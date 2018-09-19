@@ -1,5 +1,5 @@
-#ifndef CLB_SWISS_KNIFE_STRUCTS_HPP
-#define CLB_SWISS_KNIFE_STRUCTS_HPP
+#ifndef CLB_SWISS_KNIFE_STRUCTS_HH
+#define CLB_SWISS_KNIFE_STRUCTS_HH
 
 #include <iostream>
 #include <iomanip>
@@ -150,4 +150,4 @@ std::ostream& operator <<(std::ostream& stream, const UTCTime_h& timestamp)
   return stream;
 }
 
-#endif // CLB_SWISS_KNIFE_STRUCTS_HPP
+#endif // CLB_SWISS_KNIFE_STRUCTS_HH

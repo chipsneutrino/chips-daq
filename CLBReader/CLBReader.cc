@@ -75,15 +75,16 @@
 #include <sys/ioctl.h>
 #include <signal.h>
 
-#include "clb_common_header.hh"
-#include "infoword.hh"
-#include "structs.hpp"
-#include "version.hpp"
 #include <boost/tokenizer.hpp>
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/property_tree/json_parser.hpp>
+
+#include "clb_common_header.hh"
+#include "infoword.hh"
+#include "structs.hh"
+#include "version.hh"
 
 int get_terminal_width() {
 	static bool const is_a_tty = isatty(1);

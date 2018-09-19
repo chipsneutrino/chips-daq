@@ -1,5 +1,5 @@
-#ifndef CLB_READER_VERSION_HPP
-#define CLB_READER_VERSION_HPP
+#ifndef CLB_READER_VERSION_HH
+#define CLB_READER_VERSION_HH
 
 namespace clbreader {
 namespace version {
@@ -34,4 +34,4 @@ std::string v()
 } // ns version
 } // ns clbreader
 
-#endif // CLB_READER_VERSION_HPP
+#endif // CLB_READER_VERSION_HH
