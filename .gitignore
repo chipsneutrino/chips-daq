@@ -1,0 +1,7 @@
+*.o
+*.a
+*.root
+.cproject
+.project
+daqonite/src/bbb_testServer
+daqonite/src/daqonite
