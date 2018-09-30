@@ -1,6 +1,6 @@
 CC=g++
 
-INCDIRS = 		../../fh_message/include ../include
+INCDIRS = 		../../fh_message/include ../include /etc/cern/root/include/
 LIBDIRS = 		../../fh_message/src
 LIBS = 			fh_message boost_system boost_chrono boost_program_options m
 

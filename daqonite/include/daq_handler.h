@@ -57,13 +57,8 @@ public:
 	DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 			 	bool collect_bbb_optical, bool collect_bbb_monitoring,
 			 	unsigned int optical_port, unsigned int monitoring_port,
-			 	unsigned int bbb_port, bool save, std::string fileName);
-
-	DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
-			 	bool collect_bbb_optical, bool collect_bbb_monitoring,
-			 	unsigned int optical_port, unsigned int monitoring_port,
 			 	unsigned int bbb_port, bool save, std::string fileName,
-			 	std::vector<TCanvas*> canvasVec);
+			 	bool monitoringPlots);
 
 	virtual ~DAQ_handler();
 
@@ -156,9 +151,9 @@ private:
 	BBB_handler * fBBB_handler;
 
 	// Combined things
+	bool fShowMonitoringPlots;
+	Monitoring_plots * fMonitoringPlots;
 	std::size_t const fBuffer_size;
-	bool showPlots;
-	Monitoring_plots * fMonitoring_plots;
 };
 
 #endif /* DAQ_HANDLER_H_ */

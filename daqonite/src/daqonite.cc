@@ -31,10 +31,10 @@
 #include <TGTextEntry.h>
 #include <TGNumberEntry.h>
 #include <TGLabel.h>
+#include <TGClient.h>
 
 #include "TFile.h"
 #include "TTree.h"
-#include <TGClient.h>
 #include <TApplication.h>
 
 int main(int argc, char* argv[]) {
@@ -108,10 +108,10 @@ int main(int argc, char* argv[]) {
 
 	if (usingGui) {
 		// Create a simple GUI and pass the TCanvas objects onto the Monitoring_plots object via the DAQ_handler
+
 		TApplication theApp("app", &argc, argv);
 
-		int NUMPLOTS = 2;
-
+		/*
 		// Create a main frame
 		TGMainFrame *mainFrame = new TGMainFrame(gClient->GetRoot(),600,600);
 
@@ -131,12 +131,11 @@ int main(int argc, char* argv[]) {
 		std::vector<TCanvas*> canvasVec;
 		canvasVec.push_back(eChannelRateCanvas->GetCanvas());
 		canvasVec.push_back(eTotalRateCanvas->GetCanvas());
-
-		if ((int)canvasVec.size() != NUMPLOTS) {throw std::runtime_error("DAQonite: Error: CanvasVec size!");}
+		*/
 
 		DAQ_handler * daq_handler = new DAQ_handler(collect_optical, collect_monitoring, false, false,
 													port_optical, port_monitoring, (unsigned int)999,
-													saveData, filename, canvasVec);
+													saveData, filename, true);
 
 		daq_handler->StartRun();
 		theApp.Run();
@@ -146,7 +145,7 @@ int main(int argc, char* argv[]) {
 		TApplication theApp("app", &argc, argv);
 		DAQ_handler * daq_handler = new DAQ_handler(collect_optical, collect_monitoring, false, false,
 													port_optical, port_monitoring, (unsigned int)999,
-													saveData, filename);
+													saveData, filename, false);
 		daq_handler->StartRun();
 	}
 

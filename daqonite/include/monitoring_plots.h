@@ -25,16 +25,30 @@
 #include <cstdlib>
 #include "assert.h"
 
+#include <TApplication.h>
+#include <TGClient.h>
+#include <TCanvas.h>
+#include <TF1.h>
+#include <TRandom.h>
+#include <TGButton.h>
+#include <TRootEmbeddedCanvas.h>
+#include <TGTextEntry.h>
+#include <TGNumberEntry.h>
+#include <TGLabel.h>
+#include <TGClient.h>
+
 #include "TH2F.h"
 #include "TCanvas.h"
 #include "TF1.h"
 #include <TRandom.h>
+#include <TROOT.h>
+#include <TStyle.h>
 
 #define PLOTRATE 2000
 
 class Monitoring_plots {
 	public:
-		Monitoring_plots(std::vector<TCanvas*> canvasVec);
+		Monitoring_plots();
 		virtual ~Monitoring_plots();
 
 		void addHits(unsigned int pomID, unsigned int channel, unsigned int hits);
@@ -51,6 +65,7 @@ class Monitoring_plots {
 		TH2F *fChannelRatePlot;
 		TH1F *fTotalRatePlot;
 
+		int windowsPackets;
 		UInt_t startPomID;
 		UInt_t startTime_ms;
 		int cycleCounter;

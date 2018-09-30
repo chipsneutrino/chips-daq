@@ -9,28 +9,69 @@
 
 #include "monitoring_plots.h"
 
-/*	DATA RECEIVED!!!
- *
- *
- */
+Monitoring_plots::Monitoring_plots() {
+	// Create a main frame
+	TGMainFrame *mainFrame = new TGMainFrame(gClient->GetRoot(),600,600);
 
-Monitoring_plots::Monitoring_plots(std::vector<TCanvas*> canvasVec) {
-	fChannelRateCanvas = canvasVec[0];
-	fTotalRateCanvas = canvasVec[1];
+	// Channel Rate Frame /////////////////
+	TGHorizontalFrame * channelRateFrame = new TGHorizontalFrame(mainFrame, 600, 300);
+
+	TRootEmbeddedCanvas *eChannelRateCanvas = new TRootEmbeddedCanvas("eChannelRateCanvas", channelRateFrame, 600, 300);
+	channelRateFrame->AddFrame(eChannelRateCanvas, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 10, 10, 10, 1));
+	fChannelRateCanvas = eChannelRateCanvas->GetCanvas();
+
+	mainFrame->AddFrame(channelRateFrame, new TGLayoutHints(kLHintsCenterX, 2, 2, 2, 2));
+	///////////////////////////////////////
+
+	// Total Rate Frame /////////////////
+	TGHorizontalFrame * totalRateFrame = new TGHorizontalFrame(mainFrame, 600, 300);
+
+	TRootEmbeddedCanvas *eTotalRateCanvas = new TRootEmbeddedCanvas("eTotalRateCanvas", totalRateFrame, 600, 300);
+	totalRateFrame->AddFrame(eTotalRateCanvas, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 10, 10, 10, 1));
+	fTotalRateCanvas = eTotalRateCanvas->GetCanvas();
+
+	mainFrame->AddFrame(totalRateFrame, new TGLayoutHints(kLHintsCenterX, 2, 2, 2, 2));
+	///////////////////////////////////////
+
+	/*
+	/////////  Saving Setting Frame   /////////
+	TGHorizontalFrame * textFrame = new TGHorizontalFrame(mainFrame, 600, 200);
+
+	// Save file name
+	TGLabel *cycleLabel = new TGLabel(textFrame, "hello!");
+	textFrame->AddFrame(cycleLabel, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 10, 10, 10, 1));
+
+	TGCheckButton *SaveDataButton = new TGCheckButton(textFrame, "Save Data");
+	SaveDataButton->SetState(kButtonUp);
+	textFrame->AddFrame(SaveDataButton, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 10, 10, 10, 1));
+
+	mainFrame->AddFrame(textFrame, new TGLayoutHints(kLHintsCenterX, 2, 2, 2, 2));
+	///////////////////////////////////////////
+	*/
+
+	mainFrame->SetWindowName("DAQoniteGUI - by Josh Tingey MSci, JoshTingeyDAQDemon.Josh");
+	mainFrame->MapSubwindows();
+	mainFrame->Resize(mainFrame->GetDefaultSize());
+	mainFrame->MapWindow();
 
 	fChannelRateCanvas->cd();
 	fChannelRatePlot = new TH2F("ChannelRatePlot", "ChannelRatePlot", 30, -0.5, 29.5, 2, -0.5, 1.5);
 	fChannelRatePlot->GetZaxis()->SetRangeUser(0, 12000);
+	fChannelRatePlot->GetXaxis()->SetTitle("Channel");
+	fChannelRatePlot->GetYaxis()->SetTitle("POM");
 	fChannelRatePlot->SetStats(0);
 	fChannelRatePlot->Draw();
 	fChannelRateCanvas->Update();
 
 	fTotalRateCanvas->cd();
 	fTotalRatePlot = new TH1F("TotalRatePlot", "TotalRatePlot", 100, 0, 100);
+	fTotalRatePlot->GetXaxis()->SetTitle("cycleCounter");
+	fTotalRatePlot->GetYaxis()->SetTitle("Total Hit Rate");
 	fTotalRatePlot->SetStats(0);
 	fTotalRatePlot->Draw();
 	fTotalRateCanvas->Update();
 
+	windowsPackets = 0;
 	startPomID = 0;
 	startTime_ms = 0;
 	cycleCounter = 1;
@@ -56,7 +97,7 @@ void Monitoring_plots::addHits(unsigned int pomID, unsigned int channel, unsigne
 	    }
 	}
 
-	std::cout << "Adding new POM to monitoring -> " << pomID << std::endl;
+	std::cout << "DAQonite - Adding new POM to monitoring, with ID -> " << pomID << std::endl;
 	fActivePOMs.push_back(pomID);
 	std::vector<unsigned int> channelVec(30);
 	fRateArray.push_back(channelVec);
@@ -82,7 +123,6 @@ void Monitoring_plots::updatePlots() {
 		clearPOMRates(i);
 	}
 
-	
 	fChannelRatePlot->Draw("COLZ");
 	fChannelRateCanvas->Update();
 
@@ -99,12 +139,15 @@ void Monitoring_plots::addHeader(UInt_t pomID, UInt_t time_ms) {
 		startPomID = pomID;
 		cycleCounter += 1;
 	} else if (pomID != startPomID) {
+		windowsPackets += 1;
 		return;
 	} else if ((pomID == startPomID) && ((time_ms - startTime_ms) < PLOTRATE)) {
+		windowsPackets += 1;
 		return;
 	} else {
 		startTime_ms = time_ms;
 		updatePlots();
+		windowsPackets = 0;
 		cycleCounter += 1;
 	}
 }

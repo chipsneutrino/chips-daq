@@ -12,31 +12,8 @@
 DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 	 					 bool collect_bbb_optical, bool collect_bbb_monitoring,
 	 					 unsigned int optical_port, unsigned int monitoring_port,
-	 					 unsigned int bbb_port, bool save, std::string fileName) :
-						 fCollect_CLB_optical_data(collect_clb_optical),
-						 fCollect_CLB_monitoring_data(collect_clb_monitoring),
-						 fCollect_BBB_optical_data(collect_bbb_optical),
-						 fCollect_BBB_monitoring_data(collect_bbb_monitoring),
-						 fCLB_optical_port(optical_port),
-						 fCLB_monitoring_port(monitoring_port),
-						 fBBB_port(bbb_port), fSaveData(save), fFilename(fileName),
-						 fBuffer_size(buffer_size) {
-
-	fOutput_file = NULL;
-	fCLB_optical_tree = NULL;
-	fCLB_monitoring_tree = NULL;
-	fBBB_optical_tree = NULL;
-	fBBB_monitoring_tree = NULL;
-
-	showPlots = false;
-	fMonitoring_plots = NULL;
-}
-
-DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
-	 					 bool collect_bbb_optical, bool collect_bbb_monitoring,
-	 					 unsigned int optical_port, unsigned int monitoring_port,
 	 					 unsigned int bbb_port, bool save, std::string fileName,
-	 					 std::vector<TCanvas*> canvasVec) :
+	 					 bool monitoringPlots) :
 						 fCollect_CLB_optical_data(collect_clb_optical),
 						 fCollect_CLB_monitoring_data(collect_clb_monitoring),
 						 fCollect_BBB_optical_data(collect_bbb_optical),
@@ -44,7 +21,7 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 						 fCLB_optical_port(optical_port),
 						 fCLB_monitoring_port(monitoring_port),
 						 fBBB_port(bbb_port), fSaveData(save), fFilename(fileName),
-						 fBuffer_size(buffer_size) {
+						 fShowMonitoringPlots(monitoringPlots), fBuffer_size(buffer_size) {
 
 	fOutput_file = NULL;
 	fCLB_optical_tree = NULL;
@@ -52,8 +29,11 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 	fBBB_optical_tree = NULL;
 	fBBB_monitoring_tree = NULL;
 
-	showPlots = true;
-	fMonitoring_plots = new Monitoring_plots(canvasVec);
+	if (fShowMonitoringPlots) {
+		fMonitoringPlots = new Monitoring_plots();
+	} else {
+		fMonitoringPlots = NULL;
+	}
 }
 
 DAQ_handler::~DAQ_handler() {
@@ -112,7 +92,7 @@ void DAQ_handler::StartRun() {
 	if (fCollect_CLB_optical_data || fCollect_CLB_monitoring_data) {
 		fCLB_handler = new CLB_handler(socket_clb_opt, buffer_clb_opt, fCollect_CLB_optical_data,
 									   socket_clb_mon, buffer_clb_mon, fCollect_CLB_monitoring_data,
-									   fSaveData, fBuffer_size, fMonitoring_plots,
+									   fSaveData, fBuffer_size, fMonitoringPlots,
 									   fCLB_optical_tree, fCLB_monitoring_tree);
 	}
 
