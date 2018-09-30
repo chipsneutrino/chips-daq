@@ -1,3 +1,4 @@
+
 *.o
 *.a
 *.root
@@ -5,3 +6,6 @@
 .project
 daqonite/src/bbb_testServer
 daqonite/src/daqonite
+daqonite/src/daqonite_gui_dict.cc
+daqonite/src/daqonite_gui_dict.h
+daqonite/src/daqonite_gui_linkdef.h

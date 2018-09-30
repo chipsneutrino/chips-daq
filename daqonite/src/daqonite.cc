@@ -37,6 +37,8 @@
 #include "TTree.h"
 #include <TApplication.h>
 
+#include "daqonite_gui.h"
+
 int main(int argc, char* argv[]) {
 
 	std::cout << "################################################################################" << std::endl;
@@ -138,6 +140,9 @@ int main(int argc, char* argv[]) {
 													saveData, filename, true);
 
 		daq_handler->StartRun();
+
+		//DAQoniteGUI* testGui = new DAQoniteGUI(gClient->GetRoot(),600,400);
+
 		theApp.Run();
 
 	} else {
