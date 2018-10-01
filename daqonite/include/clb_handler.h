@@ -39,10 +39,11 @@
 #include "TFile.h"
 #include "TTree.h"
 #include "TH1F.h"
+#include <TSystem.h>
 
 #include "clb_header_structs.h"
 #include "clb_data_structs.h"
-#include "monitoring_plots.h"
+#include "daqonite_gui.h"
 
 #define TERMINALPRINTRATE 5000
 #define MONI 0x1
@@ -87,7 +88,7 @@ class CLB_handler {
 	public:
 		CLB_handler(boost::asio::ip::udp::socket& socket_opt, char* buffer_opt, bool mine_opt,
 				 	boost::asio::ip::udp::socket& socket_mon, char* buffer_mon, bool mine_mon,
-				 	bool saveData, std::size_t buffer_size, Monitoring_plots *monitoring_plots,
+				 	bool saveData, std::size_t buffer_size, DAQoniteGUI *daqGui,
 				 	TTree * output_tree_opt, TTree * output_tree_mon);
 		virtual ~CLB_handler();
 
@@ -122,7 +123,7 @@ class CLB_handler {
 
 		// Output
 		bool 				fSaveData;
-		Monitoring_plots*  	fMonitoringPlots;
+		DAQoniteGUI*		fDaqGui;
 		TTree* 				fOutputTreeOptical;
 		TTree* 				fOutputTreeMonitoring;
 

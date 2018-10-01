@@ -13,7 +13,7 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 	 					 bool collect_bbb_optical, bool collect_bbb_monitoring,
 	 					 unsigned int optical_port, unsigned int monitoring_port,
 	 					 unsigned int bbb_port, bool save, std::string fileName,
-	 					 bool monitoringPlots) :
+	 					 bool showGui) :
 						 fCollect_CLB_optical_data(collect_clb_optical),
 						 fCollect_CLB_monitoring_data(collect_clb_monitoring),
 						 fCollect_BBB_optical_data(collect_bbb_optical),
@@ -21,7 +21,7 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 						 fCLB_optical_port(optical_port),
 						 fCLB_monitoring_port(monitoring_port),
 						 fBBB_port(bbb_port), fSaveData(save), fFilename(fileName),
-						 fShowMonitoringPlots(monitoringPlots), fBuffer_size(buffer_size) {
+						 fShowGui(showGui), fBuffer_size(buffer_size) {
 
 	fOutput_file = NULL;
 	fCLB_optical_tree = NULL;
@@ -29,11 +29,13 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 	fBBB_optical_tree = NULL;
 	fBBB_monitoring_tree = NULL;
 
-	if (fShowMonitoringPlots) {
-		fMonitoringPlots = new Monitoring_plots();
+	if (fShowGui) {
+		fDaqGui = new DAQoniteGUI(gClient->GetRoot(),600,400);
 	} else {
-		fMonitoringPlots = NULL;
+		fDaqGui = NULL;
 	}
+
+	fRunning = false;
 }
 
 DAQ_handler::~DAQ_handler() {
@@ -92,7 +94,7 @@ void DAQ_handler::StartRun() {
 	if (fCollect_CLB_optical_data || fCollect_CLB_monitoring_data) {
 		fCLB_handler = new CLB_handler(socket_clb_opt, buffer_clb_opt, fCollect_CLB_optical_data,
 									   socket_clb_mon, buffer_clb_mon, fCollect_CLB_monitoring_data,
-									   fSaveData, fBuffer_size, fMonitoringPlots,
+									   fSaveData, fBuffer_size, fDaqGui,
 									   fCLB_optical_tree, fCLB_monitoring_tree);
 	}
 
@@ -114,15 +116,17 @@ void DAQ_handler::StartRun() {
 		std::cout << "DAQonite - Putting into container: " << fFilename << std::endl;
 	}
 
-	// Start mining
 	std::cout << "DAQonite - Start Mining... " << std::endl;
+	fRunning = true;
 	fCLB_handler->work_optical_data();
 	fCLB_handler->work_monitoring_data();
+	handleGui();
 	fIO_service.run();
 }
 
 void DAQ_handler::StopRun() {
 	std::cout << "DAQonite - Stop mining!" << std::endl;
+	fRunning = false;
 	fIO_service.stop();
 	if (fOutput_file != NULL) {
 		if (fCLB_optical_tree != NULL) { fCLB_optical_tree->Write(); }
@@ -137,12 +141,15 @@ void DAQ_handler::handle_signal(boost::asio::signal_set& set,
 	if (!error) {
 		if (signum == SIGINT) {
 			StopRun();
-			//set.get_io_service().stop();
 			return;
 		}
-
 		set.async_wait(boost::bind(&DAQ_handler::handle_signal, this, boost::ref(set),
 					   boost::asio::placeholders::error,
 					   boost::asio::placeholders::signal_number));
 	}
+}
+
+void DAQ_handler::handleGui() {
+	gSystem->ProcessEvents();
+	fIO_service.post(boost::bind(&DAQ_handler::handleGui, this));  
 }

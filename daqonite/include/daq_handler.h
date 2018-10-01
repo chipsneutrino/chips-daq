@@ -44,6 +44,7 @@
 #include "clb_handler.h"
 #include "bbb_handler.h"
 #include "monitoring_plots.h"
+#include "daqonite_gui.h"
 
 namespace po = boost::program_options;
 using boost::asio::ip::udp;
@@ -58,7 +59,7 @@ public:
 			 	bool collect_bbb_optical, bool collect_bbb_monitoring,
 			 	unsigned int optical_port, unsigned int monitoring_port,
 			 	unsigned int bbb_port, bool save, std::string fileName,
-			 	bool monitoringPlots);
+			 	bool showGui);
 
 	virtual ~DAQ_handler();
 
@@ -67,6 +68,8 @@ public:
 
 	void handle_signal(boost::asio::signal_set& set,
 					   boost::system::error_code const& error, int signum);
+
+	void handleGui();
 
 	void SetCollectCLBOptical(bool val) {
 		fCollect_CLB_optical_data = val;
@@ -126,34 +129,35 @@ public:
 
 private:
 	// What do we want to collect?
-	bool fCollect_CLB_optical_data;
-	bool fCollect_CLB_monitoring_data;
-	bool fCollect_BBB_optical_data;
-	bool fCollect_BBB_monitoring_data;
+	bool 				fCollect_CLB_optical_data;
+	bool 				fCollect_CLB_monitoring_data;
+	bool 				fCollect_BBB_optical_data;
+	bool 				fCollect_BBB_monitoring_data;
 
 	// The ports for the various things...
-	unsigned int fCLB_optical_port;
-	unsigned int fCLB_monitoring_port;
-	unsigned int fBBB_port;
+	unsigned int 		fCLB_optical_port;
+	unsigned int 		fCLB_monitoring_port;
+	unsigned int 		fBBB_port;
 
 	// Output variables
-	bool fSaveData;
-	std::string fFilename;
-	TFile * fOutput_file;
-	TTree * fCLB_optical_tree;
-	TTree * fCLB_monitoring_tree;
-	TTree * fBBB_optical_tree;
-	TTree * fBBB_monitoring_tree;
+	bool 				fSaveData;
+	std::string 		fFilename;
+	TFile* 				fOutput_file;
+	TTree* 				fCLB_optical_tree;
+	TTree* 				fCLB_monitoring_tree;
+	TTree* 				fBBB_optical_tree;
+	TTree* 				fBBB_monitoring_tree;
 
 	// IO
 	boost::asio::io_service fIO_service;
-	CLB_handler * fCLB_handler;
-	BBB_handler * fBBB_handler;
+	CLB_handler* 		fCLB_handler;
+	BBB_handler* 		fBBB_handler;
 
 	// Combined things
-	bool fShowMonitoringPlots;
-	Monitoring_plots * fMonitoringPlots;
-	std::size_t const fBuffer_size;
+	bool 				fShowGui;
+	DAQoniteGUI* 		fDaqGui;
+	std::size_t const 	fBuffer_size;
+	bool 				fRunning;
 };
 
 #endif /* DAQ_HANDLER_H_ */

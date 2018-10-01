@@ -36,8 +36,7 @@
 #include "TFile.h"
 #include "TTree.h"
 #include <TApplication.h>
-
-#include "daqonite_gui.h"
+#include <TSystem.h>
 
 int main(int argc, char* argv[]) {
 
@@ -109,48 +108,18 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (usingGui) {
-		// Create a simple GUI and pass the TCanvas objects onto the Monitoring_plots object via the DAQ_handler
-
+		// Need to create a TApplication before building the GUI in the DAQ_handler
 		TApplication theApp("app", &argc, argv);
-
-		/*
-		// Create a main frame
-		TGMainFrame *mainFrame = new TGMainFrame(gClient->GetRoot(),600,600);
-
-		// Create the channel rate canvas
-		TRootEmbeddedCanvas *eChannelRateCanvas = new TRootEmbeddedCanvas("eChannelRateCanvas", mainFrame, 600, 300);
-		mainFrame->AddFrame(eChannelRateCanvas, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 10, 10, 10, 1));
-
-		// Create the total rate canvas
-		TRootEmbeddedCanvas *eTotalRateCanvas = new TRootEmbeddedCanvas("eTotalRateCanvas", mainFrame, 600, 300);
-		mainFrame->AddFrame(eTotalRateCanvas, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 10, 10, 10, 1));
-
-		mainFrame->SetWindowName("DAQoniteGUI - by Josh Tingey MSci, JoshTingeyDAQDemon.Josh");
-		mainFrame->MapSubwindows();
-		mainFrame->Resize(mainFrame->GetDefaultSize());
-		mainFrame->MapWindow();
-
-		std::vector<TCanvas*> canvasVec;
-		canvasVec.push_back(eChannelRateCanvas->GetCanvas());
-		canvasVec.push_back(eTotalRateCanvas->GetCanvas());
-		*/
-
 		DAQ_handler * daq_handler = new DAQ_handler(collect_optical, collect_monitoring, false, false,
 													port_optical, port_monitoring, (unsigned int)999,
-													saveData, filename, true);
-
+													saveData, filename, usingGui);
 		daq_handler->StartRun();
-
-		//DAQoniteGUI* testGui = new DAQoniteGUI(gClient->GetRoot(),600,400);
-
-		theApp.Run();
-
 	} else {
 		// Just Load a DAQ_handler
 		TApplication theApp("app", &argc, argv);
 		DAQ_handler * daq_handler = new DAQ_handler(collect_optical, collect_monitoring, false, false,
 													port_optical, port_monitoring, (unsigned int)999,
-													saveData, filename, false);
+													saveData, filename, usingGui);
 		daq_handler->StartRun();
 	}
 

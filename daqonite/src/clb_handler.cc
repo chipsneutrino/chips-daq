@@ -11,11 +11,11 @@
 
 CLB_handler::CLB_handler(boost::asio::ip::udp::socket& socket_opt, char* buffer_opt, bool collect_opt,
 						 boost::asio::ip::udp::socket& socket_mon, char* buffer_mon, bool collect_mon,
-						 bool saveData, std::size_t buffer_size, Monitoring_plots *monitoring_plots,
+						 bool saveData, std::size_t buffer_size, DAQoniteGUI *daqGui,
 						 TTree * output_tree_opt, TTree * output_tree_mon) :
 						 fSocket_optical(socket_opt), fBuffer_optical(buffer_opt), fCollect_optical(collect_opt),
 						 fSocket_monitoring(socket_mon), fBuffer_monitoring(buffer_mon), fCollect_monitoring(collect_mon),
-						 fBuffer_size(buffer_size), fSaveData(saveData), fMonitoringPlots(monitoring_plots),
+						 fBuffer_size(buffer_size), fSaveData(saveData), fDaqGui(daqGui),
 						 fOutputTreeOptical(output_tree_opt), fOutputTreeMonitoring(output_tree_mon) {
 
 	// Output Variables Optical
@@ -179,7 +179,7 @@ void CLB_handler::handle_monitoring_data(boost::system::error_code const& error,
 		fTimeStamp_s_monitoring = (UInt_t) header_monitoring.timeStamp().sec();
 
 		// Monitoring Plots
-		if (fMonitoringPlots != NULL) {
+		if (fDaqGui != NULL) {
 			for (int i = 0; i < 30; ++i) { // NOT 31 HERE!!!
 				const uint32_t
 						* const field =
@@ -187,9 +187,9 @@ void CLB_handler::handle_monitoring_data(boost::system::error_code const& error,
 										(static_cast<const void* const >(fBuffer_monitoring + sizeof(CLBCommonHeader) + i * 4));
 
 				unsigned int hits =	(unsigned int)htonl(*field);
-				fMonitoringPlots->addHits((unsigned int)fPomId_monitoring, (unsigned int)i, hits);
+				fDaqGui->addHits((unsigned int)fPomId_monitoring, (unsigned int)i, hits);
 			}
-			fMonitoringPlots->addHeader(fPomId_monitoring, (UInt_t)header_monitoring.timeStamp().inMilliSeconds());
+			fDaqGui->addHeader(fPomId_monitoring, (UInt_t)header_monitoring.timeStamp().inMilliSeconds());
 		}
 
 		const ssize_t minimum_size = sizeof(CLBCommonHeader) + sizeof(int) * 31;
