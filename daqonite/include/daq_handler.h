@@ -63,8 +63,11 @@ public:
 
 	virtual ~DAQ_handler();
 
-	void StartRun();
-	void StopRun();
+	void startRun(unsigned int runNum, unsigned int type);
+	void pauseRun();
+	void restartRun();
+	void stopRun();
+	void exit();
 
 	void handle_signal(boost::asio::signal_set& set,
 					   boost::system::error_code const& error, int signum);

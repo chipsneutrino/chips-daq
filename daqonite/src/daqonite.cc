@@ -113,14 +113,14 @@ int main(int argc, char* argv[]) {
 		DAQ_handler * daq_handler = new DAQ_handler(collect_optical, collect_monitoring, false, false,
 													port_optical, port_monitoring, (unsigned int)999,
 													saveData, filename, usingGui);
-		daq_handler->StartRun();
+		daq_handler->startRun(1,2);
 	} else {
 		// Just Load a DAQ_handler
 		TApplication theApp("app", &argc, argv);
 		DAQ_handler * daq_handler = new DAQ_handler(collect_optical, collect_monitoring, false, false,
 													port_optical, port_monitoring, (unsigned int)999,
 													saveData, filename, usingGui);
-		daq_handler->StartRun();
+		daq_handler->startRun(1,2);
 	}
 
 

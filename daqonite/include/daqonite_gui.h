@@ -86,9 +86,7 @@ class DAQoniteGUI {
 
 		TH1F*				fTotalRatePlot;
 		std::vector<TH1F*> 	fChannelRatePlots;
-
 		TH1F*				fPacketRatePlot;
-
 		TH2F*				fRateHeatMapPlot;	
 
 		// Total monitoring values
@@ -100,7 +98,6 @@ class DAQoniteGUI {
 		UInt_t				fRunType;
 		UInt_t				fActiveChannels;
 		UInt_t				fOddChannels;
-		bool 				fFault;
 
 		// Window monitoring values
 		bool 				fModifyPlots;

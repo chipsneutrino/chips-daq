@@ -94,6 +94,8 @@ class CLB_handler {
 
 		void work_optical_data();
 		void work_monitoring_data();
+		void startData();
+		void stopData();
 
 	private:
 
@@ -120,6 +122,7 @@ class CLB_handler {
 		char* fBuffer_monitoring;
 		bool fCollect_monitoring;
 		std::size_t const fBuffer_size;
+		bool fDataTaking;
 
 		// Output
 		bool 				fSaveData;

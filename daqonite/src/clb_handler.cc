@@ -18,6 +18,9 @@ CLB_handler::CLB_handler(boost::asio::ip::udp::socket& socket_opt, char* buffer_
 						 fBuffer_size(buffer_size), fSaveData(saveData), fDaqGui(daqGui),
 						 fOutputTreeOptical(output_tree_opt), fOutputTreeMonitoring(output_tree_mon) {
 
+	// Construct not running
+	fDataTaking = false;
+
 	// Output Variables Optical
 	fPomId_optical 			= 0;
 	fTimeStamp_s_optical	= 0;
@@ -47,7 +50,7 @@ CLB_handler::~CLB_handler() {
 }
 
 void CLB_handler::work_optical_data() {
-	if (fCollect_optical) {
+	if (fCollect_optical && fDataTaking) {
 		fSocket_optical.async_receive(boost::asio::buffer(fBuffer_optical, fBuffer_size),
 								   boost::bind(&CLB_handler::handle_optical_data, this,
 								   boost::asio::placeholders::error,
@@ -56,12 +59,20 @@ void CLB_handler::work_optical_data() {
 }
 
 void CLB_handler::work_monitoring_data() {
-	if (fCollect_monitoring) {
+	if (fCollect_monitoring && fDataTaking) {
 		fSocket_monitoring.async_receive(boost::asio::buffer(fBuffer_monitoring, fBuffer_size),
 								   boost::bind(&CLB_handler::handle_monitoring_data, this,
 								   boost::asio::placeholders::error,
 								   boost::asio::placeholders::bytes_transferred));
 	}
+}
+
+void CLB_handler::startData() {
+	fDataTaking = true;
+}
+
+void CLB_handler::stopData() {
+	fDataTaking = false;
 }
 
 void CLB_handler::add_opt_tree_branches() {

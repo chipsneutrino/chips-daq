@@ -156,8 +156,8 @@ DAQoniteGUI::DAQoniteGUI(const TGWindow*p, UInt_t w, UInt_t h) {
 	fMainFrame->SetMWMHints(kMWMDecorAll,
 						kMWMFuncAll,
 						kMWMInputModeless);
-	fMainFrame->MapSubwindows();
 
+	fMainFrame->MapSubwindows();
 	fMainFrame->Resize(fMainFrame->GetDefaultSize());
 	fMainFrame->MapWindow();
 	fMainFrame->Resize(523,708);
@@ -197,7 +197,6 @@ DAQoniteGUI::DAQoniteGUI(const TGWindow*p, UInt_t w, UInt_t h) {
 	fRunType = 1;
 	fActiveChannels = 0;
 	fOddChannels = 0;
-	fFault = false;
 }
 
 DAQoniteGUI::~DAQoniteGUI() {
@@ -343,7 +342,7 @@ void DAQoniteGUI::drawPlots() {
 }
 
 void DAQoniteGUI::refreshPlots() {
-
+	std::cout << "DAQonite - Refresh Plots" << std::endl;
 }
 
 void DAQoniteGUI::updateLabels() {

@@ -45,11 +45,15 @@ DAQ_handler::~DAQ_handler() {
 	}
 }
 
-void DAQ_handler::StartRun() {
-
+void DAQ_handler::startRun(unsigned int runNum, unsigned int type) {
 	// First setup the output file
+	TString fileName = "type";
+	fileName += type;
+	fileName += "_run";
+	fileName += runNum;
+	fileName += ".root";
 	if (fSaveData) {
-		fOutput_file = new TFile(fFilename.c_str(), "RECREATE");
+		fOutput_file = new TFile(fileName, "RECREATE");
 		if (!fOutput_file) { throw std::runtime_error("Error: Opening Output file!"); }
 		if (fCollect_CLB_optical_data) {
 			fCLB_optical_tree = new TTree("CLBOpt_tree", "CLBOpt_tree");
@@ -82,9 +86,7 @@ void DAQ_handler::StartRun() {
 	char buffer_clb_mon[fBuffer_size] __attribute__((aligned(8)));
 
 	// Setup the signals_handler
-	boost::asio::signal_set signals_handler(fIO_service, SIGWINCH, SIGINT);
-
-	//signals_handler.async_wait(handle_signal);
+	boost::asio::signal_set signals_handler(fIO_service, SIGINT, 34, 35);
 
 	signals_handler.async_wait(boost::bind(&DAQ_handler::handle_signal, this, boost::ref(signals_handler),
 							   boost::asio::placeholders::error,
@@ -106,33 +108,55 @@ void DAQ_handler::StartRun() {
 		fBBB_handler->bbb_disconnect();
 	}
 
-	if (fCollect_CLB_optical_data == true) {
-		std::cout << "DAQonite - Mining on port: " << fCLB_optical_port << ", for Optical data ... " << std::endl;
-	}
-	if (fCollect_CLB_monitoring_data == true) {
-		std::cout << "DAQonite - Mining on port: " << fCLB_monitoring_port << ", for Monitoring data ... " << std::endl;
-	}
-	if (fSaveData) {
-		std::cout << "DAQonite - Putting into container: " << fFilename << std::endl;
-	}
-
 	std::cout << "DAQonite - Start Mining... " << std::endl;
 	fRunning = true;
+
+	if (fCollect_CLB_optical_data == true) {
+		std::cout << "DAQonite - Will mine Opticalite on port: " << fCLB_optical_port << std::endl;
+	}
+	if (fCollect_CLB_monitoring_data == true) {
+		std::cout << "DAQonite - Will mine Monitorite port: " << fCLB_monitoring_port << std::endl;
+	}
+	if (fSaveData) {
+		std::cout << "DAQonite - Will arrange in the container: " << fileName << std::endl;
+	}
+
+	fCLB_handler->startData();
 	fCLB_handler->work_optical_data();
 	fCLB_handler->work_monitoring_data();
 	handleGui();
 	fIO_service.run();
 }
 
-void DAQ_handler::StopRun() {
+void DAQ_handler::pauseRun() {
+	std::cout << "DAQonite - Pause Mining... " << std::endl;
+	fRunning = false;
+	fCLB_handler->stopData();
+}
+
+void DAQ_handler::restartRun() {
+	std::cout << "DAQonite - Restart Mining... " << std::endl;
+	fRunning = true;
+	fCLB_handler->startData();
+	fCLB_handler->work_optical_data();
+	fCLB_handler->work_monitoring_data();
+}
+
+void DAQ_handler::stopRun() {
 	std::cout << "DAQonite - Stop mining!" << std::endl;
 	fRunning = false;
-	fIO_service.stop();
+	fCLB_handler->stopData();
 	if (fOutput_file != NULL) {
 		if (fCLB_optical_tree != NULL) { fCLB_optical_tree->Write(); }
 		if (fCLB_monitoring_tree != NULL) { fCLB_monitoring_tree->Write(); }
 		fOutput_file->Close();
 	}
+	exit();
+}
+
+void DAQ_handler::exit() {
+	std::cout << "DAQonite - Leave for the day!" << std::endl;
+	fIO_service.stop();
 	gApplication->Terminate(0);
 }
 
@@ -140,9 +164,18 @@ void DAQ_handler::handle_signal(boost::asio::signal_set& set,
 				   	   	   	    boost::system::error_code const& error, int signum) {
 	if (!error) {
 		if (signum == SIGINT) {
-			StopRun();
+			stopRun();
 			return;
 		}
+
+		if (signum == 34) {
+			pauseRun();
+		}
+
+		if (signum == 35) {
+			restartRun();
+		}
+
 		set.async_wait(boost::bind(&DAQ_handler::handle_signal, this, boost::ref(set),
 					   boost::asio::placeholders::error,
 					   boost::asio::placeholders::signal_number));
@@ -150,6 +183,7 @@ void DAQ_handler::handle_signal(boost::asio::signal_set& set,
 }
 
 void DAQ_handler::handleGui() {
+	// I could deal with the GUI timing in here!!!
 	gSystem->ProcessEvents();
 	fIO_service.post(boost::bind(&DAQ_handler::handleGui, this));  
 }
