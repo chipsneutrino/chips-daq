@@ -9,14 +9,12 @@
 
 #include "clb_handler.h"
 
-CLB_handler::CLB_handler(boost::asio::ip::udp::socket& socket_opt, char* buffer_opt, bool collect_opt,
-						 boost::asio::ip::udp::socket& socket_mon, char* buffer_mon, bool collect_mon,
-						 bool saveData, std::size_t buffer_size, DAQoniteGUI *daqGui,
-						 TTree * output_tree_opt, TTree * output_tree_mon) :
-						 fSocket_optical(socket_opt), fBuffer_optical(buffer_opt), fCollect_optical(collect_opt),
-						 fSocket_monitoring(socket_mon), fBuffer_monitoring(buffer_mon), fCollect_monitoring(collect_mon),
-						 fBuffer_size(buffer_size), fSaveData(saveData), fDaqGui(daqGui),
-						 fOutputTreeOptical(output_tree_opt), fOutputTreeMonitoring(output_tree_mon) {
+CLB_handler::CLB_handler(boost::asio::ip::udp::socket* socket_opt, bool collect_opt,
+						 boost::asio::ip::udp::socket* socket_mon, bool collect_mon,
+						 std::size_t buffer_size, DAQoniteGUI *daqGui) :
+						 fSocket_optical(socket_opt), fCollect_optical(collect_opt),
+						 fSocket_monitoring(socket_mon), fCollect_monitoring(collect_mon),
+						 fBuffer_size(buffer_size), fDaqGui(daqGui) {
 
 	// Construct not running
 	fDataTaking = false;
@@ -38,6 +36,16 @@ CLB_handler::CLB_handler(boost::asio::ip::udp::socket& socket_opt, char* buffer_
 	// Packet Counters
 	fCounterOptical 		= 0;
 	fCounterMonitoring 		= 0;
+}
+
+CLB_handler::~CLB_handler() {
+	// Empty
+}
+
+void CLB_handler::SetSaveTrees(bool saveData, TTree * output_tree_opt, TTree * output_tree_mon) {
+	fSaveData = saveData;
+	fOutputTreeOptical = output_tree_opt;
+	fOutputTreeMonitoring = output_tree_mon;
 
 	if (fSaveData) {
 		if (fCollect_optical) { add_opt_tree_branches(); }
@@ -45,13 +53,9 @@ CLB_handler::CLB_handler(boost::asio::ip::udp::socket& socket_opt, char* buffer_
 	}
 }
 
-CLB_handler::~CLB_handler() {
-	// Empty
-}
-
 void CLB_handler::work_optical_data() {
 	if (fCollect_optical && fDataTaking) {
-		fSocket_optical.async_receive(boost::asio::buffer(fBuffer_optical, fBuffer_size),
+		fSocket_optical->async_receive(boost::asio::buffer(&fBuffer_optical[0], fBuffer_size),
 								   boost::bind(&CLB_handler::handle_optical_data, this,
 								   boost::asio::placeholders::error,
 								   boost::asio::placeholders::bytes_transferred));
@@ -60,7 +64,7 @@ void CLB_handler::work_optical_data() {
 
 void CLB_handler::work_monitoring_data() {
 	if (fCollect_monitoring && fDataTaking) {
-		fSocket_monitoring.async_receive(boost::asio::buffer(fBuffer_monitoring, fBuffer_size),
+		fSocket_monitoring->async_receive(boost::asio::buffer(&fBuffer_monitoring[0], fBuffer_size),
 								   boost::bind(&CLB_handler::handle_monitoring_data, this,
 								   boost::asio::placeholders::error,
 								   boost::asio::placeholders::bytes_transferred));
@@ -107,7 +111,7 @@ void CLB_handler::handle_optical_data(boost::system::error_code const& error, st
 
 		CLBCommonHeader const
 				& header_optical =
-						*static_cast<CLBCommonHeader const*> (static_cast<void const*> (fBuffer_optical));
+						*static_cast<CLBCommonHeader const*> (static_cast<void const*> (&fBuffer_optical[0]));
 
 		// Check the type...
 		std::pair<int, std::string> const& type = getType(header_optical);
@@ -133,7 +137,7 @@ void CLB_handler::handle_optical_data(boost::system::error_code const& error, st
 				for (int i = 0; i < (int)nhits; ++i) {
 					const hit_t
 							* const hit =
-									static_cast<const hit_t* const > (static_cast<const void* const > (fBuffer_optical
+									static_cast<const hit_t* const > (static_cast<const void* const > (&fBuffer_optical[0]
 											+ sizeof(CLBCommonHeader) + i
 											* sizeof(hit_t)));
 
@@ -174,7 +178,7 @@ void CLB_handler::handle_monitoring_data(boost::system::error_code const& error,
 
 		CLBCommonHeader const
 				& header_monitoring =
-						*static_cast<CLBCommonHeader const*> (static_cast<void const*> (fBuffer_monitoring));
+						*static_cast<CLBCommonHeader const*> (static_cast<void const*> (&fBuffer_monitoring[0]));
 
 		// Check the type...
 		std::pair<int, std::string> const& type = getType(header_monitoring);
@@ -195,7 +199,7 @@ void CLB_handler::handle_monitoring_data(boost::system::error_code const& error,
 				const uint32_t
 						* const field =
 								static_cast<const uint32_t* const >
-										(static_cast<const void* const >(fBuffer_monitoring + sizeof(CLBCommonHeader) + i * 4));
+										(static_cast<const void* const >(&fBuffer_monitoring[0] + sizeof(CLBCommonHeader) + i * 4));
 
 				unsigned int hits =	(unsigned int)htonl(*field);
 				fDaqGui->addHits((unsigned int)fPomId_monitoring, (unsigned int)i, hits);
@@ -208,7 +212,7 @@ void CLB_handler::handle_monitoring_data(boost::system::error_code const& error,
 		if (fSaveData && ((ssize_t)size > minimum_size)) {
 			const SCData
 					* const scData =
-							static_cast<const SCData* const > (static_cast<const void* const > (fBuffer_monitoring
+							static_cast<const SCData* const > (static_cast<const void* const > (&fBuffer_monitoring[0]
 									+ minimum_size));
 
 			fPad_monitoring = (UInt_t)scData->pad;

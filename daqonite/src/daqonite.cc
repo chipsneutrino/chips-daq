@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
 	unsigned int port_optical 		= (unsigned int)default_opto_port;
 	unsigned int port_monitoring 	= (unsigned int)default_moni_port;
 	bool saveData					= false;
-	std::string filename;
+	std::string filename			= "";
 	bool usingGui					= false;
 
 	// Argument handling
@@ -63,8 +63,9 @@ int main(int argc, char* argv[]) {
 					"Set optical port, default (56015).")
 			("monPort,m", po::value<unsigned int>(&port_monitoring) ->implicit_value(default_moni_port) ->value_name("port_monitoring"),
 					"Set monitoring port, default (56017).")
+			("save,s", "Save data to file.")
 			("savefile,f", po::value<std::string>(&filename)->value_name("filename"),
-					"Save the acquired data to a file.")
+					"Specify the name of the data file.")
 			("justOpt", "Just mine the optical data.")
 			("justMon", "Just mine the monitoring data");
 
@@ -89,6 +90,10 @@ int main(int argc, char* argv[]) {
 
 		if (vm.count("justMon")) {
 			collect_optical = false;
+		}
+
+		if (vm.count("save")) {
+			saveData = true;
 		}
 
 		if (vm.count("savefile")) {

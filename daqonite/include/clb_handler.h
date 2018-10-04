@@ -45,6 +45,8 @@
 #include "clb_data_structs.h"
 #include "daqonite_gui.h"
 
+const static size_t buffer_size = 10000;
+
 #define TERMINALPRINTRATE 5000
 #define MONI 0x1
 #define ACOU 0x2
@@ -86,11 +88,12 @@ std::ostream& operator <<(std::ostream& stream, const POMID_h& pomid) {
 
 class CLB_handler {
 	public:
-		CLB_handler(boost::asio::ip::udp::socket& socket_opt, char* buffer_opt, bool mine_opt,
-				 	boost::asio::ip::udp::socket& socket_mon, char* buffer_mon, bool mine_mon,
-				 	bool saveData, std::size_t buffer_size, DAQoniteGUI *daqGui,
-				 	TTree * output_tree_opt, TTree * output_tree_mon);
+		CLB_handler(boost::asio::ip::udp::socket* socket_opt, bool mine_opt,
+					boost::asio::ip::udp::socket* socket_mon, bool mine_mon,
+					std::size_t buffer_size, DAQoniteGUI *daqGui);
 		virtual ~CLB_handler();
+
+		void SetSaveTrees(bool saveData, TTree * output_tree_opt, TTree * output_tree_mon);
 
 		void work_optical_data();
 		void work_monitoring_data();
@@ -115,39 +118,41 @@ class CLB_handler {
 		void print_monitoring_data(const char* const buffer, ssize_t buffer_size, int max_col);
 
 		// Collection
-		boost::asio::ip::udp::socket& fSocket_optical;
-		char* fBuffer_optical;
-		bool fCollect_optical;
-		boost::asio::ip::udp::socket& fSocket_monitoring;
-		char* fBuffer_monitoring;
-		bool fCollect_monitoring;
-		std::size_t const fBuffer_size;
-		bool fDataTaking;
+		boost::asio::ip::udp::socket* 	fSocket_optical;
+		char 							fBuffer_optical[buffer_size] __attribute__((aligned(8)));
+		bool 							fCollect_optical;
+
+		boost::asio::ip::udp::socket*	fSocket_monitoring;
+		char 							fBuffer_monitoring[buffer_size] __attribute__((aligned(8)));
+		bool 							fCollect_monitoring;
+
+		std::size_t const 				fBuffer_size;
+		bool 							fDataTaking;
 
 		// Output
-		bool 				fSaveData;
-		DAQoniteGUI*		fDaqGui;
-		TTree* 				fOutputTreeOptical;
-		TTree* 				fOutputTreeMonitoring;
+		bool 							fSaveData;
+		DAQoniteGUI*					fDaqGui;
+		TTree* 							fOutputTreeOptical;
+		TTree* 							fOutputTreeMonitoring;
 
 		// Optical Variables
-		UInt_t 				fPomId_optical;
-		UChar_t 			fChannel_optical;
-		UInt_t 				fTimeStamp_s_optical;
-		UInt_t 				fTimeStamp_w_optical;
-		UInt_t 				fTimeStamp_ns_optical;
-		Char_t 				fToT_optical;
+		UInt_t 							fPomId_optical;
+		UChar_t 						fChannel_optical;
+		UInt_t 							fTimeStamp_s_optical;
+		UInt_t 							fTimeStamp_w_optical;
+		UInt_t 							fTimeStamp_ns_optical;
+		Char_t 							fToT_optical;
 
 		// Monitoring Variables
-		UInt_t 				fPomId_monitoring;
-		UInt_t 				fTimeStamp_s_monitoring;
-		UInt_t 				fPad_monitoring;
-		UInt_t 				fValid_monitoring;
-		UInt_t 				fTemperate_monitoring;
-		UInt_t 				fHumidity_monitoring;
+		UInt_t 							fPomId_monitoring;
+		UInt_t 							fTimeStamp_s_monitoring;
+		UInt_t 							fPad_monitoring;
+		UInt_t 							fValid_monitoring;
+		UInt_t 							fTemperate_monitoring;
+		UInt_t 							fHumidity_monitoring;
 
-		int 				fCounterOptical;
-		int 				fCounterMonitoring;
+		int 							fCounterOptical;
+		int 							fCounterMonitoring;
 };
 
 #endif /* CLB_HANDLER_H_ */

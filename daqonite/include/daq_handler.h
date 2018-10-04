@@ -49,7 +49,7 @@
 namespace po = boost::program_options;
 using boost::asio::ip::udp;
 
-const static size_t buffer_size = 10000;
+//const static size_t buffer_size = 10000;
 const static unsigned int default_opto_port = 56015;
 const static unsigned int default_moni_port = 56017;
 
@@ -69,9 +69,7 @@ public:
 	void stopRun();
 	void exit();
 
-	void handle_signal(boost::asio::signal_set& set,
-					   boost::system::error_code const& error, int signum);
-
+	void handleSignal(boost::system::error_code const& error, int signum);
 	void handleGui();
 
 	void SetCollectCLBOptical(bool val) {
@@ -132,35 +130,38 @@ public:
 
 private:
 	// What do we want to collect?
-	bool 				fCollect_CLB_optical_data;
-	bool 				fCollect_CLB_monitoring_data;
-	bool 				fCollect_BBB_optical_data;
-	bool 				fCollect_BBB_monitoring_data;
+	bool 						fCollect_CLB_optical_data;
+	bool 						fCollect_CLB_monitoring_data;
+	bool 						fCollect_BBB_optical_data;
+	bool 						fCollect_BBB_monitoring_data;
 
 	// The ports for the various things...
-	unsigned int 		fCLB_optical_port;
-	unsigned int 		fCLB_monitoring_port;
-	unsigned int 		fBBB_port;
+	unsigned int 				fCLB_optical_port;
+	unsigned int 				fCLB_monitoring_port;
+	unsigned int 				fBBB_port;
 
 	// Output variables
-	bool 				fSaveData;
-	std::string 		fFilename;
-	TFile* 				fOutput_file;
-	TTree* 				fCLB_optical_tree;
-	TTree* 				fCLB_monitoring_tree;
-	TTree* 				fBBB_optical_tree;
-	TTree* 				fBBB_monitoring_tree;
+	bool 						fSaveData;
+	std::string 				fFilename;
+	TFile* 						fOutput_file;
+	TTree* 						fCLB_optical_tree;
+	TTree* 						fCLB_monitoring_tree;
+	TTree* 						fBBB_optical_tree;
+	TTree* 						fBBB_monitoring_tree;
 
 	// IO
-	boost::asio::io_service fIO_service;
-	CLB_handler* 		fCLB_handler;
-	BBB_handler* 		fBBB_handler;
+	boost::asio::io_service* 	fIO_service;
+	boost::asio::signal_set*	fSignalSet;
+	udp::socket*				fSocket_clb_opt;
+	udp::socket*				fSocket_clb_mon;
+	CLB_handler* 				fCLB_handler;
+	BBB_handler* 				fBBB_handler;
 
 	// Combined things
-	bool 				fShowGui;
-	DAQoniteGUI* 		fDaqGui;
-	std::size_t const 	fBuffer_size;
-	bool 				fRunning;
+	bool 						fShowGui;
+	DAQoniteGUI* 				fDaqGui;
+	std::size_t const 			fBuffer_size;
+	bool 						fRunning;
 };
 
 #endif /* DAQ_HANDLER_H_ */

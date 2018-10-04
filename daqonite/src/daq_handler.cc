@@ -35,6 +35,36 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 		fDaqGui = NULL;
 	}
 
+	// Set up the IO service
+	fIO_service = new boost::asio::io_service();
+
+	fSocket_clb_opt = new udp::socket(*fIO_service, udp::endpoint(udp::v4(), fCLB_optical_port));
+	udp::socket::receive_buffer_size option_clb_opt(33554432);
+	fSocket_clb_opt->set_option(option_clb_opt);
+
+	fSocket_clb_mon = new udp::socket(*fIO_service, udp::endpoint(udp::v4(), fCLB_monitoring_port));
+	udp::socket::receive_buffer_size option_clb_mon(33554432);
+	fSocket_clb_mon->set_option(option_clb_mon);
+
+	fSignalSet = new boost::asio::signal_set(*fIO_service, SIGINT, 34, 35);
+	fSignalSet->async_wait(boost::bind(&DAQ_handler::handleSignal, this,
+							   	   	   boost::asio::placeholders::error,
+							   	   	   boost::asio::placeholders::signal_number));
+
+	if (fCollect_CLB_optical_data || fCollect_CLB_monitoring_data) {
+		fCLB_handler = new CLB_handler(fSocket_clb_opt, fCollect_CLB_optical_data,
+									   fSocket_clb_mon, fCollect_CLB_monitoring_data,
+									   fBuffer_size, fDaqGui);
+	}
+
+	// Setup the BBB handler
+	if (fCollect_BBB_optical_data || fCollect_BBB_monitoring_data) {
+		fBBB_handler = new BBB_handler();
+		fBBB_handler->bbb_connect();
+		fBBB_handler->get_bbb_status();
+		fBBB_handler->bbb_disconnect();
+	}
+
 	fRunning = false;
 }
 
@@ -43,15 +73,26 @@ DAQ_handler::~DAQ_handler() {
 		fOutput_file->Close();
 		fOutput_file = NULL;
 	}
+	delete fIO_service;
+	delete fSignalSet;
+	delete fSocket_clb_opt;
+	delete fSocket_clb_mon;
+	delete fCLB_handler;
+	delete fBBB_handler;
 }
 
 void DAQ_handler::startRun(unsigned int runNum, unsigned int type) {
-	// First setup the output file
-	TString fileName = "type";
-	fileName += type;
-	fileName += "_run";
-	fileName += runNum;
-	fileName += ".root";
+	// Setup the output file
+	TString fileName;
+	if (fFilename == "") {
+		fileName += "type";
+		fileName += type;
+		fileName += "_run";
+		fileName += runNum;
+		fileName += ".root";
+	} else {
+		fileName = fFilename;
+	}
 	if (fSaveData) {
 		fOutput_file = new TFile(fileName, "RECREATE");
 		if (!fOutput_file) { throw std::runtime_error("Error: Opening Output file!"); }
@@ -73,44 +114,9 @@ void DAQ_handler::startRun(unsigned int runNum, unsigned int type) {
 		}
 	}
 
-	// Setup the CLB optical data socket
-	udp::socket socket_clb_opt(fIO_service, udp::endpoint(udp::v4(), fCLB_optical_port));
-	udp::socket::receive_buffer_size option_clb_opt(33554432);
-	socket_clb_opt.set_option(option_clb_opt);
-	char buffer_clb_opt[fBuffer_size] __attribute__((aligned(8)));
-
-	// Setup the monitoring data socket
-	udp::socket socket_clb_mon(fIO_service, udp::endpoint(udp::v4(), fCLB_monitoring_port));
-	udp::socket::receive_buffer_size option_clb_mon(33554432);
-	socket_clb_mon.set_option(option_clb_mon);
-	char buffer_clb_mon[fBuffer_size] __attribute__((aligned(8)));
-
-	// Setup the signals_handler
-	boost::asio::signal_set signals_handler(fIO_service, SIGINT, 34, 35);
-
-	signals_handler.async_wait(boost::bind(&DAQ_handler::handle_signal, this, boost::ref(signals_handler),
-							   boost::asio::placeholders::error,
-							   boost::asio::placeholders::signal_number));
-
-	// Setup the CLB handler
-	if (fCollect_CLB_optical_data || fCollect_CLB_monitoring_data) {
-		fCLB_handler = new CLB_handler(socket_clb_opt, buffer_clb_opt, fCollect_CLB_optical_data,
-									   socket_clb_mon, buffer_clb_mon, fCollect_CLB_monitoring_data,
-									   fSaveData, fBuffer_size, fDaqGui,
-									   fCLB_optical_tree, fCLB_monitoring_tree);
-	}
-
-	// Setup the BBB handler
-	if (fCollect_BBB_optical_data || fCollect_BBB_monitoring_data) {
-		fBBB_handler = new BBB_handler();
-		fBBB_handler->bbb_connect();
-		fBBB_handler->get_bbb_status();
-		fBBB_handler->bbb_disconnect();
-	}
+	fCLB_handler->SetSaveTrees(fSaveData, fCLB_optical_tree, fCLB_monitoring_tree);
 
 	std::cout << "DAQonite - Start Mining... " << std::endl;
-	fRunning = true;
-
 	if (fCollect_CLB_optical_data == true) {
 		std::cout << "DAQonite - Will mine Opticalite on port: " << fCLB_optical_port << std::endl;
 	}
@@ -125,7 +131,8 @@ void DAQ_handler::startRun(unsigned int runNum, unsigned int type) {
 	fCLB_handler->work_optical_data();
 	fCLB_handler->work_monitoring_data();
 	handleGui();
-	fIO_service.run();
+	fRunning = true;
+	fIO_service->run();
 }
 
 void DAQ_handler::pauseRun() {
@@ -156,34 +163,29 @@ void DAQ_handler::stopRun() {
 
 void DAQ_handler::exit() {
 	std::cout << "DAQonite - Leave for the day!" << std::endl;
-	fIO_service.stop();
+	fIO_service->stop();
 	gApplication->Terminate(0);
 }
 
-void DAQ_handler::handle_signal(boost::asio::signal_set& set,
-				   	   	   	    boost::system::error_code const& error, int signum) {
+void DAQ_handler::handleSignal(boost::system::error_code const& error, int signum) {
 	if (!error) {
 		if (signum == SIGINT) {
 			stopRun();
 			return;
-		}
-
-		if (signum == 34) {
+		} else if (signum == 34) {
 			pauseRun();
-		}
-
-		if (signum == 35) {
+		} else if (signum == 35) {
 			restartRun();
 		}
 
-		set.async_wait(boost::bind(&DAQ_handler::handle_signal, this, boost::ref(set),
-					   boost::asio::placeholders::error,
-					   boost::asio::placeholders::signal_number));
+		fSignalSet->async_wait(boost::bind(&DAQ_handler::handleSignal, this,
+					   	   	   boost::asio::placeholders::error,
+					   	   	   boost::asio::placeholders::signal_number));
 	}
 }
 
 void DAQ_handler::handleGui() {
 	// I could deal with the GUI timing in here!!!
 	gSystem->ProcessEvents();
-	fIO_service.post(boost::bind(&DAQ_handler::handleGui, this));  
+	fIO_service->post(boost::bind(&DAQ_handler::handleGui, this));
 }
