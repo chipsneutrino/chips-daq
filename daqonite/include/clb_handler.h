@@ -93,10 +93,10 @@ class CLB_handler {
 					std::size_t buffer_size, DAQoniteGUI *daqGui);
 		virtual ~CLB_handler();
 
-		void SetSaveTrees(bool saveData, TTree * output_tree_opt, TTree * output_tree_mon);
+		void setSaveTrees(bool saveData, TTree * output_tree_opt, TTree * output_tree_mon);
 
-		void work_optical_data();
-		void work_monitoring_data();
+		void workOpticalData();
+		void workMonitoringData();
 		void startData();
 		void stopData();
 
@@ -105,54 +105,51 @@ class CLB_handler {
 		CLB_handler(CLB_handler const&); // non-copyable
 		CLB_handler& operator =(CLB_handler const&); // non-copyable
 
-		void handle_optical_data(boost::system::error_code const& error, std::size_t size);
-		void handle_monitoring_data(boost::system::error_code const& error, std::size_t size);
+		void handleOpticalData(boost::system::error_code const& error, std::size_t size);
+		void handleMonitoringData(boost::system::error_code const& error, std::size_t size);
 
-		void add_opt_tree_branches();
-		void add_mon_tree_branches();
+		void addOptTreeBranches();
+		void addMonTreeBranches();
 
 		std::pair<int, std::string> getType(CLBCommonHeader const& header);
 
-		void print_header(CLBCommonHeader const& header);
-		void print_optical_data(const char* const buffer, ssize_t buffer_size, int max_col);
-		void print_monitoring_data(const char* const buffer, ssize_t buffer_size, int max_col);
+		void printHeader(CLBCommonHeader const& header);
+		void printOpticalData(const char* const buffer, ssize_t buffer_size, int max_col);
+		void printMonitoringData(const char* const buffer, ssize_t buffer_size, int max_col);
 
 		// Collection
 		boost::asio::ip::udp::socket* 	fSocket_optical;
 		char 							fBuffer_optical[buffer_size] __attribute__((aligned(8)));
 		bool 							fCollect_optical;
-
 		boost::asio::ip::udp::socket*	fSocket_monitoring;
 		char 							fBuffer_monitoring[buffer_size] __attribute__((aligned(8)));
 		bool 							fCollect_monitoring;
-
 		std::size_t const 				fBuffer_size;
-		bool 							fDataTaking;
+		bool 							fData_taking;
 
 		// Output
-		bool 							fSaveData;
-		DAQoniteGUI*					fDaqGui;
-		TTree* 							fOutputTreeOptical;
-		TTree* 							fOutputTreeMonitoring;
-
+		bool 							fSave_data;
+		DAQoniteGUI*					fDaq_gui;
+		TTree* 							fOutput_tree_optical;
+		TTree* 							fOutput_tree_monitoring;
 		// Optical Variables
 		UInt_t 							fPomId_optical;
 		UChar_t 						fChannel_optical;
-		UInt_t 							fTimeStamp_s_optical;
-		UInt_t 							fTimeStamp_w_optical;
-		UInt_t 							fTimeStamp_ns_optical;
-		Char_t 							fToT_optical;
-
+		UInt_t 							fTimestamp_s_optical;
+		UInt_t 							fTimestamp_w_optical;
+		UInt_t 							fTimestamp_ns_optical;
+		Char_t 							fTot_optical;
 		// Monitoring Variables
 		UInt_t 							fPomId_monitoring;
-		UInt_t 							fTimeStamp_s_monitoring;
+		UInt_t 							fTimestamp_s_monitoring;
 		UInt_t 							fPad_monitoring;
 		UInt_t 							fValid_monitoring;
 		UInt_t 							fTemperate_monitoring;
 		UInt_t 							fHumidity_monitoring;
 
-		int 							fCounterOptical;
-		int 							fCounterMonitoring;
+		// Other
+		int 							fCounter_optical;
+		int 							fCounter_monitoring;
 };
 
 #endif /* CLB_HANDLER_H_ */

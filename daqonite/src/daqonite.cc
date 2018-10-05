@@ -47,25 +47,21 @@ int main(int argc, char* argv[]) {
 	std::cout << "DAQonite - Checking hard hats, high-vis vests, steel capped boots and gloves..." 	<< std::endl;
 
 	// Default settings
-	bool collect_optical 			= true;
-	bool collect_monitoring 		= true;
-	unsigned int port_optical 		= (unsigned int)default_opto_port;
-	unsigned int port_monitoring 	= (unsigned int)default_moni_port;
-	bool saveData					= false;
-	std::string filename			= "";
-	bool usingGui					= false;
+	bool collect_clb_optical 		= true;
+	bool collect_clb_monitoring 	= true;
+	bool collect_bbb_optical 		= false;
+	bool collect_bbb_monitoring 	= false;
+
+	bool useMonitoringGui			= false;
+	bool useLocalControl 			= false;
+	bool saveToFile					= false;
 
 	// Argument handling
 	po::options_description desc("Options");
 	desc.add_options()("help,h", "Print this help and exit.")
 			("gui,g", "Use the GUI.")
-			("optPort,o",po::value<unsigned int>(&port_optical) ->implicit_value(default_opto_port) ->value_name("port_optical"),
-					"Set optical port, default (56015).")
-			("monPort,m", po::value<unsigned int>(&port_monitoring) ->implicit_value(default_moni_port) ->value_name("port_monitoring"),
-					"Set monitoring port, default (56017).")
+			("localControl,l", "Enable local socket control through /tmp/daqSock endpoint")
 			("save,s", "Save data to file.")
-			("savefile,f", po::value<std::string>(&filename)->value_name("filename"),
-					"Specify the name of the data file.")
 			("justOpt", "Just mine the optical data.")
 			("justMon", "Just mine the monitoring data");
 
@@ -77,57 +73,47 @@ int main(int argc, char* argv[]) {
 			std::cout << desc << std::endl;
 			return EXIT_SUCCESS;
 		}
-
 		if (vm.count("gui")) {
-			usingGui = true;
+			useMonitoringGui = true;
+		}
+		if (vm.count("localControl")) {
+			useLocalControl = true;
+		}
+		if (vm.count("save")) {
+			saveToFile = true;
 		}
 
 		po::notify(vm);
 
 		if (vm.count("justOpt")) {
-			collect_monitoring = false;
+			collect_clb_optical = false;
+			collect_bbb_optical = false;
 		}
-
 		if (vm.count("justMon")) {
-			collect_optical = false;
-		}
-
-		if (vm.count("save")) {
-			saveData = true;
-		}
-
-		if (vm.count("savefile")) {
-			saveData = true;
-			if (!collect_optical || !collect_monitoring) {
-				throw std::runtime_error("DAQonite: Error: Need to mine something!");
-			}
+			collect_clb_monitoring = false;
+			collect_bbb_monitoring = false;
 		}
 
 	} catch (const po::error& e) {
-		std::cerr << "DAQonite: Error: " << e.what() << '\n' << desc
-				<< std::endl;
+		std::cerr << "DAQonite: Error: " << e.what() << '\n' << desc << std::endl;
 		return EXIT_FAILURE;
 	} catch (const std::runtime_error& e) {
 		std::cerr << "DAQonite: Error: " << e.what() << std::endl;
 		return EXIT_FAILURE;
 	}
 
-	if (usingGui) {
-		// Need to create a TApplication before building the GUI in the DAQ_handler
+	// Need to start a TApplication if we are using the GUI
+	DAQ_handler * daq_handler;
+	if (useMonitoringGui) {
 		TApplication theApp("app", &argc, argv);
-		DAQ_handler * daq_handler = new DAQ_handler(collect_optical, collect_monitoring, false, false,
-													port_optical, port_monitoring, (unsigned int)999,
-													saveData, filename, usingGui);
-		daq_handler->startRun(1,2);
+
+		daq_handler = new DAQ_handler(collect_clb_optical, collect_clb_monitoring, 
+									  collect_bbb_optical, collect_bbb_monitoring,
+									  saveToFile, useMonitoringGui, useLocalControl);
 	} else {
-		// Just Load a DAQ_handler
-		TApplication theApp("app", &argc, argv);
-		DAQ_handler * daq_handler = new DAQ_handler(collect_optical, collect_monitoring, false, false,
-													port_optical, port_monitoring, (unsigned int)999,
-													saveData, filename, usingGui);
-		daq_handler->startRun(1,2);
+		daq_handler = new DAQ_handler(collect_clb_optical, collect_clb_monitoring, 
+									  collect_bbb_optical, collect_bbb_monitoring,
+									  saveToFile, useMonitoringGui, useLocalControl);	
 	}
-
-
-	std::cout << "DAQonite - Done for the day!" << std::endl;
+	delete daq_handler;
 }

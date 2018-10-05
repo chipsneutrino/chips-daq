@@ -57,76 +57,21 @@ class DAQ_handler {
 public:
 	DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 			 	bool collect_bbb_optical, bool collect_bbb_monitoring,
-			 	unsigned int optical_port, unsigned int monitoring_port,
-			 	unsigned int bbb_port, bool save, std::string fileName,
-			 	bool showGui);
+				bool save, bool gui, bool localControl);
 
 	virtual ~DAQ_handler();
 
 	void startRun(unsigned int runNum, unsigned int type);
-	void pauseRun();
-	void restartRun();
+	void newRun(unsigned int runNum, unsigned int type);
 	void stopRun();
 	void exit();
 
-	void handleSignal(boost::system::error_code const& error, int signum);
-	void handleGui();
+	void handleSignals(boost::system::error_code const& error, int signum);
+	void handleLocalSocket(boost::system::error_code const& error, std::size_t size);
 
-	void SetCollectCLBOptical(bool val) {
-		fCollect_CLB_optical_data = val;
-	}
-	bool GetCollectCLBOptical() {
-		return fCollect_CLB_optical_data;
-	}
-
-	void SetCollectCLBMonitoring(bool val) {
-		fCollect_CLB_monitoring_data = val;
-	}
-	bool GetCollectCLBMonitoring() {
-		return fCollect_CLB_monitoring_data;
-	}
-
-	void SetCollectBBBOptical(bool val) {
-		fCollect_BBB_optical_data = val;
-	}
-	bool GetCollectBBBOptical() {
-		return fCollect_BBB_optical_data;
-	}
-
-	void SetCollectBBBMonitoring(bool val) {
-		fCollect_BBB_monitoring_data = val;
-	}
-	bool GetCollectBBBMonitoring() {
-		return fCollect_BBB_monitoring_data;
-	}
-
-	void SetCLBOpticalPort(unsigned int val) {
-		fCLB_optical_port = val;
-	}
-	unsigned int GetCLBOpticalPort() {
-		return fCLB_optical_port;
-	}
-
-	void SetCLBMonitoringPort(unsigned int val) {
-		fCLB_monitoring_port = val;
-	}
-	unsigned int GetCLBMonitoringPort() {
-		return fCLB_monitoring_port;
-	}
-
-	void SetBBBPort(unsigned int val) {
-		fBBB_port = val;
-	}
-	unsigned int GetBBBPort() {
-		return fBBB_port;
-	}
-
-	void SetFilename(std::string val) {
-		fFilename = val;
-	}
-	std::string GetFilename() {
-		return fFilename;
-	}
+	void workSignals();
+	void workLocalSocket();
+	void workGui();
 
 private:
 	// What do we want to collect?
@@ -135,14 +80,9 @@ private:
 	bool 						fCollect_BBB_optical_data;
 	bool 						fCollect_BBB_monitoring_data;
 
-	// The ports for the various things...
-	unsigned int 				fCLB_optical_port;
-	unsigned int 				fCLB_monitoring_port;
-	unsigned int 				fBBB_port;
-
 	// Output variables
-	bool 						fSaveData;
-	std::string 				fFilename;
+	bool 						fSave_data;
+	TString 					fFilename;
 	TFile* 						fOutput_file;
 	TTree* 						fCLB_optical_tree;
 	TTree* 						fCLB_monitoring_tree;
@@ -151,15 +91,18 @@ private:
 
 	// IO
 	boost::asio::io_service* 	fIO_service;
-	boost::asio::signal_set*	fSignalSet;
+	boost::asio::signal_set*	fSignal_set;
+	udp::socket*				fLocal_socket;
+	char 						fBuffer_local[buffer_size] __attribute__((aligned(8)));
 	udp::socket*				fSocket_clb_opt;
 	udp::socket*				fSocket_clb_mon;
 	CLB_handler* 				fCLB_handler;
 	BBB_handler* 				fBBB_handler;
 
 	// Combined things
-	bool 						fShowGui;
-	DAQoniteGUI* 				fDaqGui;
+	bool 						fShow_gui;
+	bool 						fLocal_control;
+	DAQoniteGUI* 				fDaq_gui;
 	std::size_t const 			fBuffer_size;
 	bool 						fRunning;
 };
