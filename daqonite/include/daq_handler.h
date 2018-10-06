@@ -43,7 +43,6 @@
 
 #include "clb_handler.h"
 #include "bbb_handler.h"
-#include "monitoring_plots.h"
 #include "daqonite_gui.h"
 
 namespace po = boost::program_options;
@@ -59,8 +58,7 @@ class DAQ_handler {
 public:
 	DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 			 	bool collect_bbb_optical, bool collect_bbb_monitoring,
-				bool gui, bool localControl, bool save,
-				unsigned int runType);
+				bool gui, bool save, unsigned int runType);
 
 	virtual ~DAQ_handler();
 
@@ -85,7 +83,6 @@ private:
 	bool 						fCollect_BBB_optical_data;
 	bool 						fCollect_BBB_monitoring_data;
 	bool 						fShow_gui;
-	bool 						fLocal_control;
 	bool 						fSave_data;
 
 	// Output variables

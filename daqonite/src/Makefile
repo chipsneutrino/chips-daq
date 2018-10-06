@@ -8,7 +8,7 @@ CXXFLAGS =		$(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0
 
 ROOTFLAGS = 	`root-config --cflags --glibs`
 
-OBJS =          daqonite.o daq_handler.o clb_handler.o bbb_handler.o monitoring_plots.o daqonite_gui.o
+OBJS =          daqonite.o daq_handler.o clb_handler.o bbb_handler.o daqonite_gui.o
 
 rootcint:
 	rootcint -f daqonite_gui_dict.cc -c ../include/daqonite_gui.h daqonite_gui_linkdef.h

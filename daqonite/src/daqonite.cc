@@ -40,11 +40,11 @@
 
 int main(int argc, char* argv[]) {
 
-	std::cout << "################################################################################" << std::endl;
-	std::cout << "#                            WELCOME TO DAQONITE!!!                            #" << std::endl;
-	std::cout << "#                 by Josh Tingey MSci, JoshTingeyDAQDemon.Josh                 #" << std::endl;
-	std::cout << "################################################################################" << std::endl << std::endl;
-	std::cout << "DAQonite - Checking hard hats, high-vis vests, steel capped boots and gloves..." 	<< std::endl;
+	std::cout << "#################################################################" << std::endl;
+	std::cout << "#                    WELCOME TO DAQONITE!!!                     #" << std::endl;
+	std::cout << "#         by Josh Tingey MSci, JoshTingeyDAQDemon.Josh          #" << std::endl;
+	std::cout << "# Checking hard hats, high-vis, gloves and steel capped boot... #" << std::endl;
+	std::cout << "#################################################################" << std::endl;
 
 	// Default settings
 	bool collect_clb_optical 		= true;
@@ -53,15 +53,17 @@ int main(int argc, char* argv[]) {
 	bool collect_bbb_monitoring 	= false;
 
 	bool useMonitoringGui			= false;
-	bool useLocalControl 			= false;
 	bool saveToFile					= false;
+
+	int runType						= -1;
 
 	// Argument handling
 	po::options_description desc("Options");
 	desc.add_options()("help,h", "Print this help and exit.")
 			("gui,g", "Use the GUI.")
-			("localControl,l", "Enable local socket control through /tmp/daqSock endpoint")
 			("save,s", "Save data to file.")
+			("runType,t", po::value<int>(&runType)->value_name("runType"),
+				"Specify the run type")
 			("justOpt", "Just mine the optical data.")
 			("justMon", "Just mine the monitoring data");
 
@@ -75,9 +77,6 @@ int main(int argc, char* argv[]) {
 		}
 		if (vm.count("gui")) {
 			useMonitoringGui = true;
-		}
-		if (vm.count("localControl")) {
-			useLocalControl = true;
 		}
 		if (vm.count("save")) {
 			saveToFile = true;
@@ -102,6 +101,10 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	if (runType < 0 || runType >= NUMRUNTYPES) {
+		throw std::runtime_error("DAQonite: Error: Need to specify a valid run type!");
+	}
+
 	// Need to start a TApplication if we are using the GUI
 	DAQ_handler * daq_handler;
 	if (useMonitoringGui) {
@@ -109,11 +112,11 @@ int main(int argc, char* argv[]) {
 
 		daq_handler = new DAQ_handler(collect_clb_optical, collect_clb_monitoring, 
 									  collect_bbb_optical, collect_bbb_monitoring,
-									  useMonitoringGui, useLocalControl, saveToFile, 2);
+									  useMonitoringGui, saveToFile, runType);
 	} else {
 		daq_handler = new DAQ_handler(collect_clb_optical, collect_clb_monitoring, 
 									  collect_bbb_optical, collect_bbb_monitoring,
-									  useMonitoringGui, useLocalControl, saveToFile, 2);	
+									  useMonitoringGui, saveToFile, runType);	
 	}
 	delete daq_handler;
 }

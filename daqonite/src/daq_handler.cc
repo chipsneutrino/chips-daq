@@ -11,14 +11,14 @@
 
 DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 			 			 bool collect_bbb_optical, bool collect_bbb_monitoring,
-						 bool gui, bool localControl, bool save, 
+						 bool gui, bool save, 
 						 unsigned int runType) :
 						 fCollect_CLB_optical_data(collect_clb_optical),
 						 fCollect_CLB_monitoring_data(collect_clb_monitoring),
 						 fCollect_BBB_optical_data(collect_bbb_optical),
 						 fCollect_BBB_monitoring_data(collect_bbb_monitoring),
-						 fShow_gui(gui), fLocal_control(localControl), 
-						 fSave_data(save), fRun_type(runType), fBuffer_size(buffer_size) {
+						 fShow_gui(gui), fSave_data(save), 
+						 fRun_type(runType), fBuffer_size(buffer_size) {
 
 	// NULL all the ROOT output variables, can then check this later
 	fOutput_file = NULL;
@@ -35,22 +35,16 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 	workSignals();
 
 	// Add the local control socket to the IO service
-	// Need to have client connection before execution will continue
-	if (fLocal_control) {
-		fLocal_socket = new udp::socket(*fIO_service, udp::endpoint(udp::v4(), 1096));
-		udp::socket::receive_buffer_size option_local(33554432);
-		fLocal_socket->set_option(option_local);
-
-		workLocalSocket();
-	}
+	fLocal_socket = new udp::socket(*fIO_service, udp::endpoint(udp::v4(), 1096));
+	udp::socket::receive_buffer_size option_local(33554432);
+	fLocal_socket->set_option(option_local);
+	workLocalSocket();
 
 	// Set up the monitoring ROOT based GUI
 	if (fShow_gui) {
 		fDaq_gui = new DAQoniteGUI(gClient->GetRoot(),600,400);
 		workGui();
-	} else {
-		fDaq_gui = NULL;
-	}
+	} else { fDaq_gui = NULL; }
 
 	// TODO: Move this to the CLB Handler if possible
 	// Add the CLB Optical socket to the IO service
@@ -82,6 +76,7 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 	fRunning = false;
 
 	// Start the IO service 
+	std::cout << "DAQonite - Starting IO service, waiting for command..." << std::endl; 
 	fIO_service->run();
 }
 
@@ -100,43 +95,37 @@ DAQ_handler::~DAQ_handler() {
 
 void DAQ_handler::startRun() {
 	// Setup the output file
-	int runNum = getRunAndUpdate();
-	fFilename = "";
-	fFilename += "type";
-	fFilename += fRun_type;
-	fFilename += "_run";
-	fFilename += runNum;
-	fFilename += ".root";
 	if (fSave_data) {
+		int runNum = getRunAndUpdate();
+		fFilename = "";
+		fFilename += "type";
+		fFilename += fRun_type;
+		fFilename += "_run";
+		fFilename += runNum;
+		fFilename += ".root";
+
 		fOutput_file = new TFile(fFilename, "RECREATE");
-		if (!fOutput_file) { throw std::runtime_error("Error: Opening Output file!"); }
+		if (!fOutput_file) { throw std::runtime_error("DAQonite: Error: Opening Output file!"); }
 		if (fCollect_CLB_optical_data) {
 			fCLB_optical_tree = new TTree("CLBOpt_tree", "CLBOpt_tree");
-			if (!fCLB_optical_tree) { throw std::runtime_error("Error: fCLB_optical_tree!"); }
+			if (!fCLB_optical_tree) { throw std::runtime_error("DAQonite: Error: fCLB_optical_tree!"); }
 		}
 		if (fCollect_CLB_monitoring_data) {
 			fCLB_monitoring_tree = new TTree("CLBMon_tree", "CLBMon_tree");
-			if (!fCLB_monitoring_tree) { throw std::runtime_error("Error: fCLB_monitoring_tree!"); }
+			if (!fCLB_monitoring_tree) { throw std::runtime_error("DAQonite: Error: fCLB_monitoring_tree!"); }
 		}
 		if (fCollect_BBB_optical_data) {
 			fBBB_optical_tree = new TTree("BBBOpt_tree", "BBBOpt_tree");
-			if (!fBBB_optical_tree) { throw std::runtime_error("Error: fBBB_optical_tree!"); }
+			if (!fBBB_optical_tree) { throw std::runtime_error("DAQonite: Error: fBBB_optical_tree!"); }
 		}
 		if (fCollect_BBB_monitoring_data) {
 			fBBB_monitoring_tree = new TTree("BBBMon_tree", "BBBMon_tree");
-			if (!fBBB_monitoring_tree) { throw std::runtime_error("Error: fBBB_monitoring_tree!"); }
+			if (!fBBB_monitoring_tree) { throw std::runtime_error("DAQonite: Error: fBBB_monitoring_tree!"); }
 		}
+		fCLB_handler->setSaveTrees(fSave_data, fCLB_optical_tree, fCLB_monitoring_tree);
 	}
 
-	fCLB_handler->setSaveTrees(fSave_data, fCLB_optical_tree, fCLB_monitoring_tree);
-
-	std::cout << "\nDAQonite - Start Mining (Type: " << fRun_type << ", Run: " << runNum << ")" << std::endl;
-	if (fCollect_CLB_optical_data == true) {
-		std::cout << "DAQonite - Will mine Opticalite on port: " << default_opto_port << std::endl;
-	}
-	if (fCollect_CLB_monitoring_data == true) {
-		std::cout << "DAQonite - Will mine Monitorite port: " << default_moni_port << std::endl;
-	}
+	std::cout << "\nDAQonite - Start Mining on ( "<< default_opto_port << ", " << default_moni_port << " )..." << std::endl;
 	if (fSave_data) {
 		std::cout << "DAQonite - Will arrange in the container: " << fFilename << std::endl << std::endl;
 	}
@@ -156,11 +145,11 @@ void DAQ_handler::newRun() {
 }
 
 void DAQ_handler::stopRun() {
-	std::cout << "\nDAQonite - Stop mining!" << std::endl;
+	std::cout << "\nDAQonite - Stop mining" << std::endl;
 	fRunning = false;
 	fCLB_handler->stopData();
 	if (fOutput_file != NULL) {
-		std::cout << "DAQonite - Writing and closing file" << std::endl;
+		std::cout << "DAQonite - Closing up the container: " << fFilename << std::endl;
 		if (fCLB_optical_tree != NULL) { fCLB_optical_tree->Write(); }
 		if (fCLB_monitoring_tree != NULL) { fCLB_monitoring_tree->Write(); }
 		fOutput_file->Close();
@@ -168,14 +157,16 @@ void DAQ_handler::stopRun() {
 }
 
 void DAQ_handler::exit() {
-	std::cout << "DAQonite - Done for the day!" << std::endl;
+	if (fRunning) { stopRun(); }
+	std::cout << "DAQonite - Done for the day" << std::endl;
 	fIO_service->stop();
-	gApplication->Terminate(0);
+	if (fDaq_gui != NULL) {
+		gApplication->Terminate(0);	
+	}
 }
 
 int DAQ_handler::getRunAndUpdate() {
 	// 4 fRun_types -> 1) Data_normal, 2) Calibration, 3) Test_normal, 4) test_daq
-
 	if (fRun_type < 0 || fRun_type >= NUMRUNTYPES) {
 		throw std::runtime_error("DAQonite: Error: Incorrect run type number!");
 	}
@@ -244,7 +235,7 @@ void DAQ_handler::handleLocalSocket(boost::system::error_code const& error, std:
 		} else if (strncmp(fBuffer_local, "exit", 4) == 0) {
 			exit();
 		} else {
-			std::cout << "Don't understand command!!!" << std::endl;
+			std::cout << "\nDAQonite: Error: Don't understand the command!\n" << std::endl;
 		}
 		workLocalSocket();
 	}
