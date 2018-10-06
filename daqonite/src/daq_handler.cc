@@ -11,13 +11,14 @@
 
 DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 			 			 bool collect_bbb_optical, bool collect_bbb_monitoring,
-						 bool save, bool gui, bool localControl) :
+						 bool gui, bool localControl, bool save, 
+						 unsigned int runType) :
 						 fCollect_CLB_optical_data(collect_clb_optical),
 						 fCollect_CLB_monitoring_data(collect_clb_monitoring),
 						 fCollect_BBB_optical_data(collect_bbb_optical),
 						 fCollect_BBB_monitoring_data(collect_bbb_monitoring),
-						 fSave_data(save), fShow_gui(gui), 
-						 fLocal_control(localControl), fBuffer_size(buffer_size) {
+						 fShow_gui(gui), fLocal_control(localControl), 
+						 fSave_data(save), fRun_type(runType), fBuffer_size(buffer_size) {
 
 	// NULL all the ROOT output variables, can then check this later
 	fOutput_file = NULL;
@@ -97,11 +98,12 @@ DAQ_handler::~DAQ_handler() {
 	delete fBBB_handler;
 }
 
-void DAQ_handler::startRun(unsigned int runNum, unsigned int type) {
+void DAQ_handler::startRun() {
 	// Setup the output file
+	int runNum = getRunAndUpdate();
 	fFilename = "";
 	fFilename += "type";
-	fFilename += type;
+	fFilename += fRun_type;
 	fFilename += "_run";
 	fFilename += runNum;
 	fFilename += ".root";
@@ -128,7 +130,7 @@ void DAQ_handler::startRun(unsigned int runNum, unsigned int type) {
 
 	fCLB_handler->setSaveTrees(fSave_data, fCLB_optical_tree, fCLB_monitoring_tree);
 
-	std::cout << "\nDAQonite - Start Mining (Type: " << type << ", Run: " << runNum << ")" << std::endl;
+	std::cout << "\nDAQonite - Start Mining (Type: " << fRun_type << ", Run: " << runNum << ")" << std::endl;
 	if (fCollect_CLB_optical_data == true) {
 		std::cout << "DAQonite - Will mine Opticalite on port: " << default_opto_port << std::endl;
 	}
@@ -145,12 +147,12 @@ void DAQ_handler::startRun(unsigned int runNum, unsigned int type) {
 	fRunning = true;
 }
 
-void DAQ_handler::newRun(unsigned int runNum, unsigned int type) {
+void DAQ_handler::newRun() {
 	// First stop the current run and save the .root output file
 	stopRun();
 
 	// Start a new run
-	startRun(2,2);
+	startRun();
 }
 
 void DAQ_handler::stopRun() {
@@ -171,6 +173,52 @@ void DAQ_handler::exit() {
 	gApplication->Terminate(0);
 }
 
+int DAQ_handler::getRunAndUpdate() {
+	// 4 fRun_types -> 1) Data_normal, 2) Calibration, 3) Test_normal, 4) test_daq
+
+	if (fRun_type < 0 || fRun_type >= NUMRUNTYPES) {
+		throw std::runtime_error("DAQonite: Error: Incorrect run type number!");
+	}
+
+	int returnNum = 1;
+	int runNums[NUMRUNTYPES];
+	std::ifstream runNumFile("runNumbers.dat");	
+	if(runNumFile.fail()) {
+		runNumFile.close();	
+		// The file does not yet exist so lets create it
+		std::ofstream newFile("runNumbers.dat");
+  		if (newFile.is_open()) {
+			for (int i=0; i<NUMRUNTYPES; i++) {	
+				if (fRun_type == (unsigned int)i) { 
+					newFile << 2 << "\n"; 
+				} else { newFile << 1 << "\n"; }
+			}
+			newFile.close();
+		} else { throw std::runtime_error("DAQonite: Error: Unable to create runNumbers.dat!"); }
+	} else {
+		// The file exists so read from it
+		for (int i=0; i<NUMRUNTYPES; i++) { 
+			runNumFile >> runNums[i]; 
+			if (runNums[i] < 1) { runNums[i] = 1; }
+			if (fRun_type == (unsigned int)i) { returnNum = runNums[i]; }
+		}
+		runNumFile.close();	
+
+		// The file does not yet exist so lets create it
+		std::ofstream updateFile("runNumbers.dat");
+  		if (updateFile.is_open()) {
+			for (int i=0; i<NUMRUNTYPES; i++) {	
+				if (fRun_type == (unsigned int)i) { 
+					updateFile << runNums[i] + 1 << "\n"; 
+				} else { updateFile << 1 << "\n"; }
+			}
+			updateFile.close();
+		} else { throw std::runtime_error("DAQonite: Error: Unable to update runNumbers.dat!"); }
+	}
+
+	return returnNum;
+}
+
 void DAQ_handler::handleSignals(boost::system::error_code const& error, int signum) {
 	if (!error) {
 		if (signum == SIGINT) {
@@ -186,15 +234,17 @@ void DAQ_handler::handleSignals(boost::system::error_code const& error, int sign
 
 void DAQ_handler::handleLocalSocket(boost::system::error_code const& error, std::size_t size) {
 	if (!error) {
-		std::cout << "Received local message of length -> " << size << std::endl;
+		//std::cout << "Received local message of length -> " << size << std::endl;
 		if (strncmp(fBuffer_local, "start", 5) == 0) {
-			startRun(1,2);
+			startRun();
 		} else if (strncmp(fBuffer_local, "stop", 4) == 0) {
 			stopRun();
 		} else if (strncmp(fBuffer_local, "new", 3) == 0) {
-			newRun(1,2);
+			newRun();
 		} else if (strncmp(fBuffer_local, "exit", 4) == 0) {
 			exit();
+		} else {
+			std::cout << "Don't understand command!!!" << std::endl;
 		}
 		workLocalSocket();
 	}

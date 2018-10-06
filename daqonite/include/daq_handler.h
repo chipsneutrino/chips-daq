@@ -49,6 +49,8 @@
 namespace po = boost::program_options;
 using boost::asio::ip::udp;
 
+#define NUMRUNTYPES 4
+
 //const static size_t buffer_size = 10000;
 const static unsigned int default_opto_port = 56015;
 const static unsigned int default_moni_port = 56017;
@@ -57,14 +59,17 @@ class DAQ_handler {
 public:
 	DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 			 	bool collect_bbb_optical, bool collect_bbb_monitoring,
-				bool save, bool gui, bool localControl);
+				bool gui, bool localControl, bool save,
+				unsigned int runType);
 
 	virtual ~DAQ_handler();
 
-	void startRun(unsigned int runNum, unsigned int type);
-	void newRun(unsigned int runNum, unsigned int type);
+	void startRun();
+	void newRun();
 	void stopRun();
 	void exit();
+
+	int getRunAndUpdate();
 
 	void handleSignals(boost::system::error_code const& error, int signum);
 	void handleLocalSocket(boost::system::error_code const& error, std::size_t size);
@@ -74,14 +79,16 @@ public:
 	void workGui();
 
 private:
-	// What do we want to collect?
+	// Settings
 	bool 						fCollect_CLB_optical_data;
 	bool 						fCollect_CLB_monitoring_data;
 	bool 						fCollect_BBB_optical_data;
 	bool 						fCollect_BBB_monitoring_data;
+	bool 						fShow_gui;
+	bool 						fLocal_control;
+	bool 						fSave_data;
 
 	// Output variables
-	bool 						fSave_data;
 	TString 					fFilename;
 	TFile* 						fOutput_file;
 	TTree* 						fCLB_optical_tree;
@@ -100,9 +107,8 @@ private:
 	BBB_handler* 				fBBB_handler;
 
 	// Combined things
-	bool 						fShow_gui;
-	bool 						fLocal_control;
 	DAQoniteGUI* 				fDaq_gui;
+	unsigned int 				fRun_type;
 	std::size_t const 			fBuffer_size;
 	bool 						fRunning;
 };
