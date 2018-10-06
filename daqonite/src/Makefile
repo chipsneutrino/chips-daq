@@ -1,8 +1,8 @@
 CC=g++
 
-INCDIRS = 		../../fh_message/include ../include
+INCDIRS = 		../../fh_message/include ../include /home/jtingey/root/include
 LIBDIRS = 		../../fh_message/src
-LIBS = 			fh_message boost_system boost_chrono boost_program_options m
+LIBS = 			fh_message boost_system boost_chrono boost_program_options m pthread
 
 CXXFLAGS =		$(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0
 
@@ -17,13 +17,22 @@ TARGET =        daqonite
 
 TEST = 			bbb_testServer
 
+COMMAND = 		daq_command
+
 $(TARGET): $(OBJS) *.cc ../include/*.h
 	$(CC) -o $(TARGET) daqonite_gui_dict.cc $(OBJS) $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS)
 
 $(TEST): $(OBJS) bbb_testServer.o
 	$(CC) -o $(TEST) bbb_testServer.o $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) 
+
+$(COMMAND): daq_command.cc
+	$(CC) -o $(COMMAND) daq_command.cc $(LIBDIRS:%=-L%) $(LIBS:%=-l%)
 	
-all: rootcint $(TARGET) $(TEST)
+all: rootcint $(TARGET) $(COMMAND)
+
+command: $(COMMAND)
+
+test: $(TEST)
 
 clean:
-	rm -f $(OBJS) $(TARGET) $(TEST) *.o daqonite_gui_dict.cc daqonite_gui_dict.h
+	rm -f $(OBJS) $(TARGET) $(COMMAND) $(TEST) *.o daqonite_gui_dict.cc daqonite_gui_dict.h
