@@ -20,6 +20,9 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 						 fShow_gui(gui), fSave_data(save), 
 						 fRun_type(runType), fBuffer_size(buffer_size) {
 
+	// Start not running
+	fRunning = false;
+
 	// NULL all the ROOT output variables, can then check this later
 	fOutput_file = NULL;
 	fCLB_optical_tree = NULL;
@@ -61,7 +64,7 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 	if (fCollect_CLB_optical_data || fCollect_CLB_monitoring_data) {
 		fCLB_handler = new CLB_handler(fSocket_clb_opt, fCollect_CLB_optical_data,
 									   fSocket_clb_mon, fCollect_CLB_monitoring_data,
-									   fBuffer_size, fDaq_gui);
+									   fBuffer_size, fDaq_gui, &fRunning);
 	}
 
 	// Create the BBB handler, deals with all BBB data collection
@@ -71,9 +74,6 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 		fBBB_handler->get_bbb_status();
 		fBBB_handler->bbb_disconnect();
 	}
-
-	// Start not running
-	fRunning = false;
 
 	// Start the IO service 
 	std::cout << "DAQonite - Starting IO service, waiting for command..." << std::endl; 
@@ -130,10 +130,9 @@ void DAQ_handler::startRun() {
 		std::cout << "DAQonite - Will arrange in the container: " << fFilename << std::endl << std::endl;
 	}
 
-	fCLB_handler->startData();
+	fRunning = true;
 	fCLB_handler->workOpticalData();
 	fCLB_handler->workMonitoringData();
-	fRunning = true;
 }
 
 void DAQ_handler::newRun() {
@@ -147,7 +146,6 @@ void DAQ_handler::newRun() {
 void DAQ_handler::stopRun() {
 	std::cout << "\nDAQonite - Stop mining" << std::endl;
 	fRunning = false;
-	fCLB_handler->stopData();
 	if (fOutput_file != NULL) {
 		std::cout << "DAQonite - Closing up the container: " << fFilename << std::endl;
 		if (fCLB_optical_tree != NULL) { fCLB_optical_tree->Write(); }
@@ -157,7 +155,7 @@ void DAQ_handler::stopRun() {
 }
 
 void DAQ_handler::exit() {
-	if (fRunning) { stopRun(); }
+	if (fRunning == true) { stopRun(); }
 	std::cout << "DAQonite - Done for the day" << std::endl;
 	fIO_service->stop();
 	if (fDaq_gui != NULL) {

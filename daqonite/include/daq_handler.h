@@ -107,7 +107,7 @@ private:
 	DAQoniteGUI* 				fDaq_gui;
 	unsigned int 				fRun_type;
 	std::size_t const 			fBuffer_size;
-	bool 						fRunning;
+	bool						fRunning;
 };
 
 #endif /* DAQ_HANDLER_H_ */

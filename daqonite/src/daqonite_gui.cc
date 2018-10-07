@@ -10,7 +10,7 @@
 #define PLOTLENGTH 100
 #define UPDATERATE 2000
 #define PMTSPERPOM 30
-#define HIGHRATE 12000
+#define HIGHRATE 10000
 
 DAQoniteGUI::DAQoniteGUI(const TGWindow*p, UInt_t w, UInt_t h) {
 	// main frame
@@ -184,6 +184,7 @@ DAQoniteGUI::DAQoniteGUI(const TGWindow*p, UInt_t w, UInt_t h) {
 
 	fPacketsReceived = 0;
 	fNumUpdates = 0;
+	fNumRefresh = 0;
 	fModifyPlots = false;
 	fWindowPackets = 0;
 	fStartPomID = 0;
@@ -265,6 +266,7 @@ void DAQoniteGUI::clearPomRates(unsigned int pomIndex) {
 void DAQoniteGUI::updatePlots() {
 	fNumUpdates++;
 	if (fModifyPlots) { modifyPlots(); }
+	if ((fNumUpdates % PLOTLENGTH) == 0) { refreshPlots(); }
 
 	// We need to loop through the fRateArray and update the plots and then clear it...
 	int totalHits = 0;
@@ -285,7 +287,7 @@ void DAQoniteGUI::updatePlots() {
 
 			// Set the individual channel rate plot
 			int plotVectorIndex = (pomIndex*PMTSPERPOM) + (channelIndex);
-			fChannelRatePlots[plotVectorIndex]->SetBinContent(fNumUpdates, hits/((float)UPDATERATE/1000));
+			fChannelRatePlots[plotVectorIndex]->SetBinContent(fNumUpdates-(fNumRefresh*PLOTLENGTH), hits/((float)UPDATERATE/1000));
 
 			// Set the heat map bin for this channel
 			fRateHeatMapPlot->SetBinContent(channelIndex+1, pomIndex+1, hits/((float)UPDATERATE/1000));
@@ -299,11 +301,11 @@ void DAQoniteGUI::updatePlots() {
 
 	// Set the total channel rate plot
 	float hitRate = (float)totalHits / ((float)UPDATERATE/1000);
-	fTotalRatePlot->SetBinContent(fNumUpdates, hitRate);
+	fTotalRatePlot->SetBinContent(fNumUpdates-(fNumRefresh*PLOTLENGTH), hitRate);
 
 	// Set the total packet rate plot
 	float packetRate = fWindowPackets / ((float)UPDATERATE/1000);
-	fPacketRatePlot->SetBinContent(fNumUpdates, packetRate);
+	fPacketRatePlot->SetBinContent(fNumUpdates-(fNumRefresh*PLOTLENGTH), packetRate);
 }
 
 void DAQoniteGUI::modifyPlots() {
@@ -315,6 +317,10 @@ void DAQoniteGUI::modifyPlots() {
 	fRateHeatMapPlot->GetZaxis()->SetRangeUser(0, 12000);
 	fRateHeatMapPlot->GetXaxis()->SetTitle("Channel");
 	fRateHeatMapPlot->GetYaxis()->SetTitle("POM");
+	fRateHeatMapPlot->GetYaxis()->CenterTitle();
+	fRateHeatMapPlot->GetYaxis()->SetTitleSize(0.14);
+	fRateHeatMapPlot->GetYaxis()->SetTitleOffset(0.3);
+	fRateHeatMapPlot->GetYaxis()->SetLabelSize(0.08);
 	fRateHeatMapPlot->SetStats(0);
 	fModifyPlots = false;
 }
@@ -343,6 +349,27 @@ void DAQoniteGUI::drawPlots() {
 
 void DAQoniteGUI::refreshPlots() {
 	std::cout << "DAQonite - Refresh Plots" << std::endl;
+	// Clear the individual channel plots and make new clean ones
+	for(int pom = 0; pom < (int)fActivePOMs.size(); pom++) {
+		for (int channel=0; channel<PMTSPERPOM; channel++) {
+			// Set the individual channel rate plot
+			int plotVectorIndex = (pom*PMTSPERPOM) + (channel);
+			delete fChannelRatePlots[plotVectorIndex];
+			fChannelRatePlots[plotVectorIndex] = NULL;
+			fChannelRatePlots[plotVectorIndex] = makeTotalRatePlot(pom, channel);
+		}
+	}
+
+	// Clean the individual plots and create new ones
+	delete fTotalRatePlot;
+	fTotalRatePlot = NULL;
+	fTotalRatePlot = makeTotalRatePlot();
+
+	delete fPacketRatePlot;
+	fPacketRatePlot = NULL;
+	fPacketRatePlot = makePacketRatePlot();
+
+	fNumRefresh++;
 }
 
 void DAQoniteGUI::updateLabels() {
@@ -437,4 +464,5 @@ TH2F* DAQoniteGUI::makeHeatMapPlot() {
 
 void DAQoniteGUI::toggleSpecific() {
 	std::cout << "DAQonite - Show Specific Channel Toggle" << std::endl;
+	if (fNumUpdates >= 1) { drawPlots(); }
 }

@@ -92,6 +92,7 @@ class DAQoniteGUI {
 		// Total monitoring values
 		UInt_t 				fPacketsReceived;
 		UInt_t 				fNumUpdates;
+		UInt_t				fNumRefresh;
 
 		UInt_t				fRunNumber;
 		UInt_t				fStartTime;

@@ -11,13 +11,15 @@
 
 CLB_handler::CLB_handler(boost::asio::ip::udp::socket* socket_opt, bool collect_opt,
 						 boost::asio::ip::udp::socket* socket_mon, bool collect_mon,
-						 std::size_t buffer_size, DAQoniteGUI *daqGui) :
+						 std::size_t buffer_size, DAQoniteGUI *daqGui, bool* running) :
 						 fSocket_optical(socket_opt), fCollect_optical(collect_opt),
 						 fSocket_monitoring(socket_mon), fCollect_monitoring(collect_mon),
 						 fBuffer_size(buffer_size), fDaq_gui(daqGui) {
 
-	// Construct not running
-	fData_taking = false;
+	// Add the running bool pointer...
+	fRunning = running;
+	
+	fSave_data = false;
 
 	// Output Variables Optical
 	fPomId_optical 			= 0;
@@ -35,7 +37,7 @@ CLB_handler::CLB_handler(boost::asio::ip::udp::socket* socket_opt, bool collect_
 
 	// Packet Counters
 	fCounter_optical 		= 0;
-	fCounter_monitoring 		= 0;
+	fCounter_monitoring 	= 0;
 }
 
 CLB_handler::~CLB_handler() {
@@ -54,7 +56,7 @@ void CLB_handler::setSaveTrees(bool saveData, TTree * output_tree_opt, TTree * o
 }
 
 void CLB_handler::workOpticalData() {
-	if (fCollect_optical && fData_taking) {
+	if (fCollect_optical && *fRunning == true) {
 		fSocket_optical->async_receive(boost::asio::buffer(&fBuffer_optical[0], fBuffer_size),
 								   boost::bind(&CLB_handler::handleOpticalData, this,
 								   boost::asio::placeholders::error,
@@ -63,20 +65,12 @@ void CLB_handler::workOpticalData() {
 }
 
 void CLB_handler::workMonitoringData() {
-	if (fCollect_monitoring && fData_taking) {
+	if (fCollect_monitoring && *fRunning == true) {
 		fSocket_monitoring->async_receive(boost::asio::buffer(&fBuffer_monitoring[0], fBuffer_size),
 								   boost::bind(&CLB_handler::handleMonitoringData, this,
 								   boost::asio::placeholders::error,
 								   boost::asio::placeholders::bytes_transferred));
 	}
-}
-
-void CLB_handler::startData() {
-	fData_taking = true;
-}
-
-void CLB_handler::stopData() {
-	fData_taking = false;
 }
 
 void CLB_handler::addOptTreeBranches() {
@@ -154,7 +148,8 @@ void CLB_handler::handleOpticalData(boost::system::error_code const& error, std:
 
 					fTot_optical = (UChar_t)hit->ToT;
 
-					fOutput_tree_optical->Fill();
+					if(*fRunning == true) { fOutput_tree_optical->Fill(); }
+					
 				}
 			}
 		}
@@ -220,7 +215,7 @@ void CLB_handler::handleMonitoringData(boost::system::error_code const& error, s
 			fTemperate_monitoring = (UInt_t)scData->temp;
 			fHumidity_monitoring = (UInt_t)scData->humidity;
 
-			fOutput_tree_monitoring->Fill();
+			if(*fRunning == true) { fOutput_tree_monitoring->Fill(); }
 		}
 
 		workMonitoringData();

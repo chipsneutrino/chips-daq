@@ -90,15 +90,13 @@ class CLB_handler {
 	public:
 		CLB_handler(boost::asio::ip::udp::socket* socket_opt, bool mine_opt,
 					boost::asio::ip::udp::socket* socket_mon, bool mine_mon,
-					std::size_t buffer_size, DAQoniteGUI *daqGui);
+					std::size_t buffer_size, DAQoniteGUI *daqGui, bool* running);
 		virtual ~CLB_handler();
 
 		void setSaveTrees(bool saveData, TTree * output_tree_opt, TTree * output_tree_mon);
 
 		void workOpticalData();
 		void workMonitoringData();
-		void startData();
-		void stopData();
 
 	private:
 
@@ -125,7 +123,7 @@ class CLB_handler {
 		char 							fBuffer_monitoring[buffer_size] __attribute__((aligned(8)));
 		bool 							fCollect_monitoring;
 		std::size_t const 				fBuffer_size;
-		bool 							fData_taking;
+		bool* 							fRunning;
 
 		// Output
 		bool 							fSave_data;
