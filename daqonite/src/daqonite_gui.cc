@@ -3,6 +3,13 @@
  *
  *  Created on: Sep 24, 2018
  *      Author: chips
+ *
+ *   TODO:
+ *   	- Add configuration file reading and checking against
+ *   	- Add temperature and humidity tracking for each CLB
+ *   	- Add RMS or mean fluctuation monitor to flag wierd PMTs
+ *   	- Make everything bigger and cooler looking
+ *
  */
 
 #include "daqonite_gui.h"
@@ -61,16 +68,19 @@ DAQoniteGUI::DAQoniteGUI(const TGWindow*p, UInt_t w, UInt_t h) {
 	TGHorizontalFrame *fFrame3 = new TGHorizontalFrame(fMainFrame,500,50,kHorizontalFrame,ucolor);
 	fFrame3->SetName("fFrame3");
 	fFrame3->SetLayoutBroken(kTRUE);
+
 	fPomIDEntry = new TGNumberEntry(fFrame3, (Double_t) 0,2,-1,(TGNumberFormat::EStyle) 5,
 									TGNumberFormat::kNEAPositive, TGNumberFormat::kNELLimitMinMax, 0, 29);
 	fPomIDEntry->SetName("fPomIDEntry");
 	fFrame3->AddFrame(fPomIDEntry, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
 	fPomIDEntry->MoveResize(299,15,60,25);
+
 	fChannelEntry = new TGNumberEntry(fFrame3, (Double_t) 0,2,-1,(TGNumberFormat::EStyle) 5,
 									  TGNumberFormat::kNEAPositive, TGNumberFormat::kNELLimitMinMax, 0, 29);
 	fChannelEntry->SetName("fChannelEntry");
 	fFrame3->AddFrame(fChannelEntry, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
 	fChannelEntry->MoveResize(404,15,60,25);
+
 	fSpecifyButton = new TGCheckButton(fFrame3,"Specify Channel [PomID and Channel]");
 	fSpecifyButton->Connect("Clicked()","DAQoniteGUI",this,"toggleSpecific()");
 	fSpecifyButton->SetTextJustify(36);
@@ -185,6 +195,7 @@ DAQoniteGUI::DAQoniteGUI(const TGWindow*p, UInt_t w, UInt_t h) {
 	fPacketsReceived = 0;
 	fNumUpdates = 0;
 	fNumRefresh = 0;
+	fRunning = false;
 	fModifyPlots = false;
 	fWindowPackets = 0;
 	fStartPomID = 0;
@@ -374,8 +385,8 @@ void DAQoniteGUI::refreshPlots() {
 
 void DAQoniteGUI::updateLabels() {
 	// Run Labels
-	TString label1 = "Run Number: "; label1 += fRunNumber; fLabel1->SetText(label1);
-	TString label2 = "Run Type: "; label2 += fRunType; fLabel2->SetText(label2);
+	TString label1 = "Type / Run: "; label1 += fRunType; label1 += " / "; label1 += fRunNumber; fLabel1->SetText(label1);
+	TString label2 = "Running: "; label2 += fRunning; fLabel2->SetText(label2);
 	TString label3 = "Run Time [s]: "; label3 += (float)(fStartTime_ms - fStartTime)/1000; fLabel3->SetText(label3);
 
 	// Active Channels Label
@@ -463,6 +474,17 @@ TH2F* DAQoniteGUI::makeHeatMapPlot() {
 }
 
 void DAQoniteGUI::toggleSpecific() {
-	std::cout << "DAQonite - Show Specific Channel Toggle" << std::endl;
 	if (fNumUpdates >= 1) { drawPlots(); }
+}
+
+void DAQoniteGUI::startRun(unsigned int type, unsigned int run) {
+	fRunning = true;
+	fRunType = type;
+	fRunNumber = run;
+	updateLabels();
+}
+
+void DAQoniteGUI::stopRun() {
+	fRunning = false;
+	updateLabels();
 }

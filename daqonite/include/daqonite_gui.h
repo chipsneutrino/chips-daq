@@ -49,6 +49,9 @@ class DAQoniteGUI {
 
 		void toggleSpecific();
 
+		void startRun(unsigned int type, unsigned int run);
+		void stopRun();
+
 	private:
 
 		void addPom(unsigned int pomID, unsigned int pomIndex);
@@ -93,6 +96,7 @@ class DAQoniteGUI {
 		UInt_t 				fPacketsReceived;
 		UInt_t 				fNumUpdates;
 		UInt_t				fNumRefresh;
+		bool 				fRunning;
 
 		UInt_t				fRunNumber;
 		UInt_t				fStartTime;

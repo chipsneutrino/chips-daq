@@ -123,6 +123,9 @@ void DAQ_handler::startRun() {
 			if (!fBBB_monitoring_tree) { throw std::runtime_error("DAQonite: Error: fBBB_monitoring_tree!"); }
 		}
 		fCLB_handler->setSaveTrees(fSave_data, fCLB_optical_tree, fCLB_monitoring_tree);
+		fDaq_gui->startRun(fRun_type, runNum);
+	} else {
+		fDaq_gui->startRun(fRun_type, 0);
 	}
 
 	std::cout << "\nDAQonite - Start Mining on ( "<< default_opto_port << ", " << default_moni_port << " )..." << std::endl;
@@ -145,6 +148,7 @@ void DAQ_handler::newRun() {
 
 void DAQ_handler::stopRun() {
 	std::cout << "\nDAQonite - Stop mining" << std::endl;
+	fDaq_gui->stopRun();
 	fRunning = false;
 	if (fOutput_file != NULL) {
 		std::cout << "DAQonite - Closing up the container: " << fFilename << std::endl;
