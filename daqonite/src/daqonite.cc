@@ -52,20 +52,17 @@ int main(int argc, char* argv[]) {
 	bool collect_bbb_optical 		= false;
 	bool collect_bbb_monitoring 	= false;
 
-	bool useMonitoringGui			= false;
+	bool useMonitoringGui			= true;
 	bool saveToFile					= false;
-
-	int runType						= -1;
 
 	// Argument handling
 	po::options_description desc("Options");
-	desc.add_options()("help,h", "Print this help and exit.")
-			("gui,g", "Use the GUI.")
-			("save,s", "Save data to file.")
-			("runType,t", po::value<int>(&runType)->value_name("runType"),
-				"Specify the run type")
-			("justOpt", "Just mine the optical data.")
-			("justMon", "Just mine the monitoring data");
+	desc.add_options()
+		("help,h", "DAQonite - Default shows GUI but does not save files")
+		("save,s", "Save run data to file. Name is determined by type and runNumber")
+		("noGui",  "Don't show the monitoring GUI")
+		("noOpt",  "Don't mine the optical data")
+		("noMon",  "Don't mine the monitoring data");
 
 	try {
 		po::variables_map vm;
@@ -75,23 +72,21 @@ int main(int argc, char* argv[]) {
 			std::cout << desc << std::endl;
 			return EXIT_SUCCESS;
 		}
-		if (vm.count("gui")) {
-			useMonitoringGui = true;
-		}
 		if (vm.count("save")) {
 			saveToFile = true;
 		}
-
-		po::notify(vm);
-
-		if (vm.count("justOpt")) {
+		if (vm.count("noGui")) {
+			useMonitoringGui = false;
+		}
+		if (vm.count("noOpt")) {
 			collect_clb_optical = false;
 			collect_bbb_optical = false;
 		}
-		if (vm.count("justMon")) {
+		if (vm.count("noMon")) {
 			collect_clb_monitoring = false;
 			collect_bbb_monitoring = false;
 		}
+		po::notify(vm);
 
 	} catch (const po::error& e) {
 		std::cerr << "DAQonite: Error: " << e.what() << '\n' << desc << std::endl;
@@ -101,10 +96,6 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	if (runType < 0 || runType >= NUMRUNTYPES) {
-		throw std::runtime_error("DAQonite: Error: Need to specify a valid run type!");
-	}
-
 	// Need to start a TApplication if we are using the GUI
 	DAQ_handler * daq_handler;
 	if (useMonitoringGui) {
@@ -112,11 +103,11 @@ int main(int argc, char* argv[]) {
 
 		daq_handler = new DAQ_handler(collect_clb_optical, collect_clb_monitoring, 
 									  collect_bbb_optical, collect_bbb_monitoring,
-									  useMonitoringGui, saveToFile, runType);
+									  useMonitoringGui, saveToFile);
 	} else {
 		daq_handler = new DAQ_handler(collect_clb_optical, collect_clb_monitoring, 
 									  collect_bbb_optical, collect_bbb_monitoring,
-									  useMonitoringGui, saveToFile, runType);	
+									  useMonitoringGui, saveToFile);	
 	}
 	delete daq_handler;
 }

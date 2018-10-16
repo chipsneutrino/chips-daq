@@ -11,17 +11,16 @@
 
 DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 			 			 bool collect_bbb_optical, bool collect_bbb_monitoring,
-						 bool gui, bool save, 
-						 unsigned int runType) :
+						 bool gui, bool save) :
 						 fCollect_CLB_optical_data(collect_clb_optical),
 						 fCollect_CLB_monitoring_data(collect_clb_monitoring),
 						 fCollect_BBB_optical_data(collect_bbb_optical),
 						 fCollect_BBB_monitoring_data(collect_bbb_monitoring),
-						 fShow_gui(gui), fSave_data(save), 
-						 fRun_type(runType), fBuffer_size(buffer_size) {
+						 fShow_gui(gui), fSave_data(save), fBuffer_size(buffer_size) {
 
 	// Start not running
 	fRunning = false;
+	fRun_type = -1;
 
 	// NULL all the ROOT output variables, can then check this later
 	fOutput_file = NULL;
@@ -94,6 +93,9 @@ DAQ_handler::~DAQ_handler() {
 }
 
 void DAQ_handler::startRun() {
+	// If we are currently running, stop the current run before starting a new one
+	if (fRunning == true) { stopRun(); }
+
 	// Setup the output file
 	if (fSave_data) {
 		int runNum = getRunAndUpdate();
@@ -138,24 +140,18 @@ void DAQ_handler::startRun() {
 	fCLB_handler->workMonitoringData();
 }
 
-void DAQ_handler::newRun() {
-	// First stop the current run and save the .root output file
-	stopRun();
-
-	// Start a new run
-	startRun();
-}
-
 void DAQ_handler::stopRun() {
-	std::cout << "\nDAQonite - Stop mining" << std::endl;
-	fDaq_gui->stopRun();
-	fRunning = false;
-	if (fOutput_file != NULL) {
-		std::cout << "DAQonite - Closing up the container: " << fFilename << std::endl;
-		if (fCLB_optical_tree != NULL) { fCLB_optical_tree->Write(); }
-		if (fCLB_monitoring_tree != NULL) { fCLB_monitoring_tree->Write(); }
-		fOutput_file->Close();
-	}
+	if (fRunning == true) {
+		std::cout << "\nDAQonite - Stop mining" << std::endl;
+		fDaq_gui->stopRun();
+		fRunning = false;
+		if (fOutput_file != NULL) {
+			std::cout << "DAQonite - Closing up the container: " << fFilename << std::endl;
+			if (fCLB_optical_tree != NULL) { fCLB_optical_tree->Write(); }
+			if (fCLB_monitoring_tree != NULL) { fCLB_monitoring_tree->Write(); }
+			fOutput_file->Close();
+		}		
+	} else { std::cout << "\nDAQonite - Already stopped mining" << std::endl;}
 }
 
 void DAQ_handler::exit() {
@@ -227,13 +223,11 @@ void DAQ_handler::handleSignals(boost::system::error_code const& error, int sign
 
 void DAQ_handler::handleLocalSocket(boost::system::error_code const& error, std::size_t size) {
 	if (!error) {
-		//std::cout << "Received local message of length -> " << size << std::endl;
 		if (strncmp(fBuffer_local, "start", 5) == 0) {
+			fRun_type = (int)fBuffer_local[5]-48;
 			startRun();
 		} else if (strncmp(fBuffer_local, "stop", 4) == 0) {
 			stopRun();
-		} else if (strncmp(fBuffer_local, "new", 3) == 0) {
-			newRun();
 		} else if (strncmp(fBuffer_local, "exit", 4) == 0) {
 			exit();
 		} else {

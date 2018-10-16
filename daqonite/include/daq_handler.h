@@ -58,12 +58,11 @@ class DAQ_handler {
 public:
 	DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 			 	bool collect_bbb_optical, bool collect_bbb_monitoring,
-				bool gui, bool save, unsigned int runType);
+				bool gui, bool save);
 
 	virtual ~DAQ_handler();
 
 	void startRun();
-	void newRun();
 	void stopRun();
 	void exit();
 
