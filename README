@@ -2,4 +2,29 @@ CHIPS-DAQ README
 
 ####  DAQonite  ####
 
+DAQonite is the main DAQ program. It collects optical and monitoring packets and saves the data
+to .root files. It also displays graphical monitoring information.
+
+Usage:
+"./daqonite"    (By default this shows the monitoring GUI, but will not save data files when running)
+"./daqonite -s" (This will show the monitoring GUI and will save data files when running)
+
+You then command the running daqonite program using "daq_command" which takes three options and
+additional arguments specifying the run type e.g.
+
+Usage:
+
+"./daq_command start 2" (Starts a run of type 2. Will stop and save a current run and start a new one)
+"./daq_command stop"    (Stop and save the current run)
+"./daq_command exit"    (Exits DAQonite)
+
+Notes:
+    - Currently both the optical and monitoring data are only collected when a run is in progress.
+      Therefore, the monitoring GUI will not update unless a run is in progress. TODO: Have the 
+      monitoring always running.
+
+    - The filenames are determined using the run type and run number for that type which is stored
+      in the file "data/runNumbers.dat". All data files are then saved to the data file. TODO: Be
+      able to specify the data directory.
+
 #### fh_message ####

@@ -99,7 +99,7 @@ void DAQ_handler::startRun() {
 	// Setup the output file
 	if (fSave_data) {
 		int runNum = getRunAndUpdate();
-		fFilename = "";
+		fFilename = "../data/";
 		fFilename += "type";
 		fFilename += fRun_type;
 		fFilename += "_run";
@@ -171,11 +171,11 @@ int DAQ_handler::getRunAndUpdate() {
 
 	int returnNum = 1;
 	int runNums[NUMRUNTYPES];
-	std::ifstream runNumFile("runNumbers.dat");	
+	std::ifstream runNumFile("../data/runNumbers.dat");	
 	if(runNumFile.fail()) {
 		runNumFile.close();	
 		// The file does not yet exist so lets create it
-		std::ofstream newFile("runNumbers.dat");
+		std::ofstream newFile("../data/runNumbers.dat");
   		if (newFile.is_open()) {
 			for (int i=0; i<NUMRUNTYPES; i++) {	
 				if (fRun_type == (unsigned int)i) { 
@@ -183,7 +183,7 @@ int DAQ_handler::getRunAndUpdate() {
 				} else { newFile << 1 << "\n"; }
 			}
 			newFile.close();
-		} else { throw std::runtime_error("DAQonite: Error: Unable to create runNumbers.dat!"); }
+		} else { throw std::runtime_error("DAQonite: Error: Unable to create ../data/runNumbers.dat!"); }
 	} else {
 		// The file exists so read from it
 		for (int i=0; i<NUMRUNTYPES; i++) { 
@@ -194,7 +194,7 @@ int DAQ_handler::getRunAndUpdate() {
 		runNumFile.close();	
 
 		// The file does not yet exist so lets create it
-		std::ofstream updateFile("runNumbers.dat");
+		std::ofstream updateFile("../data/runNumbers.dat");
   		if (updateFile.is_open()) {
 			for (int i=0; i<NUMRUNTYPES; i++) {	
 				if (fRun_type == (unsigned int)i) { 

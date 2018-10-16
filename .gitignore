@@ -9,5 +9,4 @@ daqonite/src/daqonite
 daqonite/src/daqonite_gui_dict.cc
 daqonite/src/daqonite_gui_dict.h
 daqonite/src/daq_command
-*.dat
 
