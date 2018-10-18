@@ -20,177 +20,227 @@
 #define HIGHRATE 10000
 
 DAQoniteGUI::DAQoniteGUI(const TGWindow*p, UInt_t w, UInt_t h) {
+
 	// main frame
 	fMainFrame = new TGMainFrame(gClient->GetRoot(),10,10,kMainFrame | kVerticalFrame);
 	fMainFrame->SetName("fMainFrame");
 	fMainFrame->SetLayoutBroken(kTRUE);
 
 	ULong_t ucolor;        // will reflect user color changes
-	gClient->GetColorByName("#999999",ucolor);
+	gClient->GetColorByName("#cccccc",ucolor);
 
-	// horizontal frame
-	TGHorizontalFrame *fFrame1 = new TGHorizontalFrame(fMainFrame,500,150,kHorizontalFrame | kRaisedFrame,ucolor);
+	// Frame 1 //
+	TGHorizontalFrame *fFrame1 = new TGHorizontalFrame(fMainFrame,800,200,kHorizontalFrame | kRaisedFrame,ucolor);
 	fFrame1->SetName("fFrame1");
 	fFrame1->SetLayoutBroken(kTRUE);
 
 	// embedded canvas
-	TRootEmbeddedCanvas *fECanvas1 = new TRootEmbeddedCanvas(0,fFrame1,480,130,kSunkenFrame);
+	TRootEmbeddedCanvas *fECanvas1 = new TRootEmbeddedCanvas(0,fFrame1,790,190,kRaisedFrame);
 	fECanvas1->SetName("fECanvas1");
 	Int_t wfECanvas1 = fECanvas1->GetCanvasWindowId();
 	TCanvas *c123 = new TCanvas("c123", 10, 10, wfECanvas1);
 	fECanvas1->AdoptCanvas(c123);
 	fFrame1->AddFrame(fECanvas1, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-	fECanvas1->MoveResize(10,10,480,130);
+	fECanvas1->MoveResize(5,5,790,190);
 
 	fMainFrame->AddFrame(fFrame1, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-	fFrame1->MoveResize(10,10,500,150);
+	fFrame1->MoveResize(5,5,800,200);
+	/////////////
 
-
-	// horizontal frame
-	TGHorizontalFrame *fFrame2 = new TGHorizontalFrame(fMainFrame,500,150,kHorizontalFrame | kRaisedFrame,ucolor);
+	// Frame 2 //
+	TGHorizontalFrame *fFrame2 = new TGHorizontalFrame(fMainFrame,800,200,kHorizontalFrame | kRaisedFrame,ucolor);
 	fFrame2->SetName("fFrame2");
 	fFrame2->SetLayoutBroken(kTRUE);
 
 	// embedded canvas
-	TRootEmbeddedCanvas *fECanvas2 = new TRootEmbeddedCanvas(0,fFrame2,480,130,kSunkenFrame);
+	TRootEmbeddedCanvas *fECanvas2 = new TRootEmbeddedCanvas(0,fFrame2,790,190,kRaisedFrame);
 	fECanvas2->SetName("fECanvas2");
 	Int_t wfECanvas2 = fECanvas2->GetCanvasWindowId();
 	TCanvas *c124 = new TCanvas("c124", 10, 10, wfECanvas2);
 	fECanvas2->AdoptCanvas(c124);
 	fFrame2->AddFrame(fECanvas2, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-	fECanvas2->MoveResize(10,10,480,130);
+	fECanvas2->MoveResize(5,5,790,190);
 
 	fMainFrame->AddFrame(fFrame2, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-	fFrame2->MoveResize(10,170,500,150);
+	fFrame2->MoveResize(5,215,800,200);
+	/////////////
 
+	// Frame 4 //
+	TGHorizontalFrame *fFrame4 = new TGHorizontalFrame(fMainFrame,800,200,kHorizontalFrame | kRaisedFrame,ucolor);
+	fFrame4->SetName("fFrame4");
+	fFrame4->SetLayoutBroken(kTRUE);
 
-	// horizontal frame
-	TGHorizontalFrame *fFrame3 = new TGHorizontalFrame(fMainFrame,500,50,kHorizontalFrame,ucolor);
+	// embedded canvas
+	TRootEmbeddedCanvas *fECanvas3 = new TRootEmbeddedCanvas(0,fFrame4,790,190,kRaisedFrame);
+	fECanvas3->SetName("fECanvas3");
+	Int_t wfECanvas3 = fECanvas3->GetCanvasWindowId();
+	TCanvas *c125 = new TCanvas("c125", 10, 10, wfECanvas3);
+	fECanvas3->AdoptCanvas(c125);
+	fFrame4->AddFrame(fECanvas3, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+	fECanvas3->MoveResize(5,5,790,190);
+
+	fMainFrame->AddFrame(fFrame4, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+	fFrame4->MoveResize(5,635,800,200);
+	/////////////
+
+	// Frame 3 //
+	TGHorizontalFrame *fFrame3 = new TGHorizontalFrame(fMainFrame,800,200,kHorizontalFrame | kRaisedFrame,ucolor);
 	fFrame3->SetName("fFrame3");
 	fFrame3->SetLayoutBroken(kTRUE);
+	TGVertical3DLine *fVerticalLine = new TGVertical3DLine(fFrame3,1,190);
+	fVerticalLine->SetName("fVerticalLine");
+	fFrame3->AddFrame(fVerticalLine, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+	fVerticalLine->MoveResize(400,5,1,190);
 
-	fPomIDEntry = new TGNumberEntry(fFrame3, (Double_t) 0,2,-1,(TGNumberFormat::EStyle) 5,
-									TGNumberFormat::kNEAPositive, TGNumberFormat::kNELLimitMinMax, 0, 29);
+	gClient->GetColorByName("#7d99d1",ucolor);
+	fRunStatusLabel = new TGLabel(fFrame3,"In The Lunch Room",TGLabel::GetDefaultGC()(),TGLabel::GetDefaultFontStruct(),kSunkenFrame,ucolor);
+	fRunStatusLabel->SetTextJustify(36);
+	fRunStatusLabel->SetMargins(0,0,0,0);
+	fRunStatusLabel->SetWrapLength(-1);
+	fFrame3->AddFrame(fRunStatusLabel, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+	fRunStatusLabel->MoveResize(5,5,390,45);
+
+	fRunTypeLabel = new TGLabel(fFrame3,"Ore:",TGLabel::GetDefaultGC()(),TGLabel::GetDefaultFontStruct(),kSunkenFrame,ucolor);
+	fRunTypeLabel->SetTextJustify(36);
+	fRunTypeLabel->SetMargins(0,0,0,0);
+	fRunTypeLabel->SetWrapLength(-1);
+	fFrame3->AddFrame(fRunTypeLabel, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+	fRunTypeLabel->MoveResize(5,58,190,40);
+
+	fRunNumLabel = new TGLabel(fFrame3,"Dig:",TGLabel::GetDefaultGC()(),TGLabel::GetDefaultFontStruct(),kSunkenFrame,ucolor);
+	fRunNumLabel->SetTextJustify(36);
+	fRunNumLabel->SetMargins(0,0,0,0);
+	fRunNumLabel->SetWrapLength(-1);
+	fFrame3->AddFrame(fRunNumLabel, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+	fRunNumLabel->MoveResize(205,58,190,40);
+
+	fRunTimeLabel = new TGLabel(fFrame3,"Time:",TGLabel::GetDefaultGC()(),TGLabel::GetDefaultFontStruct(),kSunkenFrame,ucolor);
+	fRunTimeLabel->SetTextJustify(36);
+	fRunTimeLabel->SetMargins(0,0,0,0);
+	fRunTimeLabel->SetWrapLength(-1);
+	fFrame3->AddFrame(fRunTimeLabel, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+	fRunTimeLabel->MoveResize(5,106,190,40);
+
+	fRunPacketsLabel = new TGLabel(fFrame3,"Loads:",TGLabel::GetDefaultGC()(),TGLabel::GetDefaultFontStruct(),kSunkenFrame,ucolor);
+	fRunPacketsLabel->SetTextJustify(36);
+	fRunPacketsLabel->SetMargins(0,0,0,0);
+	fRunPacketsLabel->SetWrapLength(-1);
+	fFrame3->AddFrame(fRunPacketsLabel, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+	fRunPacketsLabel->MoveResize(205,106,190,40);
+
+	fRunFileLabel = new TGLabel(fFrame3,"Container:",TGLabel::GetDefaultGC()(),TGLabel::GetDefaultFontStruct(),kSunkenFrame,ucolor);
+	fRunFileLabel->SetTextJustify(36);
+	fRunFileLabel->SetMargins(0,0,0,0);
+	fRunFileLabel->SetWrapLength(-1);
+	fFrame3->AddFrame(fRunFileLabel, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+	fRunFileLabel->MoveResize(5,154,390,40);
+
+	fPomIDEntry = new TGNumberEntry(fFrame3, (Double_t) 0,6,-1,(TGNumberFormat::EStyle) 5);
 	fPomIDEntry->SetName("fPomIDEntry");
 	fFrame3->AddFrame(fPomIDEntry, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-	fPomIDEntry->MoveResize(299,15,60,25);
+	fPomIDEntry->MoveResize(630,66,60,22);
 
-	fChannelEntry = new TGNumberEntry(fFrame3, (Double_t) 0,2,-1,(TGNumberFormat::EStyle) 5,
-									  TGNumberFormat::kNEAPositive, TGNumberFormat::kNELLimitMinMax, 0, 29);
+	fChannelEntry = new TGNumberEntry(fFrame3, (Double_t) 0,6,-1,(TGNumberFormat::EStyle) 5);
 	fChannelEntry->SetName("fChannelEntry");
 	fFrame3->AddFrame(fChannelEntry, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-	fChannelEntry->MoveResize(404,15,60,25);
+	fChannelEntry->MoveResize(710,66,60,22);
 
-	fSpecifyButton = new TGCheckButton(fFrame3,"Specify Channel [PomID and Channel]");
+	fSpecifyButton = new TGCheckButton(fFrame3,"Specify [CLB] and [Channel]:",-1,TGCheckButton::GetDefaultGC()(),TGCheckButton::GetDefaultFontStruct(),kRaisedFrame);
 	fSpecifyButton->Connect("Clicked()","DAQoniteGUI",this,"toggleSpecific()");
 	fSpecifyButton->SetTextJustify(36);
 	fSpecifyButton->SetMargins(0,0,0,0);
 	fSpecifyButton->SetWrapLength(-1);
 	fFrame3->AddFrame(fSpecifyButton, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-	fSpecifyButton->MoveResize(20,15,250,19);
+	fSpecifyButton->MoveResize(410,66,180,22);
+
+	fBackButton = new TGTextButton(fFrame3,"<--- BACK",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+	fBackButton->Connect("Clicked()","DAQoniteGUI",this,"pageBackward()");
+	fBackButton->SetTextJustify(36);
+	fBackButton->SetMargins(0,0,0,0);
+	fBackButton->SetWrapLength(-1);
+	fBackButton->Resize(190,45);
+	fBackButton->ChangeBackground(ucolor);
+	fFrame3->AddFrame(fBackButton, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+	fBackButton->MoveResize(405,5,190,45);
+
+	fForwardButton = new TGTextButton(fFrame3,"FORWARD --->",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+	fForwardButton->Connect("Clicked()","DAQoniteGUI",this,"pageForward()");
+	fForwardButton->SetTextJustify(36);
+	fForwardButton->SetMargins(0,0,0,0);
+	fForwardButton->SetWrapLength(-1);
+	fForwardButton->Resize(190,45);
+	fForwardButton->ChangeBackground(ucolor);
+	fFrame3->AddFrame(fForwardButton, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+	fForwardButton->MoveResize(605,5,190,45);
+
+	fFactLabel1 = new TGLabel(fFrame3,"Fact:",TGLabel::GetDefaultGC()(),TGLabel::GetDefaultFontStruct(),kSunkenFrame,ucolor);
+	fFactLabel1->SetTextJustify(36);
+	fFactLabel1->SetMargins(0,0,0,0);
+	fFactLabel1->SetWrapLength(-1);
+	fFrame3->AddFrame(fFactLabel1, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+	fFactLabel1->MoveResize(405,106,190,40);
+
+	fFactLabel2 = new TGLabel(fFrame3,"Fact:",TGLabel::GetDefaultGC()(),TGLabel::GetDefaultFontStruct(),kSunkenFrame,ucolor);
+	fFactLabel2->SetTextJustify(36);
+	fFactLabel2->SetMargins(0,0,0,0);
+	fFactLabel2->SetWrapLength(-1);
+	fFrame3->AddFrame(fFactLabel2, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+	fFactLabel2->MoveResize(605,106,190,40);
+
+	fFactLabel3 = new TGLabel(fFrame3,"Fact:",TGLabel::GetDefaultGC()(),TGLabel::GetDefaultFontStruct(),kSunkenFrame,ucolor);
+	fFactLabel3->SetTextJustify(36);
+	fFactLabel3->SetMargins(0,0,0,0);
+	fFactLabel3->SetWrapLength(-1);
+	fFrame3->AddFrame(fFactLabel3, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+	fFactLabel3->MoveResize(405,154,190,40);
+
+	fFactLabel4 = new TGLabel(fFrame3,"Fact:",TGLabel::GetDefaultGC()(),TGLabel::GetDefaultFontStruct(),kSunkenFrame,ucolor);
+	fFactLabel4->SetTextJustify(36);
+	fFactLabel4->SetMargins(0,0,0,0);
+	fFactLabel4->SetWrapLength(-1);
+	fFrame3->AddFrame(fFactLabel4, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+	fFactLabel4->MoveResize(605,154,190,40);
 
 	fMainFrame->AddFrame(fFrame3, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-	fFrame3->MoveResize(10,330,500,50);
-
-
-	// horizontal frame
-	TGHorizontalFrame *fFrame4 = new TGHorizontalFrame(fMainFrame,500,100,kHorizontalFrame | kRaisedFrame,ucolor);
-	fFrame4->SetName("fFrame4");
-	fFrame4->SetLayoutBroken(kTRUE);
-
-	gClient->GetColorByName("#59d454",ucolor);
-	fLabel1 = new TGLabel(fFrame4,"---",TGLabel::GetDefaultGC()(),TGLabel::GetDefaultFontStruct(),kRaisedFrame,ucolor);
-	fLabel1->SetTextJustify(36);
-	fLabel1->SetMargins(0,0,0,0);
-	fLabel1->SetWrapLength(-1);
-	fFrame4->AddFrame(fLabel1, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-	fLabel1->MoveResize(10,10,150,35);
-
-	fLabel4 = new TGLabel(fFrame4,"---",TGLabel::GetDefaultGC()(),TGLabel::GetDefaultFontStruct(),kRaisedFrame,ucolor);
-	fLabel4->SetTextJustify(36);
-	fLabel4->SetMargins(0,0,0,0);
-	fLabel4->SetWrapLength(-1);
-	fFrame4->AddFrame(fLabel4, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-	fLabel4->MoveResize(10,55,150,35);
-
-	fLabel2 = new TGLabel(fFrame4,"---",TGLabel::GetDefaultGC()(),TGLabel::GetDefaultFontStruct(),kRaisedFrame,ucolor);
-	fLabel2->SetTextJustify(36);
-	fLabel2->SetMargins(0,0,0,0);
-	fLabel2->SetWrapLength(-1);
-	fFrame4->AddFrame(fLabel2, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-	fLabel2->MoveResize(175,10,150,35);
-
-	fLabel5 = new TGLabel(fFrame4,"---",TGLabel::GetDefaultGC()(),TGLabel::GetDefaultFontStruct(),kRaisedFrame,ucolor);
-	fLabel5->SetTextJustify(36);
-	fLabel5->SetMargins(0,0,0,0);
-	fLabel5->SetWrapLength(-1);
-	fFrame4->AddFrame(fLabel5, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-	fLabel5->MoveResize(175,55,150,35);
-
-	fLabel3 = new TGLabel(fFrame4,"---",TGLabel::GetDefaultGC()(),TGLabel::GetDefaultFontStruct(),kRaisedFrame,ucolor);
-	fLabel3->SetTextJustify(36);
-	fLabel3->SetMargins(0,0,0,0);
-	fLabel3->SetWrapLength(-1);
-	fFrame4->AddFrame(fLabel3, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-	fLabel3->MoveResize(340,10,150,35);
-
-	fLabel6 = new TGLabel(fFrame4,"---",TGLabel::GetDefaultGC()(),TGLabel::GetDefaultFontStruct(),kRaisedFrame,ucolor);
-	fLabel6->SetTextJustify(36);
-	fLabel6->SetMargins(0,0,0,0);
-	fLabel6->SetWrapLength(-1);
-	fFrame4->AddFrame(fLabel6, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-	fLabel6->MoveResize(340,55,150,35);
-
-	fMainFrame->AddFrame(fFrame4, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-	fFrame4->MoveResize(10,390,500,100);
-
-	gClient->GetColorByName("#999999",ucolor);
-
-	// horizontal frame
-	TGHorizontalFrame *fFrame5 = new TGHorizontalFrame(fMainFrame,500,200,kHorizontalFrame,ucolor);
-	fFrame5->SetName("fFrame5");
-	fFrame5->SetLayoutBroken(kTRUE);
-
-	// embedded canvas
-	TRootEmbeddedCanvas *fECanvas3 = new TRootEmbeddedCanvas(0,fFrame5,480,180,kSunkenFrame);
-	fECanvas3->SetName("fECanvas3");
-	Int_t wfECanvas3 = fECanvas3->GetCanvasWindowId();
-	TCanvas *c125 = new TCanvas("c125", 10, 10, wfECanvas3);
-	fECanvas3->AdoptCanvas(c125);
-	fFrame5->AddFrame(fECanvas3, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-	fECanvas3->MoveResize(10,10,480,180);
-
-	fMainFrame->AddFrame(fFrame5, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-	fFrame5->MoveResize(10,500,500,200);
+	fFrame3->MoveResize(5,425,800,200);
+	/////////////
 
 	fMainFrame->SetMWMHints(kMWMDecorAll,
-						kMWMFuncAll,
-						kMWMInputModeless);
-
+							kMWMFuncAll,
+							kMWMInputModeless);
 	fMainFrame->MapSubwindows();
+
 	fMainFrame->Resize(fMainFrame->GetDefaultSize());
 	fMainFrame->MapWindow();
-	fMainFrame->Resize(523,708);
+	fMainFrame->Resize(812,841);
 
 	// Set up the other variables...
 	fCanvas1 = fECanvas1->GetCanvas();
 	fCanvas2 = fECanvas2->GetCanvas();
 	fCanvas3 = fECanvas3->GetCanvas();
 
+	TImage *logo = TImage::Open("../data/logo.png");
+	logo->SetConstRatio(kFALSE);
+
 	fCanvas1->cd();
 	fTotalRatePlot = makeTotalRatePlot();
-	fTotalRatePlot->Draw();
+	logo->Draw();
+	//fTotalRatePlot->Draw();
 	fCanvas1->Update();
 
 	fCanvas2->cd();
 	fPacketRatePlot = makePacketRatePlot();
-	fPacketRatePlot->Draw();
+	logo->Draw();
+	//fPacketRatePlot->Draw();
 	fCanvas2->Update();
 
 	fCanvas3->cd();
 	fRateHeatMapPlot = makeHeatMapPlot();
-	fRateHeatMapPlot->Draw();
+	logo->Draw();
+	//fRateHeatMapPlot->Draw();
 	fCanvas3->Update();
+
+	fPageNum = 0;
 
 	fPacketsReceived = 0;
 	fNumUpdates = 0;
@@ -204,11 +254,13 @@ DAQoniteGUI::DAQoniteGUI(const TGWindow*p, UInt_t w, UInt_t h) {
 	fActivePOMs.clear();
 	fRateArray.clear();
 
-	fRunNumber = 1;
+	fRunNumber = 0;
 	fStartTime = 0;
-	fRunType = 1;
+	fRunType = 0;
 	fActiveChannels = 0;
 	fOddChannels = 0;
+
+	updateLabels();
 }
 
 DAQoniteGUI::~DAQoniteGUI() {
@@ -384,31 +436,85 @@ void DAQoniteGUI::refreshPlots() {
 }
 
 void DAQoniteGUI::updateLabels() {
-	// Run Labels
-	TString label1 = "Type / Run: "; label1 += fRunType; label1 += " / "; label1 += fRunNumber; fLabel1->SetText(label1);
-	TString label2 = "Running: "; label2 += fRunning; fLabel2->SetText(label2);
-	TString label3 = "Run Time [s]: "; label3 += (float)(fStartTime_ms - fStartTime)/1000; fLabel3->SetText(label3);
-
-	// Active Channels Label
-	TString label4 = "Active Channels: "; label4 += fActiveChannels; fLabel4->SetText(label4);
-	if ((fActiveChannels % PMTSPERPOM) != 0) {
-		fLabel4->SetBackgroundColor(TColor::Number2Pixel(kRed));
-	} else {
-		fLabel4->SetBackgroundColor(TColor::Number2Pixel(8));
+	// Run Status Label
+	TString statusLabelText = "Status: ";
+	if (fRunning) { 
+		statusLabelText += "Mining";
+		fRunStatusLabel->SetBackgroundColor(TColor::Number2Pixel(8));
+	} else { 
+		statusLabelText += "In The Lunch Room";
+		fRunStatusLabel->SetBackgroundColor(TColor::Number2Pixel(46));
 	}
+	fRunStatusLabel->SetText(statusLabelText);
 
-	// Off Channels label
-	TString label5 = "Odd Channels: "; label5 += fOddChannels; fLabel5->SetText(label5);
-	if (((float)fOddChannels / (float)fActiveChannels) > 0.2) {
-		fLabel5->SetBackgroundColor(TColor::Number2Pixel(kRed));
-	} else if (((float)fOddChannels / (float)fActiveChannels) > 0.1) {
-		fLabel5->SetBackgroundColor(TColor::Number2Pixel(kOrange));
-	} else {
-		fLabel5->SetBackgroundColor(TColor::Number2Pixel(8));
+	// Run Type Label
+	TString typeLabelText = "Ore: "; 
+	typeLabelText += fRunType;
+	fRunTypeLabel->SetText(typeLabelText);
+	if (fRunning) { fRunTypeLabel->SetBackgroundColor(TColor::Number2Pixel(8)); }
+	else { fRunTypeLabel->SetBackgroundColor(TColor::Number2Pixel(46)); }
+
+	// Run Num Label
+	TString numLabelText = "Dig: "; 
+	numLabelText += fRunNumber;
+	fRunNumLabel->SetText(numLabelText);	
+	if (fRunning) { fRunNumLabel->SetBackgroundColor(TColor::Number2Pixel(8)); }
+	else { fRunNumLabel->SetBackgroundColor(TColor::Number2Pixel(46)); }
+
+	// Run Time Label
+	TString timeLabelText = "Time [s]: "; 
+	timeLabelText += (float)(fStartTime_ms - fStartTime)/1000; 
+	fRunTimeLabel->SetText(timeLabelText);
+	if (fRunning) { fRunTimeLabel->SetBackgroundColor(TColor::Number2Pixel(8)); }
+	else { fRunTimeLabel->SetBackgroundColor(TColor::Number2Pixel(46)); }
+
+	// Run Packets Label
+	TString packetsLabelText = "Loads: ";
+	packetsLabelText += fPacketsReceived; 
+	fRunPacketsLabel->SetText(packetsLabelText);
+	if (fRunning) { fRunPacketsLabel->SetBackgroundColor(TColor::Number2Pixel(8)); }
+	else { fRunPacketsLabel->SetBackgroundColor(TColor::Number2Pixel(46)); }
+
+	// Run File Label
+	TString fileLabelText = "Container: ";
+	if (fRunFile != "") {
+		fileLabelText += fRunFile; 
+		fRunFileLabel->SetBackgroundColor(TColor::Number2Pixel(8));	
+	} else { 
+		fileLabelText += "Not Filling a Container"; 
+		fRunFileLabel->SetBackgroundColor(TColor::Number2Pixel(46));
 	}
+	fRunFileLabel->SetText(fileLabelText);
 
-	TString label6 = "Packets: "; label6 += fPacketsReceived; fLabel6->SetText(label6);
-	//if (((fPacketsReceived/fNumUpdates)/) != 0) { fLabel6->SetBackgroundColor(TColor::Number2Pixel(kRed)); }
+	// Fact Label 1
+	TString fact1Labeltext;
+	if (fPageNum == 0) {
+		fact1Labeltext = "Active Channels: ";
+		fact1Labeltext += fActiveChannels;
+	} else {
+		fact1Labeltext = "Not yet implemented";
+	}
+	fFactLabel1->SetText(fact1Labeltext);
+
+	// Fact Label 2
+	TString fact2Labeltext;
+	if (fPageNum == 0) {
+		fact2Labeltext = "Odd Channels: ";
+		fact2Labeltext += fOddChannels;
+	} else {
+		fact2Labeltext = "Not yet implemented";
+	}
+	fFactLabel2->SetText(fact2Labeltext);
+
+	// Fact Label 3
+	TString fact3Labeltext;
+	fact3Labeltext = "Not yet implemented";
+	fFactLabel3->SetText(fact3Labeltext);
+
+	// Fact Label 4
+	TString fact4Labeltext;
+	fact4Labeltext = "Not yet implemented";
+	fFactLabel4->SetText(fact4Labeltext);
 }
 
 TH1F* DAQoniteGUI::makeTotalRatePlot(unsigned int pomID, unsigned int channel) {
@@ -474,17 +580,38 @@ TH2F* DAQoniteGUI::makeHeatMapPlot() {
 }
 
 void DAQoniteGUI::toggleSpecific() {
+	std::cout << "Toggle Specific..." << std::endl;
 	if (fNumUpdates >= 1) { drawPlots(); }
 }
 
-void DAQoniteGUI::startRun(unsigned int type, unsigned int run) {
+// Three pages implemented at the moment...
+// 0) Hit info 
+// 1) Warning signs
+// 2) Temp/humidity
+
+void DAQoniteGUI::pageBackward() {
+	std::cout << "Page Backward..." << std::endl;
+}
+
+void DAQoniteGUI::pageForward() {
+	std::cout << "Page Forward..." << std::endl;
+}
+
+void DAQoniteGUI::startRun(unsigned int type, unsigned int run, TString fileName) {
 	fRunning = true;
 	fRunType = type;
 	fRunNumber = run;
+	fRunFile = fileName;
 	updateLabels();
 }
 
 void DAQoniteGUI::stopRun() {
 	fRunning = false;
+	fRunType = 0;
+	fRunNumber = 0;
+	fStartTime_ms = 0;
+	fStartTime = 0;
+	fPacketsReceived = 0;
+	fRunFile = "";
 	updateLabels();
 }

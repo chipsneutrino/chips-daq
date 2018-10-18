@@ -23,6 +23,7 @@
 #include <TGTextEntry.h>
 #include <TGNumberEntry.h>
 #include <TGLabel.h>
+#include <TG3DLine.h>
 
 #include "TH2F.h"
 #include "TCanvas.h"
@@ -31,6 +32,7 @@
 #include <TROOT.h>
 #include <TStyle.h>
 #include "TColor.h"
+#include "TImage.h"
 
 class TGWindow;
 class TGMainFrame;
@@ -48,8 +50,10 @@ class DAQoniteGUI {
 		void addHeader(UInt_t pomID, UInt_t time_ms);
 
 		void toggleSpecific();
+		void pageBackward();
+		void pageForward();
 
-		void startRun(unsigned int type, unsigned int run);
+		void startRun(unsigned int type, unsigned int run, TString fileName);
 		void stopRun();
 
 	private:
@@ -76,21 +80,31 @@ class DAQoniteGUI {
 		TCanvas*			fCanvas2;
 		TCanvas*			fCanvas3;
 
-		TGLabel*			fLabel1;
-		TGLabel*			fLabel2;
-		TGLabel*			fLabel3;
-		TGLabel*			fLabel4;
-		TGLabel*			fLabel5;
-		TGLabel*			fLabel6;
+		TGLabel*			fRunStatusLabel;
+		TGLabel*			fRunTypeLabel;
+		TGLabel*			fRunNumLabel;
+		TGLabel*			fRunTimeLabel;
+		TGLabel*			fRunPacketsLabel;
+		TGLabel*			fRunFileLabel;
+
+		TGTextButton* 		fBackButton;
+		TGTextButton* 		fForwardButton;
 
 		TGNumberEntry*		fPomIDEntry;
 		TGNumberEntry*		fChannelEntry;
 		TGCheckButton*		fSpecifyButton;
 
+		TGLabel*			fFactLabel1;
+		TGLabel*			fFactLabel2;
+		TGLabel*			fFactLabel3;
+		TGLabel*			fFactLabel4;
+
 		TH1F*				fTotalRatePlot;
 		std::vector<TH1F*> 	fChannelRatePlots;
 		TH1F*				fPacketRatePlot;
 		TH2F*				fRateHeatMapPlot;	
+
+		int 				fPageNum;
 
 		// Total monitoring values
 		UInt_t 				fPacketsReceived;
@@ -103,6 +117,7 @@ class DAQoniteGUI {
 		UInt_t				fRunType;
 		UInt_t				fActiveChannels;
 		UInt_t				fOddChannels;
+		TString				fRunFile;
 
 		// Window monitoring values
 		bool 				fModifyPlots;
