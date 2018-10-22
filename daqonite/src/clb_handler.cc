@@ -76,6 +76,7 @@ void CLB_handler::workMonitoringData() {
 void CLB_handler::addOptTreeBranches() {
 	fOutput_tree_optical->Branch("PomId", &fPomId_optical, "fPomId_optical/i");
 	fOutput_tree_optical->Branch("Channel", &fChannel_optical, "fChannel_optical/b");
+	fOutput_tree_optical->Branch("TimeStamp_s", &fTimestamp_s_optical, "fTimestamp_s_optical/i");
 	fOutput_tree_optical->Branch("TimeStamp_ns", &fTimestamp_ns_optical, "fTimestamp_ns_optical/i");
 	fOutput_tree_optical->Branch("ToT", &fTot_optical, "fTot_optical/B");
 }
