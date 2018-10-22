@@ -24,6 +24,7 @@
 #include <cstring>
 #include <cstdlib>
 #include "assert.h"
+#include <unistd.h>
 
 #include <boost/asio.hpp>
 #include <boost/program_options.hpp>

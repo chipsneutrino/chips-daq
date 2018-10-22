@@ -251,6 +251,8 @@ void DAQ_handler::workLocalSocket() {
 }
 
 void DAQ_handler::workGui() {
+	// TODO: Have this as an ASYNC_WAIT
+	usleep(50);
 	gSystem->ProcessEvents();
 	fIO_service->post(boost::bind(&DAQ_handler::workGui, this));
 }
