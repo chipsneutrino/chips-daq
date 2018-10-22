@@ -4,12 +4,6 @@
  *  Created on: Sep 24, 2018
  *      Author: chips
  *
- *   TODO:
- *   	- Add configuration file reading and checking against
- *   	- Add temperature and humidity tracking for each CLB
- *   	- Add RMS or mean fluctuation monitor to flag wierd PMTs
- *   	- Make everything bigger and cooler looking
- *
  */
 
 #include "daqonite_gui.h"
@@ -225,19 +219,16 @@ DAQoniteGUI::DAQoniteGUI(const TGWindow*p, UInt_t w, UInt_t h) {
 	fCanvas1->cd();
 	fTotalRatePlot = makeTotalRatePlot();
 	logo->Draw();
-	//fTotalRatePlot->Draw();
 	fCanvas1->Update();
 
 	fCanvas2->cd();
 	fPacketRatePlot = makePacketRatePlot();
 	logo->Draw();
-	//fPacketRatePlot->Draw();
 	fCanvas2->Update();
 
 	fCanvas3->cd();
 	fRateHeatMapPlot = makeHeatMapPlot();
 	logo->Draw();
-	//fRateHeatMapPlot->Draw();
 	fCanvas3->Update();
 
 	fPageNum = 0;
@@ -260,7 +251,7 @@ DAQoniteGUI::DAQoniteGUI(const TGWindow*p, UInt_t w, UInt_t h) {
 	fActiveChannels = 0;
 	fOddChannels = 0;
 
-	updateLabels();
+	drawLabels();
 }
 
 DAQoniteGUI::~DAQoniteGUI() {
@@ -298,7 +289,7 @@ void DAQoniteGUI::addHeader(UInt_t pomID, UInt_t time_ms) {
 		fStartTime_ms = time_ms;
 		updatePlots();
 		drawPlots();
-		updateLabels();
+		drawLabels();
 		fPacketsReceived++;
 		fWindowPackets = 0;
 	}
@@ -388,28 +379,6 @@ void DAQoniteGUI::modifyPlots() {
 	fModifyPlots = false;
 }
 
-void DAQoniteGUI::drawPlots() {
-	// Canvas 1
-	fCanvas1->cd();
-	if (fSpecifyButton->IsDown()) {
-		int plotVectorIndex = ((int)fPomIDEntry->GetNumber()*PMTSPERPOM) + ((int)fChannelEntry->GetNumber());
-		fChannelRatePlots[plotVectorIndex]->Draw();
-	} else {
-		fTotalRatePlot->Draw();
-	}
-	fCanvas1->Update();
-
-	// Canvas 2
-	fCanvas2->cd();
-	fPacketRatePlot->Draw();
-	fCanvas2->Update();
-
-	// Canvas 3
-	fCanvas3->cd();
-	fRateHeatMapPlot->Draw("COLZ");
-	fCanvas3->Update();
-}
-
 void DAQoniteGUI::refreshPlots() {
 	std::cout << "DAQonite - Refresh Plots" << std::endl;
 	// Clear the individual channel plots and make new clean ones
@@ -435,7 +404,29 @@ void DAQoniteGUI::refreshPlots() {
 	fNumRefresh++;
 }
 
-void DAQoniteGUI::updateLabels() {
+void DAQoniteGUI::drawPlots() {
+	// Canvas 1
+	fCanvas1->cd();
+	if (fSpecifyButton->IsDown()) {
+		int plotVectorIndex = ((int)fPomIDEntry->GetNumber()*PMTSPERPOM) + ((int)fChannelEntry->GetNumber());
+		fChannelRatePlots[plotVectorIndex]->Draw();
+	} else {
+		fTotalRatePlot->Draw();
+	}
+	fCanvas1->Update();
+
+	// Canvas 2
+	fCanvas2->cd();
+	fPacketRatePlot->Draw();
+	fCanvas2->Update();
+
+	// Canvas 3
+	fCanvas3->cd();
+	fRateHeatMapPlot->Draw("COLZ");
+	fCanvas3->Update();
+}
+
+void DAQoniteGUI::drawLabels() {
 	// Run Status Label
 	TString statusLabelText = "Status: ";
 	if (fRunning) { 
@@ -584,11 +575,6 @@ void DAQoniteGUI::toggleSpecific() {
 	if (fNumUpdates >= 1) { drawPlots(); }
 }
 
-// Three pages implemented at the moment...
-// 0) Hit info 
-// 1) Warning signs
-// 2) Temp/humidity
-
 void DAQoniteGUI::pageBackward() {
 	std::cout << "Page Backward..." << std::endl;
 }
@@ -602,7 +588,7 @@ void DAQoniteGUI::startRun(unsigned int type, unsigned int run, TString fileName
 	fRunType = type;
 	fRunNumber = run;
 	fRunFile = fileName;
-	updateLabels();
+	drawLabels();
 }
 
 void DAQoniteGUI::stopRun() {
@@ -613,5 +599,5 @@ void DAQoniteGUI::stopRun() {
 	fStartTime = 0;
 	fPacketsReceived = 0;
 	fRunFile = "";
-	updateLabels();
+	drawLabels();
 }

@@ -63,10 +63,10 @@ class DAQoniteGUI {
 
 		void updatePlots(); 	// Updates and fills all active plots
 		void modifyPlots(); 	// Modifies plots if needed
-		void drawPlots(); 		// Draws the appropriate plots to the canvases
 		void refreshPlots();	// When we get to PLOTLENGTH clear all plots
 
-		void updateLabels();	// Update the labels and change their colour status
+		void drawPlots(); 		// Draws the appropriate plots to the canvases
+		void drawLabels();	// Update the labels and change their colour status
 
 		TH1F* makeTotalRatePlot(unsigned int pomID, unsigned int channel);
 		TH1F* makeTotalRatePlot();
