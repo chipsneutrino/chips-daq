@@ -4,6 +4,8 @@
 *.root
 .cproject
 .project
+.vscode/
+daqonite/src/daqonite_gui_dict_rdict.pcm
 daqonite/src/bbb_testServer
 daqonite/src/daqonite
 daqonite/src/daqonite_gui_dict.cc
