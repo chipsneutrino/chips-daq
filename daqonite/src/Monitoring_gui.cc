@@ -1,15 +1,15 @@
 /**
- * DAQoniteGUI - The ROOT monitoring GUI for DAQonite
+ * Monitoring_gui - The ROOT monitoring GUI for DAQonite
  */
 
-#include "daqonite_gui.h"
+#include "Monitoring_gui.h"
 
 #define PLOTLENGTH 100
 #define UPDATERATE 2000
 #define PMTSPERPOM 30
 #define HIGHRATE 10000
 
-DAQoniteGUI::DAQoniteGUI() {
+Monitoring_gui::Monitoring_gui() {
 
 	// main frame
 	fMainFrame = new TGMainFrame(gClient->GetRoot(),10,10,kMainFrame | kVerticalFrame);
@@ -136,7 +136,7 @@ DAQoniteGUI::DAQoniteGUI() {
 	fChannelEntry->MoveResize(710,66,60,22);
 
 	fSpecifyButton = new TGCheckButton(fFrame3,"Specify [CLB] and [Channel]:",-1,TGCheckButton::GetDefaultGC()(),TGCheckButton::GetDefaultFontStruct(),kRaisedFrame);
-	fSpecifyButton->Connect("Clicked()","DAQoniteGUI",this,"toggleSpecific()");
+	fSpecifyButton->Connect("Clicked()","Monitoring_gui",this,"toggleSpecific()");
 	fSpecifyButton->SetTextJustify(36);
 	fSpecifyButton->SetMargins(0,0,0,0);
 	fSpecifyButton->SetWrapLength(-1);
@@ -144,7 +144,7 @@ DAQoniteGUI::DAQoniteGUI() {
 	fSpecifyButton->MoveResize(410,66,180,22);
 
 	fBackButton = new TGTextButton(fFrame3,"<--- BACK",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
-	fBackButton->Connect("Clicked()","DAQoniteGUI",this,"pageBackward()");
+	fBackButton->Connect("Clicked()","Monitoring_gui",this,"pageBackward()");
 	fBackButton->SetTextJustify(36);
 	fBackButton->SetMargins(0,0,0,0);
 	fBackButton->SetWrapLength(-1);
@@ -154,7 +154,7 @@ DAQoniteGUI::DAQoniteGUI() {
 	fBackButton->MoveResize(405,5,190,45);
 
 	fForwardButton = new TGTextButton(fFrame3,"FORWARD --->",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
-	fForwardButton->Connect("Clicked()","DAQoniteGUI",this,"pageForward()");
+	fForwardButton->Connect("Clicked()","Monitoring_gui",this,"pageForward()");
 	fForwardButton->SetTextJustify(36);
 	fForwardButton->SetMargins(0,0,0,0);
 	fForwardButton->SetWrapLength(-1);
@@ -250,11 +250,11 @@ DAQoniteGUI::DAQoniteGUI() {
 	drawLabels();
 }
 
-DAQoniteGUI::~DAQoniteGUI() {
+Monitoring_gui::~Monitoring_gui() {
 	fMainFrame->Cleanup();
 }
 
-void DAQoniteGUI::addHits(unsigned int pomID, unsigned int channel, unsigned int hits) {
+void Monitoring_gui::addHits(unsigned int pomID, unsigned int channel, unsigned int hits) {
 	int pomIndex = 0;
 	for(pomIndex = 0; pomIndex < (int)fActivePOMs.size(); pomIndex++) {
 	    if (fActivePOMs[pomIndex] == pomID) {
@@ -267,7 +267,7 @@ void DAQoniteGUI::addHits(unsigned int pomID, unsigned int channel, unsigned int
 	addPom(pomID, pomIndex);
 }
 
-void DAQoniteGUI::addHeader(UInt_t pomID, UInt_t time_ms) {
+void Monitoring_gui::addHeader(UInt_t pomID, UInt_t time_ms) {
 	if (fPacketsReceived == 0) { // If first header set as timer POM and set start time
 		fPacketsReceived++;
 		fStartPomID = pomID;
@@ -291,7 +291,7 @@ void DAQoniteGUI::addHeader(UInt_t pomID, UInt_t time_ms) {
 	}
 }
 
-void DAQoniteGUI::addPom(unsigned int pomID, unsigned int pomIndex) {
+void Monitoring_gui::addPom(unsigned int pomID, unsigned int pomIndex) {
 	std::cout << "DAQonite - Adding new POM to monitoring, with ID -> " << pomID << std::endl;
 	fModifyPlots = true;
 	fActivePOMs.push_back(pomID);
@@ -307,13 +307,13 @@ void DAQoniteGUI::addPom(unsigned int pomID, unsigned int pomIndex) {
 	}
 }
 
-void DAQoniteGUI::clearPomRates(unsigned int pomIndex) {
+void Monitoring_gui::clearPomRates(unsigned int pomIndex) {
 	for(int channel = 0; channel<PMTSPERPOM; channel++) {
 		fRateArray[pomIndex][channel] = 0;
 	}
 }
 
-void DAQoniteGUI::updatePlots() {
+void Monitoring_gui::updatePlots() {
 	fNumUpdates++;
 	if (fModifyPlots) { modifyPlots(); }
 	if ((fNumUpdates % PLOTLENGTH) == 0) { refreshPlots(); }
@@ -358,7 +358,7 @@ void DAQoniteGUI::updatePlots() {
 	fPacketRatePlot->SetBinContent(fNumUpdates-(fNumRefresh*PLOTLENGTH), packetRate);
 }
 
-void DAQoniteGUI::modifyPlots() {
+void Monitoring_gui::modifyPlots() {
 	std::cout << "DAQonite - Modifying Plots" << std::endl;
 	delete fRateHeatMapPlot;
 	fRateHeatMapPlot = NULL;
@@ -375,7 +375,7 @@ void DAQoniteGUI::modifyPlots() {
 	fModifyPlots = false;
 }
 
-void DAQoniteGUI::refreshPlots() {
+void Monitoring_gui::refreshPlots() {
 	std::cout << "DAQonite - Refresh Plots" << std::endl;
 	// Clear the individual channel plots and make new clean ones
 	for(int pom = 0; pom < (int)fActivePOMs.size(); pom++) {
@@ -400,7 +400,7 @@ void DAQoniteGUI::refreshPlots() {
 	fNumRefresh++;
 }
 
-void DAQoniteGUI::drawPlots() {
+void Monitoring_gui::drawPlots() {
 	// Canvas 1
 	fCanvas1->cd();
 	if (fSpecifyButton->IsDown()) {
@@ -422,7 +422,7 @@ void DAQoniteGUI::drawPlots() {
 	fCanvas3->Update();
 }
 
-void DAQoniteGUI::drawLabels() {
+void Monitoring_gui::drawLabels() {
 	// Run Status Label
 	TString statusLabelText = "Status: ";
 	if (fRunning) { 
@@ -504,7 +504,7 @@ void DAQoniteGUI::drawLabels() {
 	fFactLabel4->SetText(fact4Labeltext);
 }
 
-TH1F* DAQoniteGUI::makeTotalRatePlot(unsigned int pomID, unsigned int channel) {
+TH1F* Monitoring_gui::makeTotalRatePlot(unsigned int pomID, unsigned int channel) {
 	TString plotName = "TotalRatePlot_";
 	plotName += pomID;
 	plotName += "_";
@@ -523,7 +523,7 @@ TH1F* DAQoniteGUI::makeTotalRatePlot(unsigned int pomID, unsigned int channel) {
 	return totalRatePlot;
 }
 
-TH1F* DAQoniteGUI::makeTotalRatePlot() {
+TH1F* Monitoring_gui::makeTotalRatePlot() {
 	TH1F* totalRatePlot = new TH1F("TotalRatePlot", "TotalRatePlot", PLOTLENGTH, 0, PLOTLENGTH);
 	totalRatePlot->GetXaxis()->SetTitle("cycleCounter");
 	totalRatePlot->GetYaxis()->SetTitle("Total Hit Rate");
@@ -538,7 +538,7 @@ TH1F* DAQoniteGUI::makeTotalRatePlot() {
 	return totalRatePlot;
 }
 
-TH1F* DAQoniteGUI::makePacketRatePlot() {
+TH1F* Monitoring_gui::makePacketRatePlot() {
 	TH1F* packetRatePlot = new TH1F("PacketRatePlot", "PacketRatePlot", PLOTLENGTH, 0, PLOTLENGTH);
 	packetRatePlot->GetXaxis()->SetTitle("cycleCounter");
 	packetRatePlot->GetYaxis()->SetTitle("Packet Rate");
@@ -553,7 +553,7 @@ TH1F* DAQoniteGUI::makePacketRatePlot() {
 	return packetRatePlot;
 }
 
-TH2F* DAQoniteGUI::makeHeatMapPlot() {
+TH2F* Monitoring_gui::makeHeatMapPlot() {
 	TH2F* rateHeatMapPlot = new TH2F("RateHeatMapPlot", "RateHeatMapPlot", PMTSPERPOM, -0.5, PMTSPERPOM - 0.5, 2, -0.5, 1.5);
 	rateHeatMapPlot->GetZaxis()->SetRangeUser(0, 12000);
 	rateHeatMapPlot->GetXaxis()->SetTitle("Channel");
@@ -566,20 +566,20 @@ TH2F* DAQoniteGUI::makeHeatMapPlot() {
 	return rateHeatMapPlot;
 }
 
-void DAQoniteGUI::toggleSpecific() {
+void Monitoring_gui::toggleSpecific() {
 	std::cout << "Toggle Specific..." << std::endl;
 	if (fNumUpdates >= 1) { drawPlots(); }
 }
 
-void DAQoniteGUI::pageBackward() {
+void Monitoring_gui::pageBackward() {
 	std::cout << "Page Backward..." << std::endl;
 }
 
-void DAQoniteGUI::pageForward() {
+void Monitoring_gui::pageForward() {
 	std::cout << "Page Forward..." << std::endl;
 }
 
-void DAQoniteGUI::startRun(unsigned int type, unsigned int run, TString fileName) {
+void Monitoring_gui::startRun(unsigned int type, unsigned int run, TString fileName) {
 	fRunning = true;
 	fRunType = type;
 	fRunNumber = run;
@@ -587,7 +587,7 @@ void DAQoniteGUI::startRun(unsigned int type, unsigned int run, TString fileName
 	drawLabels();
 }
 
-void DAQoniteGUI::stopRun() {
+void Monitoring_gui::stopRun() {
 	fRunning = false;
 	fRunType = 0;
 	fRunNumber = 0;

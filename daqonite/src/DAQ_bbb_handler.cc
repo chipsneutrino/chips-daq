@@ -1,11 +1,11 @@
 /**
- * BBB_handler - Handler class for the BBB data stream
+ * DAQ_bbb_handler - Handler class for the BBB data stream
  */
 
-#include "bbb_handler.h"
+#include "DAQ_bbb_handler.h"
 #include "assert.h"
 
-BBB_handler::BBB_handler() {
+DAQ_bbb_handler::DAQ_bbb_handler() {
 
 	server_ip = (char*)DEFAULT_SERVER_IP;
 	port = DEFAULT_PORT;
@@ -14,20 +14,20 @@ BBB_handler::BBB_handler() {
 	msg = fh_message_new();
 }
 
-BBB_handler::~BBB_handler() {
+DAQ_bbb_handler::~DAQ_bbb_handler() {
 
 	fh_transport_destroy(&transport);
 	fh_message_destroy(&msg);
 }
 
-void BBB_handler::bbb_connect(){
+void DAQ_bbb_handler::bbb_connect(){
 	// connect to server
 	conn = fh_connector_new_tcp_client(server_ip, port);
 	transport = fh_transport_new(fh_frame_protocol_new(MAX_MESSAGE_SIZE, FP_VERSION_2), fh_connector_connect(conn));
 	assert(transport);
 }
 
-void BBB_handler::get_bbb_status(){
+void DAQ_bbb_handler::get_bbb_status(){
 	// Send a GET_STATUS message
 	std::cout << "Sending GET_STATUS message..." << std::endl;
 	fh_message_setType(msg, MSG_SERVICE);
@@ -38,7 +38,7 @@ void BBB_handler::get_bbb_status(){
 	printf("OK: Got status message:[%d]\n\n", status);
 }
 
-void BBB_handler::bbb_disconnect(){
+void DAQ_bbb_handler::bbb_disconnect(){
 	// send a MS_CLOSE message
 	std::cout << "Sending MS_CLOSE message..." << std::endl;
 	fh_message_setType(msg, MSG_SERVICE);

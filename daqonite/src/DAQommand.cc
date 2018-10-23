@@ -1,12 +1,24 @@
+/**
+ * DAQommand - Application to control DAQonite
+ * 
+ * Sends commands over a local UDP socket to a DAQonite application to
+ * start and stop runs etc...
+ *
+ * Author: Josh Tingey
+ * Contact: j.tingey.16@ucl.ac.uk
+ */
+
 #include <iostream>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 
 using boost::asio::ip::udp;
 
-class DAQ_command {
+class DAQommand {
     public:
-        DAQ_command(boost::asio::io_service& io_service, 
+
+        /// Create a DAQommand object
+        DAQommand(boost::asio::io_service& io_service, 
                     const std::string& host, 
                     const std::string& port) : 
                     io_service_(io_service), 
@@ -16,24 +28,26 @@ class DAQ_command {
                     udp::resolver::iterator iter = resolver.resolve(query);
                     endpoint_ = *iter; }
 
-        ~DAQ_command() {
+        /// Destroy a DAQommand object
+        ~DAQommand() {
             socket_.close();
         }
 
+        // Send a message 
         void send(const std::string& msg) {
             socket_.send_to(boost::asio::buffer(msg, msg.size()), endpoint_);
         }
 
     private:
-	    boost::asio::io_service& io_service_;
-	    udp::socket socket_;
-	    udp::endpoint endpoint_;
+	    boost::asio::io_service& io_service_;   ///< BOOST io_service
+	    udp::socket socket_;                    ///< Local UDP socket to communicate with DAQonite
+	    udp::endpoint endpoint_;                ///< Local UDP endpoint
 };
 
 int main(int argc, char** argv) {
-    // Make the IO service and DAQ_command object
+    // Make the IO service and DAQommand object
     boost::asio::io_service io_service;
-	DAQ_command client(io_service, "localhost", "1096"); // Hardcode port 1096 for now
+	DAQommand client(io_service, "localhost", "1096"); // Hardcode port 1096 for now
 
     // Check the command and additional arguments are valid
     if (argc < 2 || argc > 3) {

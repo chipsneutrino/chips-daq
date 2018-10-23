@@ -16,7 +16,7 @@
  *
  */
 
-#include "daq_handler.h"
+#include "DAQ_handler.h"
 
 #include <TQObject.h>
 #include <RQ_OBJECT.h>
@@ -41,7 +41,7 @@
 int main(int argc, char* argv[]) {
 
 	std::cout << "#################################################################" << std::endl;
-	std::cout << "#                    WELCOME TO DAQONITE!!!                     #" << std::endl;
+	std::cout << "#                    WELCOME TO DAQonite!!!                     #" << std::endl;
 	std::cout << "#         by Josh Tingey MSci, JoshTingeyDAQDemon.Josh          #" << std::endl;
 	std::cout << "# Checking hard hats, high-vis, gloves and steel capped boot... #" << std::endl;
 	std::cout << "#################################################################" << std::endl;

@@ -2,7 +2,7 @@
  * DAQ_handler - Handler class for combining data streams
  */
 
-#include "daq_handler.h"
+#include "DAQ_handler.h"
 
 DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 			 			 bool collect_bbb_optical, bool collect_bbb_monitoring,
@@ -39,7 +39,7 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 
 	// Set up the monitoring ROOT based GUI
 	if (fShow_gui) {
-		fDaq_gui = new DAQoniteGUI();
+		fDaq_gui = new Monitoring_gui();
 		workGui();
 	} else { fDaq_gui = NULL; }
 
@@ -56,14 +56,14 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 
 	// Create the CLB handler, deals with all CLB data collection
 	if (fCollect_CLB_optical_data || fCollect_CLB_monitoring_data) {
-		fCLB_handler = new CLB_handler(fSocket_clb_opt, fCollect_CLB_optical_data,
-									   fSocket_clb_mon, fCollect_CLB_monitoring_data,
-									   fBuffer_size, fDaq_gui, &fRunning);
+		fCLB_handler = new DAQ_clb_handler(fSocket_clb_opt, fCollect_CLB_optical_data,
+									   	   fSocket_clb_mon, fCollect_CLB_monitoring_data,
+									   	   fBuffer_size, fDaq_gui, &fRunning);
 	}
 
 	// Create the BBB handler, deals with all BBB data collection
 	if (fCollect_BBB_optical_data || fCollect_BBB_monitoring_data) {
-		fBBB_handler = new BBB_handler();
+		fBBB_handler = new DAQ_bbb_handler();
 		fBBB_handler->bbb_connect();
 		fBBB_handler->get_bbb_status();
 		fBBB_handler->bbb_disconnect();

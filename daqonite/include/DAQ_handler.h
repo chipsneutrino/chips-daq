@@ -45,9 +45,9 @@
 #include "TH1F.h"
 #include <TApplication.h>
 
-#include "clb_handler.h"
-#include "bbb_handler.h"
-#include "daqonite_gui.h"
+#include "DAQ_clb_handler.h"
+#include "DAQ_bbb_handler.h"
+#include "Monitoring_gui.h"
 
 namespace po = boost::program_options;
 using boost::asio::ip::udp;
@@ -164,11 +164,11 @@ class DAQ_handler {
 		char fBuffer_local[buffer_size] __attribute__((aligned(8)));///< Local socket buffer
 		udp::socket*				fSocket_clb_opt;				///< CLB optical data UDP socket
 		udp::socket*				fSocket_clb_mon;				///< CLB monitoring data UDP socket
-		CLB_handler* 				fCLB_handler;					///< Pointer to CLB_handler
-		BBB_handler* 				fBBB_handler;					///< Pointer to BBB_handler
+		DAQ_clb_handler* 			fCLB_handler;					///< Pointer to CLB_handler
+		DAQ_bbb_handler* 			fBBB_handler;					///< Pointer to BBB_handler
 
 		// Combined things
-		DAQoniteGUI* 				fDaq_gui;						///< Pointer to the monitoring GUI
+		Monitoring_gui* 			fDaq_gui;						///< Pointer to the monitoring GUI
 		unsigned int 				fRun_type;						///< Type of run (data, test, etc...)
 		std::size_t const 			fBuffer_size;					///< Size of the local socket buffer
 		bool						fRunning;						///< Is data collection running?

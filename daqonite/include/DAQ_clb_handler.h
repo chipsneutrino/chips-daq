@@ -1,5 +1,5 @@
 /**
- * CLB_handler - Handler class for the CLB data stream
+ * DAQ_clb_handler - Handler class for the CLB data stream
  * 
  * This class deals with the specifics of the CLB data stream, unpacking
  * the UDP binary stream into the actual data and storing into .root
@@ -9,8 +9,8 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef CLB_HANDLER_H_
-#define CLB_HANDLER_H_
+#ifndef DAQ_CLB_HANDLER_H_
+#define DAQ_CLB_HANDLER_H_
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,9 +43,9 @@
 #include "TH1F.h"
 #include <TSystem.h>
 
-#include "clb_header_structs.h"
-#include "clb_data_structs.h"
-#include "daqonite_gui.h"
+#include "DAQ_clb_header_structs.h"
+#include "DAQ_clb_data_structs.h"
+#include "Monitoring_gui.h"
 
 /// Buffer size in bytes for optical and monitoring data
 const static size_t buffer_size = 10000;
@@ -62,16 +62,16 @@ const static unsigned int ttdc = 1414808643;
 const static unsigned int taes = 1413563731;
 const static unsigned int tmch = 1414349640;
 
-class CLB_handler {
+class DAQ_clb_handler {
 	public:
 
-		/// Create a CLB_handler
-		CLB_handler(boost::asio::ip::udp::socket* socket_opt, bool mine_opt,
-					boost::asio::ip::udp::socket* socket_mon, bool mine_mon,
-					std::size_t buffer_size, DAQoniteGUI *daqGui, bool* running);
+		/// Create a DAQ_clb_handler
+		DAQ_clb_handler(boost::asio::ip::udp::socket* socket_opt, bool mine_opt,
+						boost::asio::ip::udp::socket* socket_mon, bool mine_mon,
+						std::size_t buffer_size, Monitoring_gui *daqGui, bool* running);
 					
-		/// Destroy a CLB_handler
-		virtual ~CLB_handler();
+		/// Destroy a DAQ_clb_handler
+		virtual ~DAQ_clb_handler();
 
 		/** 
 		 * Sets the pointers to the output file TTree's.
@@ -155,7 +155,7 @@ class CLB_handler {
 
 		// Output Variables
 		bool 							fSave_data;							///< Should we fill the TTree's?
-		DAQoniteGUI*					fDaq_gui;							///< Pointer to the monitoring GUI
+		Monitoring_gui*					fDaq_gui;							///< Pointer to the monitoring GUI
 		TTree* 							fOutput_tree_optical;				///< Pointer to the optical TTree
 		TTree* 							fOutput_tree_monitoring;			///< Pointer to the monitoring TTree
 

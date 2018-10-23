@@ -1,15 +1,15 @@
 /**
- * CLB_handler - Handler class for the CLB data stream
+ * DAQ_clb_handler - Handler class for the CLB data stream
  */
 
-#include "clb_handler.h"
+#include "DAQ_clb_handler.h"
 
-CLB_handler::CLB_handler(boost::asio::ip::udp::socket* socket_opt, bool collect_opt,
-						 boost::asio::ip::udp::socket* socket_mon, bool collect_mon,
-						 std::size_t buffer_size, DAQoniteGUI *daqGui, bool* running) :
-						 fSocket_optical(socket_opt), fCollect_optical(collect_opt),
-						 fSocket_monitoring(socket_mon), fCollect_monitoring(collect_mon),
-						 fBuffer_size(buffer_size), fDaq_gui(daqGui) {
+DAQ_clb_handler::DAQ_clb_handler(boost::asio::ip::udp::socket* socket_opt, bool collect_opt,
+						 		 boost::asio::ip::udp::socket* socket_mon, bool collect_mon,
+						 		 std::size_t buffer_size, Monitoring_gui *daqGui, bool* running) :
+						 		 fSocket_optical(socket_opt), fCollect_optical(collect_opt),
+						 		 fSocket_monitoring(socket_mon), fCollect_monitoring(collect_mon),
+						 		 fBuffer_size(buffer_size), fDaq_gui(daqGui) {
 
 	// Add the running bool pointer...
 	fRunning = running;
@@ -35,11 +35,11 @@ CLB_handler::CLB_handler(boost::asio::ip::udp::socket* socket_opt, bool collect_
 	fCounter_monitoring 	= 0;
 }
 
-CLB_handler::~CLB_handler() {
+DAQ_clb_handler::~DAQ_clb_handler() {
 	// Empty
 }
 
-void CLB_handler::setSaveTrees(bool saveData, TTree * output_tree_opt, TTree * output_tree_mon) {
+void DAQ_clb_handler::setSaveTrees(bool saveData, TTree * output_tree_opt, TTree * output_tree_mon) {
 	fSave_data = saveData;
 	fOutput_tree_optical = output_tree_opt;
 	fOutput_tree_monitoring = output_tree_mon;
@@ -50,25 +50,25 @@ void CLB_handler::setSaveTrees(bool saveData, TTree * output_tree_opt, TTree * o
 	}
 }
 
-void CLB_handler::workOpticalData() {
+void DAQ_clb_handler::workOpticalData() {
 	if (fCollect_optical && *fRunning == true) {
 		fSocket_optical->async_receive(boost::asio::buffer(&fBuffer_optical[0], fBuffer_size),
-								   boost::bind(&CLB_handler::handleOpticalData, this,
+								   boost::bind(&DAQ_clb_handler::handleOpticalData, this,
 								   boost::asio::placeholders::error,
 								   boost::asio::placeholders::bytes_transferred));
 	}
 }
 
-void CLB_handler::workMonitoringData() {
+void DAQ_clb_handler::workMonitoringData() {
 	if (fCollect_monitoring && *fRunning == true) {
 		fSocket_monitoring->async_receive(boost::asio::buffer(&fBuffer_monitoring[0], fBuffer_size),
-								   boost::bind(&CLB_handler::handleMonitoringData, this,
+								   boost::bind(&DAQ_clb_handler::handleMonitoringData, this,
 								   boost::asio::placeholders::error,
 								   boost::asio::placeholders::bytes_transferred));
 	}
 }
 
-void CLB_handler::addOptTreeBranches() {
+void DAQ_clb_handler::addOptTreeBranches() {
 	fOutput_tree_optical->Branch("PomId", &fPomId_optical, "fPomId_optical/i");
 	fOutput_tree_optical->Branch("Channel", &fChannel_optical, "fChannel_optical/b");
 	fOutput_tree_optical->Branch("TimeStamp_s", &fTimestamp_s_optical, "fTimestamp_s_optical/i");
@@ -76,7 +76,7 @@ void CLB_handler::addOptTreeBranches() {
 	fOutput_tree_optical->Branch("ToT", &fTot_optical, "fTot_optical/B");
 }
 
-void CLB_handler::addMonTreeBranches() {
+void DAQ_clb_handler::addMonTreeBranches() {
 	fOutput_tree_monitoring->Branch("PomId", &fPomId_monitoring, "fPomId_monitoring/i");
 	fOutput_tree_monitoring->Branch("TimeStamp_s", &fTimestamp_s_monitoring, "fTimestamp_s_monitoring/i");
 	fOutput_tree_monitoring->Branch("Pad", &fPad_monitoring, "fPad_monitoring/i");
@@ -85,7 +85,7 @@ void CLB_handler::addMonTreeBranches() {
 	fOutput_tree_monitoring->Branch("Humidity", &fHumidity_monitoring, "fHumidity_monitoring/i");
 }
 
-void CLB_handler::handleOpticalData(boost::system::error_code const& error, std::size_t size) {
+void DAQ_clb_handler::handleOpticalData(boost::system::error_code const& error, std::size_t size) {
 	if (!error) {
 		if (fBuffer_size - sizeof(CLBCommonHeader) < 0) {
 			std::cout << "Invalid buffer size OPTO: " << fBuffer_size << std::endl;
@@ -153,7 +153,7 @@ void CLB_handler::handleOpticalData(boost::system::error_code const& error, std:
 	}
 }
 
-void CLB_handler::handleMonitoringData(boost::system::error_code const& error, std::size_t size) {
+void DAQ_clb_handler::handleMonitoringData(boost::system::error_code const& error, std::size_t size) {
 	if (!error) {
 		if (fBuffer_size - sizeof(CLBCommonHeader) < 0) {
 			std::cout << "Invalid buffer size MONI: " << fBuffer_size << std::endl;
@@ -218,7 +218,7 @@ void CLB_handler::handleMonitoringData(boost::system::error_code const& error, s
 	}
 }
 
-std::pair<int, std::string> CLB_handler::getType(CLBCommonHeader const& header) {
+std::pair<int, std::string> DAQ_clb_handler::getType(CLBCommonHeader const& header) {
 	const static std::pair<int, std::string> unknown = std::make_pair(-1,
 			"unknown");
 	const static std::pair<int, std::string> acoustic = std::make_pair(ACOU,
@@ -243,25 +243,25 @@ std::pair<int, std::string> CLB_handler::getType(CLBCommonHeader const& header) 
 	return unknown;
 }
 
-void CLB_handler::printHeader(CLBCommonHeader const& header) {
+void DAQ_clb_handler::printHeader(CLBCommonHeader const& header) {
 	bool const valid = validTimeStamp(header);
 	bool const trailer = isTrailer(header);
 
 	std::string name("");
 
 	std::cout << "DataType:          " << header.dataType() << '\n'
-			<< "RunNumber:         " << header.runNumber() << '\n'
-			<< "UDPSequenceNumber: " << header.udpSequenceNumber() << '\n'
+			  << "RunNumber:         " << header.runNumber() << '\n'
+			  << "UDPSequenceNumber: " << header.udpSequenceNumber() << '\n'
 
-	<< "Timestamp:\n" << "          Seconds: " << header.timeStamp().sec()
-			<< '\n' << "          Tics:    " << header.timeStamp().tics()
-			<< '\n' << "          " << UTCTime_h(header.timeStamp(), valid)
-			<< '\n'
+			  << "Timestamp:\n" << "          Seconds: " << header.timeStamp().sec()
+			  << '\n' << "          Tics:    " << header.timeStamp().tics()
+			  << '\n' << "          " << UTCTime_h(header.timeStamp(), valid)
+			  << '\n'
 
-	<< "POMIdentifier:     " << header.pomIdentifier() << " (MAC: " << POMID_h(
-			header.pomIdentifier()) << name << ')' << '\n'
-			<< "POMStatus 1:       " << header.pomStatus(1) << '\n'
-			<< "POMStatus 2:       " << header.pomStatus(2);
+			  << "POMIdentifier:     " << header.pomIdentifier() << " (MAC: " << POMID_h(
+				header.pomIdentifier()) << name << ')' << '\n'
+			  << "POMStatus 1:       " << header.pomStatus(1) << '\n'
+			  << "POMStatus 2:       " << header.pomStatus(2);
 
 	if (trailer && header.dataType() == ttdc) {
 		std::cout << " (trailer)\n";
@@ -270,10 +270,10 @@ void CLB_handler::printHeader(CLBCommonHeader const& header) {
 	}
 
 	std::cout << "POMStatus 3:       " << header.pomStatus(3) << '\n'
-			<< "POMStatus 4:       " << header.pomStatus(4) << std::endl;
+			  << "POMStatus 4:       " << header.pomStatus(4) << std::endl;
 }
 
-void CLB_handler::printOpticalData(const char* const buffer, ssize_t buffer_size,
+void DAQ_clb_handler::printOpticalData(const char* const buffer, ssize_t buffer_size,
 		int max_col) {
 	const unsigned int nhits = (buffer_size - sizeof(CLBCommonHeader))
 			/ sizeof(hit_t);
@@ -304,7 +304,7 @@ void CLB_handler::printOpticalData(const char* const buffer, ssize_t buffer_size
 	std::cout << '\n';
 }
 
-void CLB_handler::printMonitoringData(const char* const buffer, ssize_t buffer_size,
+void DAQ_clb_handler::printMonitoringData(const char* const buffer, ssize_t buffer_size,
 		int max_col) {
 	const unsigned int n = max_col > 14 ? max_col / 14 : 1;
 

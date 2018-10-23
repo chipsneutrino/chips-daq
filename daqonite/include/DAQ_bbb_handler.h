@@ -1,5 +1,5 @@
 /**
- * BBB_handler - Handler class for the BBB data stream
+ * DAQ_bbb_handler - Handler class for the BBB data stream
  * 
  * This class deals with the specifics of the BBB data stream, using the
  * fh_library API, to communicate with the Madison beaglebones.
@@ -10,8 +10,8 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef BBB_HANDLER_H_
-#define BBB_HANDLER_H_
+#ifndef DAQ_BBB_HANDLER_H_
+#define DAQ_BBB_HANDLER_H_
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,16 +48,16 @@
 #include "TH1F.h"
 
 #include "fh_library.h"
-#include "bbb_api.h"
+#include "DAQ_bbb_api.h"
 
-class BBB_handler {
+class DAQ_bbb_handler {
 	public:
 
-		/// Create a BBB_handler
-		BBB_handler();
+		/// Create a DAQ_bbb_handler
+		DAQ_bbb_handler();
 
-		/// Destroy a CLB_handler
-		virtual ~BBB_handler();
+		/// Destroy a DAQ_bbb_handler
+		virtual ~DAQ_bbb_handler();
 
 		/**
 		 * Connects to the test server

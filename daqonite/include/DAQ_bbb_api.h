@@ -1,12 +1,12 @@
 /**
- * BBB API - fh_library service message API for the beaglebone connections
+ * DAQ BBB API - fh_library service message API for the beaglebone connections
  * 
  * Author: Josh Tingey
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef BBB_API_H_
-#define BBB_API_H_
+#ifndef DAQ_BBB_API_H_
+#define DAQ_BBB_API_H_
 
 #define DEFAULT_PORT 6060
 #define DEFAULT_SERVER_IP "127.0.0.1"

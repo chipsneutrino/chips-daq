@@ -1,5 +1,5 @@
 /**
- * DAQoniteGUI - The ROOT monitoring GUI for DAQonite
+ * Monitoring_gui - The ROOT monitoring GUI for DAQonite
  * 
  * This class provides a ROOT GUI implementation for monitoring the data streams.
  * It displays various monitoring plots and allows you to look at specific channels.
@@ -8,8 +8,8 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef DAQONITE_GUI_H_
-#define DAQONITE_GUI_H_
+#ifndef MONITORING_GUI_H_
+#define MONITORING_GUI_H_
 
 #include <TQObject.h>
 #include <RQ_OBJECT.h>
@@ -41,20 +41,20 @@ class TRootEmbeddedCanvas;
 class TFile;
 class TTree;
 
-class DAQoniteGUI {
+class Monitoring_gui {
 
-	RQ_OBJECT("DAQoniteGUI");
+	RQ_OBJECT("Monitoring_gui");
 
 	public:
 
 		/** 
-		 * Create a DAQoniteGUI object
+		 * Create a Monitoring_gui object
 		 * Creates the monitoring GUI object and builds the ROOT TApplication GUI.
 		 */		
-		DAQoniteGUI();
+		Monitoring_gui();
 
-		/// Destroys the DAQoniteGUI object
-		virtual ~DAQoniteGUI();
+		/// Destroys the Monitoring_gui object
+		virtual ~Monitoring_gui();
 
 		/** 
 		 * Adds CLB optical hits to be included in monitoring

@@ -1,5 +1,5 @@
 /**
- * CLB Data Structs - Data structures for the CLB data stream
+ * DAQ CLB Data Structs - Data structures for the CLB data stream
  * 
  * This contains all the data structures needed for decoding the CLB
  * data stream and printing to stdout
@@ -8,8 +8,8 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef CLB_DATA_STRUCTS_H
-#define CLB_DATA_STRUCTS_H
+#ifndef DAQ_CLB_DATA_STRUCTS_H
+#define DAQ_CLB_DATA_STRUCTS_H
 
 #include <iostream>
 #include <iomanip>
@@ -65,9 +65,9 @@ std::ostream& operator <<(std::ostream& stream, const hit_t& hit) {
 					<< std::setfill(' ') << std::setw(2)
 					<< (unsigned int) hit.channel
 
-					<< ", T: "
-					<< std::setfill(' ') << std::setw(6)
-					<< ntohl(hit.timestamp)
+					//<< ", T: "
+					//<< std::setfill(' ') << std::setw(6)
+					//<< ntohl(hit.timestamp)
 
 					<< ", ToT: "
 					<< std::setfill(' ') << std::setw(6)

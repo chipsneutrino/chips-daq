@@ -1,5 +1,5 @@
 /**
- * CLB Header Structs - Data structures for the CLB packet header
+ * DAQ CLB Header Structs - Data structures for the CLB packet header
  * 
  * This contains all the data structures needed to decode the CLB UDP header
  *
@@ -7,10 +7,10 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef CLB_HEADER_STRUCTS_H
-#define CLB_HEADER_STRUCTS_H
+#ifndef DAQ_CLB_HEADER_STRUCTS_H
+#define DAQ_CLB_HEADER_STRUCTS_H
 
-#include "clb_data_structs.h"
+#include "DAQ_clb_data_structs.h"
 
 /// Struct describing the CLB UDP header
 struct CLBCommonHeader {

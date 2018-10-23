@@ -1,10 +1,11 @@
-/*
- * bbb_testServer.cc
- * Test server to see if fh_library is working
+/**
+ * BBBTest - A simple "beaglebone" test server to see if the
+ * fh_library is working
+ * 
+ * NOTE: THIS IS A TEST IMPLEMENTATION!!!
  *
- *  Created on: Sep 27, 2018
- *      Author: Josh Tingey
- *       Email: j.tingey.16@ucl.ac.uk
+ * Author: Josh Tingey
+ * Contact: j.tingey.16@ucl.ac.uk
  */
 
 #include <arpa/inet.h>
@@ -19,7 +20,7 @@
 #include <getopt.h>
 
 #include "fh_library.h"
-#include "bbb_api.h"
+#include "DAQ_bbb_api.h"
 
 bool init();
 void destroy();
@@ -160,9 +161,7 @@ int ms_status(void *ctx, fh_message_t *msgin, fh_transport_t *transport);
 int ms_echo(void *ctx, fh_message_t *msgin, fh_transport_t *transport);
 int ms_close(void *ctx, fh_message_t *msgin, fh_transport_t *transport);
 
-fh_service_t *
-ms_new()
-{
+fh_service_t * ms_new() {
     fh_service_t *srvc = fh_service_new(MSG_SERVICE, NULL);       // new service handling typecode MSG_SERVICE
     fh_service_register_function(srvc, MS_STATUS, &ms_status);    // bind "status" function to subcode MS_STATUS
     fh_service_register_function(srvc, MS_ECHO, &ms_echo);        // bind "echo" functionto subcode MS_ECHO
@@ -170,17 +169,13 @@ ms_new()
     return srvc;
 }
 
-int
-ms_status(void *ctx, fh_message_t *msgin, fh_transport_t *transport)
-{
+int ms_status(void *ctx, fh_message_t *msgin, fh_transport_t *transport) {
     uint8_t out[] = {1}; // OK
     fh_message_setData(msgin, out, 1);
     return fh_transport_send(transport, msgin);
 }
 
-int
-ms_echo(void *ctx, fh_message_t *msgin, fh_transport_t *transport)
-{
+int ms_echo(void *ctx, fh_message_t *msgin, fh_transport_t *transport) {
     int size = fh_message_dataLen(msgin);
     uint8_t *original = fh_message_getData(msgin);
     uint8_t copy[size];
@@ -189,9 +184,7 @@ ms_echo(void *ctx, fh_message_t *msgin, fh_transport_t *transport)
     return fh_transport_send(transport, msgin);
 }
 
-int
-ms_close(void *ctx, fh_message_t *msgin, fh_transport_t *transport)
-{
+int ms_close(void *ctx, fh_message_t *msgin, fh_transport_t *transport) {
     fh_message_setData(msgin, (uint8_t *)"GOODBYE", 7);
     int status = fh_transport_send(transport, msgin);
 
