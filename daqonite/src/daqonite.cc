@@ -1,4 +1,4 @@
-/*
+/**
  * Program name: DAQonite, by Josh Tingey MSci, JoshTingeyDAQDemon.Josh
  *
  * This program is a modification of the CLBSwissKnife...

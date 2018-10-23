@@ -1,9 +1,5 @@
-/*
- * daqonite_gui.cc
- *
- *  Created on: Sep 24, 2018
- *      Author: chips
- *
+/**
+ * DAQoniteGUI - The ROOT monitoring GUI for DAQonite
  */
 
 #include "daqonite_gui.h"
@@ -13,7 +9,7 @@
 #define PMTSPERPOM 30
 #define HIGHRATE 10000
 
-DAQoniteGUI::DAQoniteGUI(const TGWindow*p, UInt_t w, UInt_t h) {
+DAQoniteGUI::DAQoniteGUI() {
 
 	// main frame
 	fMainFrame = new TGMainFrame(gClient->GetRoot(),10,10,kMainFrame | kVerticalFrame);

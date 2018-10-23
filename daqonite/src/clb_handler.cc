@@ -1,10 +1,5 @@
-/*
- * clb_handler.cc
- * Handler for the CLB data
- *
- *  Created on: Sep 27, 2018
- *      Author: Josh Tingey
- *       Email: j.tingey.16@ucl.ac.uk
+/**
+ * CLB_handler - Handler class for the CLB data stream
  */
 
 #include "clb_handler.h"

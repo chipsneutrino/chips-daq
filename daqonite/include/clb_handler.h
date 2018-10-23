@@ -1,10 +1,12 @@
-/*
- * clb_handler.h
- * Handler for the CLB data
+/**
+ * CLB_handler - Handler class for the CLB data stream
+ * 
+ * This class deals with the specifics of the CLB data stream, unpacking
+ * the UDP binary stream into the actual data and storing into .root
+ * files. It also supplies the monitoring GUI with the data it needs.
  *
- *  Created on: Sep 27, 2018
- *      Author: Josh Tingey
- *       Email: j.tingey.16@ucl.ac.uk
+ * Author: Josh Tingey
+ * Contact: j.tingey.16@ucl.ac.uk
  */
 
 #ifndef CLB_HANDLER_H_
@@ -45,9 +47,12 @@
 #include "clb_data_structs.h"
 #include "daqonite_gui.h"
 
+/// Buffer size in bytes for optical and monitoring data
 const static size_t buffer_size = 10000;
 
+/// Rate at which number of packets received is printed to stdout
 #define TERMINALPRINTRATE 5000
+
 #define MONI 0x1
 #define ACOU 0x2
 #define OPTO 0x4
@@ -57,97 +62,120 @@ const static unsigned int ttdc = 1414808643;
 const static unsigned int taes = 1413563731;
 const static unsigned int tmch = 1414349640;
 
-struct POMID_h {
-	uint32_t m_val;
-	POMID_h(uint32_t val) :
-		m_val(val) {
-	}
-};
-
-inline
-std::ostream& operator <<(std::ostream& stream, const POMID_h& pomid) {
-	/*
-	 * The MAC address of a WR node starts with 08:00:30.
-	 * The POMID is defined by the MAC address removing the initial 08:00.
-	 */
-
-	std::ostringstream oss("0800", std::ostringstream::ate);
-	oss << std::hex << pomid.m_val;
-	if (oss.tellp() != 12) {
-		return stream << "undefined";
-	}
-
-	std::string const no = oss.str();
-	std::size_t const s = no.size();
-	for (std::size_t i = 0; i < s; i += 2) {
-		stream << char(toupper(no[i])) << char(toupper(no[i + 1])) << (i != s
-				- 2 ? ":" : "");
-	}
-	return stream;
-}
-
 class CLB_handler {
 	public:
+
+		/// Create a CLB_handler
 		CLB_handler(boost::asio::ip::udp::socket* socket_opt, bool mine_opt,
 					boost::asio::ip::udp::socket* socket_mon, bool mine_mon,
 					std::size_t buffer_size, DAQoniteGUI *daqGui, bool* running);
+					
+		/// Destroy a CLB_handler
 		virtual ~CLB_handler();
 
+		/** 
+		 * Sets the pointers to the output file TTree's.
+		 * Called from the DAQ_handler, which deals with the file IO, in order to set
+		 * the TTree pointers so Fill() can be called from here.
+		 * 
+		 * @param saveData Bool specifying if TTree should be filled
+		 * @param output_tree_opt Pointer to optical TTree
+		 * @param output_tree_mon Pointer to monitoring TTree
+		 */
 		void setSaveTrees(bool saveData, TTree * output_tree_opt, TTree * output_tree_mon);
 
+		/**
+		 * IO_service optical data work function.
+		 * Calls the async_receive() on the IO_service for the optical data stream.
+		 */
 		void workOpticalData();
+
+		/**
+		 * IO_service monitoring data work function.
+		 * Calls the async_receive() on the IO_service for the monitoring data stream.
+		 */
 		void workMonitoringData();
 
 	private:
-
-		CLB_handler(CLB_handler const&); // non-copyable
-		CLB_handler& operator =(CLB_handler const&); // non-copyable
-
+	
+		/**
+		 * Callback completion function for optical data async_receive().
+		 * Handles the received optical data after the async_receive() has completed. 
+		 * It fills the ROOT TTrees with the decoded data.
+		 * 
+		 * @param error Error code from async_receive()
+		 * @param size Number of bytes received
+		 */
 		void handleOpticalData(boost::system::error_code const& error, std::size_t size);
+
+		/**
+		 * Callback completion function for monitoring data async_receive().
+		 * Handles the received monitoring data after the async_receive() has completed. 
+		 * It fills the ROOT TTrees with the decoded data. It also forwards on monitoring
+		 * data to the GUI for visualising.
+		 * 
+		 * @param error Error code from async_receive()
+		 * @param size Number of bytes received
+		 */
 		void handleMonitoringData(boost::system::error_code const& error, std::size_t size);
 
+		/// Add the neccesary branches to the optical TTree
 		void addOptTreeBranches();
+		/// Add the neccesary branches to the monitoring TTree
 		void addMonTreeBranches();
 
+		/**
+		 * Gets the data type from CLBCommonHeader.
+		 * Given a CLBCommonHeader it reads to appropriate byte to find the data type.
+		 * Either optical, acoustic or monitoring.
+		 * 
+		 * @param header CLBCommonHeader from input data packet
+		 * @return size Number of bytes received
+		 */
 		std::pair<int, std::string> getType(CLBCommonHeader const& header);
 
+		/// Print CLBCommonHeader to stdout
 		void printHeader(CLBCommonHeader const& header);
+		/// Print Optical data to stdout
 		void printOpticalData(const char* const buffer, ssize_t buffer_size, int max_col);
+		/// Print monitoring data to stdout
 		void printMonitoringData(const char* const buffer, ssize_t buffer_size, int max_col);
 
-		// Collection
-		boost::asio::ip::udp::socket* 	fSocket_optical;
-		char 							fBuffer_optical[buffer_size] __attribute__((aligned(8)));
-		bool 							fCollect_optical;
-		boost::asio::ip::udp::socket*	fSocket_monitoring;
-		char 							fBuffer_monitoring[buffer_size] __attribute__((aligned(8)));
-		bool 							fCollect_monitoring;
-		std::size_t const 				fBuffer_size;
-		bool* 							fRunning;
+		// Data Collection Variables
+		boost::asio::ip::udp::socket* 	fSocket_optical;					///< Optical data UDP socket
+		char fBuffer_optical[buffer_size] __attribute__((aligned(8)));		///< Optical data buffer
+		bool 							fCollect_optical;					///< Should we collect optical data?
 
-		// Output
-		bool 							fSave_data;
-		DAQoniteGUI*					fDaq_gui;
-		TTree* 							fOutput_tree_optical;
-		TTree* 							fOutput_tree_monitoring;
-		// Optical Variables
-		UInt_t 							fPomId_optical;
-		UChar_t 						fChannel_optical;
-		UInt_t 							fTimestamp_s_optical;
-		UInt_t 							fTimestamp_w_optical;
-		UInt_t 							fTimestamp_ns_optical;
-		Char_t 							fTot_optical;
-		// Monitoring Variables
-		UInt_t 							fPomId_monitoring;
-		UInt_t 							fTimestamp_s_monitoring;
-		UInt_t 							fPad_monitoring;
-		UInt_t 							fValid_monitoring;
-		UInt_t 							fTemperate_monitoring;
-		UInt_t 							fHumidity_monitoring;
+		boost::asio::ip::udp::socket*	fSocket_monitoring;					///< Monitoring data UDP socket
+		char fBuffer_monitoring[buffer_size] __attribute__((aligned(8)));	///< Monitoring data buffer
+		bool 							fCollect_monitoring;				///< Should we collect monitoring data?
 
-		// Other
-		int 							fCounter_optical;
-		int 							fCounter_monitoring;
+		std::size_t const 				fBuffer_size;						///< Size of the buffers
+		bool* 							fRunning;							///< Is data collection running?
+
+		// Output Variables
+		bool 							fSave_data;							///< Should we fill the TTree's?
+		DAQoniteGUI*					fDaq_gui;							///< Pointer to the monitoring GUI
+		TTree* 							fOutput_tree_optical;				///< Pointer to the optical TTree
+		TTree* 							fOutput_tree_monitoring;			///< Pointer to the monitoring TTree
+
+		UInt_t 							fPomId_optical;						///< Optical Data: Header POM ID
+		UChar_t 						fChannel_optical;					///< Optical Data: Hit Channel ID
+		UInt_t 							fTimestamp_s_optical;				///< Optical Data: Header timestamp [s]
+		UInt_t 							fTimestamp_w_optical;				///< Optical Data: Header ticks
+		UInt_t 							fTimestamp_ns_optical;				///< Optical Data: Hit timestamp [ns]
+		Char_t 							fTot_optical;						///< Optical Data: Hit TOT value
+		
+		UInt_t 							fPomId_monitoring;					///< Monitoring Data: Header POM ID
+		UInt_t 							fTimestamp_s_monitoring;			///< Monitoring Data: Header timestamp [s]
+		UInt_t 							fPad_monitoring;					///< Monitoring Data: Header Pad
+		UInt_t 							fValid_monitoring;					///< Monitoring Data: Header Valid
+		UInt_t 							fTemperate_monitoring;				///< Monitoring Data: Temperature data
+		UInt_t 							fHumidity_monitoring;				///< Monitoring Data: Humidity data
+
+		// Other Variables
+		int 							fCounter_optical;					///< Optical packet counter
+		int 							fCounter_monitoring;				///< Monitoring packet counter
 };
 
-#endif /* CLB_HANDLER_H_ */
+#endif

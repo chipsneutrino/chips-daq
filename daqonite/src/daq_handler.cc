@@ -1,10 +1,5 @@
-/*
- * daq_handler.cc
- * Handler for the combining of both streams of data
- *
- *  Created on: Sep 27, 2018
- *      Author: Josh Tingey
- *       Email: j.tingey.16@ucl.ac.uk
+/**
+ * DAQ_handler - Handler class for combining data streams
  */
 
 #include "daq_handler.h"
@@ -44,7 +39,7 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 
 	// Set up the monitoring ROOT based GUI
 	if (fShow_gui) {
-		fDaq_gui = new DAQoniteGUI(gClient->GetRoot(),600,400);
+		fDaq_gui = new DAQoniteGUI();
 		workGui();
 	} else { fDaq_gui = NULL; }
 

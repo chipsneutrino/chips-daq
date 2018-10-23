@@ -1,10 +1,13 @@
-/*
- * daq_handler.h
- * Handler that deals with combining data streams
+/**
+ * DAQ_handler - Handler class for combining data streams
+ * 
+ * This is the main class that deals with the DAQ across all stream
+ * It holds a CLB_handler and BBB_handler object which deal with the 
+ * individual streams data collection. It controls the IO_service 
+ * which provides the backbone to the entire DAQonite program.
  *
- *  Created on: Sep 27, 2018
- *      Author: Josh Tingey
- *       Email: j.tingey.16@ucl.ac.uk
+ * Author: Josh Tingey
+ * Contact: j.tingey.16@ucl.ac.uk
  */
 
 #ifndef DAQ_HANDLER_H_
@@ -49,65 +52,126 @@
 namespace po = boost::program_options;
 using boost::asio::ip::udp;
 
+/// The number of different types of run possible
 #define NUMRUNTYPES 4
 
-//const static size_t buffer_size = 10000;
+/// The default port for CLB UDP optical data
 const static unsigned int default_opto_port = 56015;
+
+/// The default port for CLB UDP monitoring data
 const static unsigned int default_moni_port = 56017;
 
 class DAQ_handler {
-public:
-	DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
-			 	bool collect_bbb_optical, bool collect_bbb_monitoring,
-				bool gui, bool save);
+	public:
 
-	virtual ~DAQ_handler();
+		/**
+		 * Create a DAQ_handler
+		 * This creates a DAQ_handler, setting up the GUI and local control socket.
+		 * Initial work is then added to the IO_service before run() is called to
+		 * start to main loop.
+		 */
+		DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
+					bool collect_bbb_optical, bool collect_bbb_monitoring,
+					bool gui, bool save);
 
-	void startRun();
-	void stopRun();
-	void exit();
+		/// Destroy a DAQ_handler
+		virtual ~DAQ_handler();
 
-	int getRunAndUpdate();
+		/**
+		 * Setup the data collection and start the IO_service
+		 * Opens the output file, sets up the UDP sockets, adds the initial work
+		 * to the IO_service needed for data collection.
+		 */
+		void startRun();
 
-	void handleSignals(boost::system::error_code const& error, int signum);
-	void handleLocalSocket(boost::system::error_code const& error, std::size_t size);
+		/**
+		 * Stops data collection and saves file
+		 * This function stops data collection and writes the TTree's to the file
+		 * before saving
+		 */		
+		void stopRun();
 
-	void workSignals();
-	void workLocalSocket();
-	void workGui();
+		/**
+		 * Exits DAQonite
+		 * This function stops the IO_service and terminates the application. It will
+		 * call stopRun() first if currently running.
+		 */	
+		void exit();
 
-private:
-	// Settings
-	bool 						fCollect_CLB_optical_data;
-	bool 						fCollect_CLB_monitoring_data;
-	bool 						fCollect_BBB_optical_data;
-	bool 						fCollect_BBB_monitoring_data;
-	bool 						fShow_gui;
-	bool 						fSave_data;
+		/**
+		 * Reads and updates runNumbers.dat
+		 * Reads ../data/runNumbers.dat to determine the run number for the given run
+		 * type. It then increments this value in the file
+		 * 
+		 * @return The run number
+		 */	
+		int getRunAndUpdate();
 
-	// Output variables
-	TString 					fFilename;
-	TFile* 						fOutput_file;
-	TTree* 						fCLB_optical_tree;
-	TTree* 						fCLB_monitoring_tree;
-	TTree* 						fBBB_optical_tree;
-	TTree* 						fBBB_monitoring_tree;
+		/**
+		 * Handles UNIX signals
+		 * Handles the interupts from UNIX signals. Currently only ctrl-c is defined
+		 * which calls exit() on the application.
+		 * 
+		 * @param error Signals error code
+		 * @param signum Signal number
+		 */	
+		void handleSignals(boost::system::error_code const& error, int signum);
 
-	// IO
-	boost::asio::io_service* 	fIO_service;
-	boost::asio::signal_set*	fSignal_set;
-	udp::socket*				fLocal_socket;
-	char 						fBuffer_local[buffer_size] __attribute__((aligned(8)));
-	udp::socket*				fSocket_clb_opt;
-	udp::socket*				fSocket_clb_mon;
-	CLB_handler* 				fCLB_handler;
-	BBB_handler* 				fBBB_handler;
+		/**
+		 * Handles the local control socket
+		 * Handles any commands sent from daq_command over the local control UDP socket.
+		 * It reads the input buffer and determines the action to take.
+		 * 
+		 * @param error Error code from the async_receive()
+		 * @param size Signal Number of bytes received
+		 */	
+		void handleLocalSocket(boost::system::error_code const& error, std::size_t size);
 
-	// Combined things
-	DAQoniteGUI* 				fDaq_gui;
-	unsigned int 				fRun_type;
-	std::size_t const 			fBuffer_size;
-	bool						fRunning;
+		/// Calls the async_wait() on the signal_set
+		void workSignals();
+
+		/// Calls the async_receive() on the local UDP control socket
+		void workLocalSocket();
+
+		/**
+		 * Keeps the GUI working
+		 * Calls the ROOT method ProcessEvents() to process any events for the monitoring
+		 * GUI. Need to include a sleep() in order for this to not consume 100% CPU.
+		 */	
+		void workGui();
+
+	private:
+		// Settings
+		bool 						fCollect_CLB_optical_data;		///< Should we collect CLB optical data?
+		bool 						fCollect_CLB_monitoring_data;	///< Should we collect CLB monitoring data?
+		bool 						fCollect_BBB_optical_data;		///< Should we collect BBB optical data?
+		bool 						fCollect_BBB_monitoring_data;	///< Should we collect BBB monitoring data?
+		bool 						fShow_gui;						///< Should we run the monitoring GUI?
+		bool 						fSave_data;						///< Should we save data to .root file?
+
+		// Output variables
+		TString 					fFilename;						///< Output file name
+		TFile* 						fOutput_file;					///< ROOT output file
+		TTree* 						fCLB_optical_tree;				///< ROOT CLB optical output TTree
+		TTree* 						fCLB_monitoring_tree;			///< ROOT CLB monitoring output TTree
+		TTree* 						fBBB_optical_tree;				///< ROOT BBB optical output TTree
+		TTree* 						fBBB_monitoring_tree;			///< ROOT BBB monitoring output TTree
+
+		// IO
+		boost::asio::io_service* 	fIO_service;					///< BOOST io_service. The heart of everything
+		boost::asio::signal_set*	fSignal_set;					///< BOOST signal_set
+		udp::socket*				fLocal_socket;					///< Local UDP control socket
+		char fBuffer_local[buffer_size] __attribute__((aligned(8)));///< Local socket buffer
+		udp::socket*				fSocket_clb_opt;				///< CLB optical data UDP socket
+		udp::socket*				fSocket_clb_mon;				///< CLB monitoring data UDP socket
+		CLB_handler* 				fCLB_handler;					///< Pointer to CLB_handler
+		BBB_handler* 				fBBB_handler;					///< Pointer to BBB_handler
+
+		// Combined things
+		DAQoniteGUI* 				fDaq_gui;						///< Pointer to the monitoring GUI
+		unsigned int 				fRun_type;						///< Type of run (data, test, etc...)
+		std::size_t const 			fBuffer_size;					///< Size of the local socket buffer
+		bool						fRunning;						///< Is data collection running?
 };
 
-#endif /* DAQ_HANDLER_H_ */
+#endif

@@ -1,10 +1,5 @@
-/*
- * bbb_handler.cc
- * Handler for the beaglebone data
- *
- *  Created on: Sep 27, 2018
- *      Author: Josh Tingey
- *       Email: j.tingey.16@ucl.ac.uk
+/**
+ * BBB_handler - Handler class for the BBB data stream
  */
 
 #include "bbb_handler.h"
