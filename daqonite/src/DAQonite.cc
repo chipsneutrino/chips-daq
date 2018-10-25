@@ -103,11 +103,11 @@ int main(int argc, char* argv[]) {
 
 		daq_handler = new DAQ_handler(collect_clb_optical, collect_clb_monitoring, 
 									  collect_bbb_optical, collect_bbb_monitoring,
-									  useMonitoringGui, saveToFile, 2);
+									  useMonitoringGui, saveToFile, 3);
 	} else {
 		daq_handler = new DAQ_handler(collect_clb_optical, collect_clb_monitoring, 
 									  collect_bbb_optical, collect_bbb_monitoring,
-									  useMonitoringGui, saveToFile, 2);	
+									  useMonitoringGui, saveToFile, 3);	
 	}
 	delete daq_handler;
 }
