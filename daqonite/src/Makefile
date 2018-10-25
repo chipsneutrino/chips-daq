@@ -4,7 +4,7 @@ INCDIRS = 		../../fh_message/include ../include
 LIBDIRS = 		../../fh_message/src
 LIBS = 			fh_message boost_system boost_chrono boost_program_options m pthread boost_thread
 
-CXXFLAGS =		$(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0
+CXXFLAGS =		$(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0 -std=c++0x
 
 ROOTFLAGS = 	`root-config --cflags --glibs`
 
