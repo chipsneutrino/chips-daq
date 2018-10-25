@@ -2,13 +2,13 @@ CC=g++
 
 INCDIRS = 		../../fh_message/include ../include
 LIBDIRS = 		../../fh_message/src
-LIBS = 			fh_message boost_system boost_chrono boost_program_options m pthread
+LIBS = 			fh_message boost_system boost_chrono boost_program_options m pthread boost_thread
 
 CXXFLAGS =		$(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0
 
 ROOTFLAGS = 	`root-config --cflags --glibs`
 
-OBJS =          DAQonite.o DAQ_handler.o DAQ_clb_handler.o DAQ_bbb_handler.o Monitoring_gui.o
+OBJS =          DAQonite.o DAQ_handler.o DAQ_clb_handler.o DAQ_bbb_handler.o Monitoring_gui.o Monitoring_buffer.o Monitoring_config.o
 
 rootcint:
 	rootcint -f Monitoring_gui_dict.cc -c ../include/Monitoring_gui.h Monitoring_gui_linkdef.h

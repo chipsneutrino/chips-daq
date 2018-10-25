@@ -28,6 +28,7 @@
 #include <cstdlib>
 #include "assert.h"
 #include <unistd.h>
+#include <thread>
 
 #include <boost/asio.hpp>
 #include <boost/program_options.hpp>
@@ -39,6 +40,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/thread.hpp>
 
 #include "TFile.h"
 #include "TTree.h"
@@ -72,7 +74,7 @@ class DAQ_handler {
 		 */
 		DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 					bool collect_bbb_optical, bool collect_bbb_monitoring,
-					bool gui, bool save);
+					bool gui, bool save, int numThreads);
 
 		/// Destroy a DAQ_handler
 		virtual ~DAQ_handler();
@@ -106,6 +108,12 @@ class DAQ_handler {
 		 * @return The run number
 		 */	
 		int getRunAndUpdate();
+
+		/**
+		 * Binded to thread creation
+		 * Allows us to modify how the thread operates and what it does
+		 */	
+		void ioServiceThread(int threadNum);
 
 		/**
 		 * Handles UNIX signals
@@ -159,6 +167,8 @@ class DAQ_handler {
 
 		// IO
 		boost::asio::io_service* 	fIO_service;					///< BOOST io_service. The heart of everything
+		int 						fNum_threads;					///< The number of threads to use
+		boost::thread_group* 		fThread_group;					///< Group of threads to do the work
 		boost::asio::signal_set*	fSignal_set;					///< BOOST signal_set
 		udp::socket*				fLocal_socket;					///< Local UDP control socket
 		char fBuffer_local[buffer_size] __attribute__((aligned(8)));///< Local socket buffer

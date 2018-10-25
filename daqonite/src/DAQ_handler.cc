@@ -6,12 +6,13 @@
 
 DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 			 			 bool collect_bbb_optical, bool collect_bbb_monitoring,
-						 bool gui, bool save) :
+						 bool gui, bool save, int numThreads) :
 						 fCollect_CLB_optical_data(collect_clb_optical),
 						 fCollect_CLB_monitoring_data(collect_clb_monitoring),
 						 fCollect_BBB_optical_data(collect_bbb_optical),
 						 fCollect_BBB_monitoring_data(collect_bbb_monitoring),
-						 fShow_gui(gui), fSave_data(save), fBuffer_size(buffer_size) {
+						 fShow_gui(gui), fSave_data(save),
+						 fNum_threads(numThreads), fBuffer_size(buffer_size) {
 
 	// Start not running
 	fRunning = false;
@@ -71,7 +72,13 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 
 	// Start the IO service 
 	std::cout << "DAQonite - Starting IO service, waiting for command..." << std::endl; 
-	fIO_service->run();
+
+	fThread_group = new boost::thread_group();
+	for (int threadCount = 0; threadCount < fNum_threads; threadCount ++) {
+		fThread_group->create_thread( boost::bind(&DAQ_handler::ioServiceThread, this, threadCount) );
+	}
+
+	fThread_group->join_all();
 }
 
 DAQ_handler::~DAQ_handler() {
@@ -203,6 +210,11 @@ int DAQ_handler::getRunAndUpdate() {
 	return returnNum;
 }
 
+void DAQ_handler::ioServiceThread(int threadNum) {
+	std::cout << "Starting thread " << threadNum << " for IO_service run()..." << std::endl;
+	fIO_service->run();
+}
+
 void DAQ_handler::handleSignals(boost::system::error_code const& error, int signum) {
 	if (!error) {
 		if (signum == SIGINT) {
@@ -247,7 +259,7 @@ void DAQ_handler::workLocalSocket() {
 
 void DAQ_handler::workGui() {
 	// TODO: Have this as an ASYNC_WAIT
-	usleep(50);
+	usleep(5);
 	gSystem->ProcessEvents();
 	fIO_service->post(boost::bind(&DAQ_handler::workGui, this));
 }
