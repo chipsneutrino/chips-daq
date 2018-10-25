@@ -54,15 +54,19 @@ int main(int argc, char* argv[]) {
 
 	bool useMonitoringGui			= true;
 	bool saveToFile					= false;
+	
+	unsigned int numThreads			= 3;
 
 	// Argument handling
 	po::options_description desc("Options");
 	desc.add_options()
 		("help,h", "DAQonite - Default shows GUI but does not save files")
-		("save,s", "Save run data to file. Name is determined by type and runNumber")
+		("save,s", "Save run data to file")
 		("noGui",  "Don't show the monitoring GUI")
 		("noOpt",  "Don't mine the optical data")
-		("noMon",  "Don't mine the monitoring data");
+		("noMon",  "Don't mine the monitoring data")
+		("threads,t", po::value<unsigned int>(&numThreads),
+          		   "Number of threads to use, default = 3");
 
 	try {
 		po::variables_map vm;
@@ -96,6 +100,10 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	if (numThreads < 1 || numThreads > 4) {
+		throw std::runtime_error("DAQonite: Error: Invalid number of threads. Valid = [1,4]!");
+	}
+
 	// Need to start a TApplication if we are using the GUI
 	DAQ_handler * daq_handler;
 	if (useMonitoringGui) {
@@ -103,11 +111,11 @@ int main(int argc, char* argv[]) {
 
 		daq_handler = new DAQ_handler(collect_clb_optical, collect_clb_monitoring, 
 									  collect_bbb_optical, collect_bbb_monitoring,
-									  useMonitoringGui, saveToFile, 3);
+									  useMonitoringGui, saveToFile, numThreads);
 	} else {
 		daq_handler = new DAQ_handler(collect_clb_optical, collect_clb_monitoring, 
 									  collect_bbb_optical, collect_bbb_monitoring,
-									  useMonitoringGui, saveToFile, 3);	
+									  useMonitoringGui, saveToFile, numThreads);	
 	}
 	delete daq_handler;
 }

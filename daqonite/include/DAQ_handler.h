@@ -113,7 +113,7 @@ class DAQ_handler {
 		 * Binded to thread creation
 		 * Allows us to modify how the thread operates and what it does
 		 */	
-		void ioServiceThread(int threadNum);
+		void ioServiceThread();
 
 		/**
 		 * Handles UNIX signals

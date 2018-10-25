@@ -71,14 +71,21 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 	}
 
 	// Start the IO service 
-	std::cout << "DAQonite - Starting IO service, waiting for command..." << std::endl; 
+	std::cout << "DAQonite - Starting IO service with " << fNum_threads << " threads" << std::endl;
+	std::cout << "DAQonite - Waiting for DAQommand command..." << std::endl;
 
+	// Create a new thread group and call the io_service run() method in each
+	// They can then all handle work to be done by the io_service.
 	fThread_group = new boost::thread_group();
 	for (int threadCount = 0; threadCount < fNum_threads; threadCount ++) {
-		fThread_group->create_thread( boost::bind(&DAQ_handler::ioServiceThread, this, threadCount) );
+		fThread_group->create_thread( boost::bind(&DAQ_handler::ioServiceThread, this) );
 	}
 
+	// This application will then wait here until all the threads have run out of work to do
 	fThread_group->join_all();
+
+	// The threads run out of work when exit() is called, we then need to terminate the GUI
+	if (fDaq_gui != NULL) {	gApplication->Terminate(0);	}
 }
 
 DAQ_handler::~DAQ_handler() {
@@ -127,14 +134,14 @@ void DAQ_handler::startRun() {
 			if (!fBBB_monitoring_tree) { throw std::runtime_error("DAQonite: Error: fBBB_monitoring_tree!"); }
 		}
 		fCLB_handler->setSaveTrees(fSave_data, fCLB_optical_tree, fCLB_monitoring_tree);
-		fDaq_gui->startRun(fRun_type, runNum, fFilename);
+		if (fDaq_gui != NULL) { fDaq_gui->startRun(fRun_type, runNum, fFilename); }
 	} else {
-		fDaq_gui->startRun(fRun_type, 0, "");
+		if (fDaq_gui != NULL) { fDaq_gui->startRun(fRun_type, 0, ""); }
 	}
 
 	std::cout << "\nDAQonite - Start Mining on ( "<< default_opto_port << ", " << default_moni_port << " )..." << std::endl;
 	if (fSave_data) {
-		std::cout << "DAQonite - Will arrange in the container: " << fFilename << std::endl << std::endl;
+		std::cout << "DAQonite - Will arrange in the container: " << fFilename << std::endl;
 	}
 
 	fRunning = true;
@@ -145,7 +152,7 @@ void DAQ_handler::startRun() {
 void DAQ_handler::stopRun() {
 	if (fRunning == true) {
 		std::cout << "\nDAQonite - Stop mining" << std::endl;
-		fDaq_gui->stopRun();
+		if (fDaq_gui != NULL) { fDaq_gui->stopRun(); }
 		fRunning = false;
 		if (fOutput_file != NULL) {
 			std::cout << "DAQonite - Closing up the container: " << fFilename << std::endl;
@@ -158,11 +165,8 @@ void DAQ_handler::stopRun() {
 
 void DAQ_handler::exit() {
 	if (fRunning == true) { stopRun(); }
-	std::cout << "DAQonite - Done for the day" << std::endl;
+	std::cout << "\nDAQonite - Done for the day" << std::endl;
 	fIO_service->stop();
-	if (fDaq_gui != NULL) {
-		gApplication->Terminate(0);	
-	}
 }
 
 int DAQ_handler::getRunAndUpdate() {
@@ -210,8 +214,7 @@ int DAQ_handler::getRunAndUpdate() {
 	return returnNum;
 }
 
-void DAQ_handler::ioServiceThread(int threadNum) {
-	std::cout << "Starting thread " << threadNum << " for IO_service run()..." << std::endl;
+void DAQ_handler::ioServiceThread() {
 	fIO_service->run();
 }
 
@@ -237,9 +240,11 @@ void DAQ_handler::handleLocalSocket(boost::system::error_code const& error, std:
 			stopRun();
 		} else if (strncmp(fBuffer_local, "exit", 4) == 0) {
 			exit();
+			return;
 		} else {
 			std::cout << "\nDAQonite: Error: Don't understand the command!\n" << std::endl;
 		}
+
 		workLocalSocket();
 	}
 }
