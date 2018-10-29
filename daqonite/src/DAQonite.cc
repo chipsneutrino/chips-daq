@@ -16,27 +16,9 @@
  *
  */
 
+#include <TApplication.h>
+
 #include "DAQ_handler.h"
-
-#include <TQObject.h>
-#include <RQ_OBJECT.h>
-
-#include <TApplication.h>
-#include <TGClient.h>
-#include <TCanvas.h>
-#include <TF1.h>
-#include <TRandom.h>
-#include <TGButton.h>
-#include <TRootEmbeddedCanvas.h>
-#include <TGTextEntry.h>
-#include <TGNumberEntry.h>
-#include <TGLabel.h>
-#include <TGClient.h>
-
-#include "TFile.h"
-#include "TTree.h"
-#include <TApplication.h>
-#include <TSystem.h>
 
 int main(int argc, char* argv[]) {
 

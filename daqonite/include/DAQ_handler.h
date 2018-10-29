@@ -13,39 +13,17 @@
 #ifndef DAQ_HANDLER_H_
 #define DAQ_HANDLER_H_
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <iostream>
-#include <stdint.h>
-#include <stddef.h>
-#include <string>
-#include <stdexcept>
-#include <fstream>
-#include <vector>
-#include <ctime>
-#include <cerrno>
-#include <cstring>
-#include <cstdlib>
-#include "assert.h"
-#include <unistd.h>
-#include <thread>
 
+#include <iostream>
+#include <fstream>
 #include <boost/asio.hpp>
 #include <boost/program_options.hpp>
-#include <sys/ioctl.h>
-#include <signal.h>
-
-#include <boost/tokenizer.hpp>
-#include <boost/foreach.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string/trim.hpp>
-#include <boost/property_tree/json_parser.hpp>
 #include <boost/thread.hpp>
 
 #include "TFile.h"
 #include "TTree.h"
-#include "TH1F.h"
 #include <TApplication.h>
+#include <TSystem.h>
 
 #include "DAQ_clb_handler.h"
 #include "DAQ_bbb_handler.h"

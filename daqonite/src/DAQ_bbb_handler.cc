@@ -3,7 +3,6 @@
  */
 
 #include "DAQ_bbb_handler.h"
-#include "assert.h"
 
 DAQ_bbb_handler::DAQ_bbb_handler() {
 

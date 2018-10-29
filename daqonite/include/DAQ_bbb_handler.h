@@ -13,39 +13,8 @@
 #ifndef DAQ_BBB_HANDLER_H_
 #define DAQ_BBB_HANDLER_H_
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <iostream>
-#include <stdint.h>
-#include <stddef.h>
-#include <string>
-#include <stdexcept>
-#include <fstream>
-#include <vector>
-#include <ctime>
-#include <cerrno>
-#include <cstring>
-#include <cstdlib>
 #include "assert.h"
-
-#include <boost/asio.hpp>
-#include <boost/program_options.hpp>
-#include <sys/ioctl.h>
-#include <signal.h>
-
-#include <boost/tokenizer.hpp>
-#include <boost/foreach.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string/trim.hpp>
-#include <boost/property_tree/json_parser.hpp>
-
-#include "TFile.h"
-#include "TTree.h"
-#include "TH1F.h"
-
-#include "TFile.h"
-#include "TTree.h"
-#include "TH1F.h"
 
 #include "fh_library.h"
 #include "DAQ_bbb_api.h"

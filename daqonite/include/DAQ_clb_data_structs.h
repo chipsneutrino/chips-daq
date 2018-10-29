@@ -12,9 +12,6 @@
 #define DAQ_CLB_DATA_STRUCTS_H
 
 #include <iostream>
-#include <iomanip>
-#include <stdint.h>
-#include <arpa/inet.h>
 #include <ctime>
 
 #define MON_AHRS_VALID 0x4000 // 16384 = 2^14
