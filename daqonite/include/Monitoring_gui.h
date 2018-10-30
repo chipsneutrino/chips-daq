@@ -56,6 +56,18 @@ class Monitoring_gui {
 		virtual ~Monitoring_gui();
 
 		/** 
+		 * Adds a monitoring packet from a clb to the monitoring
+		 * 
+		 * @param pomID The POM ID of the hits
+		 * @param timeStamp_ms Timestamp in ms for the monitoring packet
+		 * @param hits Array holding the number of hits on each channel
+		 * @param temp CLB temperature in Celsius
+		 * @param humidity CLB humidity in RH
+		 */	
+		void addMonitoringPacket(unsigned int pomID, unsigned int timeStamp_ms, unsigned int hits[30],
+								 float temp, float humidity);		
+
+		/** 
 		 * Adds CLB optical hits to be included in monitoring
 		 * Adds hits for a specific POM and channel to be included in the monitoring,
 		 * if hits have not yet been received from this POM, the POM is added.
@@ -156,13 +168,17 @@ class Monitoring_gui {
 		void drawDirectionButtons();
 
 		// Draw the CHIPS logo on all canvases
-		void drawLogo();
+		void drawLogo(TCanvas* canvas);
 
 		// ROOT Hist plot makers
-		TH1F* makeTotalRatePlot(unsigned int pomID, unsigned int channel);
+		TH1F* makeTotalRatePlot(unsigned int pomIndex, unsigned int channel);
 		TH1F* makeTotalRatePlot();
 		TH1F* makePacketRatePlot();
 		TH2F* makeHeatMapPlot();
+		TH1F* makeTemperaturePlot(unsigned int pomIndex);
+		TH1F* makeTemperaturePlot();
+		TH1F* makeHumidityPlot(unsigned int pomIndex);
+		TH1F* makeHumidityPlot();
 
 		// The main frame
 		TGMainFrame*		fMainFrame;			///< The ROOT GUI main frame that holds everything
@@ -190,10 +206,17 @@ class Monitoring_gui {
 		TGLabel*			fFactLabel3;		///< Fact 3 label in the GUI
 		TGLabel*			fFactLabel4;		///< Fact 4 label in the GUI
 
+		// Combined Plots
 		TH1F*				fTotalRatePlot;		///< Total rate plot across all channels
-		std::vector<TH1F*> 	fChannelRatePlots;	///< Individual channel rate plots
 		TH1F*				fPacketRatePlot;	///< Total packet rate plot across all channels
 		TH2F*				fRateHeatMapPlot;	///< Heat map of hit rates across all channels
+		TH1F*				fAvgTempPlot;		///< Total packet rate plot across all channels
+		TH1F*				fAvgHumidityPlot;	///< Total packet rate plot across all channels
+
+		// Specific Plots
+		std::vector<TH1F*> 	fChannelRatePlots;	///< Individual channel rate plots
+		std::vector<TH1F*> 	fCLBTempPlots;		///< Individual CLB temperature plots
+		std::vector<TH1F*> 	fCLBHumidityPlots;	///< Individual CLB humidity plots
 
 		int 				fPageNum;			///< Current page being displayed in the GUI
 
@@ -227,6 +250,8 @@ class Monitoring_gui {
 		std::vector<std::bitset<32> > fActiveChannelsArr;	///< Which channels are active
 
 		std::vector<std::vector<unsigned int> > fRateArray;	///< Array holding number of hits in window
+		std::vector<float> fTempArray;						///< Array holding the most recent temperature for each CLB
+		std::vector<float> fHumidityArray;					///< Array holding the most recent humidity for each CLB
 };
 
 #endif

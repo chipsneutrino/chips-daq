@@ -145,8 +145,8 @@ class DAQ_clb_handler {
 		UInt_t 							fTimestamp_s_monitoring;			///< Monitoring Data: Header timestamp [s]
 		UInt_t 							fPad_monitoring;					///< Monitoring Data: Header Pad
 		UInt_t 							fValid_monitoring;					///< Monitoring Data: Header Valid
-		UInt_t 							fTemperate_monitoring;				///< Monitoring Data: Temperature data
-		UInt_t 							fHumidity_monitoring;				///< Monitoring Data: Humidity data
+		float 							fTemperate_monitoring;				///< Monitoring Data: Temperature data
+		float 							fHumidity_monitoring;				///< Monitoring Data: Humidity data
 
 		// Other Variables
 		int 							fCounter_optical;					///< Optical packet counter

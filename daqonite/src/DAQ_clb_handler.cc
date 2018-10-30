@@ -27,8 +27,8 @@ DAQ_clb_handler::DAQ_clb_handler(boost::asio::ip::udp::socket* socket_opt, bool 
 	fTimestamp_s_monitoring = 0;
 	fPad_monitoring 		= 0;
 	fValid_monitoring 		= 0;
-	fTemperate_monitoring 	= 0;
-	fHumidity_monitoring 	= 0;
+	fTemperate_monitoring 	= 0.0;
+	fHumidity_monitoring 	= 0.0;
 
 	// Packet Counters
 	fCounter_optical 		= 0;
@@ -81,8 +81,8 @@ void DAQ_clb_handler::addMonTreeBranches() {
 	fOutput_tree_monitoring->Branch("TimeStamp_s", &fTimestamp_s_monitoring, "fTimestamp_s_monitoring/i");
 	fOutput_tree_monitoring->Branch("Pad", &fPad_monitoring, "fPad_monitoring/i");
 	fOutput_tree_monitoring->Branch("Valid", &fValid_monitoring, "fValid_monitoring/i");
-	fOutput_tree_monitoring->Branch("Temperate", &fTemperate_monitoring, "fTemperate_monitoring/i");
-	fOutput_tree_monitoring->Branch("Humidity", &fHumidity_monitoring, "fHumidity_monitoring/i");
+	fOutput_tree_monitoring->Branch("Temperate", &fTemperate_monitoring, "fTemperate_monitoring/F");
+	fOutput_tree_monitoring->Branch("Humidity", &fHumidity_monitoring, "fHumidity_monitoring/F");
 }
 
 void DAQ_clb_handler::handleOpticalData(boost::system::error_code const& error, std::size_t size) {
@@ -181,37 +181,43 @@ void DAQ_clb_handler::handleMonitoringData(boost::system::error_code const& erro
 			std::cout << "Received: " << fCounter_monitoring << " monitoring packets" << std::endl;
 		}
 
+		// Get what we need from the header
 		fPomId_monitoring = (UInt_t) header_monitoring.pomIdentifier();
 		fTimestamp_s_monitoring = (UInt_t) header_monitoring.timeStamp().sec();
 
-		// Monitoring Plots
-		if (fDaq_gui != NULL) {
-			for (int i = 0; i < 30; ++i) { // NOT 31 HERE!!!
-				const uint32_t
-						* const field =
-								static_cast<const uint32_t* const >
-										(static_cast<const void* const >(&fBuffer_monitoring[0] + sizeof(CLBCommonHeader) + i * 4));
-
-				unsigned int hits =	(unsigned int)htonl(*field);
-				fDaq_gui->addHits((unsigned int)fPomId_monitoring, (unsigned int)i, hits);
-			}
-			fDaq_gui->addHeader(fPomId_monitoring, (UInt_t)header_monitoring.timeStamp().inMilliSeconds());
+		// Get the monitoring hits data
+		unsigned int hits[30];
+		for (int i = 0; i < 30; ++i) {
+			const uint32_t
+					* const field =
+							static_cast<const uint32_t* const >
+									(static_cast<const void* const >(&fBuffer_monitoring[0] + sizeof(CLBCommonHeader) + i * 4));
+			hits[i] = (unsigned int)htonl(*field);
 		}
 
+		// Get the other monitoring info
 		const ssize_t minimum_size = sizeof(CLBCommonHeader) + sizeof(int) * 31;
-
-		if (fSave_data && ((ssize_t)size > minimum_size)) {
+		if (((ssize_t)size > minimum_size)) {
 			const SCData
 					* const scData =
 							static_cast<const SCData* const > (static_cast<const void* const > (&fBuffer_monitoring[0]
 									+ minimum_size));
 
 			fPad_monitoring = (UInt_t)scData->pad;
-			fValid_monitoring = (UInt_t)scData->valid;
-			fTemperate_monitoring = (UInt_t)scData->temp;
-			fHumidity_monitoring = (UInt_t)scData->humidity;
+			fValid_monitoring = ntohl(scData->valid);
+			fTemperate_monitoring = (float)ntohs(scData->temp) / (float)100;
+			fHumidity_monitoring = (float)ntohs(scData->humidity) / (float)100;
 
-			if(*fRunning == true) { fOutput_tree_monitoring->Fill(); }
+			if (fDaq_gui != NULL) {
+				fDaq_gui->addMonitoringPacket((unsigned int)fPomId_monitoring,
+				 							  (unsigned int)header_monitoring.timeStamp().inMilliSeconds(),
+											  hits, fTemperate_monitoring, fHumidity_monitoring);
+			}
+
+			if(*fRunning == true && fSave_data == true) { fOutput_tree_monitoring->Fill(); }
+		} else {
+			// Do not fill anything is we get here!
+			std::cout << "DAQonite: Error: Incomplete monitoring packet!" << std::endl;
 		}
 
 		workMonitoringData();

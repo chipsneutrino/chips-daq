@@ -214,7 +214,9 @@ Monitoring_gui::Monitoring_gui() {
 	fCanvas3 = fECanvas3->GetCanvas();
 
 	// Show the CHIPS logo on all the canvases to starts
-	drawLogo();
+	drawLogo(fCanvas1);
+	drawLogo(fCanvas2);
+	drawLogo(fCanvas3);
 
 	//////////////////////////////////////
 	//			GUI SETUP END			//
@@ -225,17 +227,12 @@ Monitoring_gui::Monitoring_gui() {
 
 	// Set the configuration variables using the Monitoring_config class
 	Monitoring_config* fConfig = new Monitoring_config("../data/config.opt");
-
 	fNumCLBs = fConfig->getNumCLBs();
 	fCLBeIDs = fConfig->getCLBeIDs();
 	fCLBTypes = fConfig->getCLBTypes();
-
 	fTotalNumChannels = fConfig->getTotalNumChannels();
 	fActiveChannelsArr = fConfig->getActiveChannels();
-
 	delete fConfig;
-
-	std::cout << fNumCLBs << "," << fTotalNumChannels << std::endl;
 
 	setupArrays();
 	setupPlots();
@@ -276,6 +273,9 @@ void Monitoring_gui::setupArrays() {
 		std::vector<unsigned int> channelVec(PMTSPERPOM);
 		fRateArray.push_back(channelVec);
 		clearPomRates(clbNum);
+
+		fTempArray.push_back(0.0);
+		fHumidityArray.push_back(0.0);
 	}
 }
 
@@ -284,11 +284,58 @@ void Monitoring_gui::setupPlots() {
 	fTotalRatePlot = makeTotalRatePlot();
 	fPacketRatePlot = makePacketRatePlot();
 	fRateHeatMapPlot = makeHeatMapPlot();
+	fAvgTempPlot = makeTemperaturePlot();
+	fAvgHumidityPlot = makeHumidityPlot();
 
 	for (int clbNum = 0; clbNum<fNumCLBs; clbNum++) {
+		fCLBTempPlots.push_back(makeTemperaturePlot(fCLBeIDs[clbNum]));
+		fCLBHumidityPlots.push_back(makeHumidityPlot(fCLBeIDs[clbNum]));
 		for (int channel=0; channel<PMTSPERPOM; channel++) {
 			fChannelRatePlots.push_back(makeTotalRatePlot(fCLBeIDs[clbNum], channel));
 		}
+	}
+}
+
+void Monitoring_gui::addMonitoringPacket(unsigned int pomID, unsigned int timeStamp_ms, 
+										 unsigned int hits[30], float temp, float humidity) {
+	std::vector<unsigned int>::iterator it = std::find(fCLBeIDs.begin(), fCLBeIDs.end(), pomID);
+	if (it != fCLBeIDs.end()) {
+		int clbIndex = std::distance(fCLBeIDs.begin(), it);
+		// This is a valid CLB. Therefore, add the hits...
+		for (int channel = 0; channel < 30; channel ++) {
+			fRateArray[clbIndex][channel] += hits[channel];
+		}
+
+		// Update the temperature and humidity for this CLB
+		fTempArray[clbIndex] = temp;
+		fHumidityArray[clbIndex] = humidity;
+
+		// Now we need to decide if we want to update the plots etc...
+		if (fPacketsReceived == 0) { // If first header set as timer POM and set start time
+			fPacketsReceived++;
+			fStartPomID = pomID;
+			fStartTime_ms = timeStamp_ms;
+			fStartTime = timeStamp_ms;
+		} else if (pomID != fStartPomID) { // If not timer POM skip
+			fPacketsReceived++;
+			fWindowPackets++;
+			return;
+		} else if ((timeStamp_ms - fStartTime_ms) < UPDATERATE) { // If not greater than UPDATERATE skip
+			fPacketsReceived++;
+			fWindowPackets++;
+			return;
+		} else { // Else it's time to update the plots
+			fStartTime_ms = timeStamp_ms;
+			updatePlots();
+			drawPlots();
+			drawLabels();
+			fPacketsReceived++;
+			fWindowPackets = 0;
+		}	
+
+	} else {
+		fNonConfigData = true;
+		//std::cout << "DAQonite: Error: Receiving hit data from unknown CLB -> " << pomID << std::endl;
 	}
 }
 
@@ -304,27 +351,27 @@ void Monitoring_gui::addHits(unsigned int pomID, unsigned int channel, unsigned 
 void Monitoring_gui::addHeader(unsigned int pomID, unsigned int time_ms) {
 	std::vector<unsigned int>::iterator it = std::find(fCLBeIDs.begin(), fCLBeIDs.end(), pomID);
 	if (it != fCLBeIDs.end()) {
-	if (fPacketsReceived == 0) { // If first header set as timer POM and set start time
-		fPacketsReceived++;
-		fStartPomID = pomID;
-		fStartTime_ms = time_ms;
-		fStartTime = time_ms;
-	} else if (pomID != fStartPomID) { // If not timer POM skip
-		fPacketsReceived++;
-		fWindowPackets++;
-		return;
-	} else if ((time_ms - fStartTime_ms) < UPDATERATE) { // If not greater than UPDATERATE skip
-		fPacketsReceived++;
-		fWindowPackets++;
-		return;
-	} else { // Else it's time to update the plots
-		fStartTime_ms = time_ms;
-		updatePlots();
-		drawPlots();
-		drawLabels();
-		fPacketsReceived++;
-		fWindowPackets = 0;
-	}		
+		if (fPacketsReceived == 0) { // If first header set as timer POM and set start time
+			fPacketsReceived++;
+			fStartPomID = pomID;
+			fStartTime_ms = time_ms;
+			fStartTime = time_ms;
+		} else if (pomID != fStartPomID) { // If not timer POM skip
+			fPacketsReceived++;
+			fWindowPackets++;
+			return;
+		} else if ((time_ms - fStartTime_ms) < UPDATERATE) { // If not greater than UPDATERATE skip
+			fPacketsReceived++;
+			fWindowPackets++;
+			return;
+		} else { // Else it's time to update the plots
+			fStartTime_ms = time_ms;
+			updatePlots();
+			drawPlots();
+			drawLabels();
+			fPacketsReceived++;
+			fWindowPackets = 0;
+		}		
 	} else {
 		fNonConfigData = true;
 		//std::cout << "DAQonite: Error: Receiving hit data from unknown CLB -> " << pomID << std::endl;
@@ -348,8 +395,22 @@ void Monitoring_gui::updatePlots() {
 	int totalHits = 0;
 	int activeChannels = 0;
 	int oddChannels = 0;
+
+	float averageTemp = 0.0;
+	float averageHumidity = 0.0;
+
 	for (int pomIndex = 0; pomIndex < fNumCLBs; pomIndex++) {
 		clbHits[pomIndex] = false;
+
+		// Update the CLB specific temp/humidity plots
+		float clbTemp = fTempArray[pomIndex];
+		averageTemp += clbTemp;
+		fCLBTempPlots[pomIndex]->SetBinContent(fNumUpdates-(fNumRefresh*PLOTLENGTH), clbTemp);
+
+		float clbHumidity = fHumidityArray[pomIndex];
+		averageHumidity += clbHumidity;
+		fCLBHumidityPlots[pomIndex]->SetBinContent(fNumUpdates-(fNumRefresh*PLOTLENGTH), clbHumidity);
+
 		for (int channelIndex = 0; channelIndex < PMTSPERPOM; channelIndex++) {
 			int hits = (int)fRateArray[pomIndex][channelIndex];
 
@@ -390,6 +451,12 @@ void Monitoring_gui::updatePlots() {
 	// Set the total packet rate plot
 	float packetRate = fWindowPackets / ((float)UPDATERATE/1000);
 	fPacketRatePlot->SetBinContent(fNumUpdates-(fNumRefresh*PLOTLENGTH), packetRate);
+
+	// Set the temperature and humidity average plots
+	averageTemp = averageTemp / (float)fActiveCLBs;
+	fAvgTempPlot->SetBinContent(fNumUpdates-(fNumRefresh*PLOTLENGTH), averageTemp);
+	averageHumidity = averageHumidity / (float)fActiveCLBs;
+	fAvgHumidityPlot->SetBinContent(fNumUpdates-(fNumRefresh*PLOTLENGTH), averageHumidity);
 }
 
 void Monitoring_gui::refreshPlots() {
@@ -420,7 +487,9 @@ void Monitoring_gui::refreshPlots() {
 void Monitoring_gui::drawPlots() {
 
 	if (fPacketsReceived == 0) {
-		drawLogo();
+		drawLogo(fCanvas1);
+		drawLogo(fCanvas2);
+		drawLogo(fCanvas3);
 	} else if (fPageNum == 0) {
 		// Canvas 1
 		fCanvas1->cd();
@@ -442,9 +511,30 @@ void Monitoring_gui::drawPlots() {
 		fRateHeatMapPlot->Draw("COLZ");
 		fCanvas3->Update();
 	} else if (fPageNum == 1) {
-		drawLogo();
+		// Canvas 1
+		fCanvas1->cd();
+		if (fSpecifyButton->IsDown()) {
+			fCLBTempPlots[(int)fPomIDEntry->GetNumber()]->Draw();
+		} else {
+			fAvgTempPlot->Draw();
+		}
+		fCanvas1->Update();
+
+		// Canvas 2
+		fCanvas2->cd();
+		if (fSpecifyButton->IsDown()) {
+			fCLBHumidityPlots[(int)fPomIDEntry->GetNumber()]->Draw();
+		} else {
+			fAvgHumidityPlot->Draw();
+		}
+		fCanvas2->Update();
+
+		// Canvas 3
+		drawLogo(fCanvas3);
 	} else if (fPageNum == 2) {
-		drawLogo();
+		drawLogo(fCanvas1);
+		drawLogo(fCanvas2);
+		drawLogo(fCanvas3);
 	} else { std::cout << "DAQonite: Error: Wrong GUI page number!" << std::endl; }
 
 }
@@ -500,6 +590,9 @@ void Monitoring_gui::drawLabels() {
 	}
 	fRunFileLabel->SetText(fileLabelText);
 
+	// Draw the correct direction button
+	drawDirectionButtons();
+
 	// Fact Label 1
 	TString fact1Labeltext;
 	if (fPageNum == 0) {
@@ -515,6 +608,7 @@ void Monitoring_gui::drawLabels() {
 
 	} else {
 		fact1Labeltext = "Not yet implemented";
+		fFactLabel1->SetBackgroundColor(TColor::Number2Pixel(38)); 
 	}
 	fFactLabel1->SetText(fact1Labeltext);
 
@@ -533,6 +627,7 @@ void Monitoring_gui::drawLabels() {
 
 	} else {
 		fact2Labeltext = "Not yet implemented";
+		fFactLabel2->SetBackgroundColor(TColor::Number2Pixel(38)); 
 	}
 	fFactLabel2->SetText(fact2Labeltext);
 
@@ -551,6 +646,7 @@ void Monitoring_gui::drawLabels() {
 
 	} else {
 		fact3Labeltext = "Not yet implemented";
+		fFactLabel3->SetBackgroundColor(TColor::Number2Pixel(38)); 
 	}
 	fFactLabel3->SetText(fact3Labeltext);
 
@@ -571,6 +667,7 @@ void Monitoring_gui::drawLabels() {
 
 	} else {
 		fact4Labeltext = "Not yet implemented";
+		fFactLabel4->SetBackgroundColor(TColor::Number2Pixel(38)); 
 	}
 	fFactLabel4->SetText(fact4Labeltext);
 }
@@ -589,20 +686,19 @@ void Monitoring_gui::drawDirectionButtons() {
 
 }
 
-void Monitoring_gui::drawLogo() {
+void Monitoring_gui::drawLogo(TCanvas* canvas) {
 	TImage *logo = TImage::Open("../data/logo.png");
 	logo->SetConstRatio(kFALSE);
 
-	fCanvas1->cd(); logo->Draw(); fCanvas1->Update();
-	fCanvas2->cd(); logo->Draw(); fCanvas2->Update();
-	fCanvas3->cd(); logo->Draw(); fCanvas3->Update();
+	canvas->cd(); logo->Draw(); canvas->Update();
 }
 
-TH1F* Monitoring_gui::makeTotalRatePlot(unsigned int pomID, unsigned int channel) {
+TH1F* Monitoring_gui::makeTotalRatePlot(unsigned int pomIndex, unsigned int channel) {
 	TString plotName = "TotalRatePlot_";
-	plotName += pomID;
+	plotName += pomIndex;
 	plotName += "_";
 	plotName += channel;
+
 	TH1F* totalRatePlot = new TH1F(plotName, plotName, PLOTLENGTH, 0, PLOTLENGTH);
 	totalRatePlot->GetXaxis()->SetTitle("cycleCounter");
 	totalRatePlot->GetYaxis()->SetTitle("Total Hit Rate");
@@ -610,7 +706,7 @@ TH1F* Monitoring_gui::makeTotalRatePlot(unsigned int pomID, unsigned int channel
 	totalRatePlot->GetYaxis()->SetTitleSize(0.14);
 	totalRatePlot->GetYaxis()->SetTitleOffset(0.3);
 	totalRatePlot->GetYaxis()->SetLabelSize(0.08);
-	totalRatePlot->SetFillColor(49);
+	totalRatePlot->SetFillColor(9);
 	totalRatePlot->SetLineColor(kBlack);
 	totalRatePlot->SetLineWidth(2);
 	totalRatePlot->SetStats(0);
@@ -661,9 +757,74 @@ TH2F* Monitoring_gui::makeHeatMapPlot() {
 	return rateHeatMapPlot;
 }
 
+TH1F* Monitoring_gui::makeTemperaturePlot(unsigned int pomIndex) {
+	TString plotName = "temperaturePlot_";
+	plotName += pomIndex;
+
+	TH1F* temperaturePlot = new TH1F(plotName, plotName, PLOTLENGTH, 0, PLOTLENGTH);
+	temperaturePlot->GetXaxis()->SetTitle("cycleCounter");
+	temperaturePlot->GetYaxis()->SetTitle("Temperature [deg Celsius]");
+	temperaturePlot->GetYaxis()->CenterTitle();
+	temperaturePlot->GetYaxis()->SetTitleSize(0.14);
+	temperaturePlot->GetYaxis()->SetTitleOffset(0.3);
+	temperaturePlot->GetYaxis()->SetLabelSize(0.08);
+	temperaturePlot->SetFillColor(9);
+	temperaturePlot->SetLineColor(kBlack);
+	temperaturePlot->SetLineWidth(2);
+	temperaturePlot->SetStats(0);
+	return temperaturePlot;
+}
+
+TH1F* Monitoring_gui::makeTemperaturePlot() {
+	TH1F* temperaturePlot = new TH1F("temperaturePlot", "temperaturePlot", PLOTLENGTH, 0, PLOTLENGTH);
+	temperaturePlot->GetXaxis()->SetTitle("cycleCounter");
+	temperaturePlot->GetYaxis()->SetTitle("Temperature [deg Celsius]");
+	temperaturePlot->GetYaxis()->CenterTitle();
+	temperaturePlot->GetYaxis()->SetTitleSize(0.14);
+	temperaturePlot->GetYaxis()->SetTitleOffset(0.3);
+	temperaturePlot->GetYaxis()->SetLabelSize(0.08);
+	temperaturePlot->SetFillColor(9);
+	temperaturePlot->SetLineColor(kBlack);
+	temperaturePlot->SetLineWidth(2);
+	temperaturePlot->SetStats(0);
+	return temperaturePlot;
+}
+
+TH1F* Monitoring_gui::makeHumidityPlot(unsigned int pomIndex) {
+	TString plotName = "humidityPlot_";
+	plotName += pomIndex;
+
+	TH1F* humidityPlot = new TH1F(plotName, plotName, PLOTLENGTH, 0, PLOTLENGTH);
+	humidityPlot->GetXaxis()->SetTitle("cycleCounter");
+	humidityPlot->GetYaxis()->SetTitle("Humidity [RH]");
+	humidityPlot->GetYaxis()->CenterTitle();
+	humidityPlot->GetYaxis()->SetTitleSize(0.14);
+	humidityPlot->GetYaxis()->SetTitleOffset(0.3);
+	humidityPlot->GetYaxis()->SetLabelSize(0.08);
+	humidityPlot->SetFillColor(9);
+	humidityPlot->SetLineColor(kBlack);
+	humidityPlot->SetLineWidth(2);
+	humidityPlot->SetStats(0);
+	return humidityPlot;
+}
+
+TH1F* Monitoring_gui::makeHumidityPlot() {
+	TH1F* humidityPlot = new TH1F("humidityPlot", "humidityPlot", PLOTLENGTH, 0, PLOTLENGTH);
+	humidityPlot->GetXaxis()->SetTitle("cycleCounter");
+	humidityPlot->GetYaxis()->SetTitle("Humidity [RH]");
+	humidityPlot->GetYaxis()->CenterTitle();
+	humidityPlot->GetYaxis()->SetTitleSize(0.14);
+	humidityPlot->GetYaxis()->SetTitleOffset(0.3);
+	humidityPlot->GetYaxis()->SetLabelSize(0.08);
+	humidityPlot->SetFillColor(9);
+	humidityPlot->SetLineColor(kBlack);
+	humidityPlot->SetLineWidth(2);
+	humidityPlot->SetStats(0);
+	return humidityPlot;
+}
+
 void Monitoring_gui::toggleSpecific() {
 	std::cout << "Toggle Specific..." << std::endl;
-	if (fNumUpdates >= 1) { drawPlots(); }
 }
 
 void Monitoring_gui::pageBackward() {
@@ -671,11 +832,6 @@ void Monitoring_gui::pageBackward() {
 	else if (fPageNum == 1) { fPageNum = 0; }
 	else if (fPageNum == 2) { fPageNum = 1; }
 	else { std::cout << "DAQonite: Error: Wrong GUI page number!" << std::endl; }
-
-	drawPlots();
-	drawLabels();
-	drawDirectionButtons();
-
 }
 
 void Monitoring_gui::pageForward() {
@@ -683,10 +839,6 @@ void Monitoring_gui::pageForward() {
 	else if (fPageNum == 1) { fPageNum = 2; }
 	else if (fPageNum == 2) { fPageNum = 0; }
 	else { std::cout << "DAQonite: Error: Wrong GUI page number!" << std::endl; }
-
-	drawPlots();
-	drawLabels();
-	drawDirectionButtons();
 }
 
 void Monitoring_gui::startRun(unsigned int type, unsigned int run, TString fileName) {
