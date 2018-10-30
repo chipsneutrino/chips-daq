@@ -13,6 +13,9 @@
 
 #include <iostream>
 #include <ctime>
+#include <string>
+#include <sstream>
+#include <iomanip>
 
 #define MON_AHRS_VALID 0x4000 // 16384 = 2^14
 

@@ -13,27 +13,26 @@
 
 #include <TQObject.h>
 #include <RQ_OBJECT.h>
-
 #include <TApplication.h>
 #include <TGClient.h>
-#include <TCanvas.h>
-#include <TF1.h>
-#include <TRandom.h>
+#include <TROOT.h>
+
 #include <TGButton.h>
 #include <TRootEmbeddedCanvas.h>
-#include <TGTextEntry.h>
 #include <TGNumberEntry.h>
 #include <TGLabel.h>
 #include <TG3DLine.h>
 
+#include "TF1.h"
 #include "TH2F.h"
 #include "TCanvas.h"
-#include "TF1.h"
-#include <TRandom.h>
-#include <TROOT.h>
 #include <TStyle.h>
 #include "TColor.h"
 #include "TImage.h"
+
+#include <bitset>
+
+#include "Monitoring_config.h"
 
 class TGWindow;
 class TGMainFrame;
@@ -75,7 +74,7 @@ class Monitoring_gui {
 		 * @param pomID The POM ID
 		 * @param time_ms The timestamp in ms for the monitoring packet header
 		 */	
-		void addHeader(UInt_t pomID, UInt_t time_ms);
+		void addHeader(unsigned int pomID, unsigned int time_ms);
 
 		/** 
 		 * Toggles the drawing of POM/Channel specific plots
@@ -115,14 +114,14 @@ class Monitoring_gui {
 	private:
 
 		/** 
-		 * Adds a POM to the monitoring
-		 * When hits from a new POM are found this is called to add it to fActivePOMs and 
-		 * fRateArray for future usage. 
-		 * 
-		 * @param pomID The new POM ID
-		 * @param pomIndex The POM index in the monitoring arrays
-		 */			
-		void addPom(unsigned int pomID, unsigned int pomIndex);
+		 * Setup the monitoring arrays from the configuration variables
+		 */		
+		void setupArrays();
+
+		/** 
+		 * Setup the plots from the configuration variables
+		 */		
+		void setupPlots();
 
 		/** 
 		 * Clears the hit array for a specific POM
@@ -141,13 +140,6 @@ class Monitoring_gui {
 		void updatePlots();
 
 		/** 
-		 * Modifies any plots that need changes to axis etc...
-		 * If a new POM has been added between one window and the next, this will update the
-		 * plots to have the correct axis, for displaying everything correctly.
-		 */	
-		void modifyPlots();
-
-		/** 
 		 * When plots are full empty them
 		 * Deletes and created new plots that have reached PLOTLENGTH in order to keep 
 		 * showing new monitoring data
@@ -159,6 +151,12 @@ class Monitoring_gui {
 
 		/// Updates the labels with new values
 		void drawLabels();	// Update the labels and change their colour status
+
+		/// Update buttons when clicked
+		void drawDirectionButtons();
+
+		// Draw the CHIPS logo on all canvases
+		void drawLogo();
 
 		// ROOT Hist plot makers
 		TH1F* makeTotalRatePlot(unsigned int pomID, unsigned int channel);
@@ -200,27 +198,35 @@ class Monitoring_gui {
 		int 				fPageNum;			///< Current page being displayed in the GUI
 
 		// Total monitoring values
-		UInt_t 				fPacketsReceived;	///< Number of monitoring packets received
-		UInt_t 				fNumUpdates;		///< Number of GUI updates
-		UInt_t				fNumRefresh;		///< Number of times plots have been refreshed
+		int 				fPacketsReceived;	///< Number of monitoring packets received
+		int 				fNumUpdates;		///< Number of GUI updates
+		int					fNumRefresh;		///< Number of times plots have been refreshed
 		bool 				fRunning;			///< Is data collection happening?
 
-		UInt_t				fRunNumber;			///< The current run number
-		UInt_t				fStartTime;			///< The current run start time
-		UInt_t				fRunType;			///< The current run type
-		UInt_t				fActiveChannels;	///< The number of channels we have received hits from
-		UInt_t				fOddChannels;		///< The number of channels that are behaving oddly
+		int					fRunNumber;			///< The current run number
+		int					fStartTime;			///< The current run start time
+		int					fRunType;			///< The current run type
+		int					fActiveCLBs;		///< The number of CLBs we have received hits from
+		int					fActiveChannels;	///< The number of channels we have received hits from
+		int					fOddChannels;		///< The number of channels that are behaving oddly
 		TString				fRunFile;			///< The output .root file for this run
 
 		// Window monitoring values
 		bool 				fModifyPlots;		///< Do we need to modify the plots?
-		UInt_t 				fWindowPackets;		///< The number of monitoring packets in this window
-		UInt_t 				fStartPomID;		///< The first POM ID
-		UInt_t 				fStartTime_ms;		///< The first start time in ms
+		int 				fWindowPackets;		///< The number of monitoring packets in this window
+		unsigned int 		fStartPomID;		///< The first POM ID
+		unsigned int 		fStartTime_ms;		///< The first start time in ms
+		bool 				fNonConfigData;		///< Are we receiving data from non-config CLBs?
 
-		// Storage Vectors
-		std::vector<unsigned int> fActivePOMs;	///< Array holding active POM IDs
-		std::vector< std::vector<unsigned int> > fRateArray;	///< Array holding number of hits in window
+		// Configuration variables
+		int fNumCLBs;										///< Number of CLBs from "clb_number"
+		std::vector<unsigned int> fCLBeIDs; 				///< eIDs of the CLBs
+		std::vector<unsigned int> fCLBTypes;				///< Plane types for the CLBs
+
+		int fTotalNumChannels;								///< Total number of active channels
+		std::vector<std::bitset<32> > fActiveChannelsArr;	///< Which channels are active
+
+		std::vector<std::vector<unsigned int> > fRateArray;	///< Array holding number of hits in window
 };
 
 #endif

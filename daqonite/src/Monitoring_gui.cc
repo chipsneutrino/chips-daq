@@ -11,6 +11,10 @@
 
 Monitoring_gui::Monitoring_gui() {
 
+	//////////////////////////////////////
+	//			GUI SETUP START			//
+	//////////////////////////////////////
+
 	// main frame
 	fMainFrame = new TGMainFrame(gClient->GetRoot(),10,10,kMainFrame | kVerticalFrame);
 	fMainFrame->SetName("fMainFrame");
@@ -209,41 +213,51 @@ Monitoring_gui::Monitoring_gui() {
 	fCanvas2 = fECanvas2->GetCanvas();
 	fCanvas3 = fECanvas3->GetCanvas();
 
-	TImage *logo = TImage::Open("../data/logo.png");
-	logo->SetConstRatio(kFALSE);
+	// Show the CHIPS logo on all the canvases to starts
+	drawLogo();
 
-	fCanvas1->cd();
-	fTotalRatePlot = makeTotalRatePlot();
-	logo->Draw();
-	fCanvas1->Update();
+	//////////////////////////////////////
+	//			GUI SETUP END			//
+	//////////////////////////////////////
 
-	fCanvas2->cd();
-	fPacketRatePlot = makePacketRatePlot();
-	logo->Draw();
-	fCanvas2->Update();
+	// Now we need to get the clb/channel configuration from the config file
+	// and setup all the variables needed to do the monitoring
 
-	fCanvas3->cd();
-	fRateHeatMapPlot = makeHeatMapPlot();
-	logo->Draw();
-	fCanvas3->Update();
+	// Set the configuration variables using the Monitoring_config class
+	Monitoring_config* fConfig = new Monitoring_config("../data/config.opt");
 
+	fNumCLBs = fConfig->getNumCLBs();
+	fCLBeIDs = fConfig->getCLBeIDs();
+	fCLBTypes = fConfig->getCLBTypes();
+
+	fTotalNumChannels = fConfig->getTotalNumChannels();
+	fActiveChannelsArr = fConfig->getActiveChannels();
+
+	delete fConfig;
+
+	std::cout << fNumCLBs << "," << fTotalNumChannels << std::endl;
+
+	setupArrays();
+	setupPlots();
+
+	// What page are we displaying?
 	fPageNum = 0;
 
+	// Monitoring tracking variables
 	fPacketsReceived = 0;
 	fNumUpdates = 0;
 	fNumRefresh = 0;
-	fRunning = false;
-	fModifyPlots = false;
 	fWindowPackets = 0;
 	fStartPomID = 0;
 	fStartTime_ms = 0;
+	fNonConfigData = false;
 
-	fActivePOMs.clear();
-	fRateArray.clear();
-
+	// Run variables
+	fRunning = false;
 	fRunNumber = 0;
 	fStartTime = 0;
 	fRunType = 0;
+	fActiveCLBs = 0;
 	fActiveChannels = 0;
 	fOddChannels = 0;
 
@@ -254,20 +268,42 @@ Monitoring_gui::~Monitoring_gui() {
 	fMainFrame->Cleanup();
 }
 
-void Monitoring_gui::addHits(unsigned int pomID, unsigned int channel, unsigned int hits) {
-	int pomIndex = 0;
-	for(pomIndex = 0; pomIndex < (int)fActivePOMs.size(); pomIndex++) {
-	    if (fActivePOMs[pomIndex] == pomID) {
-	    	fRateArray[pomIndex][channel] += hits;
-	    	return;
-	    }
+void Monitoring_gui::setupArrays() {
+	fRateArray.clear();
+
+	// Add a clean channel vector into the rate array for each CLB
+	for (int clbNum = 0; clbNum<fNumCLBs; clbNum++) {
+		std::vector<unsigned int> channelVec(PMTSPERPOM);
+		fRateArray.push_back(channelVec);
+		clearPomRates(clbNum);
 	}
-	// If we get here we have not yet recorded hits for this POM
-	// Therefore, add the POM to the monitoring
-	addPom(pomID, pomIndex);
 }
 
-void Monitoring_gui::addHeader(UInt_t pomID, UInt_t time_ms) {
+void Monitoring_gui::setupPlots() {
+
+	fTotalRatePlot = makeTotalRatePlot();
+	fPacketRatePlot = makePacketRatePlot();
+	fRateHeatMapPlot = makeHeatMapPlot();
+
+	for (int clbNum = 0; clbNum<fNumCLBs; clbNum++) {
+		for (int channel=0; channel<PMTSPERPOM; channel++) {
+			fChannelRatePlots.push_back(makeTotalRatePlot(fCLBeIDs[clbNum], channel));
+		}
+	}
+}
+
+void Monitoring_gui::addHits(unsigned int pomID, unsigned int channel, unsigned int hits) {
+	std::vector<unsigned int>::iterator it = std::find(fCLBeIDs.begin(), fCLBeIDs.end(), pomID);
+	if (it != fCLBeIDs.end()) {
+		fRateArray[std::distance(fCLBeIDs.begin(), it)][channel] += hits;
+	} else {
+		fNonConfigData = true;
+	}
+}
+
+void Monitoring_gui::addHeader(unsigned int pomID, unsigned int time_ms) {
+	std::vector<unsigned int>::iterator it = std::find(fCLBeIDs.begin(), fCLBeIDs.end(), pomID);
+	if (it != fCLBeIDs.end()) {
 	if (fPacketsReceived == 0) { // If first header set as timer POM and set start time
 		fPacketsReceived++;
 		fStartPomID = pomID;
@@ -288,23 +324,11 @@ void Monitoring_gui::addHeader(UInt_t pomID, UInt_t time_ms) {
 		drawLabels();
 		fPacketsReceived++;
 		fWindowPackets = 0;
-	}
-}
-
-void Monitoring_gui::addPom(unsigned int pomID, unsigned int pomIndex) {
-	std::cout << "DAQonite - Adding new POM to monitoring, with ID -> " << pomID << std::endl;
-	fModifyPlots = true;
-	fActivePOMs.push_back(pomID);
-
-	// Add a clean channel vector into the rate array
-	std::vector<unsigned int> channelVec(PMTSPERPOM);
-	fRateArray.push_back(channelVec);
-	clearPomRates(pomIndex);
-
-	// Add the individual channel plots
-	for (int i=0; i<PMTSPERPOM; i++) {
-		fChannelRatePlots.push_back(makeTotalRatePlot(pomID, i));
-	}
+	}		
+	} else {
+		fNonConfigData = true;
+		//std::cout << "DAQonite: Error: Receiving hit data from unknown CLB -> " << pomID << std::endl;
+	}	
 }
 
 void Monitoring_gui::clearPomRates(unsigned int pomIndex) {
@@ -315,14 +339,17 @@ void Monitoring_gui::clearPomRates(unsigned int pomIndex) {
 
 void Monitoring_gui::updatePlots() {
 	fNumUpdates++;
-	if (fModifyPlots) { modifyPlots(); }
 	if ((fNumUpdates % PLOTLENGTH) == 0) { refreshPlots(); }
 
 	// We need to loop through the fRateArray and update the plots and then clear it...
+	fActiveCLBs = 0;
+	bool clbHits[fNumCLBs];
+
 	int totalHits = 0;
 	int activeChannels = 0;
 	int oddChannels = 0;
-	for (int pomIndex = 0; pomIndex < (int)fActivePOMs.size(); pomIndex++) {
+	for (int pomIndex = 0; pomIndex < fNumCLBs; pomIndex++) {
+		clbHits[pomIndex] = false;
 		for (int channelIndex = 0; channelIndex < PMTSPERPOM; channelIndex++) {
 			int hits = (int)fRateArray[pomIndex][channelIndex];
 
@@ -330,7 +357,10 @@ void Monitoring_gui::updatePlots() {
 			totalHits += hits;
 
 			// if there are hits the channel is active
-			if ( hits > 0 ) { activeChannels++; }
+			if ( hits > 0 ) { 
+				clbHits[pomIndex] = true;
+				activeChannels++; 
+			}
 
 			// If more than HIGHRATE hits its odd
 			if ( hits > HIGHRATE) { oddChannels++; }
@@ -343,6 +373,10 @@ void Monitoring_gui::updatePlots() {
 			fRateHeatMapPlot->SetBinContent(channelIndex+1, pomIndex+1, hits/((float)UPDATERATE/1000));
 		}
 		clearPomRates(pomIndex);
+	}
+
+	for (int clb = 0; clb<fNumCLBs; clb++) {
+		if (clbHits[clb] == true) { fActiveCLBs++; }
 	}
 
 	// Set the channel monitoring variables from our scan
@@ -358,27 +392,10 @@ void Monitoring_gui::updatePlots() {
 	fPacketRatePlot->SetBinContent(fNumUpdates-(fNumRefresh*PLOTLENGTH), packetRate);
 }
 
-void Monitoring_gui::modifyPlots() {
-	std::cout << "DAQonite - Modifying Plots" << std::endl;
-	delete fRateHeatMapPlot;
-	fRateHeatMapPlot = NULL;
-	fRateHeatMapPlot = new TH2F("RateHeatMapPlot", "RateHeatMapPlot", PMTSPERPOM, -0.5, PMTSPERPOM - 0.5, (int)fActivePOMs.size(),
-								 -0.5, (int)fActivePOMs.size() - 0.5);
-	fRateHeatMapPlot->GetZaxis()->SetRangeUser(0, 12000);
-	fRateHeatMapPlot->GetXaxis()->SetTitle("Channel");
-	fRateHeatMapPlot->GetYaxis()->SetTitle("POM");
-	fRateHeatMapPlot->GetYaxis()->CenterTitle();
-	fRateHeatMapPlot->GetYaxis()->SetTitleSize(0.14);
-	fRateHeatMapPlot->GetYaxis()->SetTitleOffset(0.3);
-	fRateHeatMapPlot->GetYaxis()->SetLabelSize(0.08);
-	fRateHeatMapPlot->SetStats(0);
-	fModifyPlots = false;
-}
-
 void Monitoring_gui::refreshPlots() {
 	std::cout << "DAQonite - Refresh Plots" << std::endl;
 	// Clear the individual channel plots and make new clean ones
-	for(int pom = 0; pom < (int)fActivePOMs.size(); pom++) {
+	for(int pom = 0; pom < fNumCLBs; pom++) {
 		for (int channel=0; channel<PMTSPERPOM; channel++) {
 			// Set the individual channel rate plot
 			int plotVectorIndex = (pom*PMTSPERPOM) + (channel);
@@ -401,25 +418,35 @@ void Monitoring_gui::refreshPlots() {
 }
 
 void Monitoring_gui::drawPlots() {
-	// Canvas 1
-	fCanvas1->cd();
-	if (fSpecifyButton->IsDown()) {
-		int plotVectorIndex = ((int)fPomIDEntry->GetNumber()*PMTSPERPOM) + ((int)fChannelEntry->GetNumber());
-		fChannelRatePlots[plotVectorIndex]->Draw();
-	} else {
-		fTotalRatePlot->Draw();
-	}
-	fCanvas1->Update();
 
-	// Canvas 2
-	fCanvas2->cd();
-	fPacketRatePlot->Draw();
-	fCanvas2->Update();
+	if (fPacketsReceived == 0) {
+		drawLogo();
+	} else if (fPageNum == 0) {
+		// Canvas 1
+		fCanvas1->cd();
+		if (fSpecifyButton->IsDown()) {
+			int plotVectorIndex = ((int)fPomIDEntry->GetNumber()*PMTSPERPOM) + ((int)fChannelEntry->GetNumber());
+			fChannelRatePlots[plotVectorIndex]->Draw();
+		} else {
+			fTotalRatePlot->Draw();
+		}
+		fCanvas1->Update();
 
-	// Canvas 3
-	fCanvas3->cd();
-	fRateHeatMapPlot->Draw("COLZ");
-	fCanvas3->Update();
+		// Canvas 2
+		fCanvas2->cd();
+		fPacketRatePlot->Draw();
+		fCanvas2->Update();
+
+		// Canvas 3
+		fCanvas3->cd();
+		fRateHeatMapPlot->Draw("COLZ");
+		fCanvas3->Update();
+	} else if (fPageNum == 1) {
+		drawLogo();
+	} else if (fPageNum == 2) {
+		drawLogo();
+	} else { std::cout << "DAQonite: Error: Wrong GUI page number!" << std::endl; }
+
 }
 
 void Monitoring_gui::drawLabels() {
@@ -476,8 +503,16 @@ void Monitoring_gui::drawLabels() {
 	// Fact Label 1
 	TString fact1Labeltext;
 	if (fPageNum == 0) {
-		fact1Labeltext = "Active Channels: ";
-		fact1Labeltext += fActiveChannels;
+		fact1Labeltext = "Active CLBs: ";
+		fact1Labeltext += fActiveCLBs;
+		fact1Labeltext += "/";
+		fact1Labeltext += fNumCLBs;
+
+		if (fRunning) {
+			if (fActiveCLBs == fNumCLBs) { fFactLabel1->SetBackgroundColor(TColor::Number2Pixel(8)); }
+			else { fFactLabel1->SetBackgroundColor(TColor::Number2Pixel(46)); }
+		} else { fFactLabel1->SetBackgroundColor(TColor::Number2Pixel(38)); }
+
 	} else {
 		fact1Labeltext = "Not yet implemented";
 	}
@@ -486,8 +521,16 @@ void Monitoring_gui::drawLabels() {
 	// Fact Label 2
 	TString fact2Labeltext;
 	if (fPageNum == 0) {
-		fact2Labeltext = "Odd Channels: ";
-		fact2Labeltext += fOddChannels;
+		fact2Labeltext = "Active Channels: ";
+		fact2Labeltext += fActiveChannels;
+		fact2Labeltext += "/";
+		fact2Labeltext += fTotalNumChannels;
+
+		if (fRunning) {
+			if (fActiveChannels == fTotalNumChannels) { fFactLabel2->SetBackgroundColor(TColor::Number2Pixel(8)); }
+			else { fFactLabel2->SetBackgroundColor(TColor::Number2Pixel(46)); }
+		} else { fFactLabel2->SetBackgroundColor(TColor::Number2Pixel(38)); }
+
 	} else {
 		fact2Labeltext = "Not yet implemented";
 	}
@@ -495,13 +538,64 @@ void Monitoring_gui::drawLabels() {
 
 	// Fact Label 3
 	TString fact3Labeltext;
-	fact3Labeltext = "Not yet implemented";
+	if (fPageNum == 0) {
+		fact3Labeltext = "Odd Channels: ";
+		fact3Labeltext += fOddChannels;
+		fact3Labeltext += "/";
+		fact3Labeltext += fTotalNumChannels;
+
+		if (fRunning) {
+			if (fOddChannels == 0) { fFactLabel3->SetBackgroundColor(TColor::Number2Pixel(8)); }
+			else { fFactLabel3->SetBackgroundColor(TColor::Number2Pixel(46)); }		
+		} else { fFactLabel3->SetBackgroundColor(TColor::Number2Pixel(38)); }
+
+	} else {
+		fact3Labeltext = "Not yet implemented";
+	}
 	fFactLabel3->SetText(fact3Labeltext);
 
 	// Fact Label 4
 	TString fact4Labeltext;
-	fact4Labeltext = "Not yet implemented";
+	if (fPageNum == 0) {
+
+		if (!fRunning) {
+			fact4Labeltext = "No Non Config Data";
+			fFactLabel4->SetBackgroundColor(TColor::Number2Pixel(38)); 			
+		} else if (!fNonConfigData) {
+			fact4Labeltext = "No Non Config Data";
+			fFactLabel4->SetBackgroundColor(TColor::Number2Pixel(8)); 			
+		} else {
+			fact4Labeltext = "Non config data present";
+			fFactLabel4->SetBackgroundColor(TColor::Number2Pixel(46)); 			
+		}
+
+	} else {
+		fact4Labeltext = "Not yet implemented";
+	}
 	fFactLabel4->SetText(fact4Labeltext);
+}
+
+void Monitoring_gui::drawDirectionButtons() {
+	if (fPageNum == 0) { 
+		fBackButton->SetText("<--- Advanced Plots");
+		fForwardButton->SetText("Temp/Humidity --->");
+	} else if (fPageNum == 1) {
+		fBackButton->SetText("<--- Main Plots");
+		fForwardButton->SetText("Advanced Plots --->");		
+	} else if (fPageNum == 2) {
+		fBackButton->SetText("<--- Temp/Humidity");
+		fForwardButton->SetText("Main Plots --->");		
+	} else { std::cout << "DAQonite: Error: Wrong GUI page number!" << std::endl; }
+
+}
+
+void Monitoring_gui::drawLogo() {
+	TImage *logo = TImage::Open("../data/logo.png");
+	logo->SetConstRatio(kFALSE);
+
+	fCanvas1->cd(); logo->Draw(); fCanvas1->Update();
+	fCanvas2->cd(); logo->Draw(); fCanvas2->Update();
+	fCanvas3->cd(); logo->Draw(); fCanvas3->Update();
 }
 
 TH1F* Monitoring_gui::makeTotalRatePlot(unsigned int pomID, unsigned int channel) {
@@ -554,7 +648,8 @@ TH1F* Monitoring_gui::makePacketRatePlot() {
 }
 
 TH2F* Monitoring_gui::makeHeatMapPlot() {
-	TH2F* rateHeatMapPlot = new TH2F("RateHeatMapPlot", "RateHeatMapPlot", PMTSPERPOM, -0.5, PMTSPERPOM - 0.5, 2, -0.5, 1.5);
+	TH2F* rateHeatMapPlot = new TH2F("RateHeatMapPlot", "RateHeatMapPlot", PMTSPERPOM, -0.5, PMTSPERPOM - 0.5, 
+									 fNumCLBs, -0.5, fNumCLBs - 0.5);
 	rateHeatMapPlot->GetZaxis()->SetRangeUser(0, 12000);
 	rateHeatMapPlot->GetXaxis()->SetTitle("Channel");
 	rateHeatMapPlot->GetYaxis()->SetTitle("POM");
@@ -572,11 +667,26 @@ void Monitoring_gui::toggleSpecific() {
 }
 
 void Monitoring_gui::pageBackward() {
-	std::cout << "Page Backward..." << std::endl;
+	if (fPageNum == 0) { fPageNum = 2; }
+	else if (fPageNum == 1) { fPageNum = 0; }
+	else if (fPageNum == 2) { fPageNum = 1; }
+	else { std::cout << "DAQonite: Error: Wrong GUI page number!" << std::endl; }
+
+	drawPlots();
+	drawLabels();
+	drawDirectionButtons();
+
 }
 
 void Monitoring_gui::pageForward() {
-	std::cout << "Page Forward..." << std::endl;
+	if (fPageNum == 0) { fPageNum = 1; }
+	else if (fPageNum == 1) { fPageNum = 2; }
+	else if (fPageNum == 2) { fPageNum = 0; }
+	else { std::cout << "DAQonite: Error: Wrong GUI page number!" << std::endl; }
+
+	drawPlots();
+	drawLabels();
+	drawDirectionButtons();
 }
 
 void Monitoring_gui::startRun(unsigned int type, unsigned int run, TString fileName) {
