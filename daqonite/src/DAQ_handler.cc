@@ -11,80 +11,73 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 						 fCollect_CLB_monitoring_data(collect_clb_monitoring),
 						 fCollect_BBB_optical_data(collect_bbb_optical),
 						 fCollect_BBB_monitoring_data(collect_bbb_monitoring),
-						 fShow_gui(gui), fSave_data(save),
-						 fNum_threads(numThreads), fBuffer_size(buffer_size) {
+						 fShow_gui(gui), fSave_data(save), fNum_threads(numThreads) {
 
-	// Start not running
-	fRunning = false;
+	// How we want this to run...
+	// 1) Set to monitoring mode and initialise run variables
+	// 2) Setup the io_service
+	// 3) Setup the signal listener
+	// 4) Setup the local socket (DAQommand) listener
+	// 5) Setup the monitoring GUI (if required)
+	// 6) Setup the CLB handler (if required)
+	// 7) Setup the BBB handler (if required)
+	// 8) Setup the thread group and call io_service.run() in each
+	// 9) Wait for all the threads to finish
+	// 10) Terminate the ROOT gApplication (if required)
+
+	// 1) Set to monitoring mode and initialise run variables
+	fMode = false;
+
 	fRun_type = -1;
-
-	// NULL all the ROOT output variables, can then check this later
 	fOutput_file = NULL;
 	fCLB_optical_tree = NULL;
 	fCLB_monitoring_tree = NULL;
 	fBBB_optical_tree = NULL;
 	fBBB_monitoring_tree = NULL;
 
-	// Set up the IO service
+	// 2) Setup the io_service
 	fIO_service = new boost::asio::io_service();
 
-	// Add a signal listener to the IO service. Just listens for SIGINT (ctrl-c)
+	// 3) Setup the signal listener
 	fSignal_set = new boost::asio::signal_set(*fIO_service, SIGINT);
 	workSignals();
 
-	// Add the local control socket to the IO service
+	// 4) Setup the local socket (DAQommand) listener
 	fLocal_socket = new udp::socket(*fIO_service, udp::endpoint(udp::v4(), 1096));
 	udp::socket::receive_buffer_size option_local(33554432);
 	fLocal_socket->set_option(option_local);
 	workLocalSocket();
 
-	// Set up the monitoring ROOT based GUI
+	// 5) Setup the monitoring GUI (if required)
 	if (fShow_gui) {
 		fDaq_gui = new Monitoring_gui();
 		workGui();
 	} else { fDaq_gui = NULL; }
 
-	// TODO: Move this to the CLB Handler if possible
-	// Add the CLB Optical socket to the IO service
-	fSocket_clb_opt = new udp::socket(*fIO_service, udp::endpoint(udp::v4(), default_opto_port));
-	udp::socket::receive_buffer_size option_clb_opt(33554432);
-	fSocket_clb_opt->set_option(option_clb_opt);
-
-	// Add the CLB monitoring port to the IO service
-	fSocket_clb_mon = new udp::socket(*fIO_service, udp::endpoint(udp::v4(), default_moni_port));
-	udp::socket::receive_buffer_size option_clb_mon(33554432);
-	fSocket_clb_mon->set_option(option_clb_mon);
-
-	// Create the CLB handler, deals with all CLB data collection
+	// 6) Setup the CLB handler (if required)
 	if (fCollect_CLB_optical_data || fCollect_CLB_monitoring_data) {
-		fCLB_handler = new DAQ_clb_handler(fSocket_clb_opt, fCollect_CLB_optical_data,
-									   	   fSocket_clb_mon, fCollect_CLB_monitoring_data,
-									   	   fBuffer_size, fDaq_gui, &fRunning);
+		fCLB_handler = new DAQ_clb_handler(fIO_service, 
+										   fCollect_CLB_optical_data, fCollect_CLB_monitoring_data,
+									   	   fDaq_gui, &fMode);
 	}
 
-	// Create the BBB handler, deals with all BBB data collection
+	// 7) Setup the BBB handler (if required)
 	if (fCollect_BBB_optical_data || fCollect_BBB_monitoring_data) {
 		fBBB_handler = new DAQ_bbb_handler();
-		fBBB_handler->bbb_connect();
-		fBBB_handler->get_bbb_status();
-		fBBB_handler->bbb_disconnect();
 	}
 
-	// Start the IO service 
+	// 8) Setup the thread group and call io_service.run() in each
 	std::cout << "DAQonite - Starting IO service With " << fNum_threads << " threads" << std::endl;
 	std::cout << "DAQonite - Waiting for DAQommand command..." << std::endl;
-
-	// Create a new thread group and call the io_service run() method in each
-	// They can then all handle work to be done by the io_service.
 	fThread_group = new boost::thread_group();
 	for (int threadCount = 0; threadCount < fNum_threads; threadCount ++) {
 		fThread_group->create_thread( boost::bind(&DAQ_handler::ioServiceThread, this) );
 	}
 
-	// This application will then wait here until all the threads have run out of work to do
+	// 9) Wait for all the threads to finish
 	fThread_group->join_all();
 
-	// The threads run out of work when exit() is called, we then need to terminate the GUI
+	// 10) Terminate the ROOT gApplication (if required)
 	if (fDaq_gui != NULL) {	gApplication->Terminate(0);	}
 }
 
@@ -95,15 +88,13 @@ DAQ_handler::~DAQ_handler() {
 	}
 	delete fIO_service;
 	delete fSignal_set;
-	delete fSocket_clb_opt;
-	delete fSocket_clb_mon;
 	delete fCLB_handler;
 	delete fBBB_handler;
 }
 
 void DAQ_handler::startRun() {
 	// If we are currently running, stop the current run before starting a new one
-	if (fRunning == true) { stopRun(); }
+	if (fMode == true) { stopRun(); }
 
 	// Setup the output file
 	if (fSave_data) {
@@ -144,16 +135,16 @@ void DAQ_handler::startRun() {
 		std::cout << "DAQonite - Filling container: " << fFilename << std::endl;
 	}
 
-	fRunning = true;
+	fMode = true;
 	fCLB_handler->workOpticalData();
 	fCLB_handler->workMonitoringData();
 }
 
 void DAQ_handler::stopRun() {
-	if (fRunning == true) {
+	if (fMode == true) {
 		std::cout << "\nDAQonite - Stop mining" << std::endl;
 		if (fDaq_gui != NULL) { fDaq_gui->stopRun(); }
-		fRunning = false;
+		fMode = false;
 		if (fOutput_file != NULL) {
 			std::cout << "DAQonite - Closing the container: " << fFilename << std::endl;
 			if (fCLB_optical_tree != NULL) { fCLB_optical_tree->Write(); }
@@ -164,7 +155,7 @@ void DAQ_handler::stopRun() {
 }
 
 void DAQ_handler::exit() {
-	if (fRunning == true) { stopRun(); }
+	if (fMode == true) { stopRun(); }
 	std::cout << "\nDAQonite - Done for the day" << std::endl;
 	fIO_service->stop();
 }
@@ -251,15 +242,15 @@ void DAQ_handler::handleLocalSocket(boost::system::error_code const& error, std:
 
 void DAQ_handler::workSignals() {
 	fSignal_set->async_wait(boost::bind(&DAQ_handler::handleSignals, this,
-					   	   boost::asio::placeholders::error,
-					   	   boost::asio::placeholders::signal_number));
+					   	    boost::asio::placeholders::error,
+					   	    boost::asio::placeholders::signal_number));
 }
 
 void DAQ_handler::workLocalSocket() {
 	fLocal_socket->async_receive(boost::asio::buffer(&fBuffer_local[0], buffer_size),
-								boost::bind(&DAQ_handler::handleLocalSocket, this,
-								boost::asio::placeholders::error,
-								boost::asio::placeholders::bytes_transferred));
+								 boost::bind(&DAQ_handler::handleLocalSocket, this,
+								 boost::asio::placeholders::error,
+								 boost::asio::placeholders::bytes_transferred));
 }
 
 void DAQ_handler::workGui() {

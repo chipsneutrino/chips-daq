@@ -4,17 +4,20 @@
 
 #include "DAQ_clb_handler.h"
 
-DAQ_clb_handler::DAQ_clb_handler(boost::asio::ip::udp::socket* socket_opt, bool collect_opt,
-						 		 boost::asio::ip::udp::socket* socket_mon, bool collect_mon,
-						 		 std::size_t buffer_size, Monitoring_gui *daqGui, bool* running) :
-						 		 fSocket_optical(socket_opt), fCollect_optical(collect_opt),
-						 		 fSocket_monitoring(socket_mon), fCollect_monitoring(collect_mon),
-						 		 fBuffer_size(buffer_size), fDaq_gui(daqGui) {
+DAQ_clb_handler::DAQ_clb_handler(boost::asio::io_service* io_service, bool mine_opt, bool mine_mon,
+								 Monitoring_gui *daqGui, bool* mode) :
+						 		 fCollect_optical(mine_opt), fCollect_monitoring(mine_mon),
+						 		 fDaq_gui(daqGui), fMode(mode), fSave_data(false), fBuffer_size(buffer_size) {
 
-	// Add the running bool pointer...
-	fRunning = running;
-	
-	fSave_data = false;
+	// Add the CLB Optical socket to the IO service
+	fSocket_optical = new udp::socket(*io_service, udp::endpoint(udp::v4(), default_opto_port));
+	udp::socket::receive_buffer_size option_clb_opt(33554432);
+	fSocket_optical->set_option(option_clb_opt);
+
+	// Add the CLB monitoring port to the IO service
+	fSocket_monitoring = new udp::socket(*io_service, udp::endpoint(udp::v4(), default_moni_port));
+	udp::socket::receive_buffer_size option_clb_mon(33554432);
+	fSocket_monitoring->set_option(option_clb_mon);
 
 	// Output Variables Optical
 	fPomId_optical 			= 0;
@@ -51,7 +54,7 @@ void DAQ_clb_handler::setSaveTrees(bool saveData, TTree * output_tree_opt, TTree
 }
 
 void DAQ_clb_handler::workOpticalData() {
-	if (fCollect_optical && *fRunning == true) {
+	if (fCollect_optical && *fMode == true && fSave_data) {
 		fSocket_optical->async_receive(boost::asio::buffer(&fBuffer_optical[0], fBuffer_size),
 								   boost::bind(&DAQ_clb_handler::handleOpticalData, this,
 								   boost::asio::placeholders::error,
@@ -60,7 +63,7 @@ void DAQ_clb_handler::workOpticalData() {
 }
 
 void DAQ_clb_handler::workMonitoringData() {
-	if (fCollect_monitoring && *fRunning == true) {
+	if (fCollect_monitoring) {
 		fSocket_monitoring->async_receive(boost::asio::buffer(&fBuffer_monitoring[0], fBuffer_size),
 								   boost::bind(&DAQ_clb_handler::handleMonitoringData, this,
 								   boost::asio::placeholders::error,
@@ -113,40 +116,34 @@ void DAQ_clb_handler::handleOpticalData(boost::system::error_code const& error, 
 			std::cout << "DAQonite - Received: " << fCounter_optical << " optical packets" << std::endl;
 		}
 
-		if (fSave_data) {
-			fPomId_optical = (UInt_t) header_optical.pomIdentifier();
-			fTimestamp_s_optical = (UInt_t) header_optical.timeStamp().sec();
+		fPomId_optical = (UInt_t) header_optical.pomIdentifier();
+		fTimestamp_s_optical = (UInt_t) header_optical.timeStamp().sec();
 
-			UInt_t TimeStampNSTicks = (UInt_t)header_optical.timeStamp().tics();
-			fTimestamp_w_optical = TimeStampNSTicks*16;
+		UInt_t TimeStampNSTicks = (UInt_t)header_optical.timeStamp().tics();
+		fTimestamp_w_optical = TimeStampNSTicks*16;
 
-		    if (((size - sizeof(CLBCommonHeader)) % sizeof(hit_t))!=0) {throw std::runtime_error("DAQonite - Error: Bad packet OPTO!");}
-			const unsigned int nhits = (size - sizeof(CLBCommonHeader)) / sizeof(hit_t);
+		if (((size - sizeof(CLBCommonHeader)) % sizeof(hit_t))!=0) {throw std::runtime_error("DAQonite - Error: Bad packet OPTO!");}
+		const unsigned int nhits = (size - sizeof(CLBCommonHeader)) / sizeof(hit_t);
 
-			if (nhits) {
-				for (int i = 0; i < (int)nhits; ++i) {
-					const hit_t
-							* const hit =
-									static_cast<const hit_t* const > (static_cast<const void* const > (&fBuffer_optical[0]
-											+ sizeof(CLBCommonHeader) + i
-											* sizeof(hit_t)));
+		if (nhits) {
+			for (int i = 0; i < (int)nhits; ++i) {
+				const hit_t
+						* const hit =
+								static_cast<const hit_t* const > (static_cast<const void* const > (&fBuffer_optical[0]
+										+ sizeof(CLBCommonHeader) + i * sizeof(hit_t)));
 
-					fChannel_optical = (UChar_t)hit->channel;
+				fChannel_optical = (UChar_t)hit->channel;
 
-					uint8_t time1 = hit->timestamp1;
-					uint8_t time2 = hit->timestamp2;
-					uint8_t time3 = hit->timestamp3;
-					uint8_t time4 = hit->timestamp4;
+				uint8_t time1 = hit->timestamp1; uint8_t time2 = hit->timestamp2; 
+				uint8_t time3 = hit->timestamp3; uint8_t time4 = hit->timestamp4;
 
-					// Need to change the ordering of the bytes to get the correct hit time
-					uint32_t orderedTime = (((uint32_t)time1) << 24) + (((uint32_t)time2) << 16) + (((uint32_t)time3) << 8) + ((uint32_t)time4);
-					fTimestamp_ns_optical = (TimeStampNSTicks * 16) + (UInt_t)orderedTime;
+				// Need to change the ordering of the bytes to get the correct hit time
+				uint32_t orderedTime = (((uint32_t)time1) << 24) + (((uint32_t)time2) << 16) + (((uint32_t)time3) << 8) + ((uint32_t)time4);
+				fTimestamp_ns_optical = (TimeStampNSTicks * 16) + (UInt_t)orderedTime;
 
-					fTot_optical = (UChar_t)hit->ToT;
+				fTot_optical = (UChar_t)hit->ToT;
 
-					if(*fRunning == true) { fOutput_tree_optical->Fill(); }
-					
-				}
+				fOutput_tree_optical->Fill();
 			}
 		}
 		workOpticalData();
@@ -214,7 +211,7 @@ void DAQ_clb_handler::handleMonitoringData(boost::system::error_code const& erro
 											  hits, fTemperate_monitoring, fHumidity_monitoring);
 			}
 
-			if(*fRunning == true && fSave_data == true) { fOutput_tree_monitoring->Fill(); }
+			if(*fMode == true && fSave_data == true) { fOutput_tree_monitoring->Fill(); }
 		} else {
 			// Do not fill anything is we get here!
 			std::cout << "DAQonite - Error: Incomplete monitoring packet!" << std::endl;

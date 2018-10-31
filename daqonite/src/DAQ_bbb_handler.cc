@@ -11,6 +11,10 @@ DAQ_bbb_handler::DAQ_bbb_handler() {
 
 	// initialse messaging stack
 	msg = fh_message_new();
+
+	this->bbb_connect();
+	this->get_bbb_status();
+	this->bbb_disconnect();
 }
 
 DAQ_bbb_handler::~DAQ_bbb_handler() {

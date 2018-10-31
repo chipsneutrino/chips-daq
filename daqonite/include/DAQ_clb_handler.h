@@ -25,6 +25,12 @@
 /// Buffer size in bytes for optical and monitoring data
 const static size_t buffer_size = 10000;
 
+/// The default port for CLB UDP optical data
+const static unsigned int default_opto_port = 56015;
+
+/// The default port for CLB UDP monitoring data
+const static unsigned int default_moni_port = 56017;
+
 /// Rate at which number of packets received is printed to stdout
 #define TERMINALPRINTRATE 50000
 
@@ -37,13 +43,14 @@ const static unsigned int ttdc = 1414808643;
 const static unsigned int taes = 1413563731;
 const static unsigned int tmch = 1414349640;
 
+using boost::asio::ip::udp;
+
 class DAQ_clb_handler {
 	public:
 
 		/// Create a DAQ_clb_handler
-		DAQ_clb_handler(boost::asio::ip::udp::socket* socket_opt, bool mine_opt,
-						boost::asio::ip::udp::socket* socket_mon, bool mine_mon,
-						std::size_t buffer_size, Monitoring_gui *daqGui, bool* running);
+		DAQ_clb_handler(boost::asio::io_service* io_service, bool mine_opt, bool mine_mon,
+						Monitoring_gui *daqGui, bool* mode);
 					
 		/// Destroy a DAQ_clb_handler
 		virtual ~DAQ_clb_handler();
@@ -116,21 +123,23 @@ class DAQ_clb_handler {
 		/// Print monitoring data to stdout
 		void printMonitoringData(const char* const buffer, ssize_t buffer_size, int max_col);
 
-		// Data Collection Variables
+		// DAQ_clb_handler settings/input
+		bool 							fCollect_optical;					///< Should we collect optical data?
+		bool 							fCollect_monitoring;				///< Should we collect monitoring data?
+		Monitoring_gui*					fDaq_gui;							///< Pointer to the monitoring GUI
+		bool* 							fMode;								///< false = Monitoring, True = Running
+		bool 							fSave_data;							///< Should we fill the TTree's?
+		std::size_t const 				fBuffer_size;						///< Size of the buffers
+
+		// BOOST data collection
 		boost::asio::ip::udp::socket* 	fSocket_optical;					///< Optical data UDP socket
 		char fBuffer_optical[buffer_size] __attribute__((aligned(8)));		///< Optical data buffer
-		bool 							fCollect_optical;					///< Should we collect optical data?
+		
 
 		boost::asio::ip::udp::socket*	fSocket_monitoring;					///< Monitoring data UDP socket
 		char fBuffer_monitoring[buffer_size] __attribute__((aligned(8)));	///< Monitoring data buffer
-		bool 							fCollect_monitoring;				///< Should we collect monitoring data?
-
-		std::size_t const 				fBuffer_size;						///< Size of the buffers
-		bool* 							fRunning;							///< Is data collection running?
-
-		// Output Variables
-		bool 							fSave_data;							///< Should we fill the TTree's?
-		Monitoring_gui*					fDaq_gui;							///< Pointer to the monitoring GUI
+	
+		// Output
 		TTree* 							fOutput_tree_optical;				///< Pointer to the optical TTree
 		TTree* 							fOutput_tree_monitoring;			///< Pointer to the monitoring TTree
 
@@ -148,7 +157,7 @@ class DAQ_clb_handler {
 		float 							fTemperate_monitoring;				///< Monitoring Data: Temperature data
 		float 							fHumidity_monitoring;				///< Monitoring Data: Humidity data
 
-		// Other Variables
+		// Packet counters
 		int 							fCounter_optical;					///< Optical packet counter
 		int 							fCounter_monitoring;				///< Monitoring packet counter
 };

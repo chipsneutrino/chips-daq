@@ -546,7 +546,7 @@ void Monitoring_gui::drawLabels() {
 		statusLabelText += "Mining";
 		fRunStatusLabel->SetBackgroundColor(TColor::Number2Pixel(8));
 	} else { 
-		statusLabelText += "In The Lunch Room";
+		statusLabelText += "Monitoring From The Lunch Room";
 		fRunStatusLabel->SetBackgroundColor(TColor::Number2Pixel(46));
 	}
 	fRunStatusLabel->SetText(statusLabelText);

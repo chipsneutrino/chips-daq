@@ -36,19 +36,19 @@ int main(int argc, char* argv[]) {
 	unsigned int numThreads			= 3;
 
 	// Argument handling
-	po::options_description desc("Options");
+	boost::program_options::options_description desc("Options");
 	desc.add_options()
 		("help,h", "DAQonite - Default shows GUI but does not save files")
 		("save,s", "Save run data to file")
 		("noGui",  "Don't show the monitoring GUI")
 		("noOpt",  "Don't mine the optical data")
 		("noMon",  "Don't mine the monitoring data")
-		("threads,t", po::value<unsigned int>(&numThreads),
+		("threads,t", boost::program_options::value<unsigned int>(&numThreads),
           		   "Number of threads to use, default = 3");
 
 	try {
-		po::variables_map vm;
-		po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
+		boost::program_options::variables_map vm;
+		boost::program_options::store(boost::program_options::command_line_parser(argc, argv).options(desc).run(), vm);
 
 		if (vm.count("help")) {
 			std::cout << desc << std::endl;
@@ -68,9 +68,9 @@ int main(int argc, char* argv[]) {
 			collect_clb_monitoring = false;
 			collect_bbb_monitoring = false;
 		}
-		po::notify(vm);
+		boost::program_options::notify(vm);
 
-	} catch (const po::error& e) {
+	} catch (const boost::program_options::error& e) {
 		std::cerr << "DAQonite - Error: " << e.what() << '\n' << desc << std::endl;
 		return EXIT_FAILURE;
 	} catch (const std::runtime_error& e) {

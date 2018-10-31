@@ -29,17 +29,8 @@
 #include "DAQ_bbb_handler.h"
 #include "Monitoring_gui.h"
 
-namespace po = boost::program_options;
-using boost::asio::ip::udp;
-
 /// The number of different types of run possible
 #define NUMRUNTYPES 4
-
-/// The default port for CLB UDP optical data
-const static unsigned int default_opto_port = 56015;
-
-/// The default port for CLB UDP monitoring data
-const static unsigned int default_moni_port = 56017;
 
 class DAQ_handler {
 	public:
@@ -127,15 +118,18 @@ class DAQ_handler {
 		void workGui();
 
 	private:
-		// Settings
+		// DAQ_handler settings
 		bool 						fCollect_CLB_optical_data;		///< Should we collect CLB optical data?
 		bool 						fCollect_CLB_monitoring_data;	///< Should we collect CLB monitoring data?
 		bool 						fCollect_BBB_optical_data;		///< Should we collect BBB optical data?
 		bool 						fCollect_BBB_monitoring_data;	///< Should we collect BBB monitoring data?
 		bool 						fShow_gui;						///< Should we run the monitoring GUI?
 		bool 						fSave_data;						///< Should we save data to .root file?
+		int 						fNum_threads;					///< The number of threads to use
 
-		// Output variables
+		// Mode and running stuff
+		bool						fMode;							///< false = Monitoring, True = Running
+		unsigned int 				fRun_type;						///< Type of run (data, test, etc...)
 		TString 					fFilename;						///< Output file name
 		TFile* 						fOutput_file;					///< ROOT output file
 		TTree* 						fCLB_optical_tree;				///< ROOT CLB optical output TTree
@@ -143,23 +137,17 @@ class DAQ_handler {
 		TTree* 						fBBB_optical_tree;				///< ROOT BBB optical output TTree
 		TTree* 						fBBB_monitoring_tree;			///< ROOT BBB monitoring output TTree
 
-		// IO
+		// IO_service stuff
 		boost::asio::io_service* 	fIO_service;					///< BOOST io_service. The heart of everything
-		int 						fNum_threads;					///< The number of threads to use
 		boost::thread_group* 		fThread_group;					///< Group of threads to do the work
 		boost::asio::signal_set*	fSignal_set;					///< BOOST signal_set
 		udp::socket*				fLocal_socket;					///< Local UDP control socket
 		char fBuffer_local[buffer_size] __attribute__((aligned(8)));///< Local socket buffer
-		udp::socket*				fSocket_clb_opt;				///< CLB optical data UDP socket
-		udp::socket*				fSocket_clb_mon;				///< CLB monitoring data UDP socket
 		DAQ_clb_handler* 			fCLB_handler;					///< Pointer to CLB_handler
 		DAQ_bbb_handler* 			fBBB_handler;					///< Pointer to BBB_handler
 
-		// Combined things
+		// Monitoring GUI
 		Monitoring_gui* 			fDaq_gui;						///< Pointer to the monitoring GUI
-		unsigned int 				fRun_type;						///< Type of run (data, test, etc...)
-		std::size_t const 			fBuffer_size;					///< Size of the local socket buffer
-		bool						fRunning;						///< Is data collection running?
 };
 
 #endif
