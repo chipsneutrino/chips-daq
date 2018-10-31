@@ -68,27 +68,6 @@ class Monitoring_gui {
 								 float temp, float humidity);		
 
 		/** 
-		 * Adds CLB optical hits to be included in monitoring
-		 * Adds hits for a specific POM and channel to be included in the monitoring,
-		 * if hits have not yet been received from this POM, the POM is added.
-		 * 
-		 * @param pomID The POM ID of the hits
-		 * @param channel The channel ID of the hits
-		 * @param hits The number of hits
-		 */	
-		void addHits(unsigned int pomID, unsigned int channel, unsigned int hits);
-
-		/** 
-		 * Adds a CLB header
-		 * Adds a header showing a montitoring packet has been received. This includes the
-		 * time information that is used in the monitoring GUI.
-		 * 
-		 * @param pomID The POM ID
-		 * @param time_ms The timestamp in ms for the monitoring packet header
-		 */	
-		void addHeader(unsigned int pomID, unsigned int time_ms);
-
-		/** 
 		 * Toggles the drawing of POM/Channel specific plots
 		 * This is called when the fSpecifyButton is Clicked() in the GUI
 		 */	
@@ -145,11 +124,11 @@ class Monitoring_gui {
 		void clearPomRates(unsigned int pomIndex);
 
 		/** 
-		 * Update the plots
+		 * Update all the monitoring variables ready for them to be drawn to the GUI display
 		 * This fills the plots with the contents of fRateArray, calculating all the bits
 		 * we need
 		 */		
-		void updatePlots();
+		void update();
 
 		/** 
 		 * When plots are full empty them
@@ -158,11 +137,14 @@ class Monitoring_gui {
 		 */			
 		void refreshPlots();
 
+		/// Draws the most recent version of everything, includes a lock on this process
+		void draw();
+
 		/// Draws the appropriate plots to the canvases	
-		void drawPlots(); 		// Draws the appropriate plots to the canvases
+		void drawPlots();
 
 		/// Updates the labels with new values
-		void drawLabels();	// Update the labels and change their colour status
+		void drawLabels();
 
 		/// Update buttons when clicked
 		void drawDirectionButtons();
@@ -218,27 +200,29 @@ class Monitoring_gui {
 		std::vector<TH1F*> 	fCLBTempPlots;		///< Individual CLB temperature plots
 		std::vector<TH1F*> 	fCLBHumidityPlots;	///< Individual CLB humidity plots
 
+		// Important variables
 		int 				fPageNum;			///< Current page being displayed in the GUI
+		bool 				fMode;				///< false = Monitoring, True = Running
 
-		// Total monitoring values
+		// Current run variables
+		int					fRunNumber;			///< The current run number
+		int					fRunType;			///< The current run type
+		unsigned int		fRunStartTime;		///< The current run start time
+		int 				fRunPackets;		///< The number of monitoring packets received in the current run
+		TString				fRunFile;			///< The output .root file for this run
+
+		// Window variables
+		int 				fWindowPackets;		///< The number of monitoring packets in this window
+		unsigned int 		fWindowCLBID;		///< The CLB ID used for the windows
+		unsigned int 		fWindowStartTime;	///< The start time of the current window in ms
+
+		// Monitoring variables
 		int 				fPacketsReceived;	///< Number of monitoring packets received
 		int 				fNumUpdates;		///< Number of GUI updates
 		int					fNumRefresh;		///< Number of times plots have been refreshed
-		bool 				fRunning;			///< Is data collection happening?
-
-		int					fRunNumber;			///< The current run number
-		int					fStartTime;			///< The current run start time
-		int					fRunType;			///< The current run type
 		int					fActiveCLBs;		///< The number of CLBs we have received hits from
 		int					fActiveChannels;	///< The number of channels we have received hits from
 		int					fOddChannels;		///< The number of channels that are behaving oddly
-		TString				fRunFile;			///< The output .root file for this run
-
-		// Window monitoring values
-		bool 				fModifyPlots;		///< Do we need to modify the plots?
-		int 				fWindowPackets;		///< The number of monitoring packets in this window
-		unsigned int 		fStartPomID;		///< The first POM ID
-		unsigned int 		fStartTime_ms;		///< The first start time in ms
 		bool 				fNonConfigData;		///< Are we receiving data from non-config CLBs?
 
 		// Configuration variables

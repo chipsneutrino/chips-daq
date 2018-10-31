@@ -6,12 +6,12 @@
 
 DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 			 			 bool collect_bbb_optical, bool collect_bbb_monitoring,
-						 bool gui, bool save, int numThreads) :
+						 bool gui, int numThreads) :
 						 fCollect_CLB_optical_data(collect_clb_optical),
 						 fCollect_CLB_monitoring_data(collect_clb_monitoring),
 						 fCollect_BBB_optical_data(collect_bbb_optical),
 						 fCollect_BBB_monitoring_data(collect_bbb_monitoring),
-						 fShow_gui(gui), fSave_data(save), fNum_threads(numThreads) {
+						 fShow_gui(gui), fNum_threads(numThreads) {
 
 	// How we want this to run...
 	// 1) Set to monitoring mode and initialise run variables
@@ -59,6 +59,7 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 		fCLB_handler = new DAQ_clb_handler(fIO_service, 
 										   fCollect_CLB_optical_data, fCollect_CLB_monitoring_data,
 									   	   fDaq_gui, &fMode);
+		fCLB_handler->workMonitoringData();
 	}
 
 	// 7) Setup the BBB handler (if required)
@@ -97,61 +98,72 @@ void DAQ_handler::startRun() {
 	if (fMode == true) { stopRun(); }
 
 	// Setup the output file
-	if (fSave_data) {
-		int runNum = getRunAndUpdate();
-		fFilename = "../data/";
-		fFilename += "type";
-		fFilename += fRun_type;
-		fFilename += "_run";
-		fFilename += runNum;
-		fFilename += ".root";
-
-		fOutput_file = new TFile(fFilename, "RECREATE");
-		if (!fOutput_file) { throw std::runtime_error("DAQonite - Error: Opening output file!"); }
-		if (fCollect_CLB_optical_data) {
-			fCLB_optical_tree = new TTree("CLBOpt_tree", "CLBOpt_tree");
-			if (!fCLB_optical_tree) { throw std::runtime_error("DAQonite - Error: fCLB_optical_tree!"); }
-		}
-		if (fCollect_CLB_monitoring_data) {
-			fCLB_monitoring_tree = new TTree("CLBMon_tree", "CLBMon_tree");
-			if (!fCLB_monitoring_tree) { throw std::runtime_error("DAQonite - Error: fCLB_monitoring_tree!"); }
-		}
-		if (fCollect_BBB_optical_data) {
-			fBBB_optical_tree = new TTree("BBBOpt_tree", "BBBOpt_tree");
-			if (!fBBB_optical_tree) { throw std::runtime_error("DAQonite - Error: fBBB_optical_tree!"); }
-		}
-		if (fCollect_BBB_monitoring_data) {
-			fBBB_monitoring_tree = new TTree("BBBMon_tree", "BBBMon_tree");
-			if (!fBBB_monitoring_tree) { throw std::runtime_error("DAQonite - Error: fBBB_monitoring_tree!"); }
-		}
-		fCLB_handler->setSaveTrees(fSave_data, fCLB_optical_tree, fCLB_monitoring_tree);
-		if (fDaq_gui != NULL) { fDaq_gui->startRun(fRun_type, runNum, fFilename); }
-	} else {
-		if (fDaq_gui != NULL) { fDaq_gui->startRun(fRun_type, 0, ""); }
+	int runNum = getRunAndUpdate();
+	fFilename = "../data/";
+	fFilename += "type";
+	fFilename += fRun_type;
+	fFilename += "_run";
+	fFilename += runNum;
+	fFilename += ".root";
+	fOutput_file = new TFile(fFilename, "RECREATE");
+	if (!fOutput_file) { throw std::runtime_error("DAQonite - Error: Opening output file!"); }
+	if (fCollect_CLB_optical_data) {
+		fCLB_optical_tree = new TTree("CLBOpt_tree", "CLBOpt_tree");
+		if (!fCLB_optical_tree) { throw std::runtime_error("DAQonite - Error: fCLB_optical_tree!"); }
+	}
+	if (fCollect_CLB_monitoring_data) {
+		fCLB_monitoring_tree = new TTree("CLBMon_tree", "CLBMon_tree");
+		if (!fCLB_monitoring_tree) { throw std::runtime_error("DAQonite - Error: fCLB_monitoring_tree!"); }
+	}
+	if (fCollect_BBB_optical_data) {
+		fBBB_optical_tree = new TTree("BBBOpt_tree", "BBBOpt_tree");
+		if (!fBBB_optical_tree) { throw std::runtime_error("DAQonite - Error: fBBB_optical_tree!"); }
+	}
+	if (fCollect_BBB_monitoring_data) {
+		fBBB_monitoring_tree = new TTree("BBBMon_tree", "BBBMon_tree");
+		if (!fBBB_monitoring_tree) { throw std::runtime_error("DAQonite - Error: fBBB_monitoring_tree!"); }
 	}
 
+	// Give the TTree's to the clb_handler
+	fCLB_handler->setSaveTrees(fCLB_optical_tree, fCLB_monitoring_tree);
+
+	// Give run info to the GUI
+	if (fDaq_gui != NULL) { 
+		fDaq_gui->startRun(fRun_type, runNum, fFilename); 
+	}
+
+	// Set the mode to running and call a workOpticalData to start its collection
 	std::cout << "\nDAQonite - Start mining on ( "<< default_opto_port << ", " << default_moni_port << " )..." << std::endl;
-	if (fSave_data) {
-		std::cout << "DAQonite - Filling container: " << fFilename << std::endl;
-	}
-
+	std::cout << "DAQonite - Filling container: " << fFilename << std::endl;
 	fMode = true;
 	fCLB_handler->workOpticalData();
-	fCLB_handler->workMonitoringData();
 }
 
 void DAQ_handler::stopRun() {
+	// Check we are actually running
 	if (fMode == true) {
 		std::cout << "\nDAQonite - Stop mining" << std::endl;
+
+		// Send stopRun() to the GUI so it can reset itself
 		if (fDaq_gui != NULL) { fDaq_gui->stopRun(); }
+
+		// Set the mode to monitoring
 		fMode = false;
+
+		// Save the output file
 		if (fOutput_file != NULL) {
 			std::cout << "DAQonite - Closing the container: " << fFilename << std::endl;
 			if (fCLB_optical_tree != NULL) { fCLB_optical_tree->Write(); }
 			if (fCLB_monitoring_tree != NULL) { fCLB_monitoring_tree->Write(); }
 			fOutput_file->Close();
 		}		
-	} else { std::cout << "\nDAQonite - Already stopped mining" << std::endl;}
+
+		// Set the TTree's the clb_handler has to NULL ready for another run
+		fCLB_handler->clearSaveTrees();
+
+	} else { 
+		std::cout << "\nDAQonite - Already stopped mining" << std::endl;
+	}
 }
 
 void DAQ_handler::exit() {
@@ -207,6 +219,7 @@ int DAQ_handler::getRunAndUpdate() {
 
 void DAQ_handler::ioServiceThread() {
 	fIO_service->run();
+	std::cout << "DAQonite - Thread Ending" << std::endl;
 }
 
 void DAQ_handler::handleSignals(boost::system::error_code const& error, int signum) {

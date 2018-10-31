@@ -7,7 +7,7 @@
 DAQ_clb_handler::DAQ_clb_handler(boost::asio::io_service* io_service, bool mine_opt, bool mine_mon,
 								 Monitoring_gui *daqGui, bool* mode) :
 						 		 fCollect_optical(mine_opt), fCollect_monitoring(mine_mon),
-						 		 fDaq_gui(daqGui), fMode(mode), fSave_data(false), fBuffer_size(buffer_size) {
+						 		 fDaq_gui(daqGui), fMode(mode), fBuffer_size(buffer_size) {
 
 	// Add the CLB Optical socket to the IO service
 	fSocket_optical = new udp::socket(*io_service, udp::endpoint(udp::v4(), default_opto_port));
@@ -18,6 +18,10 @@ DAQ_clb_handler::DAQ_clb_handler(boost::asio::io_service* io_service, bool mine_
 	fSocket_monitoring = new udp::socket(*io_service, udp::endpoint(udp::v4(), default_moni_port));
 	udp::socket::receive_buffer_size option_clb_mon(33554432);
 	fSocket_monitoring->set_option(option_clb_mon);
+
+	// Output TTree's
+	fOutput_tree_optical = NULL;
+	fOutput_tree_monitoring = NULL;
 
 	// Output Variables Optical
 	fPomId_optical 			= 0;
@@ -42,19 +46,35 @@ DAQ_clb_handler::~DAQ_clb_handler() {
 	// Empty
 }
 
-void DAQ_clb_handler::setSaveTrees(bool saveData, TTree * output_tree_opt, TTree * output_tree_mon) {
-	fSave_data = saveData;
+void DAQ_clb_handler::setSaveTrees(TTree * output_tree_opt, TTree * output_tree_mon) {
+	// Chcck to see if the TTree's are not NULL...
+	if (output_tree_opt == NULL || output_tree_mon == NULL) {
+		std::cout << "DAQonite - Error: Setting NULL tree's!" << std::endl;
+	}
+
+	// Check to see if we already have TTree's
+	if (fOutput_tree_optical != NULL || fOutput_tree_monitoring != NULL) {
+		std::cout << "DAQonite - Error: TTree's are not NULL!" << std::endl;
+		clearSaveTrees();
+	}
+
+	// Set the TTree's
 	fOutput_tree_optical = output_tree_opt;
 	fOutput_tree_monitoring = output_tree_mon;
 
-	if (fSave_data) {
-		if (fCollect_optical) { addOptTreeBranches(); }
-		if (fCollect_monitoring) { addMonTreeBranches(); }
-	}
+	// Add the branches to the TTree
+	addOptTreeBranches();
+	addMonTreeBranches();
+}
+
+void DAQ_clb_handler::clearSaveTrees() {
+	// Set the TTree's to NULL
+	fOutput_tree_optical = NULL;
+	fOutput_tree_monitoring = NULL;
 }
 
 void DAQ_clb_handler::workOpticalData() {
-	if (fCollect_optical && *fMode == true && fSave_data) {
+	if (fCollect_optical && *fMode == true) {
 		fSocket_optical->async_receive(boost::asio::buffer(&fBuffer_optical[0], fBuffer_size),
 								   boost::bind(&DAQ_clb_handler::handleOpticalData, this,
 								   boost::asio::placeholders::error,
@@ -113,7 +133,7 @@ void DAQ_clb_handler::handleOpticalData(boost::system::error_code const& error, 
 		// We have a successful optical packet, increment counter and print if required
 		fCounter_optical ++;
 		if (fCounter_optical % TERMINALPRINTRATE == 0) {
-			std::cout << "DAQonite - Received: " << fCounter_optical << " optical packets" << std::endl;
+			//std::cout << "DAQonite - Received: " << fCounter_optical << " optical packets" << std::endl;
 		}
 
 		fPomId_optical = (UInt_t) header_optical.pomIdentifier();
@@ -143,7 +163,7 @@ void DAQ_clb_handler::handleOpticalData(boost::system::error_code const& error, 
 
 				fTot_optical = (UChar_t)hit->ToT;
 
-				fOutput_tree_optical->Fill();
+				if (*fMode == true && fOutput_tree_optical!= NULL) { fOutput_tree_optical->Fill(); }
 			}
 		}
 		workOpticalData();
@@ -154,7 +174,7 @@ void DAQ_clb_handler::handleMonitoringData(boost::system::error_code const& erro
 	if (!error) {
 		if (fBuffer_size - sizeof(CLBCommonHeader) < 0) {
 			std::cout << "DAQonite - Error: Invalid buffer size MONI: " << fBuffer_size << std::endl;
-			workMonitoringData(); // DO I JUST WANT TO RETURN HERE?????
+			workMonitoringData();
 			return;
 		}
 
@@ -175,7 +195,7 @@ void DAQ_clb_handler::handleMonitoringData(boost::system::error_code const& erro
 		// We have a successful monitoring packet, increment counter and print if required
 		fCounter_monitoring ++;
 		if (fCounter_monitoring % TERMINALPRINTRATE == 0) {
-			std::cout << "DAQonite - Received: " << fCounter_monitoring << " monitoring packets" << std::endl;
+			//std::cout << "DAQonite - Received: " << fCounter_monitoring << " monitoring packets" << std::endl;
 		}
 
 		// Get what we need from the header
@@ -211,7 +231,7 @@ void DAQ_clb_handler::handleMonitoringData(boost::system::error_code const& erro
 											  hits, fTemperate_monitoring, fHumidity_monitoring);
 			}
 
-			if(*fMode == true && fSave_data == true) { fOutput_tree_monitoring->Fill(); }
+			if (*fMode == true && fOutput_tree_monitoring!= NULL) { fOutput_tree_monitoring->Fill(); }
 		} else {
 			// Do not fill anything is we get here!
 			std::cout << "DAQonite - Error: Incomplete monitoring packet!" << std::endl;

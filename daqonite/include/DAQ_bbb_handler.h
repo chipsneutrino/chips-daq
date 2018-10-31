@@ -26,7 +26,7 @@ class DAQ_bbb_handler {
 		DAQ_bbb_handler();
 
 		/// Destroy a DAQ_bbb_handler
-		virtual ~DAQ_bbb_handler();
+		~DAQ_bbb_handler();
 
 		/**
 		 * Connects to the test server

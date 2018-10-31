@@ -43,10 +43,10 @@ class DAQ_handler {
 		 */
 		DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 					bool collect_bbb_optical, bool collect_bbb_monitoring,
-					bool gui, bool save, int numThreads);
+					bool gui, int numThreads);
 
 		/// Destroy a DAQ_handler
-		virtual ~DAQ_handler();
+		~DAQ_handler();
 
 		/**
 		 * Setup the data collection and start the IO_service

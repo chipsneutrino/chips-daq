@@ -29,17 +29,13 @@ int main(int argc, char* argv[]) {
 	bool collect_clb_monitoring 	= true;
 	bool collect_bbb_optical 		= false;
 	bool collect_bbb_monitoring 	= false;
-
-	bool useMonitoringGui			= true;
-	bool saveToFile					= false;
-	
+	bool useMonitoringGui			= true;	
 	unsigned int numThreads			= 3;
 
 	// Argument handling
 	boost::program_options::options_description desc("Options");
 	desc.add_options()
-		("help,h", "DAQonite - Default shows GUI but does not save files")
-		("save,s", "Save run data to file")
+		("help,h", "DAQonite - Default shows GUI. Always saves files when running")
 		("noGui",  "Don't show the monitoring GUI")
 		("noOpt",  "Don't mine the optical data")
 		("noMon",  "Don't mine the monitoring data")
@@ -53,9 +49,6 @@ int main(int argc, char* argv[]) {
 		if (vm.count("help")) {
 			std::cout << desc << std::endl;
 			return EXIT_SUCCESS;
-		}
-		if (vm.count("save")) {
-			saveToFile = true;
 		}
 		if (vm.count("noGui")) {
 			useMonitoringGui = false;
@@ -89,11 +82,11 @@ int main(int argc, char* argv[]) {
 
 		daq_handler = new DAQ_handler(collect_clb_optical, collect_clb_monitoring, 
 									  collect_bbb_optical, collect_bbb_monitoring,
-									  useMonitoringGui, saveToFile, numThreads);
+									  useMonitoringGui, numThreads);
 	} else {
 		daq_handler = new DAQ_handler(collect_clb_optical, collect_clb_monitoring, 
 									  collect_bbb_optical, collect_bbb_monitoring,
-									  useMonitoringGui, saveToFile, numThreads);	
+									  useMonitoringGui, numThreads);	
 	}
 	delete daq_handler;
 }

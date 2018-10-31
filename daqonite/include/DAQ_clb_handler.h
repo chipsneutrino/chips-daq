@@ -53,18 +53,20 @@ class DAQ_clb_handler {
 						Monitoring_gui *daqGui, bool* mode);
 					
 		/// Destroy a DAQ_clb_handler
-		virtual ~DAQ_clb_handler();
+		~DAQ_clb_handler();
 
 		/** 
 		 * Sets the pointers to the output file TTree's.
 		 * Called from the DAQ_handler, which deals with the file IO, in order to set
 		 * the TTree pointers so Fill() can be called from here.
 		 * 
-		 * @param saveData Bool specifying if TTree should be filled
 		 * @param output_tree_opt Pointer to optical TTree
 		 * @param output_tree_mon Pointer to monitoring TTree
 		 */
-		void setSaveTrees(bool saveData, TTree * output_tree_opt, TTree * output_tree_mon);
+		void setSaveTrees(TTree * output_tree_opt, TTree * output_tree_mon);
+
+		///Sets the pointers to the output file TTree's to NULL in the clb_handler
+		void clearSaveTrees();
 
 		/**
 		 * IO_service optical data work function.
@@ -128,7 +130,6 @@ class DAQ_clb_handler {
 		bool 							fCollect_monitoring;				///< Should we collect monitoring data?
 		Monitoring_gui*					fDaq_gui;							///< Pointer to the monitoring GUI
 		bool* 							fMode;								///< false = Monitoring, True = Running
-		bool 							fSave_data;							///< Should we fill the TTree's?
 		std::size_t const 				fBuffer_size;						///< Size of the buffers
 
 		// BOOST data collection
