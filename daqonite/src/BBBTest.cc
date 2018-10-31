@@ -44,9 +44,9 @@ bool trace_stream = false;     // trace stream operations on stdout
 
 int main(int argc, char *argv[]) {
 
-    printf("starting server on port %d...\n", port);
+    printf("DAQonite - Starting BBB server on port %d...\n", port);
     if (!init()) {
-        printf("Initialization Error, Server exiting.\n");
+        printf("DAQonite - Error: BBB Initialization error, Server exiting.\n");
     }
 
     // loop on client messages
@@ -59,12 +59,12 @@ int main(int argc, char *argv[]) {
 
     // unrequested exit
     if (fault) {
-        printf("control channel fault, Server exiting.\n");
+        printf("DAQonite - Error: Control channel fault, Server exiting.\n");
     }
 
     // client-requested exit
     if (!connected) {
-        printf("client closed connection, Server exiting.\n");
+        printf("DAQonite - Error: Client closed connection, Server exiting.\n");
     }
 
     destroy();
@@ -117,12 +117,12 @@ int handle_command(uint32_t count) {
     int status = fh_transport_receive(transport, msgin);
     printf(">>Processing Command [%d]\n", count++);
     if (status != 0) {
-        printf("FAULT: error receiving message [status:%d]\n", status);
+        printf("DAQonite - Error: Error receiving message [status:%d]\n", status);
         return -1;
     }
     status = fh_dispatch_handle(dispatcher, msgin, transport);
     if (status != 0) {
-        printf("FAULT: error handling message [status:%d]\n", status);
+        printf("DAQonite - Error: Error handling message [status:%d]\n", status);
         return -1;
     }
     printf("<<\n\n");
@@ -189,7 +189,7 @@ int ms_close(void *ctx, fh_message_t *msgin, fh_transport_t *transport) {
     int status = fh_transport_send(transport, msgin);
 
     if (close(client_fd) != 0) {
-        printf("Error closing client connection\n");
+        printf("DAQonite - Error: Error closing client connection\n");
     }
     client_fd = 0;
     connected = false;

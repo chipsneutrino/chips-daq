@@ -88,13 +88,13 @@ void DAQ_clb_handler::addMonTreeBranches() {
 void DAQ_clb_handler::handleOpticalData(boost::system::error_code const& error, std::size_t size) {
 	if (!error) {
 		if (fBuffer_size - sizeof(CLBCommonHeader) < 0) {
-			std::cout << "Invalid buffer size OPTO: " << fBuffer_size << std::endl;
+			std::cout << "DAQonite - Error: Invalid buffer size OPTO: " << fBuffer_size << std::endl;
 			workOpticalData();
 			return;
 		}
 
 		if (size - sizeof(CLBCommonHeader) < 0) {
-			std::cout << "Invalid packet size OPTO: " << size << std::endl;
+			std::cout << "DAQonite - Error: Invalid packet size OPTO: " << size << std::endl;
 			workOpticalData();
 			return;
 		}
@@ -105,12 +105,12 @@ void DAQ_clb_handler::handleOpticalData(boost::system::error_code const& error, 
 
 		// Check the type...
 		std::pair<int, std::string> const& type = getType(header_optical);
-		if (type.first != OPTO) { throw std::runtime_error("DAQonite: Error: Incorrect Type Not OPTO!"); }
+		if (type.first != OPTO) { throw std::runtime_error("DAQonite - Error: Incorrect type not OPTO!"); }
 
 		// We have a successful optical packet, increment counter and print if required
 		fCounter_optical ++;
 		if (fCounter_optical % TERMINALPRINTRATE == 0) {
-			std::cout << "Received: " << fCounter_optical << " optical packets" << std::endl;
+			std::cout << "DAQonite - Received: " << fCounter_optical << " optical packets" << std::endl;
 		}
 
 		if (fSave_data) {
@@ -120,7 +120,7 @@ void DAQ_clb_handler::handleOpticalData(boost::system::error_code const& error, 
 			UInt_t TimeStampNSTicks = (UInt_t)header_optical.timeStamp().tics();
 			fTimestamp_w_optical = TimeStampNSTicks*16;
 
-		    if (((size - sizeof(CLBCommonHeader)) % sizeof(hit_t))!=0) {throw std::runtime_error("DAQonite: Error: Back Packet OPTO!");}
+		    if (((size - sizeof(CLBCommonHeader)) % sizeof(hit_t))!=0) {throw std::runtime_error("DAQonite - Error: Bad packet OPTO!");}
 			const unsigned int nhits = (size - sizeof(CLBCommonHeader)) / sizeof(hit_t);
 
 			if (nhits) {
@@ -156,13 +156,13 @@ void DAQ_clb_handler::handleOpticalData(boost::system::error_code const& error, 
 void DAQ_clb_handler::handleMonitoringData(boost::system::error_code const& error, std::size_t size) {
 	if (!error) {
 		if (fBuffer_size - sizeof(CLBCommonHeader) < 0) {
-			std::cout << "Invalid buffer size MONI: " << fBuffer_size << std::endl;
+			std::cout << "DAQonite - Error: Invalid buffer size MONI: " << fBuffer_size << std::endl;
 			workMonitoringData(); // DO I JUST WANT TO RETURN HERE?????
 			return;
 		}
 
 		if (size - sizeof(CLBCommonHeader) < 0) {
-			std::cout << "Invalid packet size MONI: " << size << std::endl;
+			std::cout << "DAQonite - Error: Invalid packet size MONI: " << size << std::endl;
 			workMonitoringData();
 			return;
 		}
@@ -173,12 +173,12 @@ void DAQ_clb_handler::handleMonitoringData(boost::system::error_code const& erro
 
 		// Check the type...
 		std::pair<int, std::string> const& type = getType(header_monitoring);
-		if (type.first != MONI) { throw std::runtime_error("DAQonite: Error: Incorrect Type Not MONI!"); }
+		if (type.first != MONI) { throw std::runtime_error("DAQonite - Error: Incorrect type not MONI!"); }
 
 		// We have a successful monitoring packet, increment counter and print if required
 		fCounter_monitoring ++;
 		if (fCounter_monitoring % TERMINALPRINTRATE == 0) {
-			std::cout << "Received: " << fCounter_monitoring << " monitoring packets" << std::endl;
+			std::cout << "DAQonite - Received: " << fCounter_monitoring << " monitoring packets" << std::endl;
 		}
 
 		// Get what we need from the header
@@ -217,7 +217,7 @@ void DAQ_clb_handler::handleMonitoringData(boost::system::error_code const& erro
 			if(*fRunning == true && fSave_data == true) { fOutput_tree_monitoring->Fill(); }
 		} else {
 			// Do not fill anything is we get here!
-			std::cout << "DAQonite: Error: Incomplete monitoring packet!" << std::endl;
+			std::cout << "DAQonite - Error: Incomplete monitoring packet!" << std::endl;
 		}
 
 		workMonitoringData();

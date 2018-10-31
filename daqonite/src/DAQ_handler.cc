@@ -71,7 +71,7 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 	}
 
 	// Start the IO service 
-	std::cout << "DAQonite - Starting IO service with " << fNum_threads << " threads" << std::endl;
+	std::cout << "DAQonite - Starting IO service With " << fNum_threads << " threads" << std::endl;
 	std::cout << "DAQonite - Waiting for DAQommand command..." << std::endl;
 
 	// Create a new thread group and call the io_service run() method in each
@@ -116,22 +116,22 @@ void DAQ_handler::startRun() {
 		fFilename += ".root";
 
 		fOutput_file = new TFile(fFilename, "RECREATE");
-		if (!fOutput_file) { throw std::runtime_error("DAQonite: Error: Opening Output file!"); }
+		if (!fOutput_file) { throw std::runtime_error("DAQonite - Error: Opening output file!"); }
 		if (fCollect_CLB_optical_data) {
 			fCLB_optical_tree = new TTree("CLBOpt_tree", "CLBOpt_tree");
-			if (!fCLB_optical_tree) { throw std::runtime_error("DAQonite: Error: fCLB_optical_tree!"); }
+			if (!fCLB_optical_tree) { throw std::runtime_error("DAQonite - Error: fCLB_optical_tree!"); }
 		}
 		if (fCollect_CLB_monitoring_data) {
 			fCLB_monitoring_tree = new TTree("CLBMon_tree", "CLBMon_tree");
-			if (!fCLB_monitoring_tree) { throw std::runtime_error("DAQonite: Error: fCLB_monitoring_tree!"); }
+			if (!fCLB_monitoring_tree) { throw std::runtime_error("DAQonite - Error: fCLB_monitoring_tree!"); }
 		}
 		if (fCollect_BBB_optical_data) {
 			fBBB_optical_tree = new TTree("BBBOpt_tree", "BBBOpt_tree");
-			if (!fBBB_optical_tree) { throw std::runtime_error("DAQonite: Error: fBBB_optical_tree!"); }
+			if (!fBBB_optical_tree) { throw std::runtime_error("DAQonite - Error: fBBB_optical_tree!"); }
 		}
 		if (fCollect_BBB_monitoring_data) {
 			fBBB_monitoring_tree = new TTree("BBBMon_tree", "BBBMon_tree");
-			if (!fBBB_monitoring_tree) { throw std::runtime_error("DAQonite: Error: fBBB_monitoring_tree!"); }
+			if (!fBBB_monitoring_tree) { throw std::runtime_error("DAQonite - Error: fBBB_monitoring_tree!"); }
 		}
 		fCLB_handler->setSaveTrees(fSave_data, fCLB_optical_tree, fCLB_monitoring_tree);
 		if (fDaq_gui != NULL) { fDaq_gui->startRun(fRun_type, runNum, fFilename); }
@@ -139,9 +139,9 @@ void DAQ_handler::startRun() {
 		if (fDaq_gui != NULL) { fDaq_gui->startRun(fRun_type, 0, ""); }
 	}
 
-	std::cout << "\nDAQonite - Start Mining on ( "<< default_opto_port << ", " << default_moni_port << " )..." << std::endl;
+	std::cout << "\nDAQonite - Start mining on ( "<< default_opto_port << ", " << default_moni_port << " )..." << std::endl;
 	if (fSave_data) {
-		std::cout << "DAQonite - Will arrange in the container: " << fFilename << std::endl;
+		std::cout << "DAQonite - Filling container: " << fFilename << std::endl;
 	}
 
 	fRunning = true;
@@ -155,7 +155,7 @@ void DAQ_handler::stopRun() {
 		if (fDaq_gui != NULL) { fDaq_gui->stopRun(); }
 		fRunning = false;
 		if (fOutput_file != NULL) {
-			std::cout << "DAQonite - Closing up the container: " << fFilename << std::endl;
+			std::cout << "DAQonite - Closing the container: " << fFilename << std::endl;
 			if (fCLB_optical_tree != NULL) { fCLB_optical_tree->Write(); }
 			if (fCLB_monitoring_tree != NULL) { fCLB_monitoring_tree->Write(); }
 			fOutput_file->Close();
@@ -172,7 +172,7 @@ void DAQ_handler::exit() {
 int DAQ_handler::getRunAndUpdate() {
 	// 4 fRun_types -> 1) Data_normal, 2) Calibration, 3) Test_normal, 4) test_daq
 	if (fRun_type < 0 || fRun_type >= NUMRUNTYPES) {
-		throw std::runtime_error("DAQonite: Error: Incorrect run type number!");
+		throw std::runtime_error("DAQonite - Error: Incorrect run type number!");
 	}
 
 	int returnNum = 1;
@@ -189,7 +189,7 @@ int DAQ_handler::getRunAndUpdate() {
 				} else { newFile << 1 << "\n"; }
 			}
 			newFile.close();
-		} else { throw std::runtime_error("DAQonite: Error: Unable to create ../data/runNumbers.dat!"); }
+		} else { throw std::runtime_error("DAQonite - Error: Unable to create ../data/runNumbers.dat!"); }
 	} else {
 		// The file exists so read from it
 		for (int i=0; i<NUMRUNTYPES; i++) { 
@@ -208,7 +208,7 @@ int DAQ_handler::getRunAndUpdate() {
 				} else { updateFile << 1 << "\n"; }
 			}
 			updateFile.close();
-		} else { throw std::runtime_error("DAQonite: Error: Unable to update runNumbers.dat!"); }
+		} else { throw std::runtime_error("DAQonite - Error: Unable to update runNumbers.dat!"); }
 	}
 
 	return returnNum;
@@ -242,7 +242,7 @@ void DAQ_handler::handleLocalSocket(boost::system::error_code const& error, std:
 			exit();
 			return;
 		} else {
-			std::cout << "\nDAQonite: Error: Don't understand the command!\n" << std::endl;
+			std::cout << "\nDAQonite - Error: Don't understand the command!\n" << std::endl;
 		}
 
 		workLocalSocket();

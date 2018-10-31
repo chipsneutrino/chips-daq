@@ -23,15 +23,16 @@ Monitoring_config::~Monitoring_config() {
 }
  
 void Monitoring_config::printConfig() {
-    std::cout << " *** DAQonite - Print Config *** " << std::endl;
-	std::cout << "Number of CLBs -> " << fNumCLBs << std::endl;
-	std::cout << "Number of active channels -> " << fTotalNumChannels << std::endl;
+	std::cout << "\n**************** DAQonite - Print Config ****************" << std::endl;
+	std::cout << "Mining Plan -> " << fConfName << std::endl;
+	std::cout << "Number of Miners on Shift (CLBs) -> " << fNumCLBs << std::endl;
+	std::cout << "Number of Pickaxes (PMT Channels) -> " << fTotalNumChannels << std::endl;
 	for (int i = 0; i<fNumCLBs; i++) {
-		std::cout << "CLB" << i << " -> eid = " << fCLBeIDs[i] <<
-		 			 ", type = " << fCLBTypes[i] << ", active = " <<
-					  fActiveChannels[i].to_string() << std::endl;
+		std::cout << "Miner " << i << " -> ID Badge = " << fCLBeIDs[i] <<
+		 			 ", Type = " << fCLBTypes[i] << ", Pickaxes = " <<
+					  fActiveChannels[i].count() << std::endl;
 	}
-	std::cout << " ******************************* " << std::endl;
+	std::cout << "*********************************************************\n" << std::endl;
 }
 
 void Monitoring_config::loadConfig() {

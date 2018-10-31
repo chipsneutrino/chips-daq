@@ -28,7 +28,7 @@ void DAQ_bbb_handler::bbb_connect(){
 
 void DAQ_bbb_handler::get_bbb_status(){
 	// Send a GET_STATUS message
-	std::cout << "Sending GET_STATUS message..." << std::endl;
+	std::cout << "DAQonite - Sending BBB GET_STATUS message" << std::endl;
 	fh_message_setType(msg, MSG_SERVICE);
 	fh_message_setSubtype(msg, MS_STATUS);
 	fh_transport_send(transport, msg);
@@ -39,11 +39,11 @@ void DAQ_bbb_handler::get_bbb_status(){
 
 void DAQ_bbb_handler::bbb_disconnect(){
 	// send a MS_CLOSE message
-	std::cout << "Sending MS_CLOSE message..." << std::endl;
+	std::cout << "DAQonite - Sending BBB MS_CLOSE message" << std::endl;
 	fh_message_setType(msg, MSG_SERVICE);
 	fh_message_setSubtype(msg, MS_CLOSE);
 	fh_message_setData(msg, NULL, 0);
 	fh_transport_send(transport, msg);
 	fh_transport_receive(transport, msg);
-	printf("OK: Client disconnect.\n\n");
+	printf("DAQonite - BBB client disconnect.\n\n");
 }

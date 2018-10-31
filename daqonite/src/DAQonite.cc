@@ -21,12 +21,8 @@
 #include "DAQ_handler.h"
 
 int main(int argc, char* argv[]) {
-
-	std::cout << "#################################################################" << std::endl;
-	std::cout << "#                    WELCOME TO DAQonite!!!                     #" << std::endl;
-	std::cout << "#         by Josh Tingey MSci, JoshTingeyDAQDemon.Josh          #" << std::endl;
-	std::cout << "# Checking hard hats, high-vis, gloves and steel capped boot... #" << std::endl;
-	std::cout << "#################################################################" << std::endl;
+	std::cout << "\nDAQonite - by Josh Tingey MSci, JoshTingeyDAQDemon.Josh" << std::endl;
+	std::cout << "DAQonite - Checking hard hats, high-vis, boots and gloves" << std::endl;
 
 	// Default settings
 	bool collect_clb_optical 		= true;
@@ -75,15 +71,15 @@ int main(int argc, char* argv[]) {
 		po::notify(vm);
 
 	} catch (const po::error& e) {
-		std::cerr << "DAQonite: Error: " << e.what() << '\n' << desc << std::endl;
+		std::cerr << "DAQonite - Error: " << e.what() << '\n' << desc << std::endl;
 		return EXIT_FAILURE;
 	} catch (const std::runtime_error& e) {
-		std::cerr << "DAQonite: Error: " << e.what() << std::endl;
+		std::cerr << "DAQonite - Error: " << e.what() << std::endl;
 		return EXIT_FAILURE;
 	}
 
 	if (numThreads < 1 || numThreads > 4) {
-		throw std::runtime_error("DAQonite: Error: Invalid number of threads. Valid = [1,4]!");
+		throw std::runtime_error("DAQonite - Error: Invalid number of threads. Valid = [1,4]!");
 	}
 
 	// Need to start a TApplication if we are using the GUI

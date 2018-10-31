@@ -460,7 +460,7 @@ void Monitoring_gui::updatePlots() {
 }
 
 void Monitoring_gui::refreshPlots() {
-	std::cout << "DAQonite - Refresh Plots" << std::endl;
+	std::cout << "DAQonite - Refresh plots" << std::endl;
 	// Clear the individual channel plots and make new clean ones
 	for(int pom = 0; pom < fNumCLBs; pom++) {
 		for (int channel=0; channel<PMTSPERPOM; channel++) {
@@ -535,7 +535,7 @@ void Monitoring_gui::drawPlots() {
 		drawLogo(fCanvas1);
 		drawLogo(fCanvas2);
 		drawLogo(fCanvas3);
-	} else { std::cout << "DAQonite: Error: Wrong GUI page number!" << std::endl; }
+	} else { std::cout << "DAQonite - Error: Wrong GUI page number!" << std::endl; }
 
 }
 
@@ -682,7 +682,7 @@ void Monitoring_gui::drawDirectionButtons() {
 	} else if (fPageNum == 2) {
 		fBackButton->SetText("<--- Temp/Humidity");
 		fForwardButton->SetText("Main Plots --->");		
-	} else { std::cout << "DAQonite: Error: Wrong GUI page number!" << std::endl; }
+	} else { std::cout << "DAQonite - Error: Wrong GUI page number!" << std::endl; }
 
 }
 
@@ -824,21 +824,21 @@ TH1F* Monitoring_gui::makeHumidityPlot() {
 }
 
 void Monitoring_gui::toggleSpecific() {
-	std::cout << "Toggle Specific..." << std::endl;
+	std::cout << "DAQonite - Toggle specific" << std::endl;
 }
 
 void Monitoring_gui::pageBackward() {
 	if (fPageNum == 0) { fPageNum = 2; }
 	else if (fPageNum == 1) { fPageNum = 0; }
 	else if (fPageNum == 2) { fPageNum = 1; }
-	else { std::cout << "DAQonite: Error: Wrong GUI page number!" << std::endl; }
+	else { std::cout << "DAQonite - Error: Wrong GUI page number!" << std::endl; }
 }
 
 void Monitoring_gui::pageForward() {
 	if (fPageNum == 0) { fPageNum = 1; }
 	else if (fPageNum == 1) { fPageNum = 2; }
 	else if (fPageNum == 2) { fPageNum = 0; }
-	else { std::cout << "DAQonite: Error: Wrong GUI page number!" << std::endl; }
+	else { std::cout << "DAQonite - Error: Wrong GUI page number!" << std::endl; }
 }
 
 void Monitoring_gui::startRun(unsigned int type, unsigned int run, TString fileName) {

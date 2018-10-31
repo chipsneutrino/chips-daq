@@ -26,7 +26,7 @@
 const static size_t buffer_size = 10000;
 
 /// Rate at which number of packets received is printed to stdout
-#define TERMINALPRINTRATE 5000
+#define TERMINALPRINTRATE 50000
 
 #define MONI 0x1
 #define ACOU 0x2
