@@ -79,7 +79,10 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 	fThread_group->join_all();
 
 	// 10) Terminate the ROOT gApplication (if required)
-	if (fDaq_gui != NULL) {	gApplication->Terminate(0);	}
+	if (fDaq_gui != NULL) {	
+		std::cout << "DAQonite - Terminating gApplication" << std::endl;
+		gApplication->Terminate(0);	
+	}
 }
 
 DAQ_handler::~DAQ_handler() {
@@ -153,9 +156,17 @@ void DAQ_handler::stopRun() {
 		// Save the output file
 		if (fOutput_file != NULL) {
 			std::cout << "DAQonite - Closing the container: " << fFilename << std::endl;
-			if (fCLB_optical_tree != NULL) { fCLB_optical_tree->Write(); }
-			if (fCLB_monitoring_tree != NULL) { fCLB_monitoring_tree->Write(); }
+			if (fCLB_optical_tree != NULL && fCollect_CLB_optical_data) { fCLB_optical_tree->Write(); }
+			if (fCLB_monitoring_tree != NULL && fCollect_CLB_monitoring_data) { fCLB_monitoring_tree->Write(); }
+			if (fBBB_optical_tree != NULL && fCollect_BBB_optical_data) { fBBB_optical_tree->Write(); }
+			if (fBBB_monitoring_tree != NULL && fCollect_BBB_monitoring_data) { fBBB_monitoring_tree->Write(); }
+
 			fOutput_file->Close();
+			fOutput_file = NULL;
+			fCLB_optical_tree = NULL;
+			fCLB_monitoring_tree = NULL;
+			fBBB_optical_tree = NULL;
+			fBBB_monitoring_tree = NULL;
 		}		
 
 		// Set the TTree's the clb_handler has to NULL ready for another run

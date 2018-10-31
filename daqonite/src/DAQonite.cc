@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
 	bool collect_clb_monitoring 	= true;
 	bool collect_bbb_optical 		= false;
 	bool collect_bbb_monitoring 	= false;
-	bool useMonitoringGui			= true;	
+	bool useMonitoringGui			= true;
 	unsigned int numThreads			= 3;
 
 	// Argument handling

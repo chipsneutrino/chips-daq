@@ -47,14 +47,23 @@ DAQ_clb_handler::~DAQ_clb_handler() {
 }
 
 void DAQ_clb_handler::setSaveTrees(TTree * output_tree_opt, TTree * output_tree_mon) {
-	// Chcck to see if the TTree's are not NULL...
-	if (output_tree_opt == NULL || output_tree_mon == NULL) {
-		std::cout << "DAQonite - Error: Setting NULL tree's!" << std::endl;
+	// Check to see if the TTree's are not NULL...
+	if (fCollect_optical && output_tree_opt == NULL) {
+		throw std::runtime_error("DAQonite - Error: Setting NULL optical tree!");
+	}
+
+	if (fCollect_monitoring && output_tree_mon == NULL) {
+		throw std::runtime_error("DAQonite - Error: Setting NULL monitoring tree!");
 	}
 
 	// Check to see if we already have TTree's
-	if (fOutput_tree_optical != NULL || fOutput_tree_monitoring != NULL) {
-		std::cout << "DAQonite - Error: TTree's are not NULL!" << std::endl;
+	if (fCollect_optical && fOutput_tree_optical != NULL) {
+		std::cout << "DAQonite - Error: Optical tree is not NULL!" << std::endl;
+		clearSaveTrees();
+	}
+
+	if (fCollect_monitoring && fOutput_tree_monitoring != NULL) {
+		std::cout << "DAQonite - Error: Monitoring tree is not NULL!" << std::endl;
 		clearSaveTrees();
 	}
 
@@ -63,8 +72,8 @@ void DAQ_clb_handler::setSaveTrees(TTree * output_tree_opt, TTree * output_tree_
 	fOutput_tree_monitoring = output_tree_mon;
 
 	// Add the branches to the TTree
-	addOptTreeBranches();
-	addMonTreeBranches();
+	if (fCollect_optical && fOutput_tree_optical != NULL) { addOptTreeBranches(); }
+	if (fCollect_monitoring && fOutput_tree_monitoring != NULL) { addMonTreeBranches(); }
 }
 
 void DAQ_clb_handler::clearSaveTrees() {
@@ -106,6 +115,11 @@ void DAQ_clb_handler::addMonTreeBranches() {
 	fOutput_tree_monitoring->Branch("Valid", &fValid_monitoring, "fValid_monitoring/i");
 	fOutput_tree_monitoring->Branch("Temperate", &fTemperate_monitoring, "fTemperate_monitoring/F");
 	fOutput_tree_monitoring->Branch("Humidity", &fHumidity_monitoring, "fHumidity_monitoring/F");
+
+	// If we are not collecting the optical data hits, I will save the monitoring hits to file
+	if (!fCollect_optical) {
+		fOutput_tree_monitoring->Branch("Hits",&fMonitoringHits,"fMonitoringHits[30]/I");	
+	}
 }
 
 void DAQ_clb_handler::handleOpticalData(boost::system::error_code const& error, std::size_t size) {
@@ -203,13 +217,13 @@ void DAQ_clb_handler::handleMonitoringData(boost::system::error_code const& erro
 		fTimestamp_s_monitoring = (UInt_t) header_monitoring.timeStamp().sec();
 
 		// Get the monitoring hits data
-		unsigned int hits[30];
+		std::fill_n(fMonitoringHits, 30, 0);
 		for (int i = 0; i < 30; ++i) {
 			const uint32_t
 					* const field =
 							static_cast<const uint32_t* const >
 									(static_cast<const void* const >(&fBuffer_monitoring[0] + sizeof(CLBCommonHeader) + i * 4));
-			hits[i] = (unsigned int)htonl(*field);
+			fMonitoringHits[i] = (unsigned int)htonl(*field);
 		}
 
 		// Get the other monitoring info
@@ -228,7 +242,7 @@ void DAQ_clb_handler::handleMonitoringData(boost::system::error_code const& erro
 			if (fDaq_gui != NULL) {
 				fDaq_gui->addMonitoringPacket((unsigned int)fPomId_monitoring,
 				 							  (unsigned int)header_monitoring.timeStamp().inMilliSeconds(),
-											  hits, fTemperate_monitoring, fHumidity_monitoring);
+											  fMonitoringHits, fTemperate_monitoring, fHumidity_monitoring);
 			}
 
 			if (*fMode == true && fOutput_tree_monitoring!= NULL) { fOutput_tree_monitoring->Fill(); }

@@ -381,7 +381,7 @@ void Monitoring_gui::update() {
 			}
 
 			// If more than HIGHRATE hits its odd
-			if ( hits > HIGHRATE) { fOddChannels++; }
+			if ( (hits/((float)UPDATERATE/1000)) > HIGHRATE) { fOddChannels++; }
 
 			// Set the individual channel rate plot
 			int plotVectorIndex = (pomIndex*PMTSPERPOM) + (channelIndex);

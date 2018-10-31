@@ -157,6 +157,7 @@ class DAQ_clb_handler {
 		UInt_t 							fValid_monitoring;					///< Monitoring Data: Header Valid
 		float 							fTemperate_monitoring;				///< Monitoring Data: Temperature data
 		float 							fHumidity_monitoring;				///< Monitoring Data: Humidity data
+		unsigned int 					fMonitoringHits[30];				///< Monitoring Data: # Hits on channels
 
 		// Packet counters
 		int 							fCounter_optical;					///< Optical packet counter
