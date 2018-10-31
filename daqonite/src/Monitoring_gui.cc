@@ -409,7 +409,7 @@ void Monitoring_gui::update() {
 }
 
 void Monitoring_gui::refreshPlots() {
-	std::cout << "DAQonite - Refresh plots" << std::endl;
+	std::cout << "\nDAQonite - Refresh plots" << std::endl;
 	fNumRefresh++;
 
 	// Clear the temp/humidity clb plots and individual channel hit plots
@@ -540,10 +540,15 @@ void Monitoring_gui::drawLabels() {
 
 	// Run Time Label
 	TString timeLabelText = "Time [s]: "; 
-	timeLabelText += (float)(fWindowStartTime - fRunStartTime)/1000; 
+	if (fMode) { 
+		fRunTimeLabel->SetBackgroundColor(TColor::Number2Pixel(8)); 
+		timeLabelText += (float)(fWindowStartTime - fRunStartTime)/1000; 
+	}
+	else { 
+		fRunTimeLabel->SetBackgroundColor(TColor::Number2Pixel(46)); 
+		timeLabelText += "0"; 
+	}
 	fRunTimeLabel->SetText(timeLabelText);
-	if (fMode) { fRunTimeLabel->SetBackgroundColor(TColor::Number2Pixel(8)); }
-	else { fRunTimeLabel->SetBackgroundColor(TColor::Number2Pixel(46)); }
 
 	// Run Packets Label
 	TString packetsLabelText = "Loads: ";
@@ -574,10 +579,8 @@ void Monitoring_gui::drawLabels() {
 		fact1Labeltext += "/";
 		fact1Labeltext += fNumCLBs;
 
-		if (fMode) {
-			if (fActiveCLBs == fNumCLBs) { fFactLabel1->SetBackgroundColor(TColor::Number2Pixel(8)); }
-			else { fFactLabel1->SetBackgroundColor(TColor::Number2Pixel(46)); }
-		} else { fFactLabel1->SetBackgroundColor(TColor::Number2Pixel(38)); }
+		if (fActiveCLBs == fNumCLBs) { fFactLabel1->SetBackgroundColor(TColor::Number2Pixel(8)); }
+		else { fFactLabel1->SetBackgroundColor(TColor::Number2Pixel(46)); }
 
 	} else {
 		fact1Labeltext = "Not yet implemented";
@@ -593,10 +596,8 @@ void Monitoring_gui::drawLabels() {
 		fact2Labeltext += "/";
 		fact2Labeltext += fTotalNumChannels;
 
-		if (fMode) {
-			if (fActiveChannels == fTotalNumChannels) { fFactLabel2->SetBackgroundColor(TColor::Number2Pixel(8)); }
-			else { fFactLabel2->SetBackgroundColor(TColor::Number2Pixel(46)); }
-		} else { fFactLabel2->SetBackgroundColor(TColor::Number2Pixel(38)); }
+		if (fActiveChannels == fTotalNumChannels) { fFactLabel2->SetBackgroundColor(TColor::Number2Pixel(8)); }
+		else { fFactLabel2->SetBackgroundColor(TColor::Number2Pixel(46)); }
 
 	} else {
 		fact2Labeltext = "Not yet implemented";
@@ -612,10 +613,8 @@ void Monitoring_gui::drawLabels() {
 		fact3Labeltext += "/";
 		fact3Labeltext += fTotalNumChannels;
 
-		if (fMode) {
-			if (fOddChannels == 0) { fFactLabel3->SetBackgroundColor(TColor::Number2Pixel(8)); }
-			else { fFactLabel3->SetBackgroundColor(TColor::Number2Pixel(46)); }		
-		} else { fFactLabel3->SetBackgroundColor(TColor::Number2Pixel(38)); }
+		if (fOddChannels == 0) { fFactLabel3->SetBackgroundColor(TColor::Number2Pixel(8)); }
+		else { fFactLabel3->SetBackgroundColor(TColor::Number2Pixel(46)); }		
 
 	} else {
 		fact3Labeltext = "Not yet implemented";
@@ -627,10 +626,7 @@ void Monitoring_gui::drawLabels() {
 	TString fact4Labeltext;
 	if (fPageNum == 0) {
 
-		if (!fMode) {
-			fact4Labeltext = "No Non Config Data";
-			fFactLabel4->SetBackgroundColor(TColor::Number2Pixel(38)); 			
-		} else if (!fNonConfigData) {
+		if (!fNonConfigData) {
 			fact4Labeltext = "No Non Config Data";
 			fFactLabel4->SetBackgroundColor(TColor::Number2Pixel(8)); 			
 		} else {
@@ -796,7 +792,7 @@ TH1F* Monitoring_gui::makeHumidityPlot() {
 }
 
 void Monitoring_gui::toggleSpecific() {
-	std::cout << "DAQonite - Toggle specific" << std::endl;
+	std::cout << "\nDAQonite - Toggle specific" << std::endl;
 
 	draw();
 }
@@ -807,7 +803,8 @@ void Monitoring_gui::pageBackward() {
 	else if (fPageNum == 2) { fPageNum = 1; }
 	else { std::cout << "DAQonite - Error: Wrong GUI page number!" << std::endl; }
 
-	draw();
+	// Only draw if we are not receiving packets. Need to setup a mutex do deal with this correctly
+	if (fPacketsReceived == 0) { draw(); }
 }
 
 void Monitoring_gui::pageForward() {
@@ -816,7 +813,8 @@ void Monitoring_gui::pageForward() {
 	else if (fPageNum == 2) { fPageNum = 0; }
 	else { std::cout << "DAQonite - Error: Wrong GUI page number!" << std::endl; }
 
-	draw();
+	// Only draw if we are not receiving packets. Need to setup a mutex do deal with this correctly
+	if (fPacketsReceived == 0) { draw(); }
 }
 
 void Monitoring_gui::startRun(unsigned int type, unsigned int run, TString fileName) {
@@ -828,7 +826,8 @@ void Monitoring_gui::startRun(unsigned int type, unsigned int run, TString fileN
 	fRunPackets = 0;
 	fRunFile = fileName;	
 
-	draw();
+	// Only draw if we are not receiving packets. Need to setup a mutex do deal with this correctly
+	if (fPacketsReceived == 0) { draw(); }
 }
 
 void Monitoring_gui::stopRun() {
@@ -840,5 +839,6 @@ void Monitoring_gui::stopRun() {
 	fRunPackets = 0;
 	fRunFile = "";
 
-	draw();
+	// Only draw if we are not receiving packets. Need to setup a mutex do deal with this correctly
+	if (fPacketsReceived == 0) { draw(); }
 }

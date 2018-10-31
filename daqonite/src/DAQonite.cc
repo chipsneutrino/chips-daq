@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
 	// Argument handling
 	boost::program_options::options_description desc("Options");
 	desc.add_options()
-		("help,h", "DAQonite - Default shows GUI. Always saves files when running")
+		("help,h", "DAQonite - Default:\n - Shows GUI\n - Always shows monitoring\n - Saves files when in run")
 		("noGui",  "Don't show the monitoring GUI")
 		("noOpt",  "Don't mine the optical data")
 		("noMon",  "Don't mine the monitoring data")
