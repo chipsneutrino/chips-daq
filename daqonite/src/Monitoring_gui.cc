@@ -277,9 +277,9 @@ void Monitoring_gui::addOpticalPacket(unsigned int pomID, unsigned int seqNumber
 			else if (seqDiff > 1) { 
 				fOptical_dropped[clbIndex] += seqDiff; 
 				fRunTotalDropped += seqDiff;
-			} 
-			else if (seqDiff == 0) { std::cout << "DAQonite - Error: Seq diff = 0!" << std::endl; }
-			else { std::cout << "DAQonite - Error: Seq diff < 0!" << std::endl;  }
+			} else { 
+				//std::cout << "DAQonite - Error: Seq: " << seqNumber << "," << fMonitoring_seq[clbIndex] << std::endl;  
+			}
 		}
 
 		// Set the current sequence number for this CLB
@@ -291,6 +291,9 @@ void Monitoring_gui::addOpticalPacket(unsigned int pomID, unsigned int seqNumber
 		// Increment the total run packet counter
 		fRunTotalPackets ++;
 
+		// Increment the packet counter 
+		fPacketsReceived ++;
+
 	} else if (it == fCLBeIDs.end()) {
 		fNonConfigData = true;
 	}
@@ -301,7 +304,6 @@ void Monitoring_gui::addMonitoringPacket(unsigned int pomID, unsigned int timeSt
 										 unsigned int seqNumber) {
 	// Search for this pomID in the config CLB IDs
 	std::vector<unsigned int>::iterator it = std::find(fCLBeIDs.begin(), fCLBeIDs.end(), pomID);
-
 
 	if (it != fCLBeIDs.end()) {
 		int clbIndex = std::distance(fCLBeIDs.begin(), it);
@@ -316,9 +318,9 @@ void Monitoring_gui::addMonitoringPacket(unsigned int pomID, unsigned int timeSt
 				else if (seqDiff > 1) { 
 					fMonitoring_dropped[clbIndex] += seqDiff; 
 					fRunTotalDropped += seqDiff;
-				} 
-				else if (seqDiff == 0) { std::cout << "DAQonite - Error: Seq diff = 0!" << std::endl; }
-				else { std::cout << "DAQonite - Error: Seq diff < 0!" << std::endl;  }
+				} else { 
+					//std::cout << "DAQonite - Error: Seq: " << seqNumber << "," << fMonitoring_seq[clbIndex] << std::endl;  
+				}
 			}
 
 			// Set the current sequence number for this CLB
@@ -359,6 +361,9 @@ void Monitoring_gui::addMonitoringPacket(unsigned int pomID, unsigned int timeSt
 			fWindowPackets = 0;
 			fWindowStartTime = timeStamp_ms;			
 		}
+
+		// Increment the packet counter 
+		fPacketsReceived ++;
 
 	} else {
 		fNonConfigData = true;
