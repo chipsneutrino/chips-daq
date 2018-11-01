@@ -6,7 +6,7 @@
 
 DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 			 			 bool collect_bbb_optical, bool collect_bbb_monitoring,
-						 bool gui, int numThreads) :
+						 bool gui, int numThreads, std::string configFile) :
 						 fCollect_CLB_optical_data(collect_clb_optical),
 						 fCollect_CLB_monitoring_data(collect_clb_monitoring),
 						 fCollect_BBB_optical_data(collect_bbb_optical),
@@ -50,7 +50,7 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 
 	// 5) Setup the monitoring GUI (if required)
 	if (fShow_gui) {
-		fDaq_gui = new Monitoring_gui();
+		fDaq_gui = new Monitoring_gui(configFile);
 		workGui();
 	} else { fDaq_gui = NULL; }
 

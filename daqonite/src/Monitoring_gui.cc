@@ -9,7 +9,7 @@
 #define PMTSPERPOM 30
 #define HIGHRATE 10000
 
-Monitoring_gui::Monitoring_gui() {
+Monitoring_gui::Monitoring_gui(std::string configFile) : fConfigFile(configFile) {
 
 	//////////////////////////////////////
 	//			GUI SETUP START			//
@@ -218,7 +218,7 @@ Monitoring_gui::Monitoring_gui() {
 	//////////////////////////////////////
 
 	// Set the configuration variables using the Monitoring_config class
-	Monitoring_config* fConfig = new Monitoring_config("../data/config.opt");
+	Monitoring_config* fConfig = new Monitoring_config(fConfigFile.c_str());
 	fNumCLBs = fConfig->getNumCLBs();
 	fCLBeIDs = fConfig->getCLBeIDs();
 	fCLBTypes = fConfig->getCLBTypes();

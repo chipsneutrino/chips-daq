@@ -43,7 +43,7 @@ class DAQ_handler {
 		 */
 		DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 					bool collect_bbb_optical, bool collect_bbb_monitoring,
-					bool gui, int numThreads);
+					bool gui, int numThreads, std::string configFile);
 
 		/// Destroy a DAQ_handler
 		~DAQ_handler();

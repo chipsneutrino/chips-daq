@@ -31,6 +31,7 @@ int main(int argc, char* argv[]) {
 	bool collect_bbb_monitoring 	= false;
 	bool useMonitoringGui			= true;
 	unsigned int numThreads			= 3;
+	std::string configFile			= "../data/config.opt";
 
 	// Argument handling
 	boost::program_options::options_description desc("Options");
@@ -40,7 +41,9 @@ int main(int argc, char* argv[]) {
 		("noOpt",  "Don't mine the optical data")
 		("noMon",  "Don't mine the monitoring data")
 		("threads,t", boost::program_options::value<unsigned int>(&numThreads),
-          		   "Number of threads to use, default = 3");
+          		   "Number of threads to use, default = 3")
+		("config,c", boost::program_options::value<std::string>(&configFile),
+          		   "Configuration file, default = ../data/config.opt");
 
 	try {
 		boost::program_options::variables_map vm;
@@ -82,11 +85,11 @@ int main(int argc, char* argv[]) {
 
 		daq_handler = new DAQ_handler(collect_clb_optical, collect_clb_monitoring, 
 									  collect_bbb_optical, collect_bbb_monitoring,
-									  useMonitoringGui, numThreads);
+									  useMonitoringGui, numThreads, configFile);
 	} else {
 		daq_handler = new DAQ_handler(collect_clb_optical, collect_clb_monitoring, 
 									  collect_bbb_optical, collect_bbb_monitoring,
-									  useMonitoringGui, numThreads);	
+									  useMonitoringGui, numThreads, configFile);	
 	}
 	delete daq_handler;
 }

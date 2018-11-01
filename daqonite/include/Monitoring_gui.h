@@ -50,7 +50,7 @@ class Monitoring_gui {
 		 * Create a Monitoring_gui object
 		 * Creates the monitoring GUI object and builds the ROOT TApplication GUI.
 		 */		
-		Monitoring_gui();
+		Monitoring_gui(std::string configFile);
 
 		/// Destroys the Monitoring_gui object
 		virtual ~Monitoring_gui();
@@ -226,16 +226,18 @@ class Monitoring_gui {
 		bool 				fNonConfigData;		///< Are we receiving data from non-config CLBs?
 
 		// Configuration variables
+		std::string 						fConfigFile;		///< Configuration file
+
 		int fNumCLBs;										///< Number of CLBs from "clb_number"
-		std::vector<unsigned int> fCLBeIDs; 				///< eIDs of the CLBs
-		std::vector<unsigned int> fCLBTypes;				///< Plane types for the CLBs
+		std::vector<unsigned int> 		fCLBeIDs; 			///< eIDs of the CLBs
+		std::vector<unsigned int> 		fCLBTypes;			///< Plane types for the CLBs
 
 		int fTotalNumChannels;								///< Total number of active channels
-		std::vector<std::bitset<32> > fActiveChannelsArr;	///< Which channels are active
+		std::vector<std::bitset<32> > 	fActiveChannelsArr;	///< Which channels are active
 
 		std::vector<std::vector<unsigned int> > fRateArray;	///< Array holding number of hits in window
-		std::vector<float> fTempArray;						///< Array holding the most recent temperature for each CLB
-		std::vector<float> fHumidityArray;					///< Array holding the most recent humidity for each CLB
+		std::vector<float> 				fTempArray;			///< Array holding the most recent temperature for each CLB
+		std::vector<float> 				fHumidityArray;		///< Array holding the most recent humidity for each CLB
 };
 
 #endif
