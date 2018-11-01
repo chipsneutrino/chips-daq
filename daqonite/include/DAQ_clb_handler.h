@@ -118,6 +118,12 @@ class DAQ_clb_handler {
 		 */
 		std::pair<int, std::string> getType(CLBCommonHeader const& header);
 
+		/// Print the status of the optical counters
+		void printOpticalStats();
+
+		/// Print the status of the optical counters
+		void printMonitoringStats();
+
 		/// Print CLBCommonHeader to stdout
 		void printHeader(CLBCommonHeader const& header);
 		/// Print Optical data to stdout
@@ -135,11 +141,10 @@ class DAQ_clb_handler {
 		// BOOST data collection
 		boost::asio::ip::udp::socket* 	fSocket_optical;					///< Optical data UDP socket
 		char fBuffer_optical[buffer_size] __attribute__((aligned(8)));		///< Optical data buffer
-		
 
 		boost::asio::ip::udp::socket*	fSocket_monitoring;					///< Monitoring data UDP socket
 		char fBuffer_monitoring[buffer_size] __attribute__((aligned(8)));	///< Monitoring data buffer
-	
+		
 		// Output
 		TTree* 							fOutput_tree_optical;				///< Pointer to the optical TTree
 		TTree* 							fOutput_tree_monitoring;			///< Pointer to the monitoring TTree
@@ -157,11 +162,7 @@ class DAQ_clb_handler {
 		UInt_t 							fValid_monitoring;					///< Monitoring Data: Header Valid
 		float 							fTemperate_monitoring;				///< Monitoring Data: Temperature data
 		float 							fHumidity_monitoring;				///< Monitoring Data: Humidity data
-		unsigned int 					fMonitoringHits[30];				///< Monitoring Data: # Hits on channels
-
-		// Packet counters
-		int 							fCounter_optical;					///< Optical packet counter
-		int 							fCounter_monitoring;				///< Monitoring packet counter
+		unsigned int 					fMonitoring_hits[30];				///< Monitoring Data: # Hits on channels
 };
 
 #endif

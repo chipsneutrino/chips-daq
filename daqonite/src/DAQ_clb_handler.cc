@@ -36,10 +36,6 @@ DAQ_clb_handler::DAQ_clb_handler(boost::asio::io_service* io_service, bool mine_
 	fValid_monitoring 		= 0;
 	fTemperate_monitoring 	= 0.0;
 	fHumidity_monitoring 	= 0.0;
-
-	// Packet Counters
-	fCounter_optical 		= 0;
-	fCounter_monitoring 	= 0;
 }
 
 DAQ_clb_handler::~DAQ_clb_handler() {
@@ -118,7 +114,7 @@ void DAQ_clb_handler::addMonTreeBranches() {
 
 	// If we are not collecting the optical data hits, I will save the monitoring hits to file
 	if (!fCollect_optical) {
-		fOutput_tree_monitoring->Branch("Hits",&fMonitoringHits,"fMonitoringHits[30]/I");	
+		fOutput_tree_monitoring->Branch("Hits",&fMonitoring_hits,"fMonitoring_hits[30]/I");	
 	}
 }
 
@@ -143,12 +139,6 @@ void DAQ_clb_handler::handleOpticalData(boost::system::error_code const& error, 
 		// Check the type...
 		std::pair<int, std::string> const& type = getType(header_optical);
 		if (type.first != OPTO) { throw std::runtime_error("DAQonite - Error: Incorrect type not OPTO!"); }
-
-		// We have a successful optical packet, increment counter and print if required
-		fCounter_optical ++;
-		if (fCounter_optical % TERMINALPRINTRATE == 0) {
-			//std::cout << "DAQonite - Received: " << fCounter_optical << " optical packets" << std::endl;
-		}
 
 		fPomId_optical = (UInt_t) header_optical.pomIdentifier();
 		fTimestamp_s_optical = (UInt_t) header_optical.timeStamp().sec();
@@ -180,6 +170,12 @@ void DAQ_clb_handler::handleOpticalData(boost::system::error_code const& error, 
 				if (*fMode == true && fOutput_tree_optical!= NULL) { fOutput_tree_optical->Fill(); }
 			}
 		}
+
+		// Add an optical packet to the monitoring
+		if (fDaq_gui != NULL) {
+			fDaq_gui->addOpticalPacket((unsigned int)fPomId_optical, (unsigned int)header_optical.udpSequenceNumber());
+		}
+
 		workOpticalData();
 	}
 }
@@ -206,24 +202,18 @@ void DAQ_clb_handler::handleMonitoringData(boost::system::error_code const& erro
 		std::pair<int, std::string> const& type = getType(header_monitoring);
 		if (type.first != MONI) { throw std::runtime_error("DAQonite - Error: Incorrect type not MONI!"); }
 
-		// We have a successful monitoring packet, increment counter and print if required
-		fCounter_monitoring ++;
-		if (fCounter_monitoring % TERMINALPRINTRATE == 0) {
-			//std::cout << "DAQonite - Received: " << fCounter_monitoring << " monitoring packets" << std::endl;
-		}
-
 		// Get what we need from the header
 		fPomId_monitoring = (UInt_t) header_monitoring.pomIdentifier();
 		fTimestamp_s_monitoring = (UInt_t) header_monitoring.timeStamp().sec();
 
 		// Get the monitoring hits data
-		std::fill_n(fMonitoringHits, 30, 0);
+		std::fill_n(fMonitoring_hits, 30, 0);
 		for (int i = 0; i < 30; ++i) {
 			const uint32_t
 					* const field =
 							static_cast<const uint32_t* const >
 									(static_cast<const void* const >(&fBuffer_monitoring[0] + sizeof(CLBCommonHeader) + i * 4));
-			fMonitoringHits[i] = (unsigned int)htonl(*field);
+			fMonitoring_hits[i] = (unsigned int)htonl(*field);
 		}
 
 		// Get the other monitoring info
@@ -242,7 +232,8 @@ void DAQ_clb_handler::handleMonitoringData(boost::system::error_code const& erro
 			if (fDaq_gui != NULL) {
 				fDaq_gui->addMonitoringPacket((unsigned int)fPomId_monitoring,
 				 							  (unsigned int)header_monitoring.timeStamp().inMilliSeconds(),
-											  fMonitoringHits, fTemperate_monitoring, fHumidity_monitoring);
+											  fMonitoring_hits, fTemperate_monitoring, fHumidity_monitoring,
+											  (unsigned int)header_monitoring.udpSequenceNumber());
 			}
 
 			if (*fMode == true && fOutput_tree_monitoring!= NULL) { fOutput_tree_monitoring->Fill(); }
@@ -278,6 +269,14 @@ std::pair<int, std::string> DAQ_clb_handler::getType(CLBCommonHeader const& head
 	}
 
 	return unknown;
+}
+
+void DAQ_clb_handler::printOpticalStats() {
+	std::cout << "***** Optical Packet Stats ******" << std::endl;
+}
+
+void DAQ_clb_handler::printMonitoringStats() {
+	std::cout << "**** Monitoring Packet Stats ****" << std::endl;
 }
 
 void DAQ_clb_handler::printHeader(CLBCommonHeader const& header) {

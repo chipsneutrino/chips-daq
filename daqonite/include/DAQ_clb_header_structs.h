@@ -16,7 +16,7 @@
 struct CLBCommonHeader {
     uint32_t DataType;				///< Type of data optical, acoustic, monitoring
     uint32_t RunNumber;				///< Run number
-    uint32_t UDPSequenceNumber;		///< Packet sequence number to check fro dropped packets
+    uint32_t UDPSequenceNumber;		///< Packet sequence number to check for dropped packets
     UTCTime Timestamp;				///< UTC timestamp, with seconds and tics
     uint32_t POMIdentifier;			///< POM identification number
     uint32_t POMStatus1;			///< Status indicator 1
