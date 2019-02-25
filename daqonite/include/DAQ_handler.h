@@ -19,6 +19,7 @@
 #include <boost/asio.hpp>
 #include <boost/program_options.hpp>
 #include <boost/thread.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "TFile.h"
 #include "TTree.h"
@@ -141,6 +142,7 @@ class DAQ_handler {
 		boost::asio::io_service* 	fIO_service;					///< BOOST io_service. The heart of everything
 		boost::thread_group* 		fThread_group;					///< Group of threads to do the work
 		boost::asio::signal_set*	fSignal_set;					///< BOOST signal_set
+		boost::asio::deadline_timer*	fGui_timer;					///< Boost GUI timer
 		udp::socket*				fLocal_socket;					///< Local UDP control socket
 		char fBuffer_local[buffer_size] __attribute__((aligned(8)));///< Local socket buffer
 		DAQ_clb_handler* 			fCLB_handler;					///< Pointer to CLB_handler

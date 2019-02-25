@@ -50,6 +50,7 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 
 	// 5) Setup the monitoring GUI (if required)
 	if (fShow_gui) {
+		fGui_timer = new boost::asio::deadline_timer(*fIO_service, boost::posix_time::millisec(10));
 		fDaq_gui = new Monitoring_gui(configFile);
 		workGui();
 	} else { fDaq_gui = NULL; }
@@ -278,8 +279,7 @@ void DAQ_handler::workLocalSocket() {
 }
 
 void DAQ_handler::workGui() {
-	// TODO: Have this as an ASYNC_WAIT
-	usleep(50);
 	gSystem->ProcessEvents();
-	fIO_service->post(boost::bind(&DAQ_handler::workGui, this));
+	fGui_timer->expires_from_now(boost::posix_time::millisec(10));
+	fGui_timer->async_wait(boost::bind(&DAQ_handler::workGui, this));
 }
