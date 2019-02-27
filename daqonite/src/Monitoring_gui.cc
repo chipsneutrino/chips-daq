@@ -297,9 +297,8 @@ void Monitoring_gui::addOpticalPacket(unsigned int pomID, unsigned int seqNumber
 	}
 }
 
-void Monitoring_gui::addMonitoringPacket(unsigned int pomID, unsigned int timeStamp_ms, 
-										 unsigned int hits[30], float temp, float humidity,
-										 unsigned int seqNumber) {
+void Monitoring_gui::addMonitoringPacket(unsigned int pomID, unsigned int hits[30], 
+										 float temp, float humidity, unsigned int seqNumber) {
 	// Search for this pomID in the config CLB IDs
 	std::vector<unsigned int>::iterator it = std::find(fCLBeIDs.begin(), fCLBeIDs.end(), pomID);
 

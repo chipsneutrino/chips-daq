@@ -4,36 +4,14 @@
 
 #include "DAQ_handler.h"
 
-DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
-			 			 bool collect_bbb_optical, bool collect_bbb_monitoring,
+DAQ_handler::DAQ_handler(bool collect_clb_data, bool collect_bbb_data,
 						 bool gui, int numThreads, std::string configFile) :
-						 fCollect_CLB_optical_data(collect_clb_optical),
-						 fCollect_CLB_monitoring_data(collect_clb_monitoring),
-						 fCollect_BBB_optical_data(collect_bbb_optical),
-						 fCollect_BBB_monitoring_data(collect_bbb_monitoring),
+						 fCollect_clb_data(collect_clb_data),
+						 fCollect_bbb_data(collect_bbb_data),
 						 fShow_gui(gui), fNum_threads(numThreads) {
 
-	// How we want this to run...
-	// 1) Set to monitoring mode and initialise run variables
-	// 2) Setup the io_service
-	// 3) Setup the signal listener
-	// 4) Setup the local socket (DAQommand) listener
-	// 5) Setup the monitoring GUI (if required)
-	// 6) Setup the CLB handler (if required)
-	// 7) Setup the BBB handler (if required)
-	// 8) Setup the thread group and call io_service.run() in each
-	// 9) Wait for all the threads to finish
-	// 10) Terminate the ROOT gApplication (if required)
-
-	// 1) Set to monitoring mode and initialise run variables
+	// 1) Set to monitoring mode
 	fMode = false;
-
-	fRun_type = -1;
-	fOutput_file = NULL;
-	fCLB_optical_tree = NULL;
-	fCLB_monitoring_tree = NULL;
-	fBBB_optical_tree = NULL;
-	fBBB_monitoring_tree = NULL;
 
 	// 2) Setup the io_service
 	fIO_service = new boost::asio::io_service();
@@ -48,29 +26,34 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 	fLocal_socket->set_option(option_local);
 	workLocalSocket();
 
-	// 5) Setup the monitoring GUI (if required)
+	// 5) Setup the monitoring GUI and timers (if required)
 	if (fShow_gui) {
 		fGui_event_timer = new boost::asio::deadline_timer(*fIO_service, boost::posix_time::millisec(GUIROOTRATE));
 		fGui_update_timer = new boost::asio::deadline_timer(*fIO_service, boost::posix_time::millisec(GUIUPDATERATE));
 		fDaq_gui = new Monitoring_gui(GUIUPDATERATE, configFile);
 		workGuiEvents();
 		workGuiUpdate();
-	} else { fDaq_gui = NULL; }
+	} else { 
+		fGui_event_timer = NULL; 
+		fGui_update_timer = NULL; 
+		fDaq_gui = NULL; 
+	}
 
-	// 6) Setup the CLB handler (if required)
-	if (fCollect_CLB_optical_data || fCollect_CLB_monitoring_data) {
-		fCLB_handler = new DAQ_clb_handler(fIO_service, 
-										   fCollect_CLB_optical_data, fCollect_CLB_monitoring_data,
-									   	   fDaq_gui, &fMode);
+	// 6) Setup the data_handler that deals with the ROOT TTree's and files
+	fData_handler = new DAQ_data_handler(fCollect_clb_data, fCollect_bbb_data);
+
+	// 7) Setup the CLB handler (if required)
+	if (fCollect_clb_data) {
+		fCLB_handler = new DAQ_clb_handler(fIO_service, fDaq_gui, fData_handler, &fMode);
 		fCLB_handler->workMonitoringData();
-	}
+	} else { fCLB_handler = NULL; }
 
-	// 7) Setup the BBB handler (if required)
-	if (fCollect_BBB_optical_data || fCollect_BBB_monitoring_data) {
+	// 8) Setup the BBB handler (if required)
+	if (fCollect_bbb_data) {
 		fBBB_handler = new DAQ_bbb_handler();
-	}
+	} else { fBBB_handler = NULL; }
 
-	// 8) Setup the thread group and call io_service.run() in each
+	// 9) Setup the thread group and call io_service.run() in each
 	std::cout << "DAQonite - Starting IO service With " << fNum_threads << " threads" << std::endl;
 	std::cout << "DAQonite - Waiting for DAQommand command..." << std::endl;
 	fThread_group = new boost::thread_group();
@@ -78,157 +61,22 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 		fThread_group->create_thread( boost::bind(&DAQ_handler::ioServiceThread, this) );
 	}
 
-	// 9) Wait for all the threads to finish
+	// 10) Wait for all the threads to finish
 	fThread_group->join_all();
 
-	// 10) Terminate the ROOT gApplication (if required)
+	// 11) Terminate the ROOT gApplication (if required)
 	if (fDaq_gui != NULL) {	
-		std::cout << "DAQonite - Terminating gApplication" << std::endl;
+		std::cout << "DAQonite - Terminating ROOT gApplication" << std::endl;
 		gApplication->Terminate(0);	
 	}
 }
 
 DAQ_handler::~DAQ_handler() {
-	if (fOutput_file!=NULL) {
-		fOutput_file->Close();
-		fOutput_file = NULL;
-	}
 	delete fIO_service;
 	delete fSignal_set;
+	delete fData_handler;
 	delete fCLB_handler;
 	delete fBBB_handler;
-}
-
-void DAQ_handler::startRun() {
-	// If we are currently running, stop the current run before starting a new one
-	if (fMode == true) { stopRun(); }
-
-	// Setup the output file
-	int runNum = getRunAndUpdate();
-	fFilename = "../data/";
-	fFilename += "type";
-	fFilename += fRun_type;
-	fFilename += "_run";
-	fFilename += runNum;
-	fFilename += ".root";
-	fOutput_file = new TFile(fFilename, "RECREATE");
-	if (!fOutput_file) { throw std::runtime_error("DAQonite - Error: Opening output file!"); }
-	if (fCollect_CLB_optical_data) {
-		fCLB_optical_tree = new TTree("CLBOpt_tree", "CLBOpt_tree");
-		if (!fCLB_optical_tree) { throw std::runtime_error("DAQonite - Error: fCLB_optical_tree!"); }
-	}
-	if (fCollect_CLB_monitoring_data) {
-		fCLB_monitoring_tree = new TTree("CLBMon_tree", "CLBMon_tree");
-		if (!fCLB_monitoring_tree) { throw std::runtime_error("DAQonite - Error: fCLB_monitoring_tree!"); }
-	}
-	if (fCollect_BBB_optical_data) {
-		fBBB_optical_tree = new TTree("BBBOpt_tree", "BBBOpt_tree");
-		if (!fBBB_optical_tree) { throw std::runtime_error("DAQonite - Error: fBBB_optical_tree!"); }
-	}
-	if (fCollect_BBB_monitoring_data) {
-		fBBB_monitoring_tree = new TTree("BBBMon_tree", "BBBMon_tree");
-		if (!fBBB_monitoring_tree) { throw std::runtime_error("DAQonite - Error: fBBB_monitoring_tree!"); }
-	}
-
-	// Give the TTree's to the clb_handler
-	fCLB_handler->setSaveTrees(fCLB_optical_tree, fCLB_monitoring_tree);
-
-	// Give run info to the GUI
-	if (fDaq_gui != NULL) { 
-		fDaq_gui->startRun(fRun_type, runNum, fFilename); 
-	}
-
-	// Set the mode to running and call a workOpticalData to start its collection
-	std::cout << "\nDAQonite - Start mining on ( "<< default_opto_port << ", " << default_moni_port << " )..." << std::endl;
-	std::cout << "DAQonite - Filling container: " << fFilename << std::endl;
-	fMode = true;
-	fCLB_handler->workOpticalData();
-}
-
-void DAQ_handler::stopRun() {
-	// Check we are actually running
-	if (fMode == true) {
-		std::cout << "\nDAQonite - Stop mining" << std::endl;
-
-		// Send stopRun() to the GUI so it can reset itself
-		if (fDaq_gui != NULL) { fDaq_gui->stopRun(); }
-
-		// Set the mode to monitoring
-		fMode = false;
-
-		// Save the output file
-		if (fOutput_file != NULL) {
-			std::cout << "DAQonite - Closing the container: " << fFilename << std::endl;
-			if (fCLB_optical_tree != NULL && fCollect_CLB_optical_data) { fCLB_optical_tree->Write(); }
-			if (fCLB_monitoring_tree != NULL && fCollect_CLB_monitoring_data) { fCLB_monitoring_tree->Write(); }
-			if (fBBB_optical_tree != NULL && fCollect_BBB_optical_data) { fBBB_optical_tree->Write(); }
-			if (fBBB_monitoring_tree != NULL && fCollect_BBB_monitoring_data) { fBBB_monitoring_tree->Write(); }
-
-			fOutput_file->Close();
-			fOutput_file = NULL;
-			fCLB_optical_tree = NULL;
-			fCLB_monitoring_tree = NULL;
-			fBBB_optical_tree = NULL;
-			fBBB_monitoring_tree = NULL;
-		}		
-
-		// Set the TTree's the clb_handler has to NULL ready for another run
-		fCLB_handler->clearSaveTrees();
-
-	} else { 
-		std::cout << "\nDAQonite - Already stopped mining" << std::endl;
-	}
-}
-
-void DAQ_handler::exit() {
-	if (fMode == true) { stopRun(); }
-	std::cout << "\nDAQonite - Done for the day" << std::endl;
-	fIO_service->stop();
-}
-
-int DAQ_handler::getRunAndUpdate() {
-	// 4 fRun_types -> 1) Data_normal, 2) Calibration, 3) Test_normal, 4) test_daq
-	if (fRun_type < 0 || fRun_type >= NUMRUNTYPES) {
-		throw std::runtime_error("DAQonite - Error: Incorrect run type number!");
-	}
-
-	int returnNum = 1;
-	int runNums[NUMRUNTYPES];
-	std::ifstream runNumFile("../data/runNumbers.dat");	
-	if(runNumFile.fail()) {
-		runNumFile.close();	
-		// The file does not yet exist so lets create it
-		std::ofstream newFile("../data/runNumbers.dat");
-  		if (newFile.is_open()) {
-			for (int i=0; i<NUMRUNTYPES; i++) {	
-				if (fRun_type == (unsigned int)i) { 
-					newFile << 2 << "\n"; 
-				} else { newFile << 1 << "\n"; }
-			}
-			newFile.close();
-		} else { throw std::runtime_error("DAQonite - Error: Unable to create ../data/runNumbers.dat!"); }
-	} else {
-		// The file exists so read from it
-		for (int i=0; i<NUMRUNTYPES; i++) { 
-			runNumFile >> runNums[i]; 
-			if (runNums[i] < 1) { runNums[i] = 1; }
-			if (fRun_type == (unsigned int)i) { returnNum = runNums[i]; }
-		}
-		runNumFile.close();	
-
-		// The file does not yet exist so lets create it
-		std::ofstream updateFile("../data/runNumbers.dat");
-  		if (updateFile.is_open()) {
-			for (int i=0; i<NUMRUNTYPES; i++) {	
-				if (fRun_type == (unsigned int)i) { 
-					updateFile << runNums[i] + 1 << "\n"; 
-				} else { updateFile << 1 << "\n"; }
-			}
-			updateFile.close();
-		} else { throw std::runtime_error("DAQonite - Error: Unable to update runNumbers.dat!"); }
-	}
-
-	return returnNum;
 }
 
 void DAQ_handler::ioServiceThread() {
@@ -239,8 +87,20 @@ void DAQ_handler::ioServiceThread() {
 void DAQ_handler::handleSignals(boost::system::error_code const& error, int signum) {
 	if (!error) {
 		if (signum == SIGINT) {
-			stopRun();
-			exit();
+			if (fMode) {
+				std::cout << "DAQonite - Stopping current run first" << std::endl;
+
+				// Set the mode to monitoring
+				fMode = false;
+
+				// Send stopRun() to the GUI so it can reset itself
+				if (fDaq_gui != NULL) { fDaq_gui->stopRun(); }	
+
+				// Stop the data_handler run
+				fData_handler->stopRun();
+			}
+			std::cout << "\nDAQonite - Done for the day" << std::endl;
+			fIO_service->stop();
 			return;
 		}
 
@@ -258,12 +118,64 @@ void DAQ_handler::workSignals() {
 void DAQ_handler::handleLocalSocket(boost::system::error_code const& error, std::size_t size) {
 	if (!error) {
 		if (strncmp(fBuffer_local, "start", 5) == 0) {
-			fRun_type = (int)fBuffer_local[5]-48;
-			startRun();
+			// If we are currently running first stop the current run
+			if (fMode == true) {
+				std::cout << "DAQonite - Stopping current run first" << std::endl;
+
+				// Set the mode to monitoring
+				fMode = false;
+
+				// Send stopRun() to the GUI so it can reset itself
+				if (fDaq_gui != NULL) { fDaq_gui->stopRun(); }	
+
+				// Stop the data_handler run
+				fData_handler->stopRun();
+			}
+
+			// Start a data_handler run
+			fData_handler->startRun((int)fBuffer_local[5]-48);
+
+			// Give run info to the GUI
+			if (fDaq_gui != NULL) { 
+				fDaq_gui->startRun(fData_handler->getRunType(), 
+								   fData_handler->getRunNum(), 
+								   fData_handler->getOutputName()); 
+			}
+
+			// Set the mode to data taking
+			fMode = true;
+
+			// Call the first work method to the optical data
+			fCLB_handler->workOpticalData();
 		} else if (strncmp(fBuffer_local, "stop", 4) == 0) {
-			stopRun();
+			// Check we are actually running
+			if (fMode == true) {
+				// Set the mode to monitoring
+				fMode = false;
+
+				// Send stopRun() to the GUI so it can reset itself
+				if (fDaq_gui != NULL) { fDaq_gui->stopRun(); }
+
+				// Stop the data_handler run
+				fData_handler->stopRun();			
+			} else { 
+				std::cout << "\nDAQonite - Already stopped mining" << std::endl;
+			}
 		} else if (strncmp(fBuffer_local, "exit", 4) == 0) {
-			exit();
+			if (fMode == true) {
+				std::cout << "DAQonite - Stopping current run first" << std::endl;
+
+				// Set the mode to monitoring
+				fMode = false;
+
+				// Send stopRun() to the GUI so it can reset itself
+				if (fDaq_gui != NULL) { fDaq_gui->stopRun(); }	
+
+				// Stop the data_handler run
+				fData_handler->stopRun();
+			}
+			std::cout << "\nDAQonite - Done for the day" << std::endl;
+			fIO_service->stop();
 			return;
 		} else {
 			std::cout << "\nDAQonite - Error: Don't understand the command!\n" << std::endl;

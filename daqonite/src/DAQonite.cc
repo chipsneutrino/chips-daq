@@ -25,10 +25,8 @@ int main(int argc, char* argv[]) {
 	std::cout << "DAQonite - Checking hard hats, high-vis, boots and gloves" << std::endl;
 
 	// Default settings
-	bool collect_clb_optical 		= true;
-	bool collect_clb_monitoring 	= true;
-	bool collect_bbb_optical 		= false;
-	bool collect_bbb_monitoring 	= false;
+	bool collect_clb_data			= true;
+	bool collect_bbb_data 			= false;
 	bool useMonitoringGui			= true;
 	unsigned int numThreads			= 3;
 	std::string configFile			= "../data/config.opt";
@@ -38,8 +36,6 @@ int main(int argc, char* argv[]) {
 	desc.add_options()
 		("help,h", "DAQonite - Default:\n - Shows GUI\n - Always shows monitoring\n - Saves files when in run")
 		("noGui",  "Don't show the monitoring GUI")
-		("noOpt",  "Don't mine the optical data")
-		("noMon",  "Don't mine the monitoring data")
 		("threads,t", boost::program_options::value<unsigned int>(&numThreads),
           		   "Number of threads to use, default = 3")
 		("config,c", boost::program_options::value<std::string>(&configFile),
@@ -55,14 +51,6 @@ int main(int argc, char* argv[]) {
 		}
 		if (vm.count("noGui")) {
 			useMonitoringGui = false;
-		}
-		if (vm.count("noOpt")) {
-			collect_clb_optical = false;
-			collect_bbb_optical = false;
-		}
-		if (vm.count("noMon")) {
-			collect_clb_monitoring = false;
-			collect_bbb_monitoring = false;
 		}
 		boost::program_options::notify(vm);
 
@@ -83,12 +71,10 @@ int main(int argc, char* argv[]) {
 	if (useMonitoringGui) {
 		TApplication theApp("app", &argc, argv);
 
-		daq_handler = new DAQ_handler(collect_clb_optical, collect_clb_monitoring, 
-									  collect_bbb_optical, collect_bbb_monitoring,
+		daq_handler = new DAQ_handler(collect_clb_data, collect_bbb_data,
 									  useMonitoringGui, numThreads, configFile);
 	} else {
-		daq_handler = new DAQ_handler(collect_clb_optical, collect_clb_monitoring, 
-									  collect_bbb_optical, collect_bbb_monitoring,
+		daq_handler = new DAQ_handler(collect_clb_data, collect_bbb_data,
 									  useMonitoringGui, numThreads, configFile);	
 	}
 	delete daq_handler;

@@ -67,13 +67,12 @@ class Monitoring_gui {
 		 * Adds a monitoring packet from a clb to the monitoring
 		 * 
 		 * @param pomID The POM ID of the packet
-		 * @param timeStamp_ms Timestamp in ms for the monitoring packet
 		 * @param hits Array holding the number of hits on each channel
 		 * @param temp CLB temperature in Celsius
 		 * @param humidity CLB humidity in RH
 		 * @param seqNumber Packet sequence number
 		 */	
-		void addMonitoringPacket(unsigned int pomID, unsigned int timeStamp_ms, unsigned int hits[30],
+		void addMonitoringPacket(unsigned int pomID, unsigned int hits[30], 
 								 float temp, float humidity, unsigned int seqNumber);		
 
 		/** 

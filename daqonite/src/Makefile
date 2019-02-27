@@ -8,7 +8,7 @@ CXXFLAGS =		$(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0 -std=c++0x
 
 ROOTFLAGS = 	`root-config --cflags --glibs`
 
-OBJS =          Monitoring_buffer.o Monitoring_config.o Monitoring_gui.o DAQ_clb_handler.o DAQ_bbb_handler.o DAQ_handler.o DAQonite.o
+OBJS =          Monitoring_buffer.o Monitoring_config.o Monitoring_gui.o DAQ_data_handler.o DAQ_clb_handler.o DAQ_bbb_handler.o DAQ_handler.o DAQonite.o
 
 rootcint:
 	rootcint -f Monitoring_gui_dict.cc -c ../include/Monitoring_gui.h Monitoring_gui_linkdef.h

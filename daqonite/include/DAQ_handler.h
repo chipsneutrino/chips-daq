@@ -13,9 +13,6 @@
 #ifndef DAQ_HANDLER_H_
 #define DAQ_HANDLER_H_
 
-
-#include <iostream>
-#include <fstream>
 #include <boost/asio.hpp>
 #include <boost/program_options.hpp>
 #include <boost/thread.hpp>
@@ -30,9 +27,9 @@
 #include "DAQ_clb_handler.h"
 #include "DAQ_bbb_handler.h"
 #include "Monitoring_gui.h"
+#include "DAQ_data_handler.h"
 
 /// The number of different types of run possible
-#define NUMRUNTYPES 4
 #define GUIROOTRATE 10
 #define GUIUPDATERATE 1000
 
@@ -45,44 +42,13 @@ class DAQ_handler {
 		 * Initial work is then added to the IO_service before run() is called to
 		 * start to main loop.
 		 */
-		DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
-					bool collect_bbb_optical, bool collect_bbb_monitoring,
+		DAQ_handler(bool collect_clb_data, bool collect_bbb_data,
 					bool gui, int numThreads, std::string configFile);
 
 		/// Destroy a DAQ_handler
 		~DAQ_handler();
 
 	private:
-
-		/**
-		 * Setup the data collection and start the IO_service
-		 * Opens the output file, sets up the UDP sockets, adds the initial work
-		 * to the IO_service needed for data collection.
-		 */
-		void startRun();
-
-		/**
-		 * Stops data collection and saves file
-		 * This function stops data collection and writes the TTree's to the file
-		 * before saving
-		 */		
-		void stopRun();
-
-		/**
-		 * Exits DAQonite
-		 * This function stops the IO_service and terminates the application. It will
-		 * call stopRun() first if currently running.
-		 */	
-		void exit();
-
-		/**
-		 * Reads and updates runNumbers.dat
-		 * Reads ../data/runNumbers.dat to determine the run number for the given run
-		 * type. It then increments this value in the file
-		 * 
-		 * @return The run number
-		 */	
-		int getRunAndUpdate();
 
 		/**
 		 * Binded to thread creation
@@ -131,38 +97,30 @@ class DAQ_handler {
 		 */	
 		void workGuiEvents();
 
-		// DAQ_handler settings
-		bool 						fCollect_CLB_optical_data;		///< Should we collect CLB optical data?
-		bool 						fCollect_CLB_monitoring_data;	///< Should we collect CLB monitoring data?
-		bool 						fCollect_BBB_optical_data;		///< Should we collect BBB optical data?
-		bool 						fCollect_BBB_monitoring_data;	///< Should we collect BBB monitoring data?
-		bool 						fShow_gui;						///< Should we run the monitoring GUI?
-		bool 						fSave_data;						///< Should we save data to .root file?
-		int 						fNum_threads;					///< The number of threads to use
+		// Settings
+		bool 							fCollect_clb_data;			///< Should we collect CLB optical data?
+		bool 							fCollect_bbb_data;			///< Should we collect CLB monitoring data?
+		bool 							fShow_gui;					///< Should we run the monitoring GUI?
+		int 							fNum_threads;				///< The number of threads to use
 
-		// Mode and running stuff
-		bool						fMode;							///< false = Monitoring, True = Running
-		unsigned int 				fRun_type;						///< Type of run (data, test, etc...)
-		TString 					fFilename;						///< Output file name
-		TFile* 						fOutput_file;					///< ROOT output file
-		TTree* 						fCLB_optical_tree;				///< ROOT CLB optical output TTree
-		TTree* 						fCLB_monitoring_tree;			///< ROOT CLB monitoring output TTree
-		TTree* 						fBBB_optical_tree;				///< ROOT BBB optical output TTree
-		TTree* 						fBBB_monitoring_tree;			///< ROOT BBB monitoring output TTree
+		// Mode (monitoring vs data taking)
+		bool							fMode;						///< false = Monitoring, True = Running
 
 		// IO_service stuff
-		boost::asio::io_service* 	fIO_service;					///< BOOST io_service. The heart of everything
-		boost::thread_group* 		fThread_group;					///< Group of threads to do the work
-		boost::asio::signal_set*	fSignal_set;					///< BOOST signal_set
-		boost::asio::deadline_timer*	fGui_event_timer;			///< Boost GUI ROOT event timer
-		boost::asio::deadline_timer*	fGui_update_timer;			///< Boost GUI update timer
-		udp::socket*				fLocal_socket;					///< Local UDP control socket
+		boost::asio::io_service* 		fIO_service;				///< BOOST io_service. The heart of everything
+		boost::thread_group* 			fThread_group;				///< Group of threads to do the work
+		boost::asio::signal_set*		fSignal_set;				///< BOOST signal_set
+		udp::socket*					fLocal_socket;				///< Local UDP control socket
 		char fBuffer_local[buffer_size] __attribute__((aligned(8)));///< Local socket buffer
-		DAQ_clb_handler* 			fCLB_handler;					///< Pointer to CLB_handler
-		DAQ_bbb_handler* 			fBBB_handler;					///< Pointer to BBB_handler
+		DAQ_data_handler*				fData_handler;				///< Pointer to data_handler
+		DAQ_clb_handler* 				fCLB_handler;				///< Pointer to CLB_handler
+		DAQ_bbb_handler* 				fBBB_handler;				///< Pointer to BBB_handler
 
 		// Monitoring GUI
-		Monitoring_gui* 			fDaq_gui;						///< Pointer to the monitoring GUI
+		boost::asio::deadline_timer*	fGui_event_timer;			///< Boost GUI ROOT event timer
+		boost::asio::deadline_timer*	fGui_update_timer;			///< Boost GUI update timer
+		Monitoring_gui* 				fDaq_gui;					///< Pointer to the monitoring GUI
+
 };
 
 #endif
