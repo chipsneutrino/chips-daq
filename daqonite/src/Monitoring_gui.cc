@@ -5,11 +5,11 @@
 #include "Monitoring_gui.h"
 
 #define PLOTLENGTH 100
-#define UPDATERATE 2000
 #define PMTSPERPOM 30
 #define HIGHRATE 10000
 
-Monitoring_gui::Monitoring_gui(std::string configFile) : fConfigFile(configFile) {
+Monitoring_gui::Monitoring_gui(int updateRate, std::string configFile) : 
+							   fUpdateRate(updateRate), fConfigFile(configFile) {
 
 	//////////////////////////////////////
 	//			GUI SETUP START			//
@@ -233,15 +233,13 @@ Monitoring_gui::Monitoring_gui(std::string configFile) : fConfigFile(configFile)
 	// Current run variables
 	fRunNumber = -1;
 	fRunType = -1;
-	fRunStartTime = 0;
 	fRunTotalPackets = 0;
 	fRunTotalDropped = 0;
 	fRunFile = "";
+	fRunUpdates = 0;
 
 	// Window variables
-	fWindowPackets = 0;
-	fWindowCLBID = 0;
-	fWindowStartTime = 0;
+	fUpdatePackets = 0;
 
 	// Monitoring variables
 	fPacketsReceived = 0;
@@ -340,27 +338,8 @@ void Monitoring_gui::addMonitoringPacket(unsigned int pomID, unsigned int timeSt
 		fTempArray[clbIndex] = temp;
 		fHumidityArray[clbIndex] = humidity;
 
-		if ( fPacketsReceived == 0 ) {
-			// Set the window CLB ID and first window start time
-			fWindowCLBID = pomID;
-			fWindowStartTime = timeStamp_ms;
-		} else if ( pomID != fWindowCLBID ) {
-			// Packet is not the window CLB and so just add hits and skip
-			fWindowPackets++;
-		} else if ( (timeStamp_ms - fWindowStartTime) < UPDATERATE ) {
-			// This is the window CLB, but we do not need to do an update yet, therefore add hits and skip
-			fWindowPackets++;
-		} else {
-			// This is the window CLB and we now need to update everything
-			update();
-
-			// We can now draw everything to the GUI display
-			draw();
-
-			// Reset the window variables
-			fWindowPackets = 0;
-			fWindowStartTime = timeStamp_ms;			
-		}
+		// Increment the number of packets received in this update window
+		fUpdatePackets++;
 
 		// Increment the packet counter 
 		fPacketsReceived ++;
@@ -425,8 +404,10 @@ void Monitoring_gui::clearPomRates(unsigned int pomIndex) {
 	for(int channel = 0; channel<PMTSPERPOM; channel++) fRateArray[pomIndex][channel] = 0;
 }
 
-void Monitoring_gui::update() {
+void Monitoring_gui::updatePlots() {
 	fNumUpdates++;
+
+	if (fMode) { fRunUpdates ++; }
 
 	// Do we need to clear the plots that have reached PLOTLENGTH and start again?
 	if ((fNumUpdates % PLOTLENGTH) == 0) { refreshPlots(); }
@@ -474,14 +455,14 @@ void Monitoring_gui::update() {
 			}
 
 			// If more than HIGHRATE hits its odd
-			if ( (hits/((float)UPDATERATE/1000)) > HIGHRATE) { fOddChannels++; }
+			if ( (hits/((float)fUpdateRate/1000)) > HIGHRATE) { fOddChannels++; }
 
 			// Set the individual channel rate plot
 			int plotVectorIndex = (pomIndex*PMTSPERPOM) + (channelIndex);
-			fChannelRatePlots[plotVectorIndex]->SetBinContent(fNumUpdates-(fNumRefresh*PLOTLENGTH), hits/((float)UPDATERATE/1000));
+			fChannelRatePlots[plotVectorIndex]->SetBinContent(fNumUpdates-(fNumRefresh*PLOTLENGTH), hits/((float)fUpdateRate/1000));
 
 			// Set the heat map bin for this channel
-			fRateHeatMapPlot->SetBinContent(channelIndex+1, pomIndex+1, hits/((float)UPDATERATE/1000));
+			fRateHeatMapPlot->SetBinContent(channelIndex+1, pomIndex+1, hits/((float)fUpdateRate/1000));
 		}
 		clearPomRates(pomIndex);
 	}
@@ -491,10 +472,10 @@ void Monitoring_gui::update() {
 	}
 
 	// Set the total channel rate plot
-	fTotalRatePlot->SetBinContent(fNumUpdates-(fNumRefresh*PLOTLENGTH), (float)totalHits / ((float)UPDATERATE/1000));
+	fTotalRatePlot->SetBinContent(fNumUpdates-(fNumRefresh*PLOTLENGTH), (float)totalHits / ((float)fUpdateRate/1000));
 
 	// Set the total packet rate plot
-	fPacketRatePlot->SetBinContent(fNumUpdates-(fNumRefresh*PLOTLENGTH), fWindowPackets / ((float)UPDATERATE/1000));
+	fPacketRatePlot->SetBinContent(fNumUpdates-(fNumRefresh*PLOTLENGTH), fUpdatePackets / ((float)fUpdateRate/1000));
 
 	// Set the temperature and humidity average plots
 	fAvgTempPlot->SetBinContent(fNumUpdates-(fNumRefresh*PLOTLENGTH), sumTemp / (float)fActiveCLBs);
@@ -503,6 +484,8 @@ void Monitoring_gui::update() {
 	// Set the packet plots
 	fTotalPacketPlot->SetBinContent(fNumUpdates-(fNumRefresh*PLOTLENGTH), fRunTotalPackets);
 	fTotalDroppedPlot->SetBinContent(fNumUpdates-(fNumRefresh*PLOTLENGTH), fRunTotalDropped);
+
+	fUpdatePackets = 0;
 }
 
 void Monitoring_gui::refreshPlots() {
@@ -720,7 +703,7 @@ void Monitoring_gui::drawLabels() {
 	TString timeLabelText = "Time [s]: "; 
 	if (fMode) { 
 		fRunTimeLabel->SetBackgroundColor(TColor::Number2Pixel(8)); 
-		timeLabelText += (float)(fWindowStartTime - fRunStartTime)/1000; 
+		timeLabelText += (float)(fRunUpdates*fUpdateRate)/1000; 
 	}
 	else { 
 		fRunTimeLabel->SetBackgroundColor(TColor::Number2Pixel(46)); 
@@ -1066,10 +1049,10 @@ void Monitoring_gui::startRun(unsigned int type, unsigned int run, TString fileN
 
 	fRunNumber = run;
 	fRunType = type;
-	fRunStartTime = fWindowStartTime;
 	fRunTotalPackets = 0;
 	fRunTotalDropped = 0;
 	fRunFile = fileName;	
+	fRunUpdates = 0;
 
 	// Only draw if we are not receiving packets. Need to setup a mutex do deal with this correctly
 	if (fPacketsReceived == 0) { draw(); }
@@ -1081,10 +1064,10 @@ void Monitoring_gui::stopRun() {
 	// Reset the run variables
 	fRunNumber = -1;
 	fRunType = -1;
-	fRunStartTime = 0;
 	fRunTotalPackets = 0;
 	fRunTotalDropped = 0;
 	fRunFile = "";
+	fRunUpdates = 0;
 
 	// Reset the packet variables
 	for (int clbNum = 0; clbNum<fNumCLBs; clbNum++) {
@@ -1098,4 +1081,9 @@ void Monitoring_gui::stopRun() {
 
 	// Only draw if we are not receiving packets. Need to setup a mutex do deal with this correctly
 	if (fPacketsReceived == 0) { draw(); }
+}
+
+void Monitoring_gui::update() {
+	updatePlots();
+	draw();
 }

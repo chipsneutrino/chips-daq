@@ -20,6 +20,7 @@
 #include <boost/program_options.hpp>
 #include <boost/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/gregorian/gregorian_types.hpp>
 
 #include "TFile.h"
 #include "TTree.h"
@@ -32,6 +33,8 @@
 
 /// The number of different types of run possible
 #define NUMRUNTYPES 4
+#define GUIROOTRATE 10
+#define GUIUPDATERATE 1000
 
 class DAQ_handler {
 	public:
@@ -48,6 +51,8 @@ class DAQ_handler {
 
 		/// Destroy a DAQ_handler
 		~DAQ_handler();
+
+	private:
 
 		/**
 		 * Setup the data collection and start the IO_service
@@ -95,6 +100,9 @@ class DAQ_handler {
 		 */	
 		void handleSignals(boost::system::error_code const& error, int signum);
 
+		/// Calls the async_wait() on the signal_set
+		void workSignals();
+
 		/**
 		 * Handles the local control socket
 		 * Handles any commands sent from daq_command over the local control UDP socket.
@@ -105,20 +113,24 @@ class DAQ_handler {
 		 */	
 		void handleLocalSocket(boost::system::error_code const& error, std::size_t size);
 
-		/// Calls the async_wait() on the signal_set
-		void workSignals();
-
 		/// Calls the async_receive() on the local UDP control socket
 		void workLocalSocket();
 
 		/**
-		 * Keeps the GUI working
-		 * Calls the ROOT method ProcessEvents() to process any events for the monitoring
-		 * GUI. Need to include a sleep() in order for this to not consume 100% CPU.
-		 */	
-		void workGui();
+		 * Handles the updating of the GUI
+		 * Updates the plots in the GUI to show the most recent monitoring info
+		 */			
+		void handleGuiUpdate();
 
-	private:
+		/// Calls the async_wait() on the update timer
+		void workGuiUpdate();
+
+		/**
+		 * Keeps the ROOT GUI processing events (clicks etc...)
+		 * Calls the ProcessEvents() method from ROOT
+		 */	
+		void workGuiEvents();
+
 		// DAQ_handler settings
 		bool 						fCollect_CLB_optical_data;		///< Should we collect CLB optical data?
 		bool 						fCollect_CLB_monitoring_data;	///< Should we collect CLB monitoring data?
@@ -142,7 +154,8 @@ class DAQ_handler {
 		boost::asio::io_service* 	fIO_service;					///< BOOST io_service. The heart of everything
 		boost::thread_group* 		fThread_group;					///< Group of threads to do the work
 		boost::asio::signal_set*	fSignal_set;					///< BOOST signal_set
-		boost::asio::deadline_timer*	fGui_timer;					///< Boost GUI timer
+		boost::asio::deadline_timer*	fGui_event_timer;			///< Boost GUI ROOT event timer
+		boost::asio::deadline_timer*	fGui_update_timer;			///< Boost GUI update timer
 		udp::socket*				fLocal_socket;					///< Local UDP control socket
 		char fBuffer_local[buffer_size] __attribute__((aligned(8)));///< Local socket buffer
 		DAQ_clb_handler* 			fCLB_handler;					///< Pointer to CLB_handler

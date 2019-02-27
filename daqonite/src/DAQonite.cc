@@ -74,8 +74,8 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	if (numThreads < 1 || numThreads > 4) {
-		throw std::runtime_error("DAQonite - Error: Invalid number of threads. Valid = [1,4]!");
+	if (numThreads < 1 || numThreads > 8) {
+		throw std::runtime_error("DAQonite - Error: Invalid number of threads. Valid = [1,8]!");
 	}
 
 	// Need to start a TApplication if we are using the GUI

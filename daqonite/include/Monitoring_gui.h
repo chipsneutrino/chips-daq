@@ -50,7 +50,7 @@ class Monitoring_gui {
 		 * Create a Monitoring_gui object
 		 * Creates the monitoring GUI object and builds the ROOT TApplication GUI.
 		 */		
-		Monitoring_gui(std::string configFile);
+		Monitoring_gui(int updateRate, std::string configFile);
 
 		/// Destroys the Monitoring_gui object
 		virtual ~Monitoring_gui();
@@ -111,6 +111,11 @@ class Monitoring_gui {
 		 */			
 		void stopRun();
 
+		/** 
+		 * Updates everything and then draws to canvases
+		 */			
+		void update();		
+
 	private:
 
 		/** 
@@ -137,7 +142,7 @@ class Monitoring_gui {
 		 * This fills the plots with the contents of fRateArray, calculating all the bits
 		 * we need
 		 */		
-		void update();
+		void updatePlots();
 
 		/** 
 		 * When plots are full empty them
@@ -226,14 +231,15 @@ class Monitoring_gui {
 		// Current run variables
 		int					fRunNumber;			///< The current run number
 		int					fRunType;			///< The current run type
-		unsigned int		fRunStartTime;		///< The current run start time
 		unsigned int 		fRunTotalPackets;	///< Total number of optical and monitoring packets in the run
 		unsigned int 		fRunTotalDropped;	///< Total number of dropped packets in the run
 		TString				fRunFile;			///< The output .root file for this run
 
 		// Window variables
-		int 				fWindowPackets;		///< The number of monitoring packets in this window
-		unsigned int 		fWindowCLBID;		///< The CLB ID used for the windows
+		int 				fUpdateRate;		///< The rate the plots will be updated
+		int 				fRunUpdates;		///< Number of updates in this run
+
+		int 				fUpdatePackets;		///< The number of monitoring packets in this update window
 		unsigned int 		fWindowStartTime;	///< The start time of the current window in ms
 
 		// Monitoring variables

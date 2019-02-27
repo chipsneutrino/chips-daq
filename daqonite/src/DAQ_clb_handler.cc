@@ -177,6 +177,8 @@ void DAQ_clb_handler::handleOpticalData(boost::system::error_code const& error, 
 		}
 
 		workOpticalData();
+	} else {
+		std::cout << "Error!" << std::endl;
 	}
 }
 
@@ -243,6 +245,8 @@ void DAQ_clb_handler::handleMonitoringData(boost::system::error_code const& erro
 		}
 
 		workMonitoringData();
+	} else {
+		std::cout << "Error!" << std::endl;
 	}
 }
 

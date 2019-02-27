@@ -50,9 +50,11 @@ DAQ_handler::DAQ_handler(bool collect_clb_optical, bool collect_clb_monitoring,
 
 	// 5) Setup the monitoring GUI (if required)
 	if (fShow_gui) {
-		fGui_timer = new boost::asio::deadline_timer(*fIO_service, boost::posix_time::millisec(10));
-		fDaq_gui = new Monitoring_gui(configFile);
-		workGui();
+		fGui_event_timer = new boost::asio::deadline_timer(*fIO_service, boost::posix_time::millisec(GUIROOTRATE));
+		fGui_update_timer = new boost::asio::deadline_timer(*fIO_service, boost::posix_time::millisec(GUIUPDATERATE));
+		fDaq_gui = new Monitoring_gui(GUIUPDATERATE, configFile);
+		workGuiEvents();
+		workGuiUpdate();
 	} else { fDaq_gui = NULL; }
 
 	// 6) Setup the CLB handler (if required)
@@ -247,6 +249,12 @@ void DAQ_handler::handleSignals(boost::system::error_code const& error, int sign
 	}
 }
 
+void DAQ_handler::workSignals() {
+	fSignal_set->async_wait(boost::bind(&DAQ_handler::handleSignals, this,
+					   	    boost::asio::placeholders::error,
+					   	    boost::asio::placeholders::signal_number));
+}
+
 void DAQ_handler::handleLocalSocket(boost::system::error_code const& error, std::size_t size) {
 	if (!error) {
 		if (strncmp(fBuffer_local, "start", 5) == 0) {
@@ -265,12 +273,6 @@ void DAQ_handler::handleLocalSocket(boost::system::error_code const& error, std:
 	}
 }
 
-void DAQ_handler::workSignals() {
-	fSignal_set->async_wait(boost::bind(&DAQ_handler::handleSignals, this,
-					   	    boost::asio::placeholders::error,
-					   	    boost::asio::placeholders::signal_number));
-}
-
 void DAQ_handler::workLocalSocket() {
 	fLocal_socket->async_receive(boost::asio::buffer(&fBuffer_local[0], buffer_size),
 								 boost::bind(&DAQ_handler::handleLocalSocket, this,
@@ -278,8 +280,31 @@ void DAQ_handler::workLocalSocket() {
 								 boost::asio::placeholders::bytes_transferred));
 }
 
-void DAQ_handler::workGui() {
-	gSystem->ProcessEvents();
-	fGui_timer->expires_from_now(boost::posix_time::millisec(10));
-	fGui_timer->async_wait(boost::bind(&DAQ_handler::workGui, this));
+void DAQ_handler::handleGuiUpdate() {
+	// This takes ~200 milliseconds so we call it as a seperate piece of work on the io_service
+	fDaq_gui->update();
 }
+
+void DAQ_handler::workGuiUpdate() {
+
+	// Can use code bellow to get the current time, useful for debugging
+	//boost::posix_time::ptime time_t_epoch(boost::gregorian::date(1970,1,1)); 
+	//boost::posix_time::ptime now = boost::posix_time::microsec_clock::local_time();
+	//boost::posix_time::time_duration diff = now - time_t_epoch;
+	//std::cout << diff.total_milliseconds() << std::endl;
+	
+	fIO_service->post(boost::bind(&DAQ_handler::handleGuiUpdate, this));
+
+	fGui_update_timer->expires_from_now(boost::posix_time::millisec(GUIUPDATERATE));
+	fGui_update_timer->async_wait(boost::bind(&DAQ_handler::workGuiUpdate, this));
+}
+
+void DAQ_handler::workGuiEvents() {
+	gSystem->ProcessEvents();
+	fGui_event_timer->expires_from_now(boost::posix_time::millisec(GUIROOTRATE));
+	fGui_event_timer->async_wait(boost::bind(&DAQ_handler::workGuiEvents, this));
+}
+
+
+
+
