@@ -1,10 +1,10 @@
 /**
- * DAQ_data_handler - Handler class for combining the data and saving to file
+ * DataHandler - Handler class for combining the data and saving to file
  */
 
-#include "DAQ_data_handler.h"
+#include "data_handler.h"
 
-DAQ_data_handler::DAQ_data_handler(bool collect_clb_data, bool collect_bbb_data) :
+DataHandler::DataHandler(bool collect_clb_data, bool collect_bbb_data) :
                                    fCollect_clb_data(collect_clb_data),
                                    fCollect_bbb_data(collect_bbb_data) {
 
@@ -19,14 +19,14 @@ DAQ_data_handler::DAQ_data_handler(bool collect_clb_data, bool collect_bbb_data)
 	fMon_tree_bbb = NULL;
 }
 
-DAQ_data_handler::~DAQ_data_handler() {
+DataHandler::~DataHandler() {
 	if (fOutput_file!=NULL) {
 		fOutput_file->Close();
 		fOutput_file = NULL;
 	}
 }
 
-void DAQ_data_handler::startRun(int run_type) {
+void DataHandler::startRun(int run_type) {
     // Set the fRun_type, fRun_num and fFile_name run variables
     fRun_type = run_type;
     getRunNumAndName();
@@ -35,27 +35,27 @@ void DAQ_data_handler::startRun(int run_type) {
 
     // Open the ROOT output file and check it exists
     fOutput_file = new TFile(fFile_name, "RECREATE");
-    if (!fOutput_file) { throw std::runtime_error("DAQonite - Error: Opening output file!"); }
+    if (!fOutput_file) { throw std::runtime_error("daqonite - Error: Opening output file!"); }
 
     // Create the TTree's, check they exist and add the branches
     if (fCollect_clb_data) {
         fOpt_tree_clb = new TTree("CLBOpt_tree", "CLBOpt_tree");
-        if (!fOpt_tree_clb) { throw std::runtime_error("DAQonite - Error: CLBOpt_tree!"); }
+        if (!fOpt_tree_clb) { throw std::runtime_error("daqonite - Error: CLBOpt_tree!"); }
         addOptCLBBranches();
         fMon_tree_clb = new TTree("CLBMon_tree", "CLBMon_tree");
-        if (!fMon_tree_clb) { throw std::runtime_error("DAQonite - Error: CLBMon_tree!"); }
+        if (!fMon_tree_clb) { throw std::runtime_error("daqonite - Error: CLBMon_tree!"); }
         addMonCLBBranches();
     }
 
     if (fCollect_bbb_data) {
         fOpt_tree_bbb = new TTree("BBBOpt_tree", "BBBOpt_tree");
-        if (!fOpt_tree_bbb) { throw std::runtime_error("DAQonite - Error: BBBOpt_tree!"); }
+        if (!fOpt_tree_bbb) { throw std::runtime_error("daqonite - Error: BBBOpt_tree!"); }
         fMon_tree_bbb = new TTree("BBBMon_tree", "BBBMon_tree");
-        if (!fMon_tree_bbb) { throw std::runtime_error("DAQonite - Error: BBBMon_tree!"); }        
+        if (!fMon_tree_bbb) { throw std::runtime_error("daqonite - Error: BBBMon_tree!"); }        
     }
 }
 
-void DAQ_data_handler::stopRun() {
+void DataHandler::stopRun() {
     // Write the TTree's to the output file
     if (fCollect_clb_data && fOpt_tree_clb != NULL && fMon_tree_clb != NULL) {
         fOpt_tree_clb->Write();
@@ -84,25 +84,25 @@ void DAQ_data_handler::stopRun() {
     fFile_name = "";
 }
 
-void DAQ_data_handler::fillOptCLBTree() {
+void DataHandler::fillOptCLBTree() {
     // Need mutex lock/unlock
     fOpt_tree_clb->Fill();
 }
 
-void DAQ_data_handler::fillMonCLBTree() {
+void DataHandler::fillMonCLBTree() {
     // Need mutex lock/unlock
     fMon_tree_clb->Fill();
 }
 
-void DAQ_data_handler::fillOptBBBTree() {
+void DataHandler::fillOptBBBTree() {
     // Empty
 }
 
-void DAQ_data_handler::fillMonBBBTree() {
+void DataHandler::fillMonBBBTree() {
     // Empty
 }
 
-void DAQ_data_handler::getRunNumAndName() {
+void DataHandler::getRunNumAndName() {
 	// 4 fRun_type -> 1) Data_normal, 2) Calibration, 3) Test_normal, 4) test_daq
 
 	int fRun_num = 1;
@@ -119,7 +119,7 @@ void DAQ_data_handler::getRunNumAndName() {
 				} else { newFile << 1 << "\n"; }
 			}
 			newFile.close();
-		} else { throw std::runtime_error("DAQonite - Error: Unable to create ../data/runNumbers.dat!"); }
+		} else { throw std::runtime_error("daqonite - Error: Unable to create ../data/runNumbers.dat!"); }
 	} else {
 		// The file exists so read from it
 		for (int i=0; i<NUMRUNTYPES; i++) { 
@@ -138,7 +138,7 @@ void DAQ_data_handler::getRunNumAndName() {
 				} else { updateFile << 1 << "\n"; }
 			}
 			updateFile.close();
-		} else { throw std::runtime_error("DAQonite - Error: Unable to update runNumbers.dat!"); }
+		} else { throw std::runtime_error("daqonite - Error: Unable to update runNumbers.dat!"); }
 	}  
 
 	fFile_name = "../data/type";
@@ -148,7 +148,7 @@ void DAQ_data_handler::getRunNumAndName() {
 	fFile_name += ".root";   
 }
 
-void DAQ_data_handler::addOptCLBBranches() {
+void DataHandler::addOptCLBBranches() {
 	fOpt_tree_clb->Branch("PomId", &fPomId_opt_clb, "fPomId_opt_clb/i");
 	fOpt_tree_clb->Branch("Channel", &fChannel_opt_clb, "fChannel_opt_clb/b");
 	fOpt_tree_clb->Branch("TimeStamp_s", &fTimestamp_s_opt_clb, "fTimestamp_s_opt_clb/i");
@@ -156,7 +156,7 @@ void DAQ_data_handler::addOptCLBBranches() {
 	fOpt_tree_clb->Branch("ToT", &fTot_opt_clb, "fTot_opt_clb/B");
 }
 
-void DAQ_data_handler::addMonCLBBranches() {
+void DataHandler::addMonCLBBranches() {
 	fMon_tree_clb->Branch("PomId", &fPomId_mon_clb, "fPomId_mon_clb/i");
 	fMon_tree_clb->Branch("TimeStamp_s", &fTimestamp_s_mon_clb, "fTimestamp_s_mon_clb/i");
 	fMon_tree_clb->Branch("Pad", &fPad_mon_clb, "fPad_mon_clb/i");
@@ -166,10 +166,10 @@ void DAQ_data_handler::addMonCLBBranches() {
     fMon_tree_clb->Branch("Hits",&fHits_mon_clb,"fHits_mon_clb[30]/i");	
 }
 
-void DAQ_data_handler::addOptBBBBranches() {
+void DataHandler::addOptBBBBranches() {
     // Empty
 }
 
-void DAQ_data_handler::addMonBBBBranches() {
+void DataHandler::addMonBBBBranches() {
     // Empty
 }

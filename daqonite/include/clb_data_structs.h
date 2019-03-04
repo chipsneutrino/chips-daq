@@ -1,5 +1,5 @@
 /**
- * DAQ CLB Data Structs - Data structures for the CLB data stream
+ * CLB Data Structs - Data structures for the CLB data stream
  * 
  * This contains all the data structures needed for decoding the CLB
  * data stream and printing to stdout
@@ -8,8 +8,8 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef DAQ_CLB_DATA_STRUCTS_H
-#define DAQ_CLB_DATA_STRUCTS_H
+#ifndef CLB_DATA_STRUCTS_H
+#define CLB_DATA_STRUCTS_H
 
 #include <iostream>
 #include <ctime>
@@ -21,17 +21,14 @@
 
 /// Struct describing the CLB POM ID
 struct POMID_h {
-	  uint32_t m_val;	///< 4 byte POM ID
-  	POMID_h(uint32_t val) :
-    		m_val(val) {
-	  }
+	uint32_t m_val;	///< 4 byte POM ID
+  	POMID_h(uint32_t val) : m_val(val) {}
 };
 
 /// << print operator for the CLB POM ID struct
-inline
-std::ostream& operator <<(std::ostream& stream, const POMID_h& pomid) {
-	  // The MAC address of a WR node starts with 08:00:30.
-	  // The POMID is defined by the MAC address removing the initial 08:00.
+inline std::ostream& operator <<(std::ostream& stream, const POMID_h& pomid) {
+	// The MAC address of a WR node starts with 08:00:30.
+	// The POMID is defined by the MAC address removing the initial 08:00.
 
     std::ostringstream oss("0800", std::ostringstream::ate);
     oss << std::hex << pomid.m_val;
@@ -59,8 +56,7 @@ struct __attribute__((packed)) hit_t {
 };
 
 /// << print operator for the CLB hit data
-inline
-std::ostream& operator <<(std::ostream& stream, const hit_t& hit) {
+inline std::ostream& operator <<(std::ostream& stream, const hit_t& hit) {
 	return stream << "C: "
 					<< std::setfill(' ') << std::setw(2)
 					<< (unsigned int) hit.channel
@@ -91,8 +87,7 @@ struct __attribute__((packed)) AHRSData {
 };
 
 /// Convert from network byte order to host byte order
-inline
-float ntohl_f(float f) {
+inline float ntohl_f(float f) {
 	union {uint32_t integer; float floating;} number;
 	number.floating = f;
 	number.integer = ntohl(number.integer);
@@ -100,8 +95,7 @@ float ntohl_f(float f) {
 }
 
 /// << print operator for the CLB AHRS data
-inline
-std::ostream& operator <<(std::ostream& stream, const AHRSData& data) {
+inline std::ostream& operator <<(std::ostream& stream, const AHRSData& data) {
 	return stream << "Yaw: "           << ntohl_f(data.yaw)
 					<< ", Pitch: "       << ntohl_f(data.pitch)
 					<< ", Roll: "        << ntohl_f(data.roll) << " deg\n"
@@ -126,8 +120,7 @@ struct __attribute__((packed)) SCData {
 };
 
 /// << print operator for the CLB monitoring data
-inline
-std::ostream& operator <<(std::ostream& stream, const SCData& data) {
+inline std::ostream& operator <<(std::ostream& stream, const SCData& data) {
 	return stream << "Validity: " << ntohl(data.valid) << '\n'
 					<< data.ahrs << '\n'
 					<< "Temp: " << ntohs(data.temp) / 100. << " Celsius"
@@ -169,8 +162,7 @@ struct UTCTime_h : public UTCTime {
 };
 
 /// << print operator for human readable time from UTCTime
-inline
-std::ostream& operator <<(std::ostream& stream, const UTCTime_h& timestamp) {
+inline std::ostream& operator <<(std::ostream& stream, const UTCTime_h& timestamp) {
 	const static std::string month[] = {"Jan",
 										"Feb",
 										"Mar",
@@ -209,7 +201,6 @@ std::ostream& operator <<(std::ostream& stream, const UTCTime_h& timestamp) {
 	} else {
 		stream << "error determining the time";
 	}
-
 	return stream;
 }
 

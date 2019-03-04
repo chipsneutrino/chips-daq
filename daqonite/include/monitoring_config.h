@@ -1,5 +1,5 @@
 /**
- * Monitoring_config - Reads the config file for use in monitoring
+ * MonitoringConfig - Reads the config file for use in monitoring
  * 
  * We can then make checks against the real data to flag up problems
  *
@@ -18,48 +18,46 @@
 #include <sstream>
 #include <bitset>
 
-class Monitoring_config {
+class MonitoringConfig {
     public:
-
 		/**
-		 * Create a Monitoring_config
+		 * Create a MonitoringConfig
 		 * @param config Path of a .opt file containing all the CLB configuration parameters
 		 */
-        Monitoring_config(const char * config);
+        MonitoringConfig(const char * config);
 
-        /// Destroy a Monitoring_config
-        ~Monitoring_config();
+        /// Destroy a MonitoringConfig
+        ~MonitoringConfig();
 
         /// Print the summary of the config file to stdout
         void printConfig();
 
 		/// Returns the number of CLBs
 		int getNumCLBs() {
-			return fNumCLBs;
+			return fNum_clbs;
 		}
 
 		/// Returns the CLB electronic IDs
 		std::vector<unsigned int> getCLBeIDs() {
-			return fCLBeIDs;
+			return fCLB_eids;
 		}
 
 		/// Returns the CLB plane types
 		std::vector<unsigned int> getCLBTypes() {
-			return fCLBTypes;
+			return fCLB_types;
 		}		
 
 		/// Returns the total number of active channels
 		int getTotalNumChannels() {
-			return fTotalNumChannels;
+			return fTotal_num_channels;
 		}
 
 		std::vector< std::bitset<32> > getActiveChannels() {
-			return fActiveChannels;
+			return fActive_channels;
 		}
 
     private:
-
-		/// Read the configuration text file specified by fConfName
+		/// Read the configuration text file specified by fConf_name
 		void loadConfig();
 
 		/**
@@ -119,15 +117,15 @@ class Monitoring_config {
 		/// Iterate through the map and use it to set all the variables it specifies
 		void setFromMap();
 
-		std::string fConfName;                   			///< Path of a dat file containing all the configuration parameters
+		std::string fConf_name;                   			///< Path of a dat file containing all the configuration parameters
 		std::map<std::string, std::string> fMap;   			///< Map to store key names and their values to set
 
-		int fNumCLBs;										///< Number of CLBs from "clb_number"
-		std::vector<unsigned int> fCLBeIDs; 				///< eIDs of the CLBs
-		std::vector<unsigned int> fCLBTypes;				///< Plane types for the CLBs
+		int fNum_clbs;										///< Number of CLBs from "clb_number"
+		std::vector<unsigned int> fCLB_eids; 				///< eIDs of the CLBs
+		std::vector<unsigned int> fCLB_types;				///< Plane types for the CLBs
 
-		int fTotalNumChannels;								///< Total number of active channels
-		std::vector< std::bitset<32> > fActiveChannels;		///< Which channels are active
+		int fTotal_num_channels;							///< Total number of active channels
+		std::vector< std::bitset<32> > fActive_channels;	///< Which channels are active
 };
 
 #endif

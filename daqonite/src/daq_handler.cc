@@ -1,14 +1,14 @@
 /**
- * DAQ_handler - Handler class for combining data streams
+ * DAQHandler - Handler class for combining data streams
  */
 
-#include "DAQ_handler.h"
+#include "daq_handler.h"
 
-DAQ_handler::DAQ_handler(bool collect_clb_data, bool collect_bbb_data,
-						 bool gui, int numThreads, std::string configFile) :
-						 fCollect_clb_data(collect_clb_data),
-						 fCollect_bbb_data(collect_bbb_data),
-						 fShow_gui(gui), fNum_threads(numThreads) {
+DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data,
+					   bool gui, int numThreads, std::string configFile) :
+					   fCollect_clb_data(collect_clb_data),
+					   fCollect_bbb_data(collect_bbb_data),
+					   fShow_gui(gui), fNum_threads(numThreads) {
 
 	// 1) Set to monitoring mode
 	fMode = false;
@@ -30,7 +30,7 @@ DAQ_handler::DAQ_handler(bool collect_clb_data, bool collect_bbb_data,
 	if (fShow_gui) {
 		fGui_event_timer = new boost::asio::deadline_timer(*fIO_service, boost::posix_time::millisec(GUIROOTRATE));
 		fGui_update_timer = new boost::asio::deadline_timer(*fIO_service, boost::posix_time::millisec(GUIUPDATERATE));
-		fDaq_gui = new Monitoring_gui(GUIUPDATERATE, configFile);
+		fDaq_gui = new MonitoringGui(GUIUPDATERATE, configFile);
 		workGuiEvents();
 		workGuiUpdate();
 	} else { 
@@ -40,25 +40,25 @@ DAQ_handler::DAQ_handler(bool collect_clb_data, bool collect_bbb_data,
 	}
 
 	// 6) Setup the data_handler that deals with the ROOT TTree's and files
-	fData_handler = new DAQ_data_handler(fCollect_clb_data, fCollect_bbb_data);
+	fData_handler = new DataHandler(fCollect_clb_data, fCollect_bbb_data);
 
 	// 7) Setup the CLB handler (if required)
 	if (fCollect_clb_data) {
-		fCLB_handler = new DAQ_clb_handler(fIO_service, fDaq_gui, fData_handler, &fMode);
+		fCLB_handler = new CLBHandler(fIO_service, fDaq_gui, fData_handler, &fMode);
 		fCLB_handler->workMonitoringData();
 	} else { fCLB_handler = NULL; }
 
 	// 8) Setup the BBB handler (if required)
 	if (fCollect_bbb_data) {
-		fBBB_handler = new DAQ_bbb_handler();
+		fBBB_handler = new BBBHandler();
 	} else { fBBB_handler = NULL; }
 
 	// 9) Setup the thread group and call io_service.run() in each
-	std::cout << "DAQonite - Starting IO service With " << fNum_threads << " threads" << std::endl;
-	std::cout << "DAQonite - Waiting for DAQommand command..." << std::endl;
+	std::cout << "daqonite - Starting IO service With " << fNum_threads << " threads" << std::endl;
+	std::cout << "daqonite - Waiting for DAQommand command..." << std::endl;
 	fThread_group = new boost::thread_group();
 	for (int threadCount = 0; threadCount < fNum_threads; threadCount ++) {
-		fThread_group->create_thread( boost::bind(&DAQ_handler::ioServiceThread, this) );
+		fThread_group->create_thread( boost::bind(&DAQHandler::ioServiceThread, this) );
 	}
 
 	// 10) Wait for all the threads to finish
@@ -66,12 +66,12 @@ DAQ_handler::DAQ_handler(bool collect_clb_data, bool collect_bbb_data,
 
 	// 11) Terminate the ROOT gApplication (if required)
 	if (fDaq_gui != NULL) {	
-		std::cout << "DAQonite - Terminating ROOT gApplication" << std::endl;
+		std::cout << "daqonite - Terminating ROOT gApplication" << std::endl;
 		gApplication->Terminate(0);	
 	}
 }
 
-DAQ_handler::~DAQ_handler() {
+DAQHandler::~DAQHandler() {
 	delete fIO_service;
 	delete fSignal_set;
 	delete fData_handler;
@@ -79,16 +79,16 @@ DAQ_handler::~DAQ_handler() {
 	delete fBBB_handler;
 }
 
-void DAQ_handler::ioServiceThread() {
+void DAQHandler::ioServiceThread() {
 	fIO_service->run();
-	std::cout << "DAQonite - Thread Ending" << std::endl;
+	std::cout << "daqonite - Thread Ending" << std::endl;
 }
 
-void DAQ_handler::handleSignals(boost::system::error_code const& error, int signum) {
+void DAQHandler::handleSignals(boost::system::error_code const& error, int signum) {
 	if (!error) {
 		if (signum == SIGINT) {
 			if (fMode) {
-				std::cout << "DAQonite - Stopping current run first" << std::endl;
+				std::cout << "daqonite - Stopping current run first" << std::endl;
 
 				// Set the mode to monitoring
 				fMode = false;
@@ -109,18 +109,18 @@ void DAQ_handler::handleSignals(boost::system::error_code const& error, int sign
 	}
 }
 
-void DAQ_handler::workSignals() {
-	fSignal_set->async_wait(boost::bind(&DAQ_handler::handleSignals, this,
+void DAQHandler::workSignals() {
+	fSignal_set->async_wait(boost::bind(&DAQHandler::handleSignals, this,
 					   	    boost::asio::placeholders::error,
 					   	    boost::asio::placeholders::signal_number));
 }
 
-void DAQ_handler::handleLocalSocket(boost::system::error_code const& error, std::size_t size) {
+void DAQHandler::handleLocalSocket(boost::system::error_code const& error, std::size_t size) {
 	if (!error) {
 		if (strncmp(fBuffer_local, "start", 5) == 0) {
 			// If we are currently running first stop the current run
 			if (fMode == true) {
-				std::cout << "DAQonite - Stopping current run first" << std::endl;
+				std::cout << "daqonite - Stopping current run first" << std::endl;
 
 				// Set the mode to monitoring
 				fMode = false;
@@ -163,7 +163,7 @@ void DAQ_handler::handleLocalSocket(boost::system::error_code const& error, std:
 			}
 		} else if (strncmp(fBuffer_local, "exit", 4) == 0) {
 			if (fMode == true) {
-				std::cout << "DAQonite - Stopping current run first" << std::endl;
+				std::cout << "daqonite - Stopping current run first" << std::endl;
 
 				// Set the mode to monitoring
 				fMode = false;
@@ -185,19 +185,19 @@ void DAQ_handler::handleLocalSocket(boost::system::error_code const& error, std:
 	}
 }
 
-void DAQ_handler::workLocalSocket() {
+void DAQHandler::workLocalSocket() {
 	fLocal_socket->async_receive(boost::asio::buffer(&fBuffer_local[0], buffer_size),
-								 boost::bind(&DAQ_handler::handleLocalSocket, this,
+								 boost::bind(&DAQHandler::handleLocalSocket, this,
 								 boost::asio::placeholders::error,
 								 boost::asio::placeholders::bytes_transferred));
 }
 
-void DAQ_handler::handleGuiUpdate() {
+void DAQHandler::handleGuiUpdate() {
 	// This takes ~200 milliseconds so we call it as a seperate piece of work on the io_service
 	fDaq_gui->update();
 }
 
-void DAQ_handler::workGuiUpdate() {
+void DAQHandler::workGuiUpdate() {
 
 	// Can use code bellow to get the current time, useful for debugging
 	//boost::posix_time::ptime time_t_epoch(boost::gregorian::date(1970,1,1)); 
@@ -205,16 +205,16 @@ void DAQ_handler::workGuiUpdate() {
 	//boost::posix_time::time_duration diff = now - time_t_epoch;
 	//std::cout << diff.total_milliseconds() << std::endl;
 	
-	fIO_service->post(boost::bind(&DAQ_handler::handleGuiUpdate, this));
+	fIO_service->post(boost::bind(&DAQHandler::handleGuiUpdate, this));
 
 	fGui_update_timer->expires_from_now(boost::posix_time::millisec(GUIUPDATERATE));
-	fGui_update_timer->async_wait(boost::bind(&DAQ_handler::workGuiUpdate, this));
+	fGui_update_timer->async_wait(boost::bind(&DAQHandler::workGuiUpdate, this));
 }
 
-void DAQ_handler::workGuiEvents() {
+void DAQHandler::workGuiEvents() {
 	gSystem->ProcessEvents();
 	fGui_event_timer->expires_from_now(boost::posix_time::millisec(GUIROOTRATE));
-	fGui_event_timer->async_wait(boost::bind(&DAQ_handler::workGuiEvents, this));
+	fGui_event_timer->async_wait(boost::bind(&DAQHandler::workGuiEvents, this));
 }
 
 

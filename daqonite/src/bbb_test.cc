@@ -1,8 +1,6 @@
 /**
- * BBBTest - A simple "beaglebone" test server to see if the
+ * bbb_test - A simple "beaglebone" test server to see if the
  * fh_library is working
- * 
- * NOTE: THIS IS A TEST IMPLEMENTATION!!!
  *
  * Author: Josh Tingey
  * Contact: j.tingey.16@ucl.ac.uk
@@ -20,7 +18,7 @@
 #include <getopt.h>
 
 #include "fh_library.h"
-#include "DAQ_bbb_api.h"
+#include "bbb_api.h"
 
 bool init();
 void destroy();
@@ -131,15 +129,13 @@ int handle_command(uint32_t count) {
 }
 
 // ##################################################################
-// MESSAGE_SERVER functions
+// MESSAGE_SERVICE functions
 // ##################################################################
 // The msg server implements the following commands:
 //
 // [subcode] <function desc>
 // payload in:
 // payload out:
-//
-//
 //
 // [1] <status>
 // in: n/a
@@ -164,8 +160,8 @@ int ms_close(void *ctx, fh_message_t *msgin, fh_transport_t *transport);
 fh_service_t * ms_new() {
     fh_service_t *srvc = fh_service_new(MSG_SERVICE, NULL);       // new service handling typecode MSG_SERVICE
     fh_service_register_function(srvc, MS_STATUS, &ms_status);    // bind "status" function to subcode MS_STATUS
-    fh_service_register_function(srvc, MS_ECHO, &ms_echo);        // bind "echo" functionto subcode MS_ECHO
-    fh_service_register_function(srvc, MS_CLOSE, &ms_close);      // bind "close" functionto subcode MS_CLOSE
+    fh_service_register_function(srvc, MS_ECHO, &ms_echo);        // bind "echo" function to subcode MS_ECHO
+    fh_service_register_function(srvc, MS_CLOSE, &ms_close);      // bind "close" function to subcode MS_CLOSE
     return srvc;
 }
 

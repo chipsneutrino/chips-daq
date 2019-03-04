@@ -1,5 +1,5 @@
 /**
- * DAQ CLB Header Structs - Data structures for the CLB packet header
+ * CLB Header Structs - Data structures for the CLB packet header
  * 
  * This contains all the data structures needed to decode the CLB UDP header
  *
@@ -7,10 +7,10 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef DAQ_CLB_HEADER_STRUCTS_H
-#define DAQ_CLB_HEADER_STRUCTS_H
+#ifndef CLB_HEADER_STRUCTS_H
+#define CLB_HEADER_STRUCTS_H
 
-#include "DAQ_clb_data_structs.h"
+#include "clb_data_structs.h"
 
 /// Struct describing the CLB UDP header
 struct CLBCommonHeader {
@@ -78,16 +78,14 @@ inline std::ostream& operator <<(std::ostream& stream, const CLBCommonHeader& he
 typedef uint64_t frame_idx_t;
 
 /// Returns the index of the CLB in the sequence of all the CLBs sending staggered data
-inline
-int32_t seq_number(CLBCommonHeader const& header, 
+inline int32_t seq_number(CLBCommonHeader const& header, 
 				   uint64_t start_run_ms, 
 				   int ts_duration_ms) {
 	return (header.timeStamp().inMilliSeconds() - start_run_ms) / ts_duration_ms;
 }
 
 /// Returns a combination of pomID and sequence number
-inline
-frame_idx_t data2idx(CLBCommonHeader const& header,
+inline frame_idx_t data2idx(CLBCommonHeader const& header,
     				 uint64_t start_run_ms,
     				 int ts_duration_ms) {
 	frame_idx_t value = seq_number(header, start_run_ms, ts_duration_ms);
@@ -97,22 +95,19 @@ frame_idx_t data2idx(CLBCommonHeader const& header,
 }
 
 /// Returns the pom ID
-inline
-uint32_t pom_id(frame_idx_t idx) {
+inline uint32_t pom_id(frame_idx_t idx) {
 	frame_idx_t const mask = 0x00000000FFFFFFFF;
 	return idx & mask;
 }
 
 /// Is the timestamp valid?
-inline
-bool validTimeStamp(CLBCommonHeader const& header) {
+inline bool validTimeStamp(CLBCommonHeader const& header) {
 	const static uint32_t mask = 0x80000000;
 	return header.pomStatus() & mask;
 }
 
 /// Is it a trailer?
-inline
-bool isTrailer(CLBCommonHeader const& header) {
+inline bool isTrailer(CLBCommonHeader const& header) {
 	const static uint32_t mask = 0x80000000;
 	return header.pomStatus(2) & mask;
 }

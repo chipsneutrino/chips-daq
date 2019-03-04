@@ -1,5 +1,5 @@
 /**
- * Monitoring_buffer - The buffers used for the data monitoring
+ * MonitoringBuffer - The buffers used for the data monitoring
  * 
  * Mainly used to seperate the GUI code from the underlying monitoring checks
  *
@@ -12,27 +12,27 @@
 
 #include <vector>
 
-class Monitoring_buffer {
+class MonitoringBuffer {
     public:
-        Monitoring_buffer(unsigned int size);
+        MonitoringBuffer(unsigned int size);
 
         void write(double input);
         double read();
 
         unsigned int getReadIndex() {
-            return readIndex;
+            return fRead_index;
         }
         unsigned int getWriteIndex() {
-            return writeIndex;
+            return fWrite_index;
         }
         size_t getCurrentSize() {
-            return buffer.size();
+            return fBuffer.size();
         }
 
     private:
-        std::vector<double> buffer;
-        unsigned int readIndex;
-        unsigned int writeIndex;
+        std::vector<double> fBuffer;
+        unsigned int fRead_index;
+        unsigned int fWrite_index;
 };
 
 #endif

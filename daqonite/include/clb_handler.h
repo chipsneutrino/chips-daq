@@ -1,5 +1,5 @@
 /**
- * DAQ_clb_handler - Handler class for the CLB data stream
+ * CLBHandler - Handler class for the CLB data stream
  * 
  * This class deals with the specifics of the CLB data stream, unpacking
  * the UDP binary stream into the actual data and storing into .root
@@ -9,8 +9,8 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef DAQ_CLB_HANDLER_H_
-#define DAQ_CLB_HANDLER_H_
+#ifndef CLB_HANDLER_H_
+#define CLB_HANDLER_H_
 
 #include <iostream>
 #include <boost/asio.hpp>
@@ -18,10 +18,10 @@
 
 #include "TTree.h"
 
-#include "DAQ_clb_header_structs.h"
-#include "DAQ_clb_data_structs.h"
-#include "Monitoring_gui.h"
-#include "DAQ_data_handler.h"
+#include "clb_header_structs.h"
+#include "clb_data_structs.h"
+#include "monitoring_gui.h"
+#include "data_handler.h"
 
 /// Buffer size in bytes for optical and monitoring data
 const static size_t buffer_size = 10000;
@@ -46,15 +46,14 @@ const static unsigned int tmch = 1414349640;
 
 using boost::asio::ip::udp;
 
-class DAQ_clb_handler {
+class CLBHandler {
 	public:
-
-		/// Create a DAQ_clb_handler
-		DAQ_clb_handler(boost::asio::io_service* io_service, Monitoring_gui *daqGui, 
-						DAQ_data_handler *data_handler, bool* mode);
+		/// Create a CLBHandler
+		CLBHandler(boost::asio::io_service* io_service, MonitoringGui *daqGui, 
+				   DataHandler *data_handler, bool* mode);
 					
-		/// Destroy a DAQ_clb_handler
-		~DAQ_clb_handler();
+		/// Destroy a CLBHandler
+		~CLBHandler();
 
 		/**
 		 * IO_service optical data work function.
@@ -69,7 +68,6 @@ class DAQ_clb_handler {
 		void workMonitoringData();
 
 	private:
-	
 		/**
 		 * Callback completion function for optical data async_receive().
 		 * Handles the received optical data after the async_receive() has completed. 
@@ -101,12 +99,6 @@ class DAQ_clb_handler {
 		 */
 		std::pair<int, std::string> getType(CLBCommonHeader const& header);
 
-		/// Print the status of the optical counters
-		void printOpticalStats();
-
-		/// Print the status of the optical counters
-		void printMonitoringStats();
-
 		/// Print CLBCommonHeader to stdout
 		void printHeader(CLBCommonHeader const& header);
 		/// Print Optical data to stdout
@@ -114,11 +106,11 @@ class DAQ_clb_handler {
 		/// Print monitoring data to stdout
 		void printMonitoringData(const char* const buffer, ssize_t buffer_size, int max_col);
 
-		// DAQ_clb_handler settings/input
+		// CLBHandler settings/input
 		bool 							fCollect_optical;					///< Should we collect optical data?
 		bool 							fCollect_monitoring;				///< Should we collect monitoring data?
-		Monitoring_gui*					fDaq_gui;							///< Pointer to the monitoring GUI
-		DAQ_data_handler*				fData_handler;					///< Pointer to the data_handler
+		MonitoringGui*					fDaq_gui;							///< Pointer to the MonitoringGui
+		DataHandler*					fData_handler;						///< Pointer to the DataHandler
 		bool* 							fMode;								///< false = Monitoring, True = Running
 		std::size_t const 				fBuffer_size;						///< Size of the buffers
 

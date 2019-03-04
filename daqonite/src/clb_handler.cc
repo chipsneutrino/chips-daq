@@ -1,13 +1,13 @@
 /**
- * DAQ_clb_handler - Handler class for the CLB data stream
+ * CLBHandler - Handler class for the CLB data stream
  */
 
-#include "DAQ_clb_handler.h"
+#include "clb_handler.h"
 
-DAQ_clb_handler::DAQ_clb_handler(boost::asio::io_service* io_service, Monitoring_gui *daqGui, 
-								 DAQ_data_handler *data_handler, bool* mode) :
-						 		 fDaq_gui(daqGui), fData_handler(data_handler), 
-								 fMode(mode), fBuffer_size(buffer_size) {
+CLBHandler::CLBHandler(boost::asio::io_service* io_service, MonitoringGui *daqGui, 
+					   DataHandler *data_handler, bool* mode) :
+					   fDaq_gui(daqGui), fData_handler(data_handler), 
+					   fMode(mode), fBuffer_size(buffer_size) {
 
 	// Add the CLB Optical socket to the IO service
 	fSocket_optical = new udp::socket(*io_service, udp::endpoint(udp::v4(), default_opto_port));
@@ -20,38 +20,38 @@ DAQ_clb_handler::DAQ_clb_handler(boost::asio::io_service* io_service, Monitoring
 	fSocket_monitoring->set_option(option_clb_mon);
 }
 
-DAQ_clb_handler::~DAQ_clb_handler() {
+CLBHandler::~CLBHandler() {
 	delete fSocket_optical;
 	delete fSocket_monitoring;
 }
 
-void DAQ_clb_handler::workOpticalData() {
+void CLBHandler::workOpticalData() {
 	if (*fMode == true) {
 		fSocket_optical->async_receive(boost::asio::buffer(&fBuffer_optical[0], fBuffer_size),
-								       boost::bind(&DAQ_clb_handler::handleOpticalData, this,
+								       boost::bind(&CLBHandler::handleOpticalData, this,
 								       boost::asio::placeholders::error,
 								       boost::asio::placeholders::bytes_transferred));
 	}
 }
 
-void DAQ_clb_handler::workMonitoringData() {
+void CLBHandler::workMonitoringData() {
 	fSocket_monitoring->async_receive(boost::asio::buffer(&fBuffer_monitoring[0], fBuffer_size),
-									  boost::bind(&DAQ_clb_handler::handleMonitoringData, this,
+									  boost::bind(&CLBHandler::handleMonitoringData, this,
 									  boost::asio::placeholders::error,
 									  boost::asio::placeholders::bytes_transferred));
 }
 
-void DAQ_clb_handler::handleOpticalData(boost::system::error_code const& error, std::size_t size) {
+void CLBHandler::handleOpticalData(boost::system::error_code const& error, std::size_t size) {
 	if (!error) {
 		// Check the packet has atleast a CLB header in it
 		if (size - sizeof(CLBCommonHeader) < 0) {
-			std::cout << "DAQonite - Error: Invalid optical packet size: " << size << std::endl;
+			std::cout << "daqonite - Error: Invalid optical packet size: " << size << std::endl;
 			workOpticalData();
 			return;
 		}
 
 		// Check the size of the packet is consistent with CLBCommonHeader + some hits
-		if (((size - sizeof(CLBCommonHeader)) % sizeof(hit_t))!=0) {throw std::runtime_error("DAQonite - Error: Bad optical packet!");}
+		if (((size - sizeof(CLBCommonHeader)) % sizeof(hit_t))!=0) {throw std::runtime_error("daqonite - Error: Bad optical packet!");}
 
 		// Cast the beggining of the packet to the CLBCommonHeader
 		CLBCommonHeader const
@@ -60,17 +60,17 @@ void DAQ_clb_handler::handleOpticalData(boost::system::error_code const& error, 
 
 		// Check the type of the packet is optical from the CLBCommonHeader
 		std::pair<int, std::string> const& type = getType(header_optical);
-		if (type.first != OPTO) { throw std::runtime_error("DAQonite - Error: Incorrect type not optical!"); }
+		if (type.first != OPTO) { throw std::runtime_error("daqonite - Error: Incorrect type not optical!"); }
 
 		// Assign the variables we need from the header
 		fData_handler->fPomId_opt_clb = header_optical.pomIdentifier();
 		fData_handler->fTimestamp_s_opt_clb = header_optical.timeStamp().sec();
-		uint32_t TimeStampNSTicks = header_optical.timeStamp().tics();
+		uint32_t time_stamp_ns_ticks = header_optical.timeStamp().tics();
 
 		// Find the number of hits this packet contains and loop over them all
-		const unsigned int nhits = (size - sizeof(CLBCommonHeader)) / sizeof(hit_t);
-		if (nhits) {
-			for (int i = 0; i<(int)nhits; ++i) {
+		const unsigned int num_hits = (size - sizeof(CLBCommonHeader)) / sizeof(hit_t);
+		if (num_hits) {
+			for (int i = 0; i<(int)num_hits; ++i) {
 				// Cast the hits individually to the hit_t struct
 				const hit_t
 						* const hit =
@@ -84,8 +84,8 @@ void DAQ_clb_handler::handleOpticalData(boost::system::error_code const& error, 
 				uint8_t time3 = hit->timestamp3; uint8_t time4 = hit->timestamp4;
 
 				// Need to change the ordering of the bytes to get the correct hit time
-				uint32_t orderedTime = (((uint32_t)time1) << 24) + (((uint32_t)time2) << 16) + (((uint32_t)time3) << 8) + ((uint32_t)time4);
-				fData_handler->fTimestamp_ns_opt_clb = (TimeStampNSTicks * 16) + orderedTime;
+				uint32_t ordered_time = (((uint32_t)time1) << 24) + (((uint32_t)time2) << 16) + (((uint32_t)time3) << 8) + ((uint32_t)time4);
+				fData_handler->fTimestamp_ns_opt_clb = (time_stamp_ns_ticks * 16) + ordered_time;
 
 				// Assign the hit TOT
 				fData_handler->fTot_opt_clb = hit->ToT;
@@ -101,22 +101,22 @@ void DAQ_clb_handler::handleOpticalData(boost::system::error_code const& error, 
 
 		workOpticalData();
 	} else {
-		std::cout << "DAQonite - Error: Optical async_receive!" << std::endl;
+		std::cout << "daqonite - Error: Optical async_receive!" << std::endl;
 	}
 }
 
-void DAQ_clb_handler::handleMonitoringData(boost::system::error_code const& error, std::size_t size) {
+void CLBHandler::handleMonitoringData(boost::system::error_code const& error, std::size_t size) {
 	if (!error) {
 		// Check the packet has atleast a CLB header in it
 		if (size - sizeof(CLBCommonHeader) < 0) {
-			std::cout << "DAQonite - Error: Invalid monitoring packet size: " << size << std::endl;
+			std::cout << "daqonite - Error: Invalid monitoring packet size: " << size << std::endl;
 			workMonitoringData();
 			return;
 		}
 
 		// Check that the size of the packet is consistent with what we expect
 		const ssize_t minimum_size = sizeof(CLBCommonHeader) + sizeof(int) * 31;
-		if ((ssize_t)size <= minimum_size) { std::cout << "DAQonite - Error: Incomplete monitoring packet!" << std::endl; }
+		if ((ssize_t)size <= minimum_size) { std::cout << "daqonite - Error: Incomplete monitoring packet!" << std::endl; }
 
 		// Cast the beggining of the packet to the CLBCommonHeader
 		CLBCommonHeader const
@@ -125,7 +125,7 @@ void DAQ_clb_handler::handleMonitoringData(boost::system::error_code const& erro
 
 		// Check the type of the packet is monitoring from the CLBCommonHeader
 		std::pair<int, std::string> const& type = getType(header_monitoring);
-		if (type.first != MONI) { throw std::runtime_error("DAQonite - Error: Incorrect type not monitoring!"); }
+		if (type.first != MONI) { throw std::runtime_error("daqonite - Error: Incorrect type not monitoring!"); }
 
 		// Assign the variables we need from the header
 		fData_handler->fPomId_mon_clb = header_monitoring.pomIdentifier();
@@ -163,44 +163,23 @@ void DAQ_clb_handler::handleMonitoringData(boost::system::error_code const& erro
 
 		workMonitoringData();
 	} else {
-		std::cout << "DAQonite - Error: Monitoring async_receive!" << std::endl;
+		std::cout << "daqonite - Error: Monitoring async_receive!" << std::endl;
 	}
 }
 
-std::pair<int, std::string> DAQ_clb_handler::getType(CLBCommonHeader const& header) {
-	const static std::pair<int, std::string> unknown = std::make_pair(-1,
-			"unknown");
-	const static std::pair<int, std::string> acoustic = std::make_pair(ACOU,
-			"acoustic data");
-	const static std::pair<int, std::string> optical = std::make_pair(OPTO,
-			"optical data");
-	const static std::pair<int, std::string> monitoring = std::make_pair(MONI,
-			"monitoring data");
+std::pair<int, std::string> CLBHandler::getType(CLBCommonHeader const& header) {
+	const static std::pair<int, std::string> unknown = std::make_pair(-1, "unknown");
+	const static std::pair<int, std::string> acoustic = std::make_pair(ACOU, "acoustic data");
+	const static std::pair<int, std::string> optical = std::make_pair(OPTO, "optical data");
+	const static std::pair<int, std::string> monitoring = std::make_pair(MONI, "monitoring data");
 
-	if (header.dataType() == tmch) {
-		return monitoring;
-	}
-
-	if (header.dataType() == ttdc) {
-		return optical;
-	}
-
-	if (header.dataType() == taes) {
-		return acoustic;
-	}
-
+	if (header.dataType() == tmch) { return monitoring; }
+	else if (header.dataType() == ttdc) { return optical; }
+	else if (header.dataType() == taes) { return acoustic; }
 	return unknown;
 }
 
-void DAQ_clb_handler::printOpticalStats() {
-	std::cout << "***** Optical Packet Stats ******" << std::endl;
-}
-
-void DAQ_clb_handler::printMonitoringStats() {
-	std::cout << "**** Monitoring Packet Stats ****" << std::endl;
-}
-
-void DAQ_clb_handler::printHeader(CLBCommonHeader const& header) {
+void CLBHandler::printHeader(CLBCommonHeader const& header) {
 	bool const valid = validTimeStamp(header);
 	bool const trailer = isTrailer(header);
 
@@ -222,23 +201,20 @@ void DAQ_clb_handler::printHeader(CLBCommonHeader const& header) {
 
 	if (trailer && header.dataType() == ttdc) {
 		std::cout << " (trailer)\n";
-	} else {
-		std::cout << '\n';
-	}
+	} else { std::cout << '\n'; }
 
 	std::cout << "POMStatus 3:       " << header.pomStatus(3) << '\n'
 			  << "POMStatus 4:       " << header.pomStatus(4) << std::endl;
 }
 
-void DAQ_clb_handler::printOpticalData(const char* const buffer, ssize_t buffer_size,
-		int max_col) {
-	const unsigned int nhits = (buffer_size - sizeof(CLBCommonHeader))
+void CLBHandler::printOpticalData(const char* const buffer, ssize_t buffer_size, int max_col) {
+	const unsigned int num_hits = (buffer_size - sizeof(CLBCommonHeader))
 			/ sizeof(hit_t);
 
-	std::cout << "Number of hits: " << nhits << '\n';
+	std::cout << "Number of hits: " << num_hits << '\n';
 
-	if (nhits) {
-		const int printing = 20 > nhits ? nhits : 20;
+	if (num_hits) {
+		const int printing = 20 > num_hits ? num_hits : 20;
 		const unsigned int n = max_col > 37 ? max_col / 37 : 1;
 
 		for (int i = 0; i < printing; ++i) {
@@ -261,8 +237,7 @@ void DAQ_clb_handler::printOpticalData(const char* const buffer, ssize_t buffer_
 	std::cout << '\n';
 }
 
-void DAQ_clb_handler::printMonitoringData(const char* const buffer, ssize_t buffer_size,
-		int max_col) {
+void CLBHandler::printMonitoringData(const char* const buffer, ssize_t buffer_size, int max_col) {
 	const unsigned int n = max_col > 14 ? max_col / 14 : 1;
 
 	for (int i = 0; i < 31; ++i) {

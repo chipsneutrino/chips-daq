@@ -1,32 +1,29 @@
 /**
- * DAQ_bbb_handler - Handler class for the BBB data stream
+ * BBBHandler - Handler class for the BBB data stream
  * 
  * This class deals with the specifics of the BBB data stream, using the
  * fh_library API, to communicate with the Madison beaglebones.
- * 
- * NOTE: THIS IS A TEST IMPLEMENTATION!!!
  *
  * Author: Josh Tingey
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef DAQ_BBB_HANDLER_H_
-#define DAQ_BBB_HANDLER_H_
+#ifndef BBB_HANDLER_H_
+#define BBB_HANDLER_H_
 
 #include <iostream>
 #include "assert.h"
 
 #include "fh_library.h"
-#include "DAQ_bbb_api.h"
+#include "bbb_api.h"
 
-class DAQ_bbb_handler {
+class BBBHandler {
 	public:
+		/// Create a BBBHandler
+		BBBHandler();
 
-		/// Create a DAQ_bbb_handler
-		DAQ_bbb_handler();
-
-		/// Destroy a DAQ_bbb_handler
-		~DAQ_bbb_handler();
+		/// Destroy a BBBHandler
+		~BBBHandler();
 
 		/**
 		 * Connects to the test server
@@ -50,13 +47,12 @@ class DAQ_bbb_handler {
 		void bbb_disconnect();
 
 	private:
+		char* 				fServer_ip;		///< Beaglebone server IP address
+		uint16_t 			fPort;			///< TCP socket port
 
-		char* 			server_ip;	///< Beaglebone server IP address
-		uint16_t 		port;		///< TCP socket port
-
-		fh_connector_t*	conn;		///< fh_library connector to setup connection
-		fh_transport_t*	transport;	///< fh_library transport for message IO
-		fh_message_t*	msg;		///< fh_library message implementation
+		fh_connector_t*		fConn;			///< fh_library connector to setup connection
+		fh_transport_t*		fTransport;		///< fh_library transport for message IO
+		fh_message_t*		fMsg;			///< fh_library message implementation
 };
 
 #endif

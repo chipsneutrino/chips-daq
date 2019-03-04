@@ -1,5 +1,5 @@
 /**
- * DAQ_handler - Handler class for combining data streams
+ * DAQHandler - Handler class for combining data streams
  * 
  * This is the main class that deals with the DAQ across all stream
  * It holds a CLB_handler and BBB_handler object which deal with the 
@@ -24,32 +24,30 @@
 #include <TApplication.h>
 #include <TSystem.h>
 
-#include "DAQ_clb_handler.h"
-#include "DAQ_bbb_handler.h"
-#include "Monitoring_gui.h"
-#include "DAQ_data_handler.h"
+#include "clb_handler.h"
+#include "bbb_handler.h"
+#include "monitoring_gui.h"
+#include "data_handler.h"
 
 /// The number of different types of run possible
 #define GUIROOTRATE 10
 #define GUIUPDATERATE 1000
 
-class DAQ_handler {
+class DAQHandler {
 	public:
-
 		/**
-		 * Create a DAQ_handler
-		 * This creates a DAQ_handler, setting up the GUI and local control socket.
+		 * Create a DAQHandler
+		 * This creates a DAQHandler, setting up the GUI and local control socket.
 		 * Initial work is then added to the IO_service before run() is called to
 		 * start to main loop.
 		 */
-		DAQ_handler(bool collect_clb_data, bool collect_bbb_data,
-					bool gui, int numThreads, std::string configFile);
+		DAQHandler(bool collect_clb_data, bool collect_bbb_data,
+				   bool gui, int numThreads, std::string configFile);
 
-		/// Destroy a DAQ_handler
-		~DAQ_handler();
+		/// Destroy a DAQHandler
+		~DAQHandler();
 
 	private:
-
 		/**
 		 * Binded to thread creation
 		 * Allows us to modify how the thread operates and what it does
@@ -112,15 +110,14 @@ class DAQ_handler {
 		boost::asio::signal_set*		fSignal_set;				///< BOOST signal_set
 		udp::socket*					fLocal_socket;				///< Local UDP control socket
 		char fBuffer_local[buffer_size] __attribute__((aligned(8)));///< Local socket buffer
-		DAQ_data_handler*				fData_handler;				///< Pointer to data_handler
-		DAQ_clb_handler* 				fCLB_handler;				///< Pointer to CLB_handler
-		DAQ_bbb_handler* 				fBBB_handler;				///< Pointer to BBB_handler
+		DataHandler*					fData_handler;				///< Pointer to DataHandler
+		CLBHandler* 					fCLB_handler;				///< Pointer to CLBHandler
+		BBBHandler* 					fBBB_handler;				///< Pointer to BBBHandler
 
 		// Monitoring GUI
 		boost::asio::deadline_timer*	fGui_event_timer;			///< Boost GUI ROOT event timer
 		boost::asio::deadline_timer*	fGui_update_timer;			///< Boost GUI update timer
-		Monitoring_gui* 				fDaq_gui;					///< Pointer to the monitoring GUI
-
+		MonitoringGui*	 				fDaq_gui;					///< Pointer to the MonitoringGui
 };
 
 #endif

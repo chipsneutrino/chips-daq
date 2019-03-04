@@ -1,5 +1,5 @@
 /**
- * DAQ_data_handler - Handler class for combining the data and saving to file
+ * DataHandler - Handler class for combining the data and saving to file
  * 
  * This class deals with combing the data stream from both the CLB and BBB,
  * sorting and then saving to file
@@ -8,8 +8,8 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef DAQ_DATA_HANDLER_H_
-#define DAQ_DATA_HANDLER_H_
+#ifndef DATA_HANDLER_H_
+#define DATA_HANDLER_H_
 
 #include <iostream>
 #include <stdexcept>
@@ -19,14 +19,13 @@
 
 #define NUMRUNTYPES 4
 
-class DAQ_data_handler {
+class DataHandler {
 	public:
+		/// Create a DataHandler
+		DataHandler(bool collect_clb_data, bool collect_bbb_data);
 
-		/// Create a DAQ_data_handler
-		DAQ_data_handler(bool collect_clb_data, bool collect_bbb_data);
-
-		/// Destroy a DAQ_data_handler
-		~DAQ_data_handler();
+		/// Destroy a DataHandler
+		~DataHandler();
 
         /**
 		 * Start a data taking run
@@ -85,7 +84,6 @@ class DAQ_data_handler {
         // fMon_tree_bbb Variables (TODO)
 
 	private:
-
         /**
 		 * Finds the run number of the given run type from file
 		 * and the updates the file having incremented the run number

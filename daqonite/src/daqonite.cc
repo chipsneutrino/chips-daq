@@ -11,14 +11,14 @@
  * Date:   18 September 2018
  *
  * Use
- * $ DAQonite -h
+ * $ daqonite -h
  * for a detailed help.
  *
  */
 
 #include <TApplication.h>
 
-#include "DAQ_handler.h"
+#include "daq_handler.h"
 
 int main(int argc, char* argv[]) {
 	std::cout << "\nDAQonite - by Josh Tingey MSci, JoshTingeyDAQDemon.Josh" << std::endl;
@@ -27,18 +27,18 @@ int main(int argc, char* argv[]) {
 	// Default settings
 	bool collect_clb_data			= true;
 	bool collect_bbb_data 			= false;
-	bool useMonitoringGui			= true;
-	unsigned int numThreads			= 3;
-	std::string configFile			= "../data/config.opt";
+	bool use_gui					= true;
+	unsigned int num_threads		= 3;
+	std::string config_file			= "../data/config.opt";
 
 	// Argument handling
 	boost::program_options::options_description desc("Options");
 	desc.add_options()
 		("help,h", "DAQonite - Default:\n - Shows GUI\n - Always shows monitoring\n - Saves files when in run")
 		("noGui",  "Don't show the monitoring GUI")
-		("threads,t", boost::program_options::value<unsigned int>(&numThreads),
+		("threads,t", boost::program_options::value<unsigned int>(&num_threads),
           		   "Number of threads to use, default = 3")
-		("config,c", boost::program_options::value<std::string>(&configFile),
+		("config,c", boost::program_options::value<std::string>(&config_file),
           		   "Configuration file, default = ../data/config.opt");
 
 	try {
@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
 			return EXIT_SUCCESS;
 		}
 		if (vm.count("noGui")) {
-			useMonitoringGui = false;
+			use_gui = false;
 		}
 		boost::program_options::notify(vm);
 
@@ -62,20 +62,20 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	if (numThreads < 1 || numThreads > 8) {
+	if (num_threads < 1 || num_threads > 8) {
 		throw std::runtime_error("DAQonite - Error: Invalid number of threads. Valid = [1,8]!");
 	}
 
 	// Need to start a TApplication if we are using the GUI
-	DAQ_handler * daq_handler;
-	if (useMonitoringGui) {
-		TApplication theApp("app", &argc, argv);
+	DAQHandler * daq_handler;
+	if (use_gui) {
+		TApplication the_app("app", &argc, argv);
 
-		daq_handler = new DAQ_handler(collect_clb_data, collect_bbb_data,
-									  useMonitoringGui, numThreads, configFile);
+		daq_handler = new DAQHandler(collect_clb_data, collect_bbb_data,
+									  use_gui, num_threads, config_file);
 	} else {
-		daq_handler = new DAQ_handler(collect_clb_data, collect_bbb_data,
-									  useMonitoringGui, numThreads, configFile);	
+		daq_handler = new DAQHandler(collect_clb_data, collect_bbb_data,
+									  use_gui, num_threads, config_file);	
 	}
 	delete daq_handler;
 }

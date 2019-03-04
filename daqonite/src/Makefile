@@ -1,6 +1,6 @@
 CC=g++
 
-INCDIRS = 		../../fh_message/include ../include
+INCDIRS = 		../../fh_message/include ../include /usr/cern/root/include
 LIBDIRS = 		../../fh_message/src
 LIBS = 			fh_message boost_system boost_chrono boost_program_options m pthread boost_thread
 
@@ -8,25 +8,25 @@ CXXFLAGS =		$(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0 -std=c++0x
 
 ROOTFLAGS = 	`root-config --cflags --glibs`
 
-OBJS =          Monitoring_buffer.o Monitoring_config.o Monitoring_gui.o DAQ_data_handler.o DAQ_clb_handler.o DAQ_bbb_handler.o DAQ_handler.o DAQonite.o
+OBJS =          monitoring_buffer.o monitoring_config.o monitoring_gui.o data_handler.o clb_handler.o bbb_handler.o daq_handler.o clb_simulator.o daqonite.o
 
 rootcint:
-	rootcint -f Monitoring_gui_dict.cc -c ../include/Monitoring_gui.h Monitoring_gui_linkdef.h
+	rootcint -f monitoring_gui_dict.cc -c ../include/monitoring_gui.h monitoring_gui_linkdef.h
 
-TARGET =        DAQonite
+TARGET =        daqonite
 
-TEST = 			BBBTest
+TEST = 			bbb_test
 
-COMMAND = 		DAQommand
+COMMAND = 		daqommand
 
 $(TARGET): $(OBJS) *.cc ../include/*.h
-	$(CC) -o $(TARGET) Monitoring_gui_dict.cc $(OBJS) $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS)
+	$(CC) -o $(TARGET) monitoring_gui_dict.cc $(OBJS) $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS)
 
-$(TEST): $(OBJS) BBBTest.o
-	$(CC) -o $(TEST) BBBTest.o $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) 
+$(TEST): $(OBJS) bbb_test.o
+	$(CC) -o $(TEST) bbb_test.o $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) 
 
-$(COMMAND): DAQommand.cc
-	$(CC) -o $(COMMAND) DAQommand.cc $(LIBDIRS:%=-L%) $(LIBS:%=-l%)
+$(COMMAND): daqommand.cc
+	$(CC) -o $(COMMAND) daqommand.cc $(LIBDIRS:%=-L%) $(LIBS:%=-l%)
 	
 all: rootcint $(TARGET) $(COMMAND)
 
@@ -35,4 +35,4 @@ command: $(COMMAND)
 test: $(TEST)
 
 clean:
-	rm -f $(OBJS) $(TARGET) $(COMMAND) $(TEST) *.o Monitoring_gui_dict.cc Monitoring_gui_dict.h
+	rm -f $(OBJS) $(TARGET) $(COMMAND) $(TEST) *.o monitoring_gui_dict.cc monitoring_gui_dict.h

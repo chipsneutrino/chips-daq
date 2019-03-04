@@ -1,5 +1,5 @@
 /**
- * Monitoring_gui - The ROOT monitoring GUI for DAQonite
+ * MonitoringGui - The ROOT monitoring GUI for DAQonite
  * 
  * This class provides a ROOT GUI implementation for monitoring the data streams.
  * It displays various monitoring plots and allows you to look at specific channels.
@@ -29,10 +29,9 @@
 #include <TStyle.h>
 #include "TColor.h"
 #include "TImage.h"
-
 #include <bitset>
 
-#include "Monitoring_config.h"
+#include "monitoring_config.h"
 
 class TGWindow;
 class TGMainFrame;
@@ -40,20 +39,20 @@ class TRootEmbeddedCanvas;
 class TFile;
 class TTree;
 
-class Monitoring_gui {
+class MonitoringGui {
 
-	RQ_OBJECT("Monitoring_gui");
+	RQ_OBJECT("MonitoringGui");
 
 	public:
 
 		/** 
-		 * Create a Monitoring_gui object
+		 * Create a MonitoringGui object
 		 * Creates the monitoring GUI object and builds the ROOT TApplication GUI.
 		 */		
-		Monitoring_gui(int updateRate, std::string configFile);
+		MonitoringGui(int updateRate, std::string configFile);
 
-		/// Destroys the Monitoring_gui object
-		virtual ~Monitoring_gui();
+		/// Destroys the MonitoringGui object
+		virtual ~MonitoringGui();
 
 		/** 
 		 * Adds a optical packet from a clb to the monitoring
@@ -165,8 +164,6 @@ class Monitoring_gui {
 		// Draw the CHIPS logo on all canvases
 		void drawLogo(TCanvas* canvas);
 
-		/// Gets the total number of packets received 
-
 		// ROOT Hist plot makers
 		TH1F* makeTotalRatePlot(unsigned int pomIndex, unsigned int channel);
 		TH1F* makeTotalRatePlot();
@@ -182,77 +179,75 @@ class Monitoring_gui {
 		TH1F* makeRunDroppedPlot();
 
 		// The main frame
-		TGMainFrame*		fMainFrame;			///< The ROOT GUI main frame that holds everything
+		TGMainFrame*		fMain_frame;		///< The ROOT GUI main frame that holds everything
 
-		TCanvas*			fCanvas1;			///< The top canvas in the GUI
-		TCanvas*			fCanvas2;			///< The middle canvas in the GUI
-		TCanvas*			fCanvas3;			///< The bottom canvas in the GUI
+		TCanvas*			fCanvas_1;			///< The top canvas in the GUI
+		TCanvas*			fCanvas_2;			///< The middle canvas in the GUI
+		TCanvas*			fCanvas_3;			///< The bottom canvas in the GUI
 
-		TGLabel*			fRunStatusLabel;	///< The run status label in the GUI
-		TGLabel*			fRunTypeLabel;		///< The run type label in the GUI
-		TGLabel*			fRunNumLabel;		///< The run number label in the GUI
-		TGLabel*			fRunTimeLabel;		///< The elapsed run time label in the GUI
-		TGLabel*			fRunPacketsLabel;	///< The collected monitoring packets label in the GUI
-		TGLabel*			fRunFileLabel;		///< The save file name label in the GUI
+		TGLabel*			fRun_status_label;	///< The run status label in the GUI
+		TGLabel*			fRun_type_label;	///< The run type label in the GUI
+		TGLabel*			fRun_num_label;		///< The run number label in the GUI
+		TGLabel*			fRun_time_label;	///< The elapsed run time label in the GUI
+		TGLabel*			fRun_packets_label;	///< The collected monitoring packets label in the GUI
+		TGLabel*			fRun_file_label;	///< The save file name label in the GUI
 
-		TGTextButton* 		fBackButton;		///< The 'Backwards' button in the GUI
-		TGTextButton* 		fForwardButton;		///< The 'Forwards' button in the GUI
+		TGTextButton* 		fBack_button;		///< The 'Backwards' button in the GUI
+		TGTextButton* 		fForward_button;	///< The 'Forwards' button in the GUI
 
-		TGNumberEntry*		fPomIDEntry;		///< The POM ID number selection in the GUI
-		TGNumberEntry*		fChannelEntry;		///< The Channel ID number selection in the GUI
-		TGCheckButton*		fSpecifyButton;		///< The toggle specific button in the GUI
+		TGNumberEntry*		fPom_id_entry;		///< The POM ID number selection in the GUI
+		TGNumberEntry*		fChannel_entry;		///< The Channel ID number selection in the GUI
+		TGCheckButton*		fSpecify_button;	///< The toggle specific button in the GUI
 
-		TGLabel*			fFactLabel1;		///< Fact 1 label in the GUI
-		TGLabel*			fFactLabel2;		///< Fact 2 label in the GUI
-		TGLabel*			fFactLabel3;		///< Fact 3 label in the GUI
-		TGLabel*			fFactLabel4;		///< Fact 4 label in the GUI
+		TGLabel*			fFact_label_1;		///< Fact 1 label in the GUI
+		TGLabel*			fFact_label_2;		///< Fact 2 label in the GUI
+		TGLabel*			fFact_label_3;		///< Fact 3 label in the GUI
+		TGLabel*			fFact_label_4;		///< Fact 4 label in the GUI
 
 		// Combined Plots
-		TH1F*				fTotalRatePlot;		///< Total rate plot across all channels
-		TH1F*				fPacketRatePlot;	///< Total packet rate plot across all channels
-		TH2F*				fRateHeatMapPlot;	///< Heat map of hit rates across all channels
-		TH1F*				fAvgTempPlot;		///< Total packet rate plot across all channels
-		TH1F*				fAvgHumidityPlot;	///< Total packet rate plot across all channels
-		TH1F*				fTotalPacketPlot;	///< Total optical packets received in the current run
-		TH1F*				fTotalDroppedPlot;	///< Total dropped optical packets in the current run
+		TH1F*				fTotal_rate_plot;	///< Total rate plot across all channels
+		TH1F*				fPacket_rate_plot;	///< Total packet rate plot across all channels
+		TH2F*				fRate_map_plot;		///< Heat map of hit rates across all channels
+		TH1F*				fAvg_temp_plot;		///< Total packet rate plot across all channels
+		TH1F*				fAvg_humidity_plot;	///< Total packet rate plot across all channels
+		TH1F*				fTotal_packet_plot;	///< Total optical packets received in the current run
+		TH1F*				fTotal_dropped_plot;///< Total dropped optical packets in the current run
 
 		// Specific Plots
-		std::vector<TH1F*> 	fChannelRatePlots;	///< Individual channel rate plots
-		std::vector<TH1F*> 	fCLBTempPlots;		///< Individual CLB temperature plots
-		std::vector<TH1F*> 	fCLBHumidityPlots;	///< Individual CLB humidity plots
-		std::vector<TH1F*>	fCLBPacketPlots;	///< Individual CLB received optical packet plots
-		std::vector<TH1F*>	fCLBDroppedPlots;	///< Individual CLB optical dropped packet plots
+		std::vector<TH1F*> 	fChannel_rate_plots;///< Individual channel rate plots
+		std::vector<TH1F*> 	fCLB_temp_plots;	///< Individual CLB temperature plots
+		std::vector<TH1F*> 	fCLB_humidity_plots;///< Individual CLB humidity plots
+		std::vector<TH1F*>	fCLB_packet_plots;	///< Individual CLB received optical packet plots
+		std::vector<TH1F*>	fCLB_dropped_plots;	///< Individual CLB optical dropped packet plots
 
 		// Important variables
-		int 				fPageNum;			///< Current page being displayed in the GUI
+		int 				fPage_num;			///< Current page being displayed in the GUI
 		bool 				fMode;				///< false = Monitoring, True = Running
 
 		// Current run variables
-		int					fRunNumber;			///< The current run number
-		int					fRunType;			///< The current run type
-		unsigned int 		fRunTotalPackets;	///< Total number of optical and monitoring packets in the run
-		unsigned int 		fRunTotalDropped;	///< Total number of dropped packets in the run
-		TString				fRunFile;			///< The output .root file for this run
+		int					fRun_num;			///< The current run number
+		int					fRun_type;			///< The current run type
+		unsigned int 		fRun_total_packets;	///< Total number of optical and monitoring packets in the run
+		unsigned int 		fRun_total_dropped;	///< Total number of dropped packets in the run
+		TString				fRun_file;			///< The output .root file for this run
 
 		// Window variables
-		int 				fUpdateRate;		///< The rate the plots will be updated
-		int 				fRunUpdates;		///< Number of updates in this run
-
-		int 				fUpdatePackets;		///< The number of monitoring packets in this update window
-		unsigned int 		fWindowStartTime;	///< The start time of the current window in ms
+		int 				fUpdate_rate;		///< The rate the plots will be updated
+		int 				fRun_updates;		///< Number of updates in this run
+		int 				fUpdate_packets;	///< The number of monitoring packets in this update window
 
 		// Monitoring variables
-		int 				fPacketsReceived;	///< Number of monitoring packets received
-		int 				fNumUpdates;		///< Number of GUI updates
-		int					fNumRefresh;		///< Number of times plots have been refreshed
-		int					fActiveCLBs;		///< The number of CLBs we have received hits from
-		int					fActiveChannels;	///< The number of channels we have received hits from
-		int					fOddChannels;		///< The number of channels that are behaving oddly
-		bool 				fNonConfigData;		///< Are we receiving data from non-config CLBs?
+		int 				fPackets_received;	///< Number of monitoring packets received
+		int 				fNum_updates;		///< Number of GUI updates
+		int					fNum_refresh;		///< Number of times plots have been refreshed
+		int					fActive_clbs;		///< The number of CLBs we have received hits from
+		int					fActive_channels;	///< The number of channels we have received hits from
+		int					fOdd_channels;		///< The number of channels that are behaving oddly
+		bool 				fNon_config_data;	///< Are we receiving data from non-config CLBs?
 
-		std::vector<std::vector<unsigned int> > fRateArray;	///< Array holding number of hits in window
-		std::vector<float> 				fTempArray;			///< Array holding the most recent temperature for each CLB
-		std::vector<float> 				fHumidityArray;		///< Array holding the most recent humidity for each CLB
+		std::vector<std::vector<unsigned int> > fRate_array;///< Array holding number of hits in window
+		std::vector<float> 				fTemp_array;		///< Array holding the most recent temperature for each CLB
+		std::vector<float> 				fHumidity_array;	///< Array holding the most recent humidity for each CLB
 
 		// Packet variables (Only apply to the current run)
 		std::vector<unsigned int> 		fOptical_packets;	///< CLB optical packets received
@@ -264,14 +259,10 @@ class Monitoring_gui {
 		std::vector<unsigned int>		fMonitoring_dropped;///< CLB monitoring packets dropped
 
 		// Configuration variables
-		std::string 					fConfigFile;		///< Configuration file
-
-		int fNumCLBs;										///< Number of CLBs from "clb_number"
-		std::vector<unsigned int> 		fCLBeIDs; 			///< eIDs of the CLBs
-		std::vector<unsigned int> 		fCLBTypes;			///< Plane types for the CLBs
-
-		int fTotalNumChannels;								///< Total number of active channels
-		std::vector<std::bitset<32> > 	fActiveChannelsArr;	///< Which channels are active
+		std::string 					fConfig_file;		///< Configuration file
+		int 							fNum_clbs;			///< Number of CLBs from "clb_number"
+		std::vector<unsigned int> 		fCLB_eids; 			///< eIDs of the CLBs
+		int 							fTotal_num_channels;///< Total number of active channels
 };
 
 #endif
