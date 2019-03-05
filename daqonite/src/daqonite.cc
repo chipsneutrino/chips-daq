@@ -67,15 +67,10 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Need to start a TApplication if we are using the GUI
-	DAQHandler * daq_handler;
 	if (use_gui) {
 		TApplication the_app("app", &argc, argv);
-
-		daq_handler = new DAQHandler(collect_clb_data, collect_bbb_data,
-									  use_gui, num_threads, config_file);
+		DAQHandler daq_handler(collect_clb_data, collect_bbb_data, use_gui, num_threads, config_file);
 	} else {
-		daq_handler = new DAQHandler(collect_clb_data, collect_bbb_data,
-									  use_gui, num_threads, config_file);	
+		DAQHandler daq_handler(collect_clb_data, collect_bbb_data, use_gui, num_threads, config_file);	
 	}
-	delete daq_handler;
 }

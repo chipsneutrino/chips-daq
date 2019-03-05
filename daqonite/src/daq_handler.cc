@@ -8,7 +8,8 @@ DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data,
 					   bool gui, int numThreads, std::string configFile) :
 					   fCollect_clb_data(collect_clb_data),
 					   fCollect_bbb_data(collect_bbb_data),
-					   fShow_gui(gui), fNum_threads(numThreads) {
+					   fShow_gui(gui), fNum_threads(numThreads),
+					   fData_handler(fCollect_clb_data, fCollect_bbb_data) {
 
 	// 1) Set to monitoring mode
 	fMode = false;
@@ -39,21 +40,18 @@ DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data,
 		fDaq_gui = NULL; 
 	}
 
-	// 6) Setup the data_handler that deals with the ROOT TTree's and files
-	fData_handler = new DataHandler(fCollect_clb_data, fCollect_bbb_data);
-
-	// 7) Setup the CLB handler (if required)
+	// 6) Setup the CLB handler (if required)
 	if (fCollect_clb_data) {
-		fCLB_handler = new CLBHandler(fIO_service, fDaq_gui, fData_handler, &fMode);
+		fCLB_handler = new CLBHandler(fIO_service, fDaq_gui, &fData_handler, &fMode);
 		fCLB_handler->workMonitoringData();
 	} else { fCLB_handler = NULL; }
 
-	// 8) Setup the BBB handler (if required)
+	// 7) Setup the BBB handler (if required)
 	if (fCollect_bbb_data) {
 		fBBB_handler = new BBBHandler();
 	} else { fBBB_handler = NULL; }
 
-	// 9) Setup the thread group and call io_service.run() in each
+	// 8) Setup the thread group and call io_service.run() in each
 	std::cout << "daqonite - Starting IO service With " << fNum_threads << " threads" << std::endl;
 	std::cout << "daqonite - Waiting for DAQommand command..." << std::endl;
 	fThread_group = new boost::thread_group();
@@ -61,10 +59,10 @@ DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data,
 		fThread_group->create_thread( boost::bind(&DAQHandler::ioServiceThread, this) );
 	}
 
-	// 10) Wait for all the threads to finish
+	// 9) Wait for all the threads to finish
 	fThread_group->join_all();
 
-	// 11) Terminate the ROOT gApplication (if required)
+	// 10) Terminate the ROOT gApplication (if required)
 	if (fDaq_gui != NULL) {	
 		std::cout << "daqonite - Terminating ROOT gApplication" << std::endl;
 		gApplication->Terminate(0);	
@@ -74,7 +72,6 @@ DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data,
 DAQHandler::~DAQHandler() {
 	delete fIO_service;
 	delete fSignal_set;
-	delete fData_handler;
 	delete fCLB_handler;
 	delete fBBB_handler;
 }
@@ -97,7 +94,7 @@ void DAQHandler::handleSignals(boost::system::error_code const& error, int signu
 				if (fDaq_gui != NULL) { fDaq_gui->stopRun(); }	
 
 				// Stop the data_handler run
-				fData_handler->stopRun();
+				fData_handler.stopRun();
 			}
 			std::cout << "\nDAQonite - Done for the day" << std::endl;
 			fIO_service->stop();
@@ -129,17 +126,17 @@ void DAQHandler::handleLocalSocket(boost::system::error_code const& error, std::
 				if (fDaq_gui != NULL) { fDaq_gui->stopRun(); }	
 
 				// Stop the data_handler run
-				fData_handler->stopRun();
+				fData_handler.stopRun();
 			}
 
 			// Start a data_handler run
-			fData_handler->startRun((int)fBuffer_local[5]-48);
+			fData_handler.startRun((int)fBuffer_local[5]-48);
 
 			// Give run info to the GUI
 			if (fDaq_gui != NULL) { 
-				fDaq_gui->startRun(fData_handler->getRunType(), 
-								   fData_handler->getRunNum(), 
-								   fData_handler->getOutputName()); 
+				fDaq_gui->startRun(fData_handler.getRunType(), 
+								   fData_handler.getRunNum(), 
+								   fData_handler.getOutputName()); 
 			}
 
 			// Set the mode to data taking
@@ -157,7 +154,7 @@ void DAQHandler::handleLocalSocket(boost::system::error_code const& error, std::
 				if (fDaq_gui != NULL) { fDaq_gui->stopRun(); }
 
 				// Stop the data_handler run
-				fData_handler->stopRun();			
+				fData_handler.stopRun();			
 			} else { 
 				std::cout << "\nDAQonite - Already stopped mining" << std::endl;
 			}
@@ -172,7 +169,7 @@ void DAQHandler::handleLocalSocket(boost::system::error_code const& error, std::
 				if (fDaq_gui != NULL) { fDaq_gui->stopRun(); }	
 
 				// Stop the data_handler run
-				fData_handler->stopRun();
+				fData_handler.stopRun();
 			}
 			std::cout << "\nDAQonite - Done for the day" << std::endl;
 			fIO_service->stop();

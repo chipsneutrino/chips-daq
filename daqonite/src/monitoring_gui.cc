@@ -410,7 +410,7 @@ void MonitoringGui::updatePlots() {
 
 	// Need variables to track things...
 	fActive_clbs 				= 0;
-	fActive_channels				= 0;
+	fActive_channels			= 0;
 	fOdd_channels 				= 0;
 
 	int 	totalHits 			= 0;

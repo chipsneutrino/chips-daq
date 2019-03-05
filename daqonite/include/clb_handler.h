@@ -99,13 +99,6 @@ class CLBHandler {
 		 */
 		std::pair<int, std::string> getType(CLBCommonHeader const& header);
 
-		/// Print CLBCommonHeader to stdout
-		void printHeader(CLBCommonHeader const& header);
-		/// Print Optical data to stdout
-		void printOpticalData(const char* const buffer, ssize_t buffer_size, int max_col);
-		/// Print monitoring data to stdout
-		void printMonitoringData(const char* const buffer, ssize_t buffer_size, int max_col);
-
 		// CLBHandler settings/input
 		bool 							fCollect_optical;					///< Should we collect optical data?
 		bool 							fCollect_monitoring;				///< Should we collect monitoring data?
@@ -115,11 +108,96 @@ class CLBHandler {
 		std::size_t const 				fBuffer_size;						///< Size of the buffers
 
 		// BOOST data collection
-		boost::asio::ip::udp::socket* 	fSocket_optical;					///< Optical data UDP socket
+		boost::asio::ip::udp::socket 	fSocket_optical;					///< Optical data UDP socket
 		char fBuffer_optical[buffer_size] __attribute__((aligned(8)));		///< Optical data buffer
 
-		boost::asio::ip::udp::socket*	fSocket_monitoring;					///< Monitoring data UDP socket
+		boost::asio::ip::udp::socket	fSocket_monitoring;					///< Monitoring data UDP socket
 		char fBuffer_monitoring[buffer_size] __attribute__((aligned(8)));	///< Monitoring data buffer
+
+		void printHeader(CLBCommonHeader const& header) {
+			bool const valid = validTimeStamp(header);
+			bool const trailer = isTrailer(header);
+
+			std::string name("");
+
+			std::cout << "DataType:          " << header.dataType() << '\n'
+					<< "RunNumber:         " << header.runNumber() << '\n'
+					<< "UDPSequenceNumber: " << header.udpSequenceNumber() << '\n'
+
+					<< "Timestamp:\n" << "          Seconds: " << header.timeStamp().sec()
+					<< '\n' << "          Tics:    " << header.timeStamp().tics()
+					<< '\n' << "          " << UTCTime_h(header.timeStamp(), valid)
+					<< '\n'
+
+					<< "POMIdentifier:     " << header.pomIdentifier() << " (MAC: " << POMID_h(
+						header.pomIdentifier()) << name << ')' << '\n'
+					<< "POMStatus 1:       " << header.pomStatus(1) << '\n'
+					<< "POMStatus 2:       " << header.pomStatus(2);
+
+			if (trailer && header.dataType() == ttdc) {
+				std::cout << " (trailer)\n";
+			} else { std::cout << '\n'; }
+
+			std::cout << "POMStatus 3:       " << header.pomStatus(3) << '\n'
+					<< "POMStatus 4:       " << header.pomStatus(4) << std::endl;
+		}
+
+		void printOpticalData(const char* const buffer, ssize_t buffer_size, int max_col) {
+			const unsigned int num_hits = (buffer_size - sizeof(CLBCommonHeader))
+					/ sizeof(hit_t);
+
+			std::cout << "Number of hits: " << num_hits << '\n';
+
+			if (num_hits) {
+				const int printing = 20 > num_hits ? num_hits : 20;
+				const unsigned int n = max_col > 37 ? max_col / 37 : 1;
+
+				for (int i = 0; i < printing; ++i) {
+					const hit_t
+							* const hit =
+									static_cast<const hit_t* const > (static_cast<const void* const > (buffer
+											+ sizeof(CLBCommonHeader) + i
+											* sizeof(hit_t)));
+
+					std::cout << "Hit" << std::setfill('0') << std::setw(2) << i
+							<< ": " << *hit << ' ';
+
+					if ((i + 1) % n == 0) {
+						std::cout << '\n';
+					} else {
+						std::cout << "| ";
+					}
+				}
+			}
+			std::cout << '\n';
+		}
+
+		void printMonitoringData(const char* const buffer, ssize_t buffer_size, int max_col) {
+			const unsigned int n = max_col > 14 ? max_col / 14 : 1;
+
+			for (int i = 0; i < 31; ++i) {
+				const uint32_t
+						* const field =
+								static_cast<const uint32_t* const > (static_cast<const void* const > (buffer
+										+ sizeof(CLBCommonHeader) + i * 4));
+
+				std::cout << "CH" << std::setfill('0') << std::setw(2) << i << ": "
+						<< std::setfill(' ') << std::setw(6) << htonl(*field) << "  ";
+
+				if ((i + 1) % n == 0) {
+					std::cout << '\n';
+				}
+			}
+			std::cout << '\n';
+
+			const ssize_t minimum_size = sizeof(CLBCommonHeader) + sizeof(int) * 31;
+
+			if (buffer_size > minimum_size) {
+				std::cout << "SlowControl data:\n"
+						<< *static_cast<const SCData* const > (static_cast<const void* const > (buffer
+								+ minimum_size)) << '\n';
+			}
+		}
 };
 
 #endif

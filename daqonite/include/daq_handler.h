@@ -110,7 +110,7 @@ class DAQHandler {
 		boost::asio::signal_set*		fSignal_set;				///< BOOST signal_set
 		udp::socket*					fLocal_socket;				///< Local UDP control socket
 		char fBuffer_local[buffer_size] __attribute__((aligned(8)));///< Local socket buffer
-		DataHandler*					fData_handler;				///< Pointer to DataHandler
+		DataHandler						fData_handler;				///< DataHandler object
 		CLBHandler* 					fCLB_handler;				///< Pointer to CLBHandler
 		BBBHandler* 					fBBB_handler;				///< Pointer to BBBHandler
 

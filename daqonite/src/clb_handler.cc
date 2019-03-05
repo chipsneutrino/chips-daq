@@ -7,27 +7,23 @@
 CLBHandler::CLBHandler(boost::asio::io_service* io_service, MonitoringGui *daqGui, 
 					   DataHandler *data_handler, bool* mode) :
 					   fDaq_gui(daqGui), fData_handler(data_handler), 
-					   fMode(mode), fBuffer_size(buffer_size) {
+					   fMode(mode), fBuffer_size(buffer_size),
+					   fSocket_optical(*io_service, udp::endpoint(udp::v4(), default_opto_port)),
+					   fSocket_monitoring(*io_service, udp::endpoint(udp::v4(), default_moni_port)) {
 
-	// Add the CLB Optical socket to the IO service
-	fSocket_optical = new udp::socket(*io_service, udp::endpoint(udp::v4(), default_opto_port));
-	udp::socket::receive_buffer_size option_clb_opt(33554432);
-	fSocket_optical->set_option(option_clb_opt);
-
-	// Add the CLB monitoring port to the IO service
-	fSocket_monitoring = new udp::socket(*io_service, udp::endpoint(udp::v4(), default_moni_port));
-	udp::socket::receive_buffer_size option_clb_mon(33554432);
-	fSocket_monitoring->set_option(option_clb_mon);
+	// Setup the sockets
+	udp::socket::receive_buffer_size option_clb(33554432);
+	fSocket_optical.set_option(option_clb);
+	fSocket_monitoring.set_option(option_clb);
 }
 
 CLBHandler::~CLBHandler() {
-	delete fSocket_optical;
-	delete fSocket_monitoring;
+	// Empty
 }
 
 void CLBHandler::workOpticalData() {
 	if (*fMode == true) {
-		fSocket_optical->async_receive(boost::asio::buffer(&fBuffer_optical[0], fBuffer_size),
+		fSocket_optical.async_receive(boost::asio::buffer(&fBuffer_optical[0], fBuffer_size),
 								       boost::bind(&CLBHandler::handleOpticalData, this,
 								       boost::asio::placeholders::error,
 								       boost::asio::placeholders::bytes_transferred));
@@ -35,7 +31,7 @@ void CLBHandler::workOpticalData() {
 }
 
 void CLBHandler::workMonitoringData() {
-	fSocket_monitoring->async_receive(boost::asio::buffer(&fBuffer_monitoring[0], fBuffer_size),
+	fSocket_monitoring.async_receive(boost::asio::buffer(&fBuffer_monitoring[0], fBuffer_size),
 									  boost::bind(&CLBHandler::handleMonitoringData, this,
 									  boost::asio::placeholders::error,
 									  boost::asio::placeholders::bytes_transferred));
@@ -177,90 +173,5 @@ std::pair<int, std::string> CLBHandler::getType(CLBCommonHeader const& header) {
 	else if (header.dataType() == ttdc) { return optical; }
 	else if (header.dataType() == taes) { return acoustic; }
 	return unknown;
-}
-
-void CLBHandler::printHeader(CLBCommonHeader const& header) {
-	bool const valid = validTimeStamp(header);
-	bool const trailer = isTrailer(header);
-
-	std::string name("");
-
-	std::cout << "DataType:          " << header.dataType() << '\n'
-			  << "RunNumber:         " << header.runNumber() << '\n'
-			  << "UDPSequenceNumber: " << header.udpSequenceNumber() << '\n'
-
-			  << "Timestamp:\n" << "          Seconds: " << header.timeStamp().sec()
-			  << '\n' << "          Tics:    " << header.timeStamp().tics()
-			  << '\n' << "          " << UTCTime_h(header.timeStamp(), valid)
-			  << '\n'
-
-			  << "POMIdentifier:     " << header.pomIdentifier() << " (MAC: " << POMID_h(
-				header.pomIdentifier()) << name << ')' << '\n'
-			  << "POMStatus 1:       " << header.pomStatus(1) << '\n'
-			  << "POMStatus 2:       " << header.pomStatus(2);
-
-	if (trailer && header.dataType() == ttdc) {
-		std::cout << " (trailer)\n";
-	} else { std::cout << '\n'; }
-
-	std::cout << "POMStatus 3:       " << header.pomStatus(3) << '\n'
-			  << "POMStatus 4:       " << header.pomStatus(4) << std::endl;
-}
-
-void CLBHandler::printOpticalData(const char* const buffer, ssize_t buffer_size, int max_col) {
-	const unsigned int num_hits = (buffer_size - sizeof(CLBCommonHeader))
-			/ sizeof(hit_t);
-
-	std::cout << "Number of hits: " << num_hits << '\n';
-
-	if (num_hits) {
-		const int printing = 20 > num_hits ? num_hits : 20;
-		const unsigned int n = max_col > 37 ? max_col / 37 : 1;
-
-		for (int i = 0; i < printing; ++i) {
-			const hit_t
-					* const hit =
-							static_cast<const hit_t* const > (static_cast<const void* const > (buffer
-									+ sizeof(CLBCommonHeader) + i
-									* sizeof(hit_t)));
-
-			std::cout << "Hit" << std::setfill('0') << std::setw(2) << i
-					<< ": " << *hit << ' ';
-
-			if ((i + 1) % n == 0) {
-				std::cout << '\n';
-			} else {
-				std::cout << "| ";
-			}
-		}
-	}
-	std::cout << '\n';
-}
-
-void CLBHandler::printMonitoringData(const char* const buffer, ssize_t buffer_size, int max_col) {
-	const unsigned int n = max_col > 14 ? max_col / 14 : 1;
-
-	for (int i = 0; i < 31; ++i) {
-		const uint32_t
-				* const field =
-						static_cast<const uint32_t* const > (static_cast<const void* const > (buffer
-								+ sizeof(CLBCommonHeader) + i * 4));
-
-		std::cout << "CH" << std::setfill('0') << std::setw(2) << i << ": "
-				<< std::setfill(' ') << std::setw(6) << htonl(*field) << "  ";
-
-		if ((i + 1) % n == 0) {
-			std::cout << '\n';
-		}
-	}
-	std::cout << '\n';
-
-	const ssize_t minimum_size = sizeof(CLBCommonHeader) + sizeof(int) * 31;
-
-	if (buffer_size > minimum_size) {
-		std::cout << "SlowControl data:\n"
-				<< *static_cast<const SCData* const > (static_cast<const void* const > (buffer
-						+ minimum_size)) << '\n';
-	}
 }
 
