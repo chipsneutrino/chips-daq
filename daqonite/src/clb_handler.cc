@@ -151,8 +151,7 @@ void CLBHandler::handleMonitoringData(boost::system::error_code const& error, st
 
 		if (fDaq_gui != NULL) {
 			fDaq_gui->addMonitoringPacket((unsigned int)fData_handler->fPomId_mon_clb, fData_handler->fHits_mon_clb, 
-			  							  fData_handler->fTemperate_mon_clb, fData_handler->fHumidity_mon_clb,
-										  (unsigned int)header_monitoring.udpSequenceNumber());
+			  							  fData_handler->fTemperate_mon_clb, fData_handler->fHumidity_mon_clb);
 		}
 
 		if (*fMode == true) { fData_handler->fillMonCLBTree(); }

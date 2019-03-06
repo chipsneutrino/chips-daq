@@ -4,7 +4,7 @@
 
 #include "monitoring_gui.h"
 
-#define PLOTLENGTH 100
+#define PLOTLENGTH 50
 #define PMTSPERPOM 30
 #define HIGHRATE 10000
 
@@ -219,6 +219,7 @@ MonitoringGui::MonitoringGui(int updateRate, std::string configFile) :
 
 	// Set the configuration variables using the Monitoring_config class
 	MonitoringConfig fConfig(fConfig_file.c_str());
+	fConfig.printConfig();
 	fNum_clbs = fConfig.getNumCLBs();
 	fCLB_eids = fConfig.getCLBeIDs();
 	fTotal_num_channels = fConfig.getTotalNumChannels();
@@ -231,21 +232,34 @@ MonitoringGui::MonitoringGui(int updateRate, std::string configFile) :
 	fRun_num = -1;
 	fRun_type = -1;
 	fRun_total_packets = 0;
-	fRun_total_dropped = 0;
 	fRun_file = "";
 	fRun_updates = 0;
 
-	// Window variables
-	fUpdate_packets = 0;
-
 	// Monitoring variables
-	fPackets_received = 0;
 	fNum_updates = 0;
 	fNum_refresh = 0;
+
+	// Hit label variables
 	fActive_clbs = 0;
 	fActive_channels = 0;
 	fOdd_channels = 0;
 	fNon_config_data = false;
+
+	// Packet label variables
+	fAvg_packet_rate = 7000;
+	fAvg_seq_num = 0;
+	fLow_packet_rate = 10000;
+	fHigh_packet_rate = 0;
+	fLow_seq_num = 10;
+	fHigh_seq_num = 0;
+
+	// Temp/Humidity label variables
+	fAvg_temp = 30;
+	fAvg_humidity = 10;
+	fLow_temp = 1000;
+	fHigh_temp = 0;
+	fLow_humidity = 1000;
+	fHigh_humidity = 0;
 
 	setupArrays();
 	setupPlots();
@@ -264,30 +278,15 @@ void MonitoringGui::addOpticalPacket(unsigned int pomID, unsigned int seqNumber)
 	if (it != fCLB_eids.end() && fMode) {
 		int clbIndex = std::distance(fCLB_eids.begin(), it);
 
-		// Check to see if we have missed a packet
-		if (fOptical_packets[clbIndex] != 0) {
-			int seqDiff = seqNumber - fOptical_seq[clbIndex];
-
-			if (seqDiff == 1) {} 
-			else if (seqDiff > 1) { 
-				fOptical_dropped[clbIndex] += seqDiff; 
-				fRun_total_dropped += seqDiff;
-			} else { 
-				//std::cout << "DAQonite - Error: Seq: " << seqNumber << "," << fMonitoring_seq[clbIndex] << std::endl;  
-			}
-		}
-
-		// Set the current sequence number for this CLB
-		fOptical_seq[clbIndex] = seqNumber;
-
-		// Increment the optical packet counter
-		fOptical_packets[clbIndex] ++;	
-
 		// Increment the total run packet counter
 		fRun_total_packets ++;
 
-		// Increment the packet counter 
-		fPackets_received ++;
+		// Increment the number of packets received for this clb in this update window
+		fPacket_array[clbIndex] += 1;
+
+		fAvg_seq_num = (0.001*seqNumber) + ((1-0.001)*fAvg_seq_num);
+		if (seqNumber<fLow_seq_num) fLow_seq_num = seqNumber;
+		if (seqNumber>fHigh_seq_num) fHigh_seq_num = seqNumber;
 
 	} else if (it == fCLB_eids.end()) {
 		fNon_config_data = true;
@@ -295,50 +294,26 @@ void MonitoringGui::addOpticalPacket(unsigned int pomID, unsigned int seqNumber)
 }
 
 void MonitoringGui::addMonitoringPacket(unsigned int pomID, unsigned int hits[30], 
-										 float temp, float humidity, unsigned int seqNumber) {
+										float temp, float humidity) {
 	// Search for this pomID in the config CLB IDs
 	std::vector<unsigned int>::iterator it = std::find(fCLB_eids.begin(), fCLB_eids.end(), pomID);
 
 	if (it != fCLB_eids.end()) {
 		int clbIndex = std::distance(fCLB_eids.begin(), it);
 
-		// If we are in running mode we do packet checking
-		if (fMode) {
-			// Check to see if we have missed a packet
-			if (fMonitoring_packets[clbIndex] != 0) {
-				int seqDiff = seqNumber - fMonitoring_seq[clbIndex];
-
-				if (seqDiff == 1) {} 
-				else if (seqDiff > 1) { 
-					fMonitoring_dropped[clbIndex] += seqDiff; 
-					fRun_total_dropped += seqDiff;
-				} else { 
-					//std::cout << "DAQonite - Error: Seq: " << seqNumber << "," << fMonitoring_seq[clbIndex] << std::endl;  
-				}
-			}
-
-			// Set the current sequence number for this CLB
-			fMonitoring_seq[clbIndex] = seqNumber;
-
-			// Increment the monitoring packet counter
-			fMonitoring_packets[clbIndex] ++;	
-
-			// Increment the total run packet counter
-			fRun_total_packets ++;		
-		}
-
 		// This is a valid CLB. Therefore, add the hits...
 		for (int channel = 0; channel < 30; channel ++) fRate_array[clbIndex][channel] += hits[channel];
 
-		// Update the temperature and humidity for this CLB
-		fTemp_array[clbIndex] = temp;
-		fHumidity_array[clbIndex] = humidity;
+		// Increment the number of packets received for this clb in this update window
+		fPacket_array[clbIndex] += 1;
 
-		// Increment the number of packets received in this update window
-		fUpdate_packets++;
-
-		// Increment the packet counter 
-		fPackets_received ++;
+		// Temp/Humidity label variables
+		fAvg_temp = (0.001*temp) + ((1-0.001)*fAvg_temp);
+		fAvg_humidity = (0.001*humidity) + ((1-0.001)*fAvg_humidity);
+		if (temp<fLow_temp) fLow_temp = temp;
+		if (temp>fHigh_temp) fHigh_temp = temp;
+		if (humidity<fLow_humidity) fLow_humidity = humidity;
+		if (humidity>fHigh_humidity) fHigh_humidity = humidity;
 
 	} else {
 		fNon_config_data = true;
@@ -347,25 +322,16 @@ void MonitoringGui::addMonitoringPacket(unsigned int pomID, unsigned int hits[30
 
 void MonitoringGui::setupArrays() {
 	fRate_array.clear();
+	fPacket_array.clear();
 
 	// Add a clean channel vector into the rate array for each CLB
 	for (int clbNum = 0; clbNum<fNum_clbs; clbNum++) {
 		std::vector<unsigned int> channelVec(PMTSPERPOM);
 		fRate_array.push_back(channelVec);
-		clearPomRates(clbNum);
-
-		fTemp_array.push_back(0.0);
-		fHumidity_array.push_back(0.0);
-
-		// Packet variables
-		fOptical_packets.push_back(0);
-		fOptical_seq.push_back(0);
-		fOptical_dropped.push_back(0);
-
-		fMonitoring_packets.push_back(0);
-		fMonitoring_seq.push_back(0);
-		fMonitoring_dropped.push_back(0);
+		fPacket_array.push_back(0);
 	}
+
+	resetArrays();
 }
 
 void MonitoringGui::setupPlots() {
@@ -374,20 +340,11 @@ void MonitoringGui::setupPlots() {
 	fTotal_rate_plot = makeTotalRatePlot();
 	fPacket_rate_plot = makePacketRatePlot();
 	fRate_map_plot = makeHeatMapPlot();
-	fAvg_temp_plot = makeTemperaturePlot();
-	fAvg_humidity_plot = makeHumidityPlot();
-	fTotal_packet_plot = makeRunPacketPlot();
-	fTotal_dropped_plot = makeRunDroppedPlot();
 
 	for (int clbNum = 0; clbNum<fNum_clbs; clbNum++) {
 
-		// Make the CLB specific temp and humidity plots
-		fCLB_temp_plots.push_back(makeTemperaturePlot(fCLB_eids[clbNum]));
-		fCLB_humidity_plots.push_back(makeHumidityPlot(fCLB_eids[clbNum]));
-
 		// Make the CLB specific packet plots
-		fCLB_packet_plots.push_back(makeRunPacketPlot(fCLB_eids[clbNum]));
-		fCLB_dropped_plots.push_back(makeRunDroppedPlot(fCLB_eids[clbNum]));
+		fCLB_packet_plots.push_back(makePacketRatePlot(fCLB_eids[clbNum]));
 
 		// Make the channel specific rate plots
 		for (int channel=0; channel<PMTSPERPOM; channel++) {
@@ -396,8 +353,13 @@ void MonitoringGui::setupPlots() {
 	}
 }
 
-void MonitoringGui::clearPomRates(unsigned int pomIndex) {
-	for(int channel = 0; channel<PMTSPERPOM; channel++) fRate_array[pomIndex][channel] = 0;
+void MonitoringGui::resetArrays() {
+	for (int clb_num = 0; clb_num<fNum_clbs; clb_num++) {
+		fPacket_array[clb_num] = 0;
+		for(int channel = 0; channel<PMTSPERPOM; channel++) {
+			fRate_array[clb_num][channel] = 0;
+		}
+	}
 }
 
 void MonitoringGui::updatePlots() {
@@ -413,36 +375,23 @@ void MonitoringGui::updatePlots() {
 	fActive_channels			= 0;
 	fOdd_channels 				= 0;
 
-	int 	totalHits 			= 0;
+	int 	total_hits 			= 0;
+	int 	total_packets		= 0;
 	bool 	clbHits[fNum_clbs];
-	float 	sumTemp 			= 0.0;
-	float 	sumHumidity 		= 0.0;
 
 	// We need to loop through the fRate_array and update the plots and then clear it...
 	for (int pomIndex = 0; pomIndex < fNum_clbs; pomIndex++) {
 		clbHits[pomIndex] = false;
 
-		// Update the CLB specific temp plots
-		float clbTemp = fTemp_array[pomIndex];
-		sumTemp += clbTemp;
-		fCLB_temp_plots[pomIndex]->SetBinContent(fNum_updates-(fNum_refresh*PLOTLENGTH), clbTemp);
-
-		// Update the CLB specific humidity plots
-		float clbHumidity = fHumidity_array[pomIndex];
-		sumHumidity += clbHumidity;
-		fCLB_humidity_plots[pomIndex]->SetBinContent(fNum_updates-(fNum_refresh*PLOTLENGTH), clbHumidity);
-
-		// Update the CLB specific packet and dropped plots
-		int clbTotalPackets = fOptical_packets[pomIndex] + fMonitoring_packets[pomIndex];
-		fCLB_packet_plots[pomIndex]->SetBinContent(fNum_updates-(fNum_refresh*PLOTLENGTH), clbTotalPackets);
-		int clbDroppedPackets = fOptical_dropped[pomIndex] + fMonitoring_dropped[pomIndex];
-		fCLB_dropped_plots[pomIndex]->SetBinContent(fNum_updates-(fNum_refresh*PLOTLENGTH), clbDroppedPackets);
+		int clb_packets = fPacket_array[pomIndex];
+		total_packets += clb_packets;
+		fCLB_packet_plots[pomIndex]->SetBinContent(fNum_updates-(fNum_refresh*PLOTLENGTH), clb_packets / ((float)fUpdate_rate/1000));
 
 		for (int channelIndex = 0; channelIndex < PMTSPERPOM; channelIndex++) {
 			int hits = (int)fRate_array[pomIndex][channelIndex];
 
 			// Add to the total hits for this window
-			totalHits += hits;
+			total_hits += hits;
 
 			// If there are hits the channel is active
 			if ( hits > 0 ) { 
@@ -460,52 +409,35 @@ void MonitoringGui::updatePlots() {
 			// Set the heat map bin for this channel
 			fRate_map_plot->SetBinContent(channelIndex+1, pomIndex+1, hits/((float)fUpdate_rate/1000));
 		}
-		clearPomRates(pomIndex);
 	}
+
+	// Reset the arrays for the next window
+	resetArrays();
 
 	for (int clb = 0; clb<fNum_clbs; clb++) {
 		if (clbHits[clb] == true) { fActive_clbs++; }
 	}
 
 	// Set the total channel rate plot
-	fTotal_rate_plot->SetBinContent(fNum_updates-(fNum_refresh*PLOTLENGTH), (float)totalHits / ((float)fUpdate_rate/1000));
+	fTotal_rate_plot->SetBinContent(fNum_updates-(fNum_refresh*PLOTLENGTH), (float)total_hits / ((float)fUpdate_rate/1000));
 
 	// Set the total packet rate plot
-	fPacket_rate_plot->SetBinContent(fNum_updates-(fNum_refresh*PLOTLENGTH), fUpdate_packets / ((float)fUpdate_rate/1000));
-
-	// Set the temperature and humidity average plots
-	fAvg_temp_plot->SetBinContent(fNum_updates-(fNum_refresh*PLOTLENGTH), sumTemp / (float)fActive_clbs);
-	fAvg_humidity_plot->SetBinContent(fNum_updates-(fNum_refresh*PLOTLENGTH), sumHumidity / (float)fActive_clbs);
-
-	// Set the packet plots
-	fTotal_packet_plot->SetBinContent(fNum_updates-(fNum_refresh*PLOTLENGTH), fRun_total_packets);
-	fTotal_dropped_plot->SetBinContent(fNum_updates-(fNum_refresh*PLOTLENGTH), fRun_total_dropped);
-
-	fUpdate_packets = 0;
+	float total_packet_rate =  total_packets / ((float)fUpdate_rate/1000);
+	fPacket_rate_plot->SetBinContent(fNum_updates-(fNum_refresh*PLOTLENGTH), total_packet_rate);
+	fAvg_packet_rate = (0.2*total_packet_rate) + ((1-0.2)*fAvg_packet_rate);
+	if (total_packet_rate<fLow_packet_rate) fLow_packet_rate = total_packet_rate;
+	if (total_packet_rate>fHigh_packet_rate) fHigh_packet_rate = total_packet_rate;
 }
 
 void MonitoringGui::refreshPlots() {
-	std::cout << "\nDAQonite - Refresh plots" << std::endl;
 	fNum_refresh++;
 
 	// Clear the temp/humidity clb plots and individual channel hit plots
 	for(int clb = 0; clb < fNum_clbs; clb++) {
 
-		delete fCLB_temp_plots[clb];
-		fCLB_temp_plots[clb] = NULL;
-		fCLB_temp_plots[clb] = makeTemperaturePlot(fCLB_eids[clb]);
-
-		delete fCLB_humidity_plots[clb];
-		fCLB_humidity_plots[clb] = NULL;
-		fCLB_humidity_plots[clb] = makeHumidityPlot(fCLB_eids[clb]);
-
 		delete fCLB_packet_plots[clb];
 		fCLB_packet_plots[clb] = NULL;
-		fCLB_packet_plots[clb] = makeRunPacketPlot(fCLB_eids[clb]);
-
-		delete fCLB_dropped_plots[clb];
-		fCLB_dropped_plots[clb] = NULL;
-		fCLB_dropped_plots[clb] = makeRunDroppedPlot(fCLB_eids[clb]);
+		fCLB_packet_plots[clb] = makePacketRatePlot(fCLB_eids[clb]);
 
 		for (int channel=0; channel<PMTSPERPOM; channel++) {
 			// Set the individual channel rate plot
@@ -524,22 +456,6 @@ void MonitoringGui::refreshPlots() {
 	delete fPacket_rate_plot;
 	fPacket_rate_plot = NULL;
 	fPacket_rate_plot = makePacketRatePlot();
-
-	delete fAvg_temp_plot;
-	fAvg_temp_plot = NULL;
-	fAvg_temp_plot = makeTemperaturePlot();
-
-	delete fAvg_humidity_plot;
-	fAvg_humidity_plot = NULL;
-	fAvg_humidity_plot = makeHumidityPlot();
-
-	delete fTotal_packet_plot;
-	fTotal_packet_plot = NULL;
-	fTotal_packet_plot = makeRunPacketPlot();
-
-	delete fTotal_dropped_plot;
-	fTotal_dropped_plot = NULL;
-	fTotal_dropped_plot = makeRunDroppedPlot();
 }
 
 void MonitoringGui::draw() {
@@ -549,123 +465,23 @@ void MonitoringGui::draw() {
 }
 
 void MonitoringGui::drawPlots() {
+	// Canvas 1 (Total rate plot or channel specific rate plot)
+	fCanvas_1->cd();
+	if (fSpecify_button->IsDown()) {
+		fChannel_rate_plots[((int)fPom_id_entry->GetNumber()*PMTSPERPOM) + ((int)fChannel_entry->GetNumber())]->Draw();
+	} else { fTotal_rate_plot->Draw(); }
+	fCanvas_1->Update();
 
-	// If we have not received any packets just display the CHIPS logo on all canvases
+	// Canvas 2 (Total packet plot or CLB specific packet plot)
+	fCanvas_2->cd();
+	if (fSpecify_button->IsDown()) { fCLB_packet_plots[(int)fPom_id_entry->GetNumber()]->Draw(); }
+	else { fPacket_rate_plot->Draw(); }
+	fCanvas_2->Update();	
 
-	if (fPackets_received == 0) { // If we have not received any packets just display the CHIPS logo on all canvases
-
-		drawLogo(fCanvas_1);
-		drawLogo(fCanvas_2);
-		drawLogo(fCanvas_3);
-
-	} else if (!fMode) { // If we are not in running mode
-
-		if (fPage_num == 0) {
-
-			// Canvas 1 (Total rate plot or channel specific rate plot)
-			fCanvas_1->cd();
-			if (fSpecify_button->IsDown()) {
-				fChannel_rate_plots[((int)fPom_id_entry->GetNumber()*PMTSPERPOM) + ((int)fChannel_entry->GetNumber())]->Draw();
-			} else { fTotal_rate_plot->Draw(); }
-			fCanvas_1->Update();
-
-			// Canvas 2 (CHIPS Logo, will be RMS plot(s))
-			drawLogo(fCanvas_2);
-
-			// Canvas 3 (Rate heat map)
-			fCanvas_3->cd();
-			fRate_map_plot->Draw("COLZ");
-			fCanvas_3->Update();
-
-		} else if (fPage_num == 1) {
-
-			// Canvas 1 (Average temperature plot or CLB specific temperature plot)
-			fCanvas_1->cd();
-			if (fSpecify_button->IsDown()) { fCLB_temp_plots[(int)fPom_id_entry->GetNumber()]->Draw(); }
-			else { fAvg_temp_plot->Draw(); }
-			fCanvas_1->Update();
-
-			// Canvas 2 (Average humidity plot or CLB specific humidity plot)
-			fCanvas_2->cd();
-			if (fSpecify_button->IsDown()) { fCLB_humidity_plots[(int)fPom_id_entry->GetNumber()]->Draw(); }
-			else { fAvg_humidity_plot->Draw(); }
-			fCanvas_2->Update();
-
-			// Canvas 3 (CHIPS logo)
-			drawLogo(fCanvas_3);
-
-		} else if (fPage_num == 2) {
-
-			// Canvas 1 (CHIPS logo)
-			drawLogo(fCanvas_1);
-
-			// Canvas 2 (CHIPS logo)
-			drawLogo(fCanvas_2);
-
-			// Canvas 3 (Total packet rate plot)
-			fCanvas_3->cd();
-			fPacket_rate_plot->Draw();
-			fCanvas_3->Update();
-			
-		} else { std::cout << "DAQonite - Error: Wrong GUI page number!" << std::endl; }
-
-	} else { // If we are in running mode
-
-		if (fPage_num == 0) {
-
-			// Canvas 1 (Total rate plot or channel specific rate plot)
-			fCanvas_1->cd();
-			if (fSpecify_button->IsDown()) {
-				fChannel_rate_plots[((int)fPom_id_entry->GetNumber()*PMTSPERPOM) + ((int)fChannel_entry->GetNumber())]->Draw();
-			} else { fTotal_rate_plot->Draw(); }
-			fCanvas_1->Update();
-
-			// Canvas 2 (CHIPS Logo, will be RMS plot(s))
-			drawLogo(fCanvas_2);
-
-			// Canvas 3 (Rate heat map)
-			fCanvas_3->cd();
-			fRate_map_plot->Draw("COLZ");
-			fCanvas_3->Update();
-
-		} else if (fPage_num == 1) {
-
-			// Canvas 1 (Average temperature plot or CLB specific temperature plot)
-			fCanvas_1->cd();
-			if (fSpecify_button->IsDown()) { fCLB_temp_plots[(int)fPom_id_entry->GetNumber()]->Draw(); }
-			else { fAvg_temp_plot->Draw(); }
-			fCanvas_1->Update();
-
-			// Canvas 2 (Average humidity plot or CLB specific humidity plot)
-			fCanvas_2->cd();
-			if (fSpecify_button->IsDown()) { fCLB_humidity_plots[(int)fPom_id_entry->GetNumber()]->Draw(); }
-			else { fAvg_humidity_plot->Draw(); }
-			fCanvas_2->Update();
-
-			// Canvas 3 (CHIPS logo)
-			drawLogo(fCanvas_3);
-
-		} else if (fPage_num == 2) {
-
-			// Canvas 1 (CHIPS logo)
-			fCanvas_1->cd();
-			if (fSpecify_button->IsDown()) { fCLB_packet_plots[(int)fPom_id_entry->GetNumber()]->Draw(); }
-			else { fTotal_packet_plot->Draw(); }
-			fCanvas_1->Update();
-
-			// Canvas 2 (CHIPS logo)
-			fCanvas_2->cd();
-			if (fSpecify_button->IsDown()) { fCLB_dropped_plots[(int)fPom_id_entry->GetNumber()]->Draw(); }
-			else { fTotal_dropped_plot->Draw(); }
-			fCanvas_2->Update();
-
-			// Canvas 3 (Total packet rate plot)
-			fCanvas_3->cd();
-			fPacket_rate_plot->Draw();
-			fCanvas_3->Update();
-			
-		} else { std::cout << "DAQonite - Error: Wrong GUI page number!" << std::endl; }
-	}
+	// Canvas 3 (Rate heat map)
+	fCanvas_3->cd();
+	fRate_map_plot->Draw("COLZ");
+	fCanvas_3->Update();
 }
 
 void MonitoringGui::drawLabels() {
@@ -739,9 +555,14 @@ void MonitoringGui::drawLabels() {
 		if (fActive_clbs == fNum_clbs) { fFact_label_1->SetBackgroundColor(TColor::Number2Pixel(8)); }
 		else { fFact_label_1->SetBackgroundColor(TColor::Number2Pixel(46)); }
 
+	} else if (fPage_num ==1) {
+		fact1Labeltext = "Avg Temp: ";
+		fact1Labeltext += fAvg_temp;
+		fFact_label_1->SetBackgroundColor(TColor::Number2Pixel(38));
 	} else {
-		fact1Labeltext = "Not yet implemented";
-		fFact_label_1->SetBackgroundColor(TColor::Number2Pixel(38)); 
+		fact1Labeltext = "Avg Packet Rate: ";
+		fact1Labeltext += fAvg_packet_rate;
+		fFact_label_1->SetBackgroundColor(TColor::Number2Pixel(38));
 	}
 	fFact_label_1->SetText(fact1Labeltext);
 
@@ -756,9 +577,14 @@ void MonitoringGui::drawLabels() {
 		if (fActive_channels == fTotal_num_channels) { fFact_label_2->SetBackgroundColor(TColor::Number2Pixel(8)); }
 		else { fFact_label_2->SetBackgroundColor(TColor::Number2Pixel(46)); }
 
+	} else if (fPage_num ==1) {
+		fact2Labeltext = "Avg Humidity: ";
+		fact2Labeltext += fAvg_humidity;
+		fFact_label_2->SetBackgroundColor(TColor::Number2Pixel(38));
 	} else {
-		fact2Labeltext = "Not yet implemented";
-		fFact_label_2->SetBackgroundColor(TColor::Number2Pixel(38)); 
+		fact2Labeltext = "Avg Seq Num: ";
+		fact2Labeltext += fAvg_seq_num;
+		fFact_label_2->SetBackgroundColor(TColor::Number2Pixel(38));
 	}
 	fFact_label_2->SetText(fact2Labeltext);
 
@@ -773,9 +599,18 @@ void MonitoringGui::drawLabels() {
 		if (fOdd_channels == 0) { fFact_label_3->SetBackgroundColor(TColor::Number2Pixel(8)); }
 		else { fFact_label_3->SetBackgroundColor(TColor::Number2Pixel(46)); }		
 
+	} else if (fPage_num ==1) {
+		fact3Labeltext = "Low/High: ";
+		fact3Labeltext += fLow_temp;
+		fact3Labeltext += "/";
+		fact3Labeltext += fHigh_temp;
+		fFact_label_3->SetBackgroundColor(TColor::Number2Pixel(38));
 	} else {
-		fact3Labeltext = "Not yet implemented";
-		fFact_label_3->SetBackgroundColor(TColor::Number2Pixel(38)); 
+		fact3Labeltext = "Low/High: ";
+		fact3Labeltext += fLow_packet_rate;
+		fact3Labeltext += "/";
+		fact3Labeltext += fHigh_packet_rate;
+		fFact_label_3->SetBackgroundColor(TColor::Number2Pixel(38));
 	}
 	fFact_label_3->SetText(fact3Labeltext);
 
@@ -791,31 +626,33 @@ void MonitoringGui::drawLabels() {
 			fFact_label_4->SetBackgroundColor(TColor::Number2Pixel(46)); 			
 		}
 
+	} else if (fPage_num ==1) {
+		fact4Labeltext = "Low/High: ";
+		fact4Labeltext += fLow_humidity;
+		fact4Labeltext += "/";
+		fact4Labeltext += fHigh_humidity;
+		fFact_label_4->SetBackgroundColor(TColor::Number2Pixel(38));
 	} else {
-		fact4Labeltext = "Not yet implemented";
-		fFact_label_4->SetBackgroundColor(TColor::Number2Pixel(38)); 
+		fact4Labeltext = "Low/High: ";
+		fact4Labeltext += fLow_seq_num;
+		fact4Labeltext += "/";
+		fact4Labeltext += fHigh_seq_num;
+		fFact_label_4->SetBackgroundColor(TColor::Number2Pixel(38));
 	}
 	fFact_label_4->SetText(fact4Labeltext);
 }
 
 void MonitoringGui::drawDirectionButtons() {
-
 	if (fPage_num == 0) { 
-		fBack_button->SetText("<--- Packets");
-		fForward_button->SetText("Environment --->");
+		fBack_button->SetText("<--- Packet Info");
+		fForward_button->SetText("Temp/Humidity --->");
 	} else if (fPage_num == 1) {
 		fBack_button->SetText("<--- Hit Rates");
-		fForward_button->SetText("Packets --->");		
+		fForward_button->SetText("Packet Info --->");		
 	} else if (fPage_num == 2) {
-		fBack_button->SetText("<--- Environment");
+		fBack_button->SetText("<--- Temp/Humidity");
 		fForward_button->SetText("Hit Rates --->");		
 	} else { std::cout << "DAQonite - Error: Wrong GUI page number!" << std::endl; }
-}
-
-void MonitoringGui::drawLogo(TCanvas* canvas) {
-	TImage *logo = TImage::Open("../data/logo.png");
-	logo->SetConstRatio(kFALSE);
-	canvas->cd(); logo->Draw(); canvas->Update();
 }
 
 TH1F* MonitoringGui::makeTotalRatePlot(unsigned int pomIndex, unsigned int channel) {
@@ -853,6 +690,24 @@ TH1F* MonitoringGui::makeTotalRatePlot() {
 	return totalRatePlot;
 }
 
+TH1F* MonitoringGui::makePacketRatePlot(unsigned int pomIndex) {
+	TString plotName = "PacketRatePlot_";
+	plotName += pomIndex;
+
+	TH1F* packetRatePlot = new TH1F(plotName, plotName, PLOTLENGTH, 0, PLOTLENGTH);
+	packetRatePlot->GetXaxis()->SetTitle("cycleCounter");
+	packetRatePlot->GetYaxis()->SetTitle("Packet Rate");
+	packetRatePlot->GetYaxis()->CenterTitle();
+	packetRatePlot->GetYaxis()->SetTitleSize(0.14);
+	packetRatePlot->GetYaxis()->SetTitleOffset(0.3);
+	packetRatePlot->GetYaxis()->SetLabelSize(0.08);
+	packetRatePlot->SetFillColor(9);
+	packetRatePlot->SetLineColor(kBlack);
+	packetRatePlot->SetLineWidth(2);
+	packetRatePlot->SetStats(0);
+	return packetRatePlot;
+}
+
 TH1F* MonitoringGui::makePacketRatePlot() {
 	TH1F* packetRatePlot = new TH1F("PacketRatePlot", "PacketRatePlot", PLOTLENGTH, 0, PLOTLENGTH);
 	packetRatePlot->GetXaxis()->SetTitle("cycleCounter");
@@ -882,141 +737,7 @@ TH2F* MonitoringGui::makeHeatMapPlot() {
 	return rateHeatMapPlot;
 }
 
-TH1F* MonitoringGui::makeTemperaturePlot(unsigned int pomIndex) {
-	TString plotName = "temperaturePlot_";
-	plotName += pomIndex;
-
-	TH1F* temperaturePlot = new TH1F(plotName, plotName, PLOTLENGTH, 0, PLOTLENGTH);
-	temperaturePlot->GetXaxis()->SetTitle("cycleCounter");
-	temperaturePlot->GetYaxis()->SetTitle("Temperature [deg Celsius]");
-	temperaturePlot->GetYaxis()->CenterTitle();
-	temperaturePlot->GetYaxis()->SetTitleSize(0.14);
-	temperaturePlot->GetYaxis()->SetTitleOffset(0.3);
-	temperaturePlot->GetYaxis()->SetLabelSize(0.08);
-	temperaturePlot->SetFillColor(9);
-	temperaturePlot->SetLineColor(kBlack);
-	temperaturePlot->SetLineWidth(2);
-	temperaturePlot->SetStats(0);
-	return temperaturePlot;
-}
-
-TH1F* MonitoringGui::makeTemperaturePlot() {
-	TH1F* temperaturePlot = new TH1F("temperaturePlot", "temperaturePlot", PLOTLENGTH, 0, PLOTLENGTH);
-	temperaturePlot->GetXaxis()->SetTitle("cycleCounter");
-	temperaturePlot->GetYaxis()->SetTitle("Temperature [deg Celsius]");
-	temperaturePlot->GetYaxis()->CenterTitle();
-	temperaturePlot->GetYaxis()->SetTitleSize(0.14);
-	temperaturePlot->GetYaxis()->SetTitleOffset(0.3);
-	temperaturePlot->GetYaxis()->SetLabelSize(0.08);
-	temperaturePlot->SetFillColor(9);
-	temperaturePlot->SetLineColor(kBlack);
-	temperaturePlot->SetLineWidth(2);
-	temperaturePlot->SetStats(0);
-	return temperaturePlot;
-}
-
-TH1F* MonitoringGui::makeHumidityPlot(unsigned int pomIndex) {
-	TString plotName = "humidityPlot_";
-	plotName += pomIndex;
-
-	TH1F* humidityPlot = new TH1F(plotName, plotName, PLOTLENGTH, 0, PLOTLENGTH);
-	humidityPlot->GetXaxis()->SetTitle("cycleCounter");
-	humidityPlot->GetYaxis()->SetTitle("Humidity [RH]");
-	humidityPlot->GetYaxis()->CenterTitle();
-	humidityPlot->GetYaxis()->SetTitleSize(0.14);
-	humidityPlot->GetYaxis()->SetTitleOffset(0.3);
-	humidityPlot->GetYaxis()->SetLabelSize(0.08);
-	humidityPlot->SetFillColor(9);
-	humidityPlot->SetLineColor(kBlack);
-	humidityPlot->SetLineWidth(2);
-	humidityPlot->SetStats(0);
-	return humidityPlot;
-}
-
-TH1F* MonitoringGui::makeHumidityPlot() {
-	TH1F* humidityPlot = new TH1F("humidityPlot", "humidityPlot", PLOTLENGTH, 0, PLOTLENGTH);
-	humidityPlot->GetXaxis()->SetTitle("cycleCounter");
-	humidityPlot->GetYaxis()->SetTitle("Humidity [RH]");
-	humidityPlot->GetYaxis()->CenterTitle();
-	humidityPlot->GetYaxis()->SetTitleSize(0.14);
-	humidityPlot->GetYaxis()->SetTitleOffset(0.3);
-	humidityPlot->GetYaxis()->SetLabelSize(0.08);
-	humidityPlot->SetFillColor(9);
-	humidityPlot->SetLineColor(kBlack);
-	humidityPlot->SetLineWidth(2);
-	humidityPlot->SetStats(0);
-	return humidityPlot;
-}
-
-TH1F* MonitoringGui::makeRunPacketPlot(unsigned int pomIndex) {
-	TString plotName = "runPacketPlot_";
-	plotName += pomIndex;
-
-	TH1F* runPacketPlot = new TH1F(plotName, plotName, PLOTLENGTH, 0, PLOTLENGTH);
-	runPacketPlot->GetXaxis()->SetTitle("cycleCounter");
-	runPacketPlot->GetYaxis()->SetTitle("Optical Packets");
-	runPacketPlot->GetYaxis()->CenterTitle();
-	runPacketPlot->GetYaxis()->SetTitleSize(0.14);
-	runPacketPlot->GetYaxis()->SetTitleOffset(0.3);
-	runPacketPlot->GetYaxis()->SetLabelSize(0.08);
-	runPacketPlot->SetFillColor(9);
-	runPacketPlot->SetLineColor(kBlack);
-	runPacketPlot->SetLineWidth(2);
-	runPacketPlot->SetStats(0);
-	return runPacketPlot;
-}
-
-TH1F* MonitoringGui::makeRunPacketPlot() {
-	TH1F* runPacketPlot = new TH1F("runPacketPlot", "runPacketPlot", PLOTLENGTH, 0, PLOTLENGTH);
-	runPacketPlot->GetXaxis()->SetTitle("cycleCounter");
-	runPacketPlot->GetYaxis()->SetTitle("Packets Received");
-	runPacketPlot->GetYaxis()->CenterTitle();
-	runPacketPlot->GetYaxis()->SetTitleSize(0.14);
-	runPacketPlot->GetYaxis()->SetTitleOffset(0.3);
-	runPacketPlot->GetYaxis()->SetLabelSize(0.08);
-	runPacketPlot->SetFillColor(9);
-	runPacketPlot->SetLineColor(kBlack);
-	runPacketPlot->SetLineWidth(2);
-	runPacketPlot->SetStats(0);
-	return runPacketPlot;
-}
-
-TH1F* MonitoringGui::makeRunDroppedPlot(unsigned int pomIndex) {
-	TString plotName = "runDroppedPlot_";
-	plotName += pomIndex;
-
-	TH1F* runDroppedPlot = new TH1F(plotName, plotName, PLOTLENGTH, 0, PLOTLENGTH);
-	runDroppedPlot->GetXaxis()->SetTitle("cycleCounter");
-	runDroppedPlot->GetYaxis()->SetTitle("Dropped Packets");
-	runDroppedPlot->GetYaxis()->CenterTitle();
-	runDroppedPlot->GetYaxis()->SetTitleSize(0.14);
-	runDroppedPlot->GetYaxis()->SetTitleOffset(0.3);
-	runDroppedPlot->GetYaxis()->SetLabelSize(0.08);
-	runDroppedPlot->SetFillColor(9);
-	runDroppedPlot->SetLineColor(kBlack);
-	runDroppedPlot->SetLineWidth(2);
-	runDroppedPlot->SetStats(0);
-	return runDroppedPlot;
-}
-
-TH1F* MonitoringGui::makeRunDroppedPlot() {
-	TH1F* runDroppedPlot = new TH1F("runDroppedPlot", "runDroppedPlot", PLOTLENGTH, 0, PLOTLENGTH);
-	runDroppedPlot->GetXaxis()->SetTitle("cycleCounter");
-	runDroppedPlot->GetYaxis()->SetTitle("Dropped Packets");
-	runDroppedPlot->GetYaxis()->CenterTitle();
-	runDroppedPlot->GetYaxis()->SetTitleSize(0.14);
-	runDroppedPlot->GetYaxis()->SetTitleOffset(0.3);
-	runDroppedPlot->GetYaxis()->SetLabelSize(0.08);
-	runDroppedPlot->SetFillColor(9);
-	runDroppedPlot->SetLineColor(kBlack);
-	runDroppedPlot->SetLineWidth(2);
-	runDroppedPlot->SetStats(0);
-	return runDroppedPlot;
-}
-
 void MonitoringGui::toggleSpecific() {
-	std::cout << "\nDAQonite - Toggle specific" << std::endl;
-
 	draw();
 }
 
@@ -1025,9 +746,6 @@ void MonitoringGui::pageBackward() {
 	else if (fPage_num == 1) { fPage_num = 0; }
 	else if (fPage_num == 2) { fPage_num = 1; }
 	else { std::cout << "DAQonite - Error: Wrong GUI page number!" << std::endl; }
-
-	// Only draw if we are not receiving packets. Need to setup a mutex do deal with this correctly
-	if (fPackets_received == 0) { draw(); }
 }
 
 void MonitoringGui::pageForward() {
@@ -1035,9 +753,6 @@ void MonitoringGui::pageForward() {
 	else if (fPage_num == 1) { fPage_num = 2; }
 	else if (fPage_num == 2) { fPage_num = 0; }
 	else { std::cout << "DAQonite - Error: Wrong GUI page number!" << std::endl; }
-
-	// Only draw if we are not receiving packets. Need to setup a mutex do deal with this correctly
-	if (fPackets_received == 0) { draw(); }
 }
 
 void MonitoringGui::startRun(unsigned int type, unsigned int run, TString fileName) {
@@ -1046,12 +761,16 @@ void MonitoringGui::startRun(unsigned int type, unsigned int run, TString fileNa
 	fRun_num = run;
 	fRun_type = type;
 	fRun_total_packets = 0;
-	fRun_total_dropped = 0;
 	fRun_file = fileName;	
 	fRun_updates = 0;
 
-	// Only draw if we are not receiving packets. Need to setup a mutex do deal with this correctly
-	if (fPackets_received == 0) { draw(); }
+	// Reset packet variables
+	fAvg_packet_rate = 0;
+	fAvg_seq_num = 0;
+	fLow_packet_rate = 10000;
+	fHigh_packet_rate = 0;
+	fLow_seq_num = 10;
+	fHigh_seq_num = 0;
 }
 
 void MonitoringGui::stopRun() {
@@ -1061,22 +780,16 @@ void MonitoringGui::stopRun() {
 	fRun_num = -1;
 	fRun_type = -1;
 	fRun_total_packets = 0;
-	fRun_total_dropped = 0;
 	fRun_file = "";
 	fRun_updates = 0;
 
-	// Reset the packet variables
-	for (int clbNum = 0; clbNum<fNum_clbs; clbNum++) {
-		fOptical_packets[clbNum] = 0;
-		fOptical_seq[clbNum] = 0;
-		fOptical_dropped[clbNum] = 0;
-		fMonitoring_packets[clbNum] = 0;
-		fMonitoring_seq[clbNum] = 0;
-		fMonitoring_dropped[clbNum] = 0;
-	}
-
-	// Only draw if we are not receiving packets. Need to setup a mutex do deal with this correctly
-	if (fPackets_received == 0) { draw(); }
+	// Reset packet variables
+	fAvg_packet_rate = 0;
+	fAvg_seq_num = 0;
+	fLow_packet_rate = 10000;
+	fHigh_packet_rate = 0;
+	fLow_seq_num = 10;
+	fHigh_seq_num = 0;
 }
 
 void MonitoringGui::update() {

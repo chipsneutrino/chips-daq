@@ -234,7 +234,4 @@ void MonitoringConfig::setFromMap() {
 
 	}
 	fMap.clear();
-
-	printConfig();
-
 }

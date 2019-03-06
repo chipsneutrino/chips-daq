@@ -69,10 +69,9 @@ class MonitoringGui {
 		 * @param hits Array holding the number of hits on each channel
 		 * @param temp CLB temperature in Celsius
 		 * @param humidity CLB humidity in RH
-		 * @param seqNumber Packet sequence number
 		 */	
 		void addMonitoringPacket(unsigned int pomID, unsigned int hits[30], 
-								 float temp, float humidity, unsigned int seqNumber);		
+								 float temp, float humidity);		
 
 		/** 
 		 * Toggles the drawing of POM/Channel specific plots
@@ -127,13 +126,9 @@ class MonitoringGui {
 		void setupPlots();
 
 		/** 
-		 * Clears the hit array for a specific POM
-		 * Clears the fRateArray for a specific POM, used at the end of monitoring windows
-		 * to reset the hit counts on all channels for the next monitoring window.
-		 * 
-		 * @param pomIndex The POM index in fRateArray to be cleared
+		 * Resets the hit and packet arrays for the next window
 		 */			
-		void clearPomRates(unsigned int pomIndex);
+		void resetArrays();
 
 		/** 
 		 * Update all the monitoring variables ready for them to be drawn to the GUI display
@@ -161,22 +156,12 @@ class MonitoringGui {
 		/// Update buttons when clicked
 		void drawDirectionButtons();
 
-		// Draw the CHIPS logo on all canvases
-		void drawLogo(TCanvas* canvas);
-
 		// ROOT Hist plot makers
 		TH1F* makeTotalRatePlot(unsigned int pomIndex, unsigned int channel);
 		TH1F* makeTotalRatePlot();
+		TH1F* makePacketRatePlot(unsigned int pomIndex);
 		TH1F* makePacketRatePlot();
 		TH2F* makeHeatMapPlot();
-		TH1F* makeTemperaturePlot(unsigned int pomIndex);
-		TH1F* makeTemperaturePlot();
-		TH1F* makeHumidityPlot(unsigned int pomIndex);
-		TH1F* makeHumidityPlot();
-		TH1F* makeRunPacketPlot(unsigned int pomIndex);
-		TH1F* makeRunPacketPlot();
-		TH1F* makeRunDroppedPlot(unsigned int pomIndex);
-		TH1F* makeRunDroppedPlot();
 
 		// The main frame
 		TGMainFrame*		fMain_frame;		///< The ROOT GUI main frame that holds everything
@@ -204,59 +189,52 @@ class MonitoringGui {
 		TGLabel*			fFact_label_3;		///< Fact 3 label in the GUI
 		TGLabel*			fFact_label_4;		///< Fact 4 label in the GUI
 
-		// Combined Plots
-		TH1F*				fTotal_rate_plot;	///< Total rate plot across all channels
-		TH1F*				fPacket_rate_plot;	///< Total packet rate plot across all channels
-		TH2F*				fRate_map_plot;		///< Heat map of hit rates across all channels
-		TH1F*				fAvg_temp_plot;		///< Total packet rate plot across all channels
-		TH1F*				fAvg_humidity_plot;	///< Total packet rate plot across all channels
-		TH1F*				fTotal_packet_plot;	///< Total optical packets received in the current run
-		TH1F*				fTotal_dropped_plot;///< Total dropped optical packets in the current run
+		// Hit rate plots and hit array that keeps track of everything in the window
+		TH1F*				fTotal_rate_plot;					///< Total rate plot across all channels
+		TH2F*				fRate_map_plot;						///< Heat map of hit rates across all channels
+		std::vector<TH1F*> 	fChannel_rate_plots;				///< Individual channel rate plots
+		std::vector<std::vector<unsigned int> > fRate_array;	///< Array holding number of hits in window
 
-		// Specific Plots
-		std::vector<TH1F*> 	fChannel_rate_plots;///< Individual channel rate plots
-		std::vector<TH1F*> 	fCLB_temp_plots;	///< Individual CLB temperature plots
-		std::vector<TH1F*> 	fCLB_humidity_plots;///< Individual CLB humidity plots
-		std::vector<TH1F*>	fCLB_packet_plots;	///< Individual CLB received optical packet plots
-		std::vector<TH1F*>	fCLB_dropped_plots;	///< Individual CLB optical dropped packet plots
+		// Packet rate plot and the packet array that keeps track of everything in the window
+		TH1F*				fPacket_rate_plot;					///< Total packet rate plot across all channels
+		std::vector<TH1F*>	fCLB_packet_plots;					///< Individual CLB received optical packet plots
+		std::vector<unsigned int> fPacket_array;				///< Array holding the number of packets per CLB in this window
 
 		// Important variables
 		int 				fPage_num;			///< Current page being displayed in the GUI
 		bool 				fMode;				///< false = Monitoring, True = Running
+		int 				fUpdate_rate;		///< The rate the plots will be updated
+		int 				fNum_updates;		///< Number of GUI updates, used for refreshing the plots
+		int					fNum_refresh;		///< Number of times plots have been refreshed, used for refreshing the plots
 
-		// Current run variables
+		// Run Variables
 		int					fRun_num;			///< The current run number
 		int					fRun_type;			///< The current run type
 		unsigned int 		fRun_total_packets;	///< Total number of optical and monitoring packets in the run
-		unsigned int 		fRun_total_dropped;	///< Total number of dropped packets in the run
 		TString				fRun_file;			///< The output .root file for this run
-
-		// Window variables
-		int 				fUpdate_rate;		///< The rate the plots will be updated
 		int 				fRun_updates;		///< Number of updates in this run
-		int 				fUpdate_packets;	///< The number of monitoring packets in this update window
 
-		// Monitoring variables
-		int 				fPackets_received;	///< Number of monitoring packets received
-		int 				fNum_updates;		///< Number of GUI updates
-		int					fNum_refresh;		///< Number of times plots have been refreshed
+		// Hit label variables
 		int					fActive_clbs;		///< The number of CLBs we have received hits from
 		int					fActive_channels;	///< The number of channels we have received hits from
 		int					fOdd_channels;		///< The number of channels that are behaving oddly
 		bool 				fNon_config_data;	///< Are we receiving data from non-config CLBs?
 
-		std::vector<std::vector<unsigned int> > fRate_array;///< Array holding number of hits in window
-		std::vector<float> 				fTemp_array;		///< Array holding the most recent temperature for each CLB
-		std::vector<float> 				fHumidity_array;	///< Array holding the most recent humidity for each CLB
+		// Packet label variables
+		float				fAvg_packet_rate;	///< Rolling accumulator average of total packet rate
+		float 				fAvg_seq_num;		///< Rolling accumulator average of sequence num (run only)
+		float				fLow_packet_rate;	///< Lowest packet rate
+		float				fHigh_packet_rate; 	///< Highest packet rate
+		unsigned int 		fLow_seq_num;		///< Lowest sequence number (run only)
+		unsigned int 		fHigh_seq_num;		///< Highest sequence number (run only)
 
-		// Packet variables (Only apply to the current run)
-		std::vector<unsigned int> 		fOptical_packets;	///< CLB optical packets received
-		std::vector<unsigned int>		fOptical_seq;		///< CLB optical packet sequence numbers
-		std::vector<unsigned int>		fOptical_dropped;	///< CLB optical packets dropped
-
-		std::vector<unsigned int>		fMonitoring_packets;///< CLB monitoring packets received
-		std::vector<unsigned int>		fMonitoring_seq;	///< CLB monitoring packet sequence numbers
-		std::vector<unsigned int>		fMonitoring_dropped;///< CLB monitoring packets dropped
+		// Temp/Humidity label variables
+		float				fAvg_temp;			///< Rolling accumulator average of temperature
+		float 				fAvg_humidity;		///< Rolling accumulator average of humidity
+		float				fLow_temp;			///< Lowest temp
+		float				fHigh_temp; 		///< Highest temp
+		float 				fLow_humidity;		///< Lowest humidity
+		float				fHigh_humidity;		///< Highest humidity
 
 		// Configuration variables
 		std::string 					fConfig_file;		///< Configuration file

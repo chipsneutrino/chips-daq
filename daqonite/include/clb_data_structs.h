@@ -16,6 +16,8 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <arpa/inet.h>
+#include <assert.h>
 
 #define MON_AHRS_VALID 0x4000 // 16384 = 2^14
 
