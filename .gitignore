@@ -11,4 +11,5 @@ daqonite/src/daqonite
 daqonite/src/monitoring_gui_dict.cc
 daqonite/src/monitoring_gui_dict.h
 daqonite/src/daqommand
+daqonite/src/clbsim
 
