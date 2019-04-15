@@ -26,7 +26,8 @@ class FrameGenerator
 		unsigned int time_slice_duration,
 		unsigned int run_number,
 		unsigned int MTU,
-		unsigned int hitR
+		unsigned int hitR,
+		raw_data_t& target
 	);
 
 	void getNext(raw_data_t& target);

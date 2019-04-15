@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
 	std::string dq_address;
 
 	std::string input_filename("");
-	std::string configuration_filename("");
+	std::string configuration_filename("../data/config.opt");
 
 	unsigned int deltaTS = 100;
 
@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
 			"Set the Maximum Transfer Unit (MTU), i.e. the maximum UDP packet size.")
 		("conf,c",
 			po::value<std::string>(&configuration_filename)->default_value(configuration_filename),
-			"Provide a file with the set of POM ID to simulate. It must be in the form \"1 2 3 5 6 11\".");
+			"Provide a config file");
 
 	try {
 		po::variables_map vm;
@@ -76,11 +76,8 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 
-		const char* config_file = "../data/config.opt";
-		MonitoringConfig config(config_file);
-		POMRange_t range = config.getCLBeIDs();
-
-	//POMRange_t range = createPOMRange(configuration_filename);
+	MonitoringConfig config(configuration_filename.c_str());
+	POMRange_t range = config.getCLBeIDs();
 
 	if (range.empty()) {
 		std::cerr << "FATAL: No POM ID range available. Exiting\n";
@@ -103,9 +100,9 @@ int main(int argc, char* argv[])
 	}
 	std::cout << '\n';
 
-	FrameGenerator generator(range, deltaTS, run_number, MTU, hit_rate);
-
 	raw_data_t data;
+
+	FrameGenerator generator(range, deltaTS, run_number, MTU, hit_rate, data);
 
 	boost::asio::io_service service;
 
@@ -122,9 +119,9 @@ int main(int argc, char* argv[])
 
 	while (true) {
 		for (unsigned int i = 0; i < range.size(); i++) {
-		generator.getNext(data);
+			generator.getNext(data);
 
-		sock.send_to(boost::asio::buffer(data), destination);
+			sock.send_to(boost::asio::buffer(data), destination);
 		}
 	}
 }

@@ -14,7 +14,7 @@ inplaceEndianSwap32(header.UDPSequenceNumber);
 
 // Endian swap time
 inplaceEndianSwap32(header.Timestamp.Sec);
-inplaceEndianSwap32(header.Timestamp.Tics)
+inplaceEndianSwap32(header.Timestamp.Tics);
 }
 
 FrameGenerator::FrameGenerator(
@@ -22,7 +22,8 @@ FrameGenerator::FrameGenerator(
 	unsigned int time_slice_duration,
 	unsigned int run_number,
 	unsigned int MTU,
-	unsigned int hitR) :
+	unsigned int hitR,
+	raw_data_t& target) :
 	m_delta_ts(time_slice_duration),
 	m_selected((srand(time(0)), rand() % dom_range.size()))
 {
@@ -50,6 +51,9 @@ FrameGenerator::FrameGenerator(
 	m_tv.tv_sec  = 0;
 	m_tv.tv_usec = 0;
 	std::cout << "m_max_seqnumber -> " << m_max_seqnumber << std::endl;
+
+	// Need to make sure the data size is large enough
+	target.resize(sizeof(CLBCommonHeader) + m_payload_size);
 }
 
 void FrameGenerator::getNext(raw_data_t& target)
@@ -61,12 +65,9 @@ void FrameGenerator::getNext(raw_data_t& target)
 
 	common_header.UDPSequenceNumber = common_header.UDPSequenceNumber + 1;
 
-	target.resize(sizeof(CLBCommonHeader) + m_payload_size);
-
 	if (common_header.UDPSequenceNumber == m_max_seqnumber) {
 		common_header.POMStatus2 = 128;
 
-		//std::cout << "resize target 1 -> " << sizeof(common_header) << std::endl;
 		target.resize(sizeof(common_header));
 	} else if (common_header.UDPSequenceNumber == m_max_seqnumber + 1) {
 		if (isTrailer(common_header)) {
@@ -78,15 +79,14 @@ void FrameGenerator::getNext(raw_data_t& target)
 			common_header.Timestamp.Tics = 0;
 		}
 		} else {
-		assert(!"Programming error: UDPSequenceNumber and trailer not respected.");
+			assert(!"Programming error: UDPSequenceNumber and trailer not respected.");
 		}
 
-		//std::cout << "resize target 2 -> " << sizeof(CLBCommonHeader) + m_payload_size << std::endl;
 		target.resize(sizeof(CLBCommonHeader) + m_payload_size);
 	}
 
+	// Copy the header to the data to send in the packet and swap the endianness
 	memcpy(target.data(), &common_header, sizeof(CLBCommonHeader));
-
 	swap_endianness(
 		*static_cast<CLBCommonHeader*>(
 			static_cast<void*>(
@@ -95,6 +95,7 @@ void FrameGenerator::getNext(raw_data_t& target)
 		)
 	);
 
+	// This delays the packets till the next window
 	if (common_header.UDPSequenceNumber == 0 && m_selected == 0) {
 		int sleep_time = m_delta_ts * 1000;
 
@@ -112,7 +113,4 @@ void FrameGenerator::getNext(raw_data_t& target)
 
 		gettimeofday(&m_tv, 0);
 	}
-
-	//std::cout << common_header.POMIdentifier << std::endl;
-	//std::cout << common_header.UDPSequenceNumber << std::endl;
 }
