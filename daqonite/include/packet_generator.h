@@ -1,5 +1,15 @@
-#ifndef __FRAME_GENERATOR_HH
-#define __FRAME_GENERATOR_HH
+/**
+ * PacketGenerator - Class to simulate UDP packets from the CLBs
+ * 
+ * This class simulates the UDP optical packets that are sent from the CLBs
+ * to DAQonite on the optical port
+ *
+ * Author: Josh Tingey
+ * Contact: j.tingey.16@ucl.ac.uk
+ */
+
+#ifndef PACKET_GENERATOR_H_
+#define PACKET_GENERATOR_H_
 
 #include "clb_header_structs.h"
 
@@ -10,7 +20,7 @@ typedef std::vector<unsigned int> POMRange_t;
 
 typedef std::vector<char> raw_data_t;
 
-class FrameGenerator
+class PacketGenerator
 {
 	unsigned int m_max_seqnumber;
 	unsigned int m_delta_ts;
@@ -21,7 +31,7 @@ class FrameGenerator
 
 	public:
 
-	FrameGenerator(
+	PacketGenerator(
 		const POMRange_t& dom_range,
 		unsigned int time_slice_duration,
 		unsigned int run_number,

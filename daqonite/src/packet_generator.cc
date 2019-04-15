@@ -1,4 +1,8 @@
-#include "frame_generator.h"
+/**
+ * PacketGenerator - Class to simulate UDP packets from the CLBs
+ */
+
+#include "packet_generator.h"
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -17,7 +21,7 @@ inplaceEndianSwap32(header.Timestamp.Sec);
 inplaceEndianSwap32(header.Timestamp.Tics);
 }
 
-FrameGenerator::FrameGenerator(
+PacketGenerator::PacketGenerator(
 	const POMRange_t& dom_range,
 	unsigned int time_slice_duration,
 	unsigned int run_number,
@@ -56,7 +60,7 @@ FrameGenerator::FrameGenerator(
 	target.resize(sizeof(CLBCommonHeader) + m_payload_size);
 }
 
-void FrameGenerator::getNext(raw_data_t& target)
+void PacketGenerator::getNext(raw_data_t& target)
 {
 	++m_selected;
 	m_selected %= m_headers.size();

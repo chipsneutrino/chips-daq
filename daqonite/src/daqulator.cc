@@ -1,5 +1,5 @@
 #include <iostream>
-#include "frame_generator.h"
+#include "packet_generator.h"
 #include "monitoring_config.h"
 #include <unistd.h>
 #include <string>
@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
 
 	raw_data_t data;
 
-	FrameGenerator generator(range, deltaTS, run_number, MTU, hit_rate, data);
+	PacketGenerator generator(range, deltaTS, run_number, MTU, hit_rate, data);
 
 	boost::asio::io_service service;
 
