@@ -3,7 +3,6 @@
  */
 
 #include "monitoring_config.h"
-#include "daq_handler.h"
 
 MonitoringConfig::MonitoringConfig(const char * config) : fConf_name(config) {
 	fMap.clear();
@@ -46,7 +45,7 @@ void MonitoringConfig::loadConfig() {
 
 	// Read the file
 	std::string line;
-	Int_t lineNum = 0;
+	int lineNum = 0;
 	while (getline(input_file, line)) {
 		this->ignoreComments(line);
 		this->parseLine(line, ++lineNum);
@@ -65,7 +64,7 @@ void MonitoringConfig::ignoreComments(std::string &str) {
 	return;
 }
 
-const Bool_t MonitoringConfig::isBlankLine(std::string str) {
+const bool MonitoringConfig::isBlankLine(std::string str) {
 	if (str.find_first_not_of(' ') == str.npos) {
 		return true;
 	} else {
@@ -73,10 +72,10 @@ const Bool_t MonitoringConfig::isBlankLine(std::string str) {
 	}
 }
 
-const Bool_t MonitoringConfig::isGoodLine(std::string str) {
-	Bool_t have_equals = false;
-	Bool_t have_lhs = false;
-	Bool_t have_rhs = false;
+const bool MonitoringConfig::isGoodLine(std::string str) {
+	bool have_equals = false;
+	bool have_lhs = false;
+	bool have_rhs = false;
 
 	// Look for an equals sign
 	if (str.find("=") == str.npos) {
@@ -118,7 +117,7 @@ void MonitoringConfig::extractPair(std::string &lhs, std::string &rhs, std::stri
 	return;
 }
 
-void MonitoringConfig::parseLine(std::string str, Int_t lineNum) {
+void MonitoringConfig::parseLine(std::string str, int lineNum) {
 	if (!(this->isGoodLine(str))) {
 		return;
 	}

@@ -12,6 +12,15 @@
 
 #include "clb_data_structs.h"
 
+#define MONI 0x1
+#define ACOU 0x2
+#define OPTO 0x4
+#define AUTO (MONI | ACOU | OPTO)
+
+const static unsigned int ttdc = 1414808643;
+const static unsigned int taes = 1413563731;
+const static unsigned int tmch = 1414349640;
+
 /// Struct describing the CLB UDP header
 struct CLBCommonHeader {
     uint32_t DataType;				///< Type of data optical, acoustic, monitoring
@@ -72,6 +81,18 @@ inline std::ostream& operator <<(std::ostream& stream, const CLBCommonHeader& he
 					<<  "POMStatus2:        " << header.pomStatus(2)        << '\n'
 					<<  "POMStatus3:        " << header.pomStatus(3)        << '\n'
 					<<  "POMStatus4:        " << header.pomStatus(4);
+}
+
+inline std::pair<int, std::string> getType(CLBCommonHeader const& header) {
+	const static std::pair<int, std::string> unknown = std::make_pair(-1, "unknown");
+	const static std::pair<int, std::string> acoustic = std::make_pair(ACOU, "acoustic data");
+	const static std::pair<int, std::string> optical = std::make_pair(OPTO, "optical data");
+	const static std::pair<int, std::string> monitoring = std::make_pair(MONI, "monitoring data");
+
+	if (header.dataType() == tmch) { return monitoring; }
+	else if (header.dataType() == ttdc) { return optical; }
+	else if (header.dataType() == taes) { return acoustic; }
+	return unknown;
 }
 
 /// 8 byte frame index typedef

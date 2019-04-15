@@ -42,9 +42,13 @@ DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data,
 
 	// 6) Setup the CLB handler (if required)
 	if (fCollect_clb_data) {
-		fCLB_handler = new CLBHandler(fIO_service, fDaq_gui, &fData_handler, &fMode);
-		fCLB_handler->workMonitoringData();
-	} else { fCLB_handler = NULL; }
+		fCLB_opt_handler = new CLBOptHandler(fIO_service, &fData_handler, &fMode);
+		fCLB_mon_handler = new CLBMonHandler(fIO_service, fDaq_gui, &fData_handler, &fMode);
+		fCLB_mon_handler->workMonitoringData();
+	} else { 
+		fCLB_opt_handler = NULL; 
+		fCLB_mon_handler = NULL;
+	}
 
 	// 7) Setup the BBB handler (if required)
 	if (fCollect_bbb_data) {
@@ -72,7 +76,8 @@ DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data,
 DAQHandler::~DAQHandler() {
 	delete fIO_service;
 	delete fSignal_set;
-	delete fCLB_handler;
+	delete fCLB_opt_handler;
+	delete fCLB_mon_handler;
 	delete fBBB_handler;
 }
 
@@ -143,7 +148,7 @@ void DAQHandler::handleLocalSocket(boost::system::error_code const& error, std::
 			fMode = true;
 
 			// Call the first work method to the optical data
-			fCLB_handler->workOpticalData();
+			fCLB_opt_handler->workOpticalData();
 		} else if (strncmp(fBuffer_local, "stop", 4) == 0) {
 			// Check we are actually running
 			if (fMode == true) {
@@ -183,7 +188,7 @@ void DAQHandler::handleLocalSocket(boost::system::error_code const& error, std::
 }
 
 void DAQHandler::workLocalSocket() {
-	fLocal_socket->async_receive(boost::asio::buffer(&fBuffer_local[0], buffer_size),
+	fLocal_socket->async_receive(boost::asio::buffer(&fBuffer_local[0], buffer_size_local),
 								 boost::bind(&DAQHandler::handleLocalSocket, this,
 								 boost::asio::placeholders::error,
 								 boost::asio::placeholders::bytes_transferred));

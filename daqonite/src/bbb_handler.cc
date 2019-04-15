@@ -11,9 +11,9 @@ BBBHandler::BBBHandler() {
 	// initialise messaging stack
 	fMsg = fh_message_new();
 
-	//this->bbb_connect();
-	//this->get_bbb_status();
-	//this->bbb_disconnect();
+	this->bbb_connect();
+	this->get_bbb_status();
+	this->bbb_disconnect();
 }
 
 BBBHandler::~BBBHandler() {

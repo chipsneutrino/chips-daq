@@ -1,6 +1,6 @@
 CC=g++
 
-INCDIRS = 		../../fh_message/include ../include /usr/cern/root/include
+INCDIRS = 		../../fh_message/include ../include /home/jtingey/root/include
 LIBDIRS = 		../../fh_message/src
 LIBS = 			fh_message boost_system boost_chrono boost_program_options m pthread boost_thread
 
@@ -8,7 +8,7 @@ CXXFLAGS =		$(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0 -std=c++0x
 
 ROOTFLAGS = 	`root-config --cflags --glibs`
 
-OBJS =          monitoring_buffer.o monitoring_config.o monitoring_gui.o data_handler.o clb_handler.o bbb_handler.o daq_handler.o clb_simulator.o daqonite.o
+OBJS =          monitoring_buffer.o monitoring_config.o monitoring_gui.o data_handler.o clb_opt_handler.o clb_mon_handler.o bbb_handler.o daq_handler.o daqonite.o
 
 rootcint:
 	rootcint -f monitoring_gui_dict.cc -c ../include/monitoring_gui.h monitoring_gui_linkdef.h

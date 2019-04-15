@@ -24,7 +24,8 @@
 #include <TApplication.h>
 #include <TSystem.h>
 
-#include "clb_handler.h"
+#include "clb_opt_handler.h"
+#include "clb_mon_handler.h"
 #include "bbb_handler.h"
 #include "monitoring_gui.h"
 #include "data_handler.h"
@@ -32,6 +33,9 @@
 /// The number of different types of run possible
 #define GUIROOTRATE 10
 #define GUIUPDATERATE 1000
+
+/// Buffer size in bytes for local data
+const static size_t buffer_size_local = 10000;
 
 class DAQHandler {
 	public:
@@ -109,9 +113,10 @@ class DAQHandler {
 		boost::thread_group* 			fThread_group;				///< Group of threads to do the work
 		boost::asio::signal_set*		fSignal_set;				///< BOOST signal_set
 		udp::socket*					fLocal_socket;				///< Local UDP control socket
-		char fBuffer_local[buffer_size] __attribute__((aligned(8)));///< Local socket buffer
+		char fBuffer_local[buffer_size_local] __attribute__((aligned(8)));///< Local socket buffer
 		DataHandler						fData_handler;				///< DataHandler object
-		CLBHandler* 					fCLB_handler;				///< Pointer to CLBHandler
+		CLBOptHandler* 					fCLB_opt_handler;			///< Pointer to CLBOptHandler
+		CLBMonHandler* 					fCLB_mon_handler;			///< Pointer to CLBMonHandler
 		BBBHandler* 					fBBB_handler;				///< Pointer to BBBHandler
 
 		// Monitoring GUI
