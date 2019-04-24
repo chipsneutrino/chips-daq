@@ -18,6 +18,7 @@
 #include <sstream>
 #include <bitset>
 #include <fstream>
+#include <stdexcept>
 
 class MonitoringConfig {
     public:

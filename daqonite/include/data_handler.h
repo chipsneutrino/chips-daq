@@ -16,6 +16,7 @@
 #include <fstream>
 #include "TFile.h"
 #include "TTree.h"
+#include "TNtuple.h"
 
 #define NUMRUNTYPES 4
 
@@ -91,7 +92,6 @@ class DataHandler {
 		 */
         void getRunNumAndName();
 
-
         /// Add the branches to the optical CLB TTree
         void addOptCLBBranches();
 
@@ -119,6 +119,8 @@ class DataHandler {
 		TTree* 		fMon_tree_clb;			///< ROOT CLB monitoring output TTree
 		TTree* 		fOpt_tree_bbb;			///< ROOT BBB optical output TTree
 		TTree* 		fMon_tree_bbb;			///< ROOT BBB monitoring output TTree
+
+        int fPackets;                       ///< Keep track of number of packets for ROOT file saving
 };
 
 #endif

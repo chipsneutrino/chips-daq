@@ -12,4 +12,5 @@ daqonite/src/monitoring_gui_dict.cc
 daqonite/src/monitoring_gui_dict.h
 daqonite/src/daqommand
 daqonite/src/daqulator
+daqonite/src/daquardian
 

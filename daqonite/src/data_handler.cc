@@ -17,6 +17,8 @@ DataHandler::DataHandler(bool collect_clb_data, bool collect_bbb_data) :
 	fMon_tree_clb = NULL;
 	fOpt_tree_bbb = NULL;
 	fMon_tree_bbb = NULL;
+
+	fPackets = 0;
 }
 
 DataHandler::~DataHandler() {
@@ -53,6 +55,8 @@ void DataHandler::startRun(int run_type) {
         fMon_tree_bbb = new TTree("BBBMon_tree", "BBBMon_tree");
         if (!fMon_tree_bbb) { throw std::runtime_error("daqonite - Error: BBBMon_tree!"); }        
     }
+
+	fPackets = 0;
 }
 
 void DataHandler::stopRun() {
@@ -87,6 +91,12 @@ void DataHandler::stopRun() {
 void DataHandler::fillOptCLBTree() {
     // Need mutex lock/unlock
     fOpt_tree_clb->Fill();
+	fPackets++;
+	// We will only autosave the trees when running for now
+	if (fPackets%200000 == 1) {
+		fOpt_tree_clb->AutoSave("SaveSelf");
+		fMon_tree_clb->AutoSave("SaveSelf");
+	} 
 }
 
 void DataHandler::fillMonCLBTree() {

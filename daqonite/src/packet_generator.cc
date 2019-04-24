@@ -3,78 +3,81 @@
  */
 
 #include "packet_generator.h"
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <arpa/inet.h>
-#include <unistd.h>
 
-#define inplaceEndianSwap32(x) x = ntohl(x);
+#define BYTESPERHIT 6
 
-void swap_endianness(CLBCommonHeader& header)
-{
 // Endian swap
-inplaceEndianSwap32(header.UDPSequenceNumber);
-
-// Endian swap time
-inplaceEndianSwap32(header.Timestamp.Sec);
-inplaceEndianSwap32(header.Timestamp.Tics);
+#define inplaceEndianSwap32(x) x = ntohl(x);
+void swap_endianness(CLBCommonHeader& header) {
+	inplaceEndianSwap32(header.UDPSequenceNumber);
+	inplaceEndianSwap32(header.Timestamp.Sec);
+	inplaceEndianSwap32(header.Timestamp.Tics);
 }
 
 PacketGenerator::PacketGenerator(
-	const POMRange_t& dom_range,
+	const POMRange_t& pom_range,
 	unsigned int time_slice_duration,
 	unsigned int run_number,
 	unsigned int MTU,
 	unsigned int hitR,
-	raw_data_t& target) :
+	raw_data_t& target,
+	unsigned int type) :
+	m_type(type),
 	m_delta_ts(time_slice_duration),
-	m_selected((srand(time(0)), rand() % dom_range.size()))
-{
-	m_headers.reserve(dom_range.size());
+	m_selected((srand(time(0)), rand() % pom_range.size())) {
 
-	for (unsigned int i = 0; i < dom_range.size(); i++) {
+	// Set up the CLB packet headers
+	m_headers.reserve(pom_range.size());
+	for (unsigned int i = 0; i < pom_range.size(); i++) {
 		CLBCommonHeader header;
 		header.RunNumber = htonl(run_number);
-		header.DataType = htonl(ttdc);
+		header.DataType = htonl(m_type);
 		header.UDPSequenceNumber = 0;
 		header.Timestamp.Sec = time(0);
 		header.Timestamp.Tics = 0;
-		header.POMIdentifier = htonl(dom_range[i]);
+		header.POMIdentifier = htonl(pom_range[i]);
 		header.POMStatus1 = 128;
 		header.POMStatus2 = 0;
 		header.POMStatus3 = 0;
 		header.POMStatus4 = 0;
-
 		m_headers.push_back(header);
 	}
 
-	// max seqnumber  = NPMT * kHz  * Bytes/Hit *   ms TS duration    / (MTU - size of CLB Common Header)
-	m_max_seqnumber =  31  * hitR *     6     * time_slice_duration / (MTU - sizeof(CLBCommonHeader)) + 1;
-	m_payload_size = 6 * ((MTU - sizeof(CLBCommonHeader)) / 6);
+	if (m_type == ttdc) {
+		// max seqnumber  = NPMT * kHz  * Bytes/Hit *   ms TS duration    / (MTU - size of CLB Common Header)
+		m_max_seqnumber =  31  * hitR *  BYTESPERHIT * time_slice_duration / (MTU - sizeof(CLBCommonHeader)) + 1;
+		m_payload_size = BYTESPERHIT * ((MTU - sizeof(CLBCommonHeader)) / BYTESPERHIT);
+	} else if (m_type == tmch) {
+		m_max_seqnumber = 0;
+		m_payload_size = (sizeof(int)*31) + sizeof(SCData);
+	} else {
+		std::cout << "daqulator: error: No matching data type\n";		
+	}
+
 	m_tv.tv_sec  = 0;
 	m_tv.tv_usec = 0;
-	std::cout << "m_max_seqnumber -> " << m_max_seqnumber << std::endl;
-
-	// Need to make sure the data size is large enough
 	target.resize(sizeof(CLBCommonHeader) + m_payload_size);
+
+	// Print out the configuration
+	std::cout << "PacketGenerator: \n";
+	cool_print(m_max_seqnumber);
+	cool_print(m_payload_size);
+	cool_print(m_type);
+	std::cout << "\n";
 }
 
-void PacketGenerator::getNext(raw_data_t& target)
-{
+void PacketGenerator::getNext(raw_data_t& target) {
 	++m_selected;
 	m_selected %= m_headers.size();
 
 	CLBCommonHeader& common_header = m_headers[m_selected];
-
 	common_header.UDPSequenceNumber = common_header.UDPSequenceNumber + 1;
 
 	if (common_header.UDPSequenceNumber == m_max_seqnumber) {
 		common_header.POMStatus2 = 128;
-
 		target.resize(sizeof(common_header));
 	} else if (common_header.UDPSequenceNumber == m_max_seqnumber + 1) {
-		if (isTrailer(common_header)) {
+		// Removed check that the last packet was trailer if (isTrailer(common_header))
 		common_header.UDPSequenceNumber = 0;
 		common_header.POMStatus2 = 0;
 		common_header.Timestamp.Tics += 62500 * m_delta_ts;
@@ -82,10 +85,6 @@ void PacketGenerator::getNext(raw_data_t& target)
 			++common_header.Timestamp.Sec;
 			common_header.Timestamp.Tics = 0;
 		}
-		} else {
-			assert(!"Programming error: UDPSequenceNumber and trailer not respected.");
-		}
-
 		target.resize(sizeof(CLBCommonHeader) + m_payload_size);
 	}
 
@@ -98,6 +97,11 @@ void PacketGenerator::getNext(raw_data_t& target)
 			)
 		)
 	);
+
+	//std::cout << common_header.POMIdentifier << " - ";
+	//std::cout << common_header.DataType << " - ";
+	//std::cout << common_header.UDPSequenceNumber << " - ";
+	//std::cout << common_header.POMStatus2 << std::endl;
 
 	// This delays the packets till the next window
 	if (common_header.UDPSequenceNumber == 0 && m_selected == 0) {
