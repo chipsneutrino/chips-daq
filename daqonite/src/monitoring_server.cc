@@ -22,8 +22,13 @@ MonitoringServer::MonitoringServer(std::string config_file,
     srand((unsigned)time(NULL));
 
 	// Open the monitoring file to save data to
-	fFile = new TFile(generateFilename().c_str(), "RECREATE");
-    if (!fFile) { throw std::runtime_error("Error Opening Output File!"); }
+	std::string fileName = generateFilename();
+	BOOST_LOG_TRIVIAL(info) << "MonitoringServer: Opening fFile " << fileName;
+	fFile = new TFile(fileName.c_str(), "RECREATE");
+    if (!fFile) {
+		BOOST_LOG_TRIVIAL(fatal) << "MonitoringServer: Could not open fFile";
+		throw std::runtime_error("MonitoringServer: Could not open fFile"); 
+	}
 
 	// Setup general socket
 	boost::asio::ip::udp::socket::receive_buffer_size option_general(33554432);
@@ -51,7 +56,6 @@ MonitoringServer::MonitoringServer(std::string config_file,
 	workSignals();
 
 	// Start the BOOST io_service
-    std::cout << "Starting io_service ..." << std::endl;
     fIO_service.run();
 }
 
@@ -75,7 +79,10 @@ std::string MonitoringServer::generateFilename() {
 // Setup the TTree
 void MonitoringServer::setupTree() {
 	fCLB_tree = new TTree("clb_tree", "clb_tree");
-	if (!fCLB_tree) { throw std::runtime_error("Error Creating CLB Tree!"); }
+	if (!fCLB_tree) { 
+		BOOST_LOG_TRIVIAL(fatal) << "MonitoringServer: Could not open fCLB_tree";
+		throw std::runtime_error("MonitoringServer: Could not open fCLB_tree"); 
+	}
 
 	// This is where I should read in a configuration file that specified the things I want to monitor
 	// FOR NOW WE SHALL HARD CODE THIS!!!
@@ -98,7 +105,6 @@ void MonitoringServer::workGeneralSocket() {
 }
 
 void MonitoringServer::handleGeneralSocket(boost::system::error_code const& error, std::size_t size) {
-    std::cout << "handleGeneralSocket" << std::endl;
     if (!error) {
         // Shall we skip this packet?
         if (((float)rand()/RAND_MAX)>fGeneral_frac) {
@@ -106,9 +112,8 @@ void MonitoringServer::handleGeneralSocket(boost::system::error_code const& erro
 			return;     
         }
     } else {
-		std::cout << "Packet Error General Socket" << std::endl;
+		BOOST_LOG_TRIVIAL(warning) << "MonitoringServer: General socket packet error";
 	}
-
     workGeneralSocket();
 }
 
@@ -130,7 +135,7 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
 
 		// Check the packet has atleast a CLB header in it
 		if (size!=clb_max_size) {
-			std::cout << "Invalid monitoring packet size: " << size << std::endl;
+			BOOST_LOG_TRIVIAL(warning) << "MonitoringServer: CLB socket invalid packet size";
 			workCLBSocket();
 			return;
 		}
@@ -141,7 +146,7 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
 
 		// Check the type of the packet is monitoring from the CLBCommonHeader
 		if (getType(header).first!=MONI) { 
-            std::cout << "Incorrect packet type!" << std::endl;
+			BOOST_LOG_TRIVIAL(warning) << "MonitoringServer: CLB socket incorrect packet type";
 			workCLBSocket();
 			return;
         }
@@ -169,7 +174,7 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
 		if (fCLB_tree!=NULL) { fCLB_tree->Fill(); }
 
 	} else {
-		std::cout << "Packet Error CLB Socket" << std::endl;
+		BOOST_LOG_TRIVIAL(warning) << "MonitoringServer: CLB socket packet error";
 	}
 
     workCLBSocket();
@@ -184,7 +189,6 @@ void MonitoringServer::workBBBSocket() {
 }
 
 void MonitoringServer::handleBBBSocket(boost::system::error_code const& error, std::size_t size) {
-    std::cout << "handleBBBSocket" << std::endl;
     if (!error) {
         // Shall we skip this packet?
         if (((float)rand()/RAND_MAX)>fBBB_frac) {
@@ -192,7 +196,7 @@ void MonitoringServer::handleBBBSocket(boost::system::error_code const& error, s
 			return;     
         }
     } else {
-		std::cout << "Packet Error BBB Socket" << std::endl;
+		BOOST_LOG_TRIVIAL(warning) << "MonitoringServer: BBB socket packet error";
 	}
     workBBBSocket();
 }
@@ -234,7 +238,7 @@ void MonitoringServer::workSignals() {
 void MonitoringServer::handleSignals(boost::system::error_code const& error, int signum) {
 	if (!error) {
 		if (signum == SIGINT) {
-			std::cout << "\nClosing file!" << std::endl;
+			BOOST_LOG_TRIVIAL(info) << "MonitoringServer: Closing fFile " << fFile->GetName();
 
 			fCLB_tree->Write();
 			fFile->Close();

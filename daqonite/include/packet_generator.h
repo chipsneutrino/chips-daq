@@ -13,6 +13,7 @@
 
 #include "clb_header_structs.h"
 #include "clb_data_structs.h"
+#include "daq_logging.h"
 
 #include <unistd.h>
 #include <string>

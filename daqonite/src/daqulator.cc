@@ -6,6 +6,9 @@ namespace po = boost::program_options;
 void generatorLoop(PacketGenerator* generator, raw_data_t* data, std::string address, int port, unsigned int num_clbs);
 
 int main(int argc, char* argv[]) {
+
+	init_daq_logging();
+
 	// Default settings
 	int daq_opt_pot = 56015;
 	int daq_mon_pot = 56017;
@@ -51,30 +54,23 @@ int main(int argc, char* argv[]) {
 			vm);
 
 		if (vm.count("help")) {
-		std::cout << desc << std::endl;
-		return EXIT_SUCCESS;
+			std::cout << desc << std::endl;
+			return 0;
 		}
 
 		po::notify(vm);
-	} catch (const po::error& e) {
-		std::cerr << "daqulator: error: " << e.what() << '\n' << desc << std::endl;
-		return EXIT_FAILURE;
-	} catch (const std::runtime_error& e) {
-		std::cerr << "daqulator: error: " << e.what() << '\n' << desc << std::endl;
-		return EXIT_FAILURE;
-	}
+	} catch (const po::error& e) { throw std::runtime_error("DAQulator: Argument error"); 
+	} catch (const std::runtime_error& e) { throw std::runtime_error("DAQulator: Argument error"); }
 
 	MonitoringConfig config(configuration_filename.c_str());
 	POMRange_t range = config.getCLBeIDs();
 	unsigned int num_clbs = range.size();
 
-	if (range.empty()) {
-		std::cerr << "daqulator: error: No POM ID range available. Exiting\n";
-		return EXIT_FAILURE;
-	}
+	if (range.empty()) { throw std::runtime_error("DAQulator: Found no POMS in file"); }
 
 	// Print out the configuration
-	std::cout << "daqulator start, with configuration:" << std::endl;;
+	BOOST_LOG_TRIVIAL(info) << "DAQulator: Starting packet generators";
+	std::cout << "\ndaqulator start, with configuration:" << std::endl;
 	cool_print(daq_address);
 	cool_print(daq_opt_pot);
 	cool_print(daq_mon_pot);
@@ -100,6 +96,8 @@ int main(int argc, char* argv[]) {
 
     optThread.join();
 	monThread.join();
+
+	BOOST_LOG_TRIVIAL(info) << "DAQulator: Stopped packet generators";
 }
 
 void generatorLoop(PacketGenerator* generator, raw_data_t* data, std::string address, int port, unsigned int num_clbs) {
