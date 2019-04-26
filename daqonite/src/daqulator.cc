@@ -119,7 +119,7 @@ void generatorLoop(PacketGenerator* generator, raw_data_t* data, std::string add
 			generator->getNext(*data);
 			sock.send_to(boost::asio::buffer(*data), destination);
 		}
-		if (((++windows) % 100) == 0) {
+		if (((++windows) % 500) == 0) {
 			 std::cout << "Thread (" << boost::this_thread::get_id() << ") windows -> " << windows << std::endl;
 		}
 	}	

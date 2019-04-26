@@ -10,5 +10,5 @@
 int main(int argc, char* argv[]) {
 
     std::string config_file	= "../data/config.opt";
-    MonitoringServer server(config_file);
+    MonitoringServer server(config_file, 1.0, 1.0, 1.0);
 }

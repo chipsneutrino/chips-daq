@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <random>
 
 #include <boost/asio.hpp>
 #include <boost/lexical_cast.hpp>
@@ -56,5 +57,15 @@ class PacketGenerator{
 		unsigned int m_selected;
 		timeval m_tv;
 		std::vector<CLBCommonHeader> m_headers;
+
+		// Hit data
+
+		// Monitoring data
+		std::default_random_engine m_generator;
+		std::normal_distribution<double> m_hit_distribution;
+		std::normal_distribution<double> m_t_distribution;
+		std::normal_distribution<double> m_h_distribution;
+		unsigned int m_mon_hits[32];
+		SCData m_mon_data;
 };
 #endif

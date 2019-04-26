@@ -4,8 +4,6 @@
 
 #include "packet_generator.h"
 
-#define BYTESPERHIT 6
-
 // Endian swap
 #define inplaceEndianSwap32(x) x = ntohl(x);
 void swap_endianness(CLBCommonHeader& header) {
@@ -24,7 +22,10 @@ PacketGenerator::PacketGenerator(
 	unsigned int type) :
 	m_type(type),
 	m_delta_ts(time_slice_duration),
-	m_selected((srand(time(0)), rand() % pom_range.size())) {
+	m_selected((srand(time(0)), rand() % pom_range.size())),
+	m_hit_distribution(500,300),
+	m_t_distribution(10,2),
+	m_h_distribution(10,2) {
 
 	// Set up the CLB packet headers
 	m_headers.reserve(pom_range.size());
@@ -45,11 +46,13 @@ PacketGenerator::PacketGenerator(
 
 	if (m_type == ttdc) {
 		// max seqnumber  = NPMT * kHz  * Bytes/Hit *   ms TS duration    / (MTU - size of CLB Common Header)
-		m_max_seqnumber =  31  * hitR *  BYTESPERHIT * time_slice_duration / (MTU - sizeof(CLBCommonHeader)) + 1;
-		m_payload_size = BYTESPERHIT * ((MTU - sizeof(CLBCommonHeader)) / BYTESPERHIT);
+		m_max_seqnumber =  31  * hitR * sizeof(hit_t) * time_slice_duration / (MTU - sizeof(CLBCommonHeader)) + 1;
+		m_payload_size = sizeof(hit_t) * ((MTU - sizeof(CLBCommonHeader)) / sizeof(hit_t));
 	} else if (m_type == tmch) {
 		m_max_seqnumber = 0;
 		m_payload_size = (sizeof(int)*31) + sizeof(SCData);
+		m_mon_data.pad = htonl(0);
+		m_mon_data.valid = htonl(0);
 	} else {
 		std::cout << "daqulator: error: No matching data type\n";		
 	}
@@ -98,10 +101,13 @@ void PacketGenerator::getNext(raw_data_t& target) {
 		)
 	);
 
-	//std::cout << common_header.POMIdentifier << " - ";
-	//std::cout << common_header.DataType << " - ";
-	//std::cout << common_header.UDPSequenceNumber << " - ";
-	//std::cout << common_header.POMStatus2 << std::endl;
+	if (m_type == tmch) {
+		for (int i=0; i<31; i++) m_mon_hits[i] = htonl(m_hit_distribution(m_generator));
+		m_mon_data.temp = (uint16_t)m_t_distribution(m_generator);
+		m_mon_data.humidity = (uint16_t)m_h_distribution(m_generator);
+		memcpy(target.data() + sizeof(CLBCommonHeader), &m_mon_hits, (sizeof(int)*31));
+		memcpy(target.data() + sizeof(CLBCommonHeader) + (sizeof(int)*31), &m_mon_data, sizeof(SCData));
+	}
 
 	// This delays the packets till the next window
 	if (common_header.UDPSequenceNumber == 0 && m_selected == 0) {
