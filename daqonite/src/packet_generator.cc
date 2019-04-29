@@ -22,10 +22,7 @@ PacketGenerator::PacketGenerator(
 	unsigned int type) :
 	m_type(type),
 	m_delta_ts(time_slice_duration),
-	m_selected((srand(time(0)), rand() % pom_range.size())),
-	m_hit_distribution(500,300),
-	m_t_distribution(10,2),
-	m_h_distribution(10,2) {
+	m_selected((srand(time(0)), rand() % pom_range.size())) {
 
 	// Set up the CLB packet headers
 	m_headers.reserve(pom_range.size());
@@ -102,9 +99,9 @@ void PacketGenerator::getNext(raw_data_t& target) {
 	);
 
 	if (m_type == tmch) {
-		for (int i=0; i<31; i++) m_mon_hits[i] = htonl(m_hit_distribution(m_generator));
-		m_mon_data.temp = (uint16_t)m_t_distribution(m_generator);
-		m_mon_data.humidity = (uint16_t)m_h_distribution(m_generator);
+		for (int i=0; i<31; i++) m_mon_hits[i] = htonl(rand() % 10000);
+		m_mon_data.temp = (uint16_t)(rand() % 50);
+		m_mon_data.humidity = (uint16_t)(rand() % 50);
 		memcpy(target.data() + sizeof(CLBCommonHeader), &m_mon_hits, (sizeof(int)*31));
 		memcpy(target.data() + sizeof(CLBCommonHeader) + (sizeof(int)*31), &m_mon_data, sizeof(SCData));
 	}

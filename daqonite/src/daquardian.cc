@@ -9,7 +9,8 @@
 
 int main(int argc, char* argv[]) {
 
-    init_daq_logging();
+    init_console_log();
+    init_syslog_log();
 
     std::string config_file	= "../data/config.opt";
 

@@ -45,8 +45,8 @@
 #define CLBMONPORT 56017
 #define BBBMONPORT 56018
 
-const static ssize_t clb_minimum_size = sizeof(CLBCommonHeader) + (sizeof(int)*31);
-const static ssize_t clb_max_size = sizeof(CLBCommonHeader) + (sizeof(int)*31) + sizeof(SCData);
+const static std::size_t clb_minimum_size = sizeof(CLBCommonHeader) + (sizeof(int)*31);
+const static std::size_t clb_max_size = sizeof(CLBCommonHeader) + (sizeof(int)*31) + sizeof(SCData);
 
 class MonitoringServer {
     public:

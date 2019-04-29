@@ -7,7 +7,7 @@ void generatorLoop(PacketGenerator* generator, raw_data_t* data, std::string add
 
 int main(int argc, char* argv[]) {
 
-	init_daq_logging();
+	init_console_log();
 
 	// Default settings
 	int daq_opt_pot = 56015;

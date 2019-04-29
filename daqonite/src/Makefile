@@ -1,6 +1,6 @@
 CC=g++
 
-INCDIRS = 		../../fh_message/include ../include /home/jtingey/root/include
+INCDIRS = 		../../fh_message/include ../include /usr/cern/root/include
 LIBDIRS = 		../../fh_message/src
 LIBS = 			fh_message boost_system boost_log_setup boost_log boost_chrono boost_program_options boost_thread RHTTP
 

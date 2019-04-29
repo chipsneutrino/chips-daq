@@ -62,10 +62,6 @@ class PacketGenerator{
 		// Hit data
 
 		// Monitoring data
-		std::default_random_engine m_generator;
-		std::normal_distribution<double> m_hit_distribution;
-		std::normal_distribution<double> m_t_distribution;
-		std::normal_distribution<double> m_h_distribution;
 		unsigned int m_mon_hits[32];
 		SCData m_mon_data;
 };
