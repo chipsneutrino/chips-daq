@@ -11,6 +11,7 @@
 #define MONITORING_BUFFER_H_
 
 #include <vector>
+#include <stddef.h>
 
 class MonitoringBuffer {
     public:

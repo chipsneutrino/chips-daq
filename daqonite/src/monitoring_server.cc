@@ -5,35 +5,25 @@
 #include "monitoring_server.h"
 
 /// Create a DAQuardian object
-MonitoringServer::MonitoringServer(std::string config_file, 
-                                   float generalFrac, float clbFrac, float bbbFrac) : 
-                                   fServer("http:8080"),
+MonitoringServer::MonitoringServer(std::string config_file,  float clbFrac, float bbbFrac) : 
 								   fSignal_set(fIO_service, SIGINT),
-                                   fGeneral_socket(fIO_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), GENERALPORT)),
-                                   fGeneral_frac(generalFrac),
                                    fCLB_socket(fIO_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), CLBMONPORT)),
                                    fCLB_frac(clbFrac),
                                    fBBB_socket(fIO_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), BBBMONPORT)),
-                                   fBBB_frac(bbbFrac),
-                                   fProcess_timer(fIO_service, boost::posix_time::millisec(PROCESSRATE)),
-                                   fUpdate_timer(fIO_service, boost::posix_time::millisec(UPDATERATE)) {
+                                   fBBB_frac(bbbFrac) {
 
 	// Initialise the random number generator
     srand((unsigned)time(NULL));
 
 	// Open the monitoring file to save data to
 	std::string fileName = generateFilename();
-	BOOST_LOG_TRIVIAL(info) << "MonitoringServer: Opening fFile " << fileName;
+	g_elastic.log(INFO, "MonitoringServer: Opening fFile " + fileName);
+
 	fFile = new TFile(fileName.c_str(), "RECREATE");
     if (!fFile) {
-		BOOST_LOG_TRIVIAL(fatal) << "MonitoringServer: Could not open fFile";
+		g_elastic.log(FATAL, "MonitoringServer: Could not open fFile");
 		throw std::runtime_error("MonitoringServer: Could not open fFile"); 
 	}
-
-	// Setup general socket
-	boost::asio::ip::udp::socket::receive_buffer_size option_general(33554432);
-	fGeneral_socket.set_option(option_general);
-	workGeneralSocket();
 
 	// Setup CLB socket
 	boost::asio::ip::udp::socket::receive_buffer_size option_clb(33554432);
@@ -45,12 +35,6 @@ MonitoringServer::MonitoringServer(std::string config_file,
 	boost::asio::ip::udp::socket::receive_buffer_size option_bbb(33554432);
 	fBBB_socket.set_option(option_bbb);
 	workBBBSocket();
-
-	// Start ROOT processing
-    workROOTProcess();
-
-	// Start plot updating
-    workPlotUpdate();
 
 	// Start working signals
 	workSignals();
@@ -80,7 +64,7 @@ std::string MonitoringServer::generateFilename() {
 void MonitoringServer::setupTree() {
 	fCLB_tree = new TTree("clb_tree", "clb_tree");
 	if (!fCLB_tree) { 
-		BOOST_LOG_TRIVIAL(fatal) << "MonitoringServer: Could not open fCLB_tree";
+		g_elastic.log(FATAL, "MonitoringServer: Could not open fCLB_tree");
 		throw std::runtime_error("MonitoringServer: Could not open fCLB_tree"); 
 	}
 
@@ -94,27 +78,6 @@ void MonitoringServer::setupTree() {
 	fCLB_tree->Branch("temperature", 	&fCLB_temperature, 	"fCLB_temperature/s");
 	fCLB_tree->Branch("humidity", 		&fCLB_humidity, 	"fCLB_humidity/s");
     fCLB_tree->Branch("hits",			&fCLB_hits,			"fCLB_hits[30]/i");
-}
-
-// Work/Handle the general input socket
-void MonitoringServer::workGeneralSocket() {
-	fGeneral_socket.async_receive(boost::asio::buffer(&fGeneral_buffer[0], BUFFERSIZE),
-						          boost::bind(&MonitoringServer::handleGeneralSocket, this,
-						          boost::asio::placeholders::error,
-						          boost::asio::placeholders::bytes_transferred));
-}
-
-void MonitoringServer::handleGeneralSocket(boost::system::error_code const& error, std::size_t size) {
-    if (!error) {
-        // Shall we skip this packet?
-        if (((float)rand()/RAND_MAX)>fGeneral_frac) {
-			workGeneralSocket();
-			return;     
-        }
-    } else {
-		BOOST_LOG_TRIVIAL(warning) << "MonitoringServer: General socket packet error";
-	}
-    workGeneralSocket();
 }
 
 // Work/Handle the CLB monitoring socket
@@ -135,7 +98,7 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
 
 		// Check the packet has atleast a CLB header in it
 		if (size!=clb_max_size) {
-			BOOST_LOG_TRIVIAL(warning) << "MonitoringServer: CLB socket invalid packet size";
+			g_elastic.log(WARNING, "MonitoringServer: CLB socket invalid packet size");
 			workCLBSocket();
 			return;
 		}
@@ -146,7 +109,7 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
 
 		// Check the type of the packet is monitoring from the CLBCommonHeader
 		if (getType(header).first!=MONI) { 
-			BOOST_LOG_TRIVIAL(warning) << "MonitoringServer: CLB socket incorrect packet type";
+			g_elastic.log(WARNING, "MonitoringServer: CLB socket incorrect packet type");
 			workCLBSocket();
 			return;
         }
@@ -174,7 +137,7 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
 		if (fCLB_tree!=NULL) { fCLB_tree->Fill(); }
 
 	} else {
-		BOOST_LOG_TRIVIAL(warning) << "MonitoringServer: CLB socket packet error";
+		g_elastic.log(WARNING, "MonitoringServer: CLB socket packet error");
 	}
 
     workCLBSocket();
@@ -196,36 +159,9 @@ void MonitoringServer::handleBBBSocket(boost::system::error_code const& error, s
 			return;     
         }
     } else {
-		BOOST_LOG_TRIVIAL(warning) << "MonitoringServer: BBB socket packet error";
+		g_elastic.log(WARNING, "MonitoringServer: BBB socket packet error");
 	}
     workBBBSocket();
-}
-
-// Work/Handle the ROOT Process to keep HTTPServer responsive
-void MonitoringServer::workROOTProcess() {
-    fProcess_timer.expires_from_now(boost::posix_time::millisec(PROCESSRATE));
-    fProcess_timer.async_wait(boost::bind(&MonitoringServer::handleROOTProcess, this));
-}
-
-void MonitoringServer::handleROOTProcess() {
-    gSystem->ProcessEvents();
-    workROOTProcess();
-}
-
-// Work/Handle updating the plots
-void MonitoringServer::workPlotUpdate() {
-    fUpdate_timer.expires_from_now(boost::posix_time::millisec(UPDATERATE));
-    fUpdate_timer.async_wait(boost::bind(&MonitoringServer::handlePlotUpdate, this));
-}
-
-void MonitoringServer::handlePlotUpdate() {
-    // fIO_service.post(boost::bind(&MonitoringServer::handleUpdate, this));
-	fCLB_tree->AutoSave("SaveSelf");
-
-	TH1F *test_del = ((TH1F *)(gROOT->FindObject("hits"))); delete test_del;
-	fCLB_tree->Draw("temperature:timestamp_s>>hits", "pom_id==816989347", "goff");
-
-    workPlotUpdate();
 }
 
 // Work/Handle signals
@@ -238,7 +174,8 @@ void MonitoringServer::workSignals() {
 void MonitoringServer::handleSignals(boost::system::error_code const& error, int signum) {
 	if (!error) {
 		if (signum == SIGINT) {
-			BOOST_LOG_TRIVIAL(info) << "MonitoringServer: Closing fFile " << fFile->GetName();
+			std::cout << "\n";
+			g_elastic.log(INFO, "MonitoringServer: Closing fFile");
 
 			fCLB_tree->Write();
 			fFile->Close();
