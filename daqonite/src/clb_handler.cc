@@ -1,46 +1,50 @@
 /**
- * CLBOptHandler - Handler class for the CLB optical data stream
+ * CLBHandler - Handler class for the CLB optical data stream
  */
 
-#include "clb_opt_handler.h"
+#include "clb_handler.h"
 
-CLBOptHandler::CLBOptHandler(boost::asio::io_service* io_service, 
-					   		 DataHandler *data_handler, 
-					   		 bool* mode) :
-							 fData_handler(data_handler), 
-					   		 fMode(mode), 
-							 fBuffer_size(buffer_size_opt),
-					   		 fSocket_optical(*io_service, udp::endpoint(udp::v4(), default_opto_port)) {
+CLBHandler::CLBHandler(boost::asio::io_service* io_service, 
+					   DataHandler *data_handler, 
+					   bool* mode) :
+					   fData_handler(data_handler), 
+					   fMode(mode), 
+					   fBuffer_size(buffer_size_opt),
+					   fSocket_optical(*io_service, udp::endpoint(udp::v4(), default_opto_port)) {
 
 	// Setup the sockets
 	udp::socket::receive_buffer_size option_clb(33554432);
 	fSocket_optical.set_option(option_clb);
 }
 
-CLBOptHandler::~CLBOptHandler() {
+CLBHandler::~CLBHandler() {
 	// Empty
 }
 
-void CLBOptHandler::workOpticalData() {
+void CLBHandler::workOpticalData() {
 	if (*fMode == true) {
 		fSocket_optical.async_receive(boost::asio::buffer(&fBuffer_optical[0], fBuffer_size),
-								      boost::bind(&CLBOptHandler::handleOpticalData, this,
+								      boost::bind(&CLBHandler::handleOpticalData, this,
 									  boost::asio::placeholders::error,
 								      boost::asio::placeholders::bytes_transferred));
 	}
 }
 
-void CLBOptHandler::handleOpticalData(boost::system::error_code const& error, std::size_t size) {
+void CLBHandler::handleOpticalData(boost::system::error_code const& error, std::size_t size) {
 	if (!error) {
 		// Check the packet has atleast a CLB header in it
 		if (size - sizeof(CLBCommonHeader) < 0) {
-			std::cout << "daqonite - Error: Invalid optical packet size: " << size << std::endl;
+			g_elastic.log(WARNING, "CLB Handler invalid packet size");
 			workOpticalData();
 			return;
 		}
 
 		// Check the size of the packet is consistent with CLBCommonHeader + some hits
-		if (((size - sizeof(CLBCommonHeader)) % sizeof(hit_t))!=0) {throw std::runtime_error("daqonite - Error: Bad optical packet!");}
+		if (((size - sizeof(CLBCommonHeader)) % sizeof(hit_t))!=0) {
+			g_elastic.log(WARNING, "CLB Handler bad packet");
+			workOpticalData();
+			return;
+		}
 
 		// Cast the beggining of the packet to the CLBCommonHeader
 		CLBCommonHeader const
@@ -49,7 +53,11 @@ void CLBOptHandler::handleOpticalData(boost::system::error_code const& error, st
 
 		// Check the type of the packet is optical from the CLBCommonHeader
 		std::pair<int, std::string> const& type = getType(header_optical);
-		if (type.first != OPTO) { throw std::runtime_error("daqonite - Error: Incorrect type not optical!"); }
+		if (type.first != OPTO) { 
+			g_elastic.log(WARNING, "CLB Handler not optical packet");
+			workOpticalData();
+			return;
+		}
 
 		// Assign the variables we need from the header
 		fData_handler->fPomId_opt_clb = header_optical.pomIdentifier();
@@ -85,6 +93,6 @@ void CLBOptHandler::handleOpticalData(boost::system::error_code const& error, st
 
 		workOpticalData();
 	} else {
-		std::cout << "daqonite - Error: Optical async_receive!" << std::endl;
+		g_elastic.log(WARNING, "CLB Handler packet error");
 	}
 }

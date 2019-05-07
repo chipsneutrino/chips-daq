@@ -1,5 +1,5 @@
 /**
- * CLBOptHandler - Handler class for the CLB optical data stream
+ * CLBHandler - Handler class for the CLB optical data stream
  * 
  * This class deals with the specifics of the CLB data stream, unpacking
  * the UDP binary stream into the actual data and storing into .root
@@ -9,18 +9,17 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef CLB_OPT_HANDLER_H_
-#define CLB_OPT_HANDLER_H_
+#ifndef CLB_HANDLER_H_
+#define CLB_HANDLER_H_
 
 #include <iostream>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 
-#include "TTree.h"
-
 #include "clb_header_structs.h"
 #include "clb_data_structs.h"
 #include "data_handler.h"
+#include "elastic_interface.h"
 
 /// Buffer size in bytes for optical data
 const static size_t buffer_size_opt = 10000;
@@ -30,15 +29,15 @@ const static unsigned int default_opto_port = 56015;
 
 using boost::asio::ip::udp;
 
-class CLBOptHandler {
+class CLBHandler {
 	public:
-		/// Create a CLBOptHandler
-		CLBOptHandler(boost::asio::io_service* io_service,
-					  DataHandler *data_handler, 
-					  bool* mode);
+		/// Create a CLBHandler
+		CLBHandler(boost::asio::io_service* io_service,
+				   DataHandler *data_handler, 
+				   bool* mode);
 					
-		/// Destroy a CLBOptHandler
-		~CLBOptHandler();
+		/// Destroy a CLBHandler
+		~CLBHandler();
 
 		/**
 		 * IO_service optical data work function.
@@ -57,7 +56,7 @@ class CLBOptHandler {
 		 */
 		void handleOpticalData(boost::system::error_code const& error, std::size_t size);
 
-		// CLBOptHandler settings/input
+		// CLBHandler settings/input
 		bool 							fCollect_optical;					///< Should we collect optical data?
 		bool 							fCollect_monitoring;				///< Should we collect monitoring data?
 		DataHandler*					fData_handler;						///< Pointer to the DataHandler

@@ -17,8 +17,6 @@ DataHandler::DataHandler(bool collect_clb_data, bool collect_bbb_data) :
 	fMon_tree_clb = NULL;
 	fOpt_tree_bbb = NULL;
 	fMon_tree_bbb = NULL;
-
-	fPackets = 0;
 }
 
 DataHandler::~DataHandler() {
@@ -33,7 +31,8 @@ void DataHandler::startRun(int run_type) {
     fRun_type = run_type;
     getRunNumAndName();
 
-    std::cout << "\nDAQonite - Start mining into container: " << fFile_name << std::endl;
+	std::string name = fFile_name.Data();
+	g_elastic.log(WARNING, "Start mining into container " + name);
 
     // Open the ROOT output file and check it exists
     fOutput_file = new TFile(fFile_name, "RECREATE");
@@ -55,8 +54,6 @@ void DataHandler::startRun(int run_type) {
         fMon_tree_bbb = new TTree("BBBMon_tree", "BBBMon_tree");
         if (!fMon_tree_bbb) { throw std::runtime_error("daqonite - Error: BBBMon_tree!"); }        
     }
-
-	fPackets = 0;
 }
 
 void DataHandler::stopRun() {
@@ -71,7 +68,8 @@ void DataHandler::stopRun() {
         fMon_tree_bbb->Write();
     }    
 
-    std::cout << "\nDAQonite - Stop mining into the container: " << fFile_name << std::endl;
+	std::string name = fFile_name.Data();
+	g_elastic.log(WARNING, "Stop mining into container " + name);
 
     // Close the ROOT output file
     if (fOutput_file != NULL) { fOutput_file->Close(); }
@@ -91,12 +89,6 @@ void DataHandler::stopRun() {
 void DataHandler::fillOptCLBTree() {
     // Need mutex lock/unlock
     fOpt_tree_clb->Fill();
-	fPackets++;
-	// We will only autosave the trees when running for now
-	if (fPackets%200000 == 1) {
-		fOpt_tree_clb->AutoSave("SaveSelf");
-		fMon_tree_clb->AutoSave("SaveSelf");
-	} 
 }
 
 void DataHandler::fillMonCLBTree() {
