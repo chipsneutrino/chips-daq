@@ -7,7 +7,7 @@ LIBS = 			fh_message boost_system boost_log_setup boost_log boost_chrono boost_p
 CXXFLAGS =		$(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0 -std=c++0x -DBOOST_LOG_DYN_LINK
 ROOTFLAGS = 	`root-config --cflags --glibs`
 
-OBJS =          monitoring_buffer.o monitoring_config.o monitoring_gui.o monitoring_server.o data_handler.o clb_opt_handler.o clb_mon_handler.o bbb_handler.o daq_handler.o packet_generator.o elastic_interface.o
+OBJS =          monitoring_config.o monitoring_gui.o monitoring_server.o data_handler.o clb_opt_handler.o clb_mon_handler.o bbb_handler.o daq_handler.o packet_generator.o elastic_interface.o
 
 rootcint:
 	rootcint -f monitoring_gui_dict.cc -c ../include/monitoring_gui.h monitoring_gui_linkdef.h
