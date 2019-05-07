@@ -4,8 +4,11 @@
 
 #include "monitoring_server.h"
 
-/// Create a DAQuardian object
-MonitoringServer::MonitoringServer(std::string config_file,  float clbFrac, float bbbFrac) : 
+/// Create a MonitoringServer
+MonitoringServer::MonitoringServer(std::string config_file,
+                        		   bool save_elastic, bool save_file, bool show_gui,
+                         		   float clbFrac, float bbbFrac) : 
+								   fSave_elastic(save_elastic), fSave_file(save_file), fShow_gui(show_gui),	
 								   fSignal_set(fIO_service, SIGINT),
                                    fCLB_socket(fIO_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), CLBMONPORT)),
                                    fCLB_frac(clbFrac),
@@ -15,21 +18,28 @@ MonitoringServer::MonitoringServer(std::string config_file,  float clbFrac, floa
 	// Initialise the random number generator
     srand((unsigned)time(NULL));
 
-	// Open the monitoring file to save data to
-	std::string fileName = generateFilename();
-	g_elastic.log(INFO, "MonitoringServer: Opening fFile " + fileName);
+	if (fSave_file) {
+		// Open the monitoring file to save data to
+		std::string fileName = generateFilename();
+		g_elastic.log(INFO, "MonitoringServer: Opening ROOT file " + fileName);
 
-	fFile = new TFile(fileName.c_str(), "RECREATE");
-    if (!fFile) {
-		g_elastic.log(FATAL, "MonitoringServer: Could not open fFile");
-		throw std::runtime_error("MonitoringServer: Could not open fFile"); 
+		fFile = new TFile(fileName.c_str(), "RECREATE");
+		if (!fFile) {
+			g_elastic.log(FATAL, "MonitoringServer: Could not open fFile");
+			throw std::runtime_error("MonitoringServer: Could not open fFile");
+		}		
+
+		setupTree();
+	}
+
+	if (fShow_gui) {
+		// Setup the old ROOT monitoring GUI
 	}
 
 	// Setup CLB socket
 	boost::asio::ip::udp::socket::receive_buffer_size option_clb(33554432);
 	fCLB_socket.set_option(option_clb);
 	workCLBSocket();
-	setupTree();
 
 	// Setup BBB socket
 	boost::asio::ip::udp::socket::receive_buffer_size option_bbb(33554432);
@@ -43,11 +53,12 @@ MonitoringServer::MonitoringServer(std::string config_file,  float clbFrac, floa
     fIO_service.run();
 }
 
+/// Destroy a MonitoringServer
 MonitoringServer::~MonitoringServer() {
     // Empty
 }
 
-// Generate filename
+/// Generate a filename for the ROOT output file
 std::string MonitoringServer::generateFilename() {
     time_t rawtime;
     struct tm * timeinfo;
@@ -60,21 +71,21 @@ std::string MonitoringServer::generateFilename() {
     return std::string(buffer);	
 }
 
-// Setup the TTree
+/// Setup the ROOT file TTree with the needed branches
 void MonitoringServer::setupTree() {
-	fCLB_tree = new TTree("clb_tree", "clb_tree");
-	if (!fCLB_tree) { 
-		g_elastic.log(FATAL, "MonitoringServer: Could not open fCLB_tree");
-		throw std::runtime_error("MonitoringServer: Could not open fCLB_tree"); 
+	if (fFile!=NULL) {
+		fCLB_tree = new TTree("clb_tree", "clb_tree");
+		if (!fCLB_tree) { 
+			g_elastic.log(FATAL, "MonitoringServer: Could not create 'clb_tree'");
+			throw std::runtime_error("MonitoringServer: Could not create 'clb_tree'"); 
+		}		
+	} else {
+		g_elastic.log(FATAL, "MonitoringServer: Could not create 'clb_tree' as TFile does not exist");
+		throw std::runtime_error("MonitoringServer: Could not create 'clb_tree' as TFile does not exist"); 		
 	}
-
-	// This is where I should read in a configuration file that specified the things I want to monitor
-	// FOR NOW WE SHALL HARD CODE THIS!!!
 
 	fCLB_tree->Branch("pom_id", 		&fCLB_pom_id, 		"fCLB_pom_id/i");
 	fCLB_tree->Branch("timestamp_s", 	&fCLB_timestamp_s, 	"fCLB_timestamp_s/i");
-	fCLB_tree->Branch("pad", 			&fCLB_pad, 			"fCLB_pad/i");
-	fCLB_tree->Branch("valid", 			&fCLB_valid, 		"fCLB_valid/i");
 	fCLB_tree->Branch("temperature", 	&fCLB_temperature, 	"fCLB_temperature/s");
 	fCLB_tree->Branch("humidity", 		&fCLB_humidity, 	"fCLB_humidity/s");
     fCLB_tree->Branch("hits",			&fCLB_hits,			"fCLB_hits[30]/i");
@@ -114,14 +125,15 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
 			return;
         }
 
-		fCLB_pom_id = header.pomIdentifier();
-		fCLB_timestamp_s = header.timeStamp().sec();
+		fCLB_run_num = (int)header.runNumber();
+		fCLB_pom_id = (int)header.pomIdentifier();
+		fCLB_timestamp_s =(int)header.timeStamp().sec();
 
 		// Get the monitoring hits data
 		for (int i = 0; i < 30; ++i) {
 			const uint32_t * const field = static_cast<const uint32_t* const >
 									(static_cast<const void* const >(&fCLB_buffer[0] + sizeof(CLBCommonHeader) + i * 4));
-			fCLB_hits[i] = htonl(*field);
+			fCLB_hits[i] = (int)htonl(*field);
 		}
 
 		// Get the other monitoring info by casting into the SCData struct
@@ -129,12 +141,17 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
 						static_cast<const SCData* const > (static_cast<const void* const > (&fCLB_buffer[0]
 								+ clb_minimum_size));
 
-		fCLB_pad = ntohl(scData->pad);
-		fCLB_valid = ntohl(scData->valid);
-		fCLB_temperature = (uint16_t)ntohs(scData->temp) / (uint16_t)100.0;
-		fCLB_humidity = (uint16_t)ntohs(scData->humidity) / (uint16_t)100.0;
+		fCLB_temperature = (int)((uint16_t)ntohs(scData->temp) / (uint16_t)100.0);
+		fCLB_humidity = (int)((uint16_t)ntohs(scData->humidity) / (uint16_t)100.0);
 
-		if (fCLB_tree!=NULL) { fCLB_tree->Fill(); }
+		// If we are saving to ROOT file, fill the TTree
+		if (fSave_file && fCLB_tree!=NULL) { fCLB_tree->Fill(); }
+
+		// Save the monitoring data to elasticsearch
+		std::string message = "test";
+		if (fSave_elastic) { g_elastic.monitoringPacket(fCLB_run_num, fCLB_pom_id, fCLB_timestamp_s, 
+                                        				fCLB_temperature, fCLB_humidity, 
+                                        				message, &fCLB_hits[0]); }
 
 	} else {
 		g_elastic.log(WARNING, "MonitoringServer: CLB socket packet error");
@@ -175,10 +192,12 @@ void MonitoringServer::handleSignals(boost::system::error_code const& error, int
 	if (!error) {
 		if (signum == SIGINT) {
 			std::cout << "\n";
-			g_elastic.log(INFO, "MonitoringServer: Closing fFile");
 
-			fCLB_tree->Write();
-			fFile->Close();
+			if (fSave_file && fFile!=NULL && fCLB_tree!=NULL) {
+				g_elastic.log(INFO, "MonitoringServer: Closing fFile");
+				fCLB_tree->Write();
+				fFile->Close();
+			}
 
 			fIO_service.stop();
 			return;

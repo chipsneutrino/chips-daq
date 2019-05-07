@@ -15,7 +15,10 @@
  
 #include <cpr/response.h>
 #include <elasticlient/client.h>
+#include <elasticlient/logging.h>
 #include <json/json.h>
+
+#include <boost/thread.hpp>
 
 ///< Define the elasticsearch address
 #define CLIENT "http://localhost:9200/"
@@ -25,6 +28,13 @@
 
 /// Enum for describing the different logging severity levels
 enum severity{TRACE, DEBUG, INFO, WARNING, ERROR, FATAL}; 
+
+/// Very simple log callback (only print message to stdout)
+inline void elasticlient_callback(elasticlient::LogLevel logLevel, const std::string &msg) {
+	if (logLevel != elasticlient::LogLevel::DEBUG) {
+		std::cout << "LOG " << (unsigned) logLevel << ": " << msg << std::endl;
+	}
+}
 
 class ElasticInterface {
     public:
@@ -40,8 +50,10 @@ class ElasticInterface {
          * and monitoring.
 		 * 
 		 * @param processName   name of the process
+         * @param stdoutPrint   print logs to stdout
+         * @param clientLog     print client log message
 		 */	
-        void init(std::string processName, bool stdoutPrint);
+        void init(std::string processName, bool stdoutPrint, bool clientLog);
 
 		/**
 		 * Indexes a "daqlog" index document to elasticsearch
@@ -79,22 +91,28 @@ class ElasticInterface {
          * "hits":              hits for all channels
          * "message":           optional message,
 		 */	
-        void monitoringPacket();
+        void monitoringPacket(int &run_num, int &pom_id, int &timestamp, 
+                              int &temperature, int &humidity,
+                              std::string &message, int * hits);
 
-	    /// Generates a new random ID (length=IDLENGTH), stored in fPid
-        void genID();
+	    /// Generates a new random ID (length=IDLENGTH)
+        std::string genID();
 
     private:
         elasticlient::Client fClient;       ///< The ElasticSearch client as provided by elasticlient library
         Json::StreamWriterBuilder fBuilder; ///< Json writer to stream json object to string
 
+
+        boost::mutex fMutex;                ///< Mutex to keep everything thread safe
+
         std::string fProcess_name;          ///< Name of the process using this interface
         pid_t fPid;                         ///< ID of the process using this interface
         bool fStdoutPrint;                  ///< Should we print logs to stdout?      
 
+        Json::Value fMonitor_message;       ///< Json monitoring message used to send monitoring data to elasticsearch
+
         Json::Value fLog_message;           ///< Json log message used to send logs to elasticsearch
 
-        char fID[IDLENGTH];                 ///< Random ID, for assigning to all new elasticsearch documents
         int fRand_count;                    ///< Incrementing number to make sure IDs never collide
 };
 

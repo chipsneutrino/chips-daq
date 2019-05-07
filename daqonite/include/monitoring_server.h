@@ -46,16 +46,24 @@ const static std::size_t clb_max_size = sizeof(CLBCommonHeader) + (sizeof(int)*3
 
 class MonitoringServer {
     public:
-        // Create a MonitoringServer
-        MonitoringServer(std::string config_file, float clbFrac, float bbbFrac);
+        /// Create a MonitoringServer
+        MonitoringServer(std::string config_file,
+                         bool save_elastic, bool save_file, bool show_gui,
+                         float clbFrac, float bbbFrac);
 
-        // Destroy a MonitoringServer
+        /// Destroy a MonitoringServer
         ~MonitoringServer();
 
-        // Generate filename
+		/**
+		 * Generate a filename for the ROOT output file
+		 * The name is based on the current time and date
+		 */	
         std::string generateFilename();
 
-        // Setup the TTree
+		/**
+		 * Setup the ROOT file TTree with the needed branches
+		 * This should deal with both CLB and BBB setup
+		 */	
         void setupTree();
 
         // Work/Handle the CLB monitoring socket
@@ -72,23 +80,32 @@ class MonitoringServer {
 
     private:
 
-        TFile*      fFile;                                              ///< Output ROOT file for saving monitoring data
+        // settings
+        bool fSave_elastic;                                             ///< Save data to elasticsearch
+        bool fSave_file;                                                ///< Save data to ROOT file
+        bool fShow_gui;                                                 ///< Show old ROOT monitoring GUI
 
+        // io_service
         boost::asio::io_service fIO_service;                            ///< The BOOST io_service
         boost::asio::signal_set fSignal_set;                            ///< Signal set to deal with process killing
+
+        // ROOT file
+        TFile*      fFile;                                              ///< Output ROOT file for saving monitoring data
+        TTree*      fCLB_tree;                                          ///< ROOT TTree to store CLB monitoring data
+
+        // Old monitoring GUI
 
         // CLB Socket
         boost::asio::ip::udp::socket fCLB_socket;                       ///< Socket to send CLB monitoring data to
         char fCLB_buffer[BUFFERSIZE] __attribute__((aligned(8)));       ///< CLB monitoring socket buffer
         float fCLB_frac;                                                ///< Fraction of CLB monitoring data to keep
-        TTree* fCLB_tree;                                               ///< ROOT TTree to store CLB monitoring data
-		uint32_t 	fCLB_pom_id;		                                ///< Mon CLB: Header POM ID (4 bytes)
-		uint32_t 	fCLB_timestamp_s;                                   ///< Mon CLB: Header timestamp (4 bytes)
-		uint32_t 	fCLB_pad;   		                                ///< Mon CLB: Header Pad (4 bytes)
-		uint32_t 	fCLB_valid; 		                                ///< Mon CLB: Header Valid (4 bytes)
-		uint16_t 	fCLB_temperature; 	                                ///< Mon CLB: Temperature data (2 bytes)
-		uint16_t 	fCLB_humidity;	                                    ///< Mon CLB: Humidity data (2 bytes)
-		uint32_t 	fCLB_hits[30];  	                                ///< Mon CLB: Channel Hits (4 bytes)
+
+        int 	fCLB_run_num;		                                    ///< Mon CLB: Header Run Num (4 bytes)
+		int 	fCLB_pom_id;		                                    ///< Mon CLB: Header POM ID (4 bytes)
+		int 	fCLB_timestamp_s;                                       ///< Mon CLB: Header timestamp (4 bytes)
+		int 	fCLB_temperature; 	                                    ///< Mon CLB: Temperature data (2 bytes)
+		int 	fCLB_humidity;	                                        ///< Mon CLB: Humidity data (2 bytes)
+		int 	fCLB_hits[30];  	                                    ///< Mon CLB: Channel Hits (4 bytes)
 
         // BBB Socket
         boost::asio::ip::udp::socket fBBB_socket;                       ///< Socket to send BBB monitoring data to

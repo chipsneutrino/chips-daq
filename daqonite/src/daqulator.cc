@@ -7,7 +7,8 @@ void generatorLoop(PacketGenerator* generator, raw_data_t* data, std::string add
 
 int main(int argc, char* argv[]) {
 
-	init_console_log();
+    // Initialise the elasticsearch interface
+    g_elastic.init("daqulator", true, false);  // We want log message to be printed to stdout
 
 	// Default settings
 	int daq_opt_pot = 56015;
@@ -15,7 +16,7 @@ int main(int argc, char* argv[]) {
 	std::string daq_address = "localhost";
 	std::string configuration_filename("../data/config.opt");
 	unsigned int hit_rate = 1; // kHz
-	unsigned int deltaTS = 100;
+	unsigned int deltaTS = 1000;
 	unsigned int MTU = 9600;
 	unsigned int run_number = 1;
 
@@ -68,19 +69,16 @@ int main(int argc, char* argv[]) {
 
 	if (range.empty()) { throw std::runtime_error("DAQulator: Found no POMS in file"); }
 
-	// Print out the configuration
-	BOOST_LOG_TRIVIAL(info) << "DAQulator: Starting packet generators";
-	std::cout << "\ndaqulator start, with configuration:" << std::endl;
-	cool_print(daq_address);
-	cool_print(daq_opt_pot);
-	cool_print(daq_mon_pot);
-	cool_print(deltaTS);
-	cool_print(MTU);
-	cool_print(run_number);
-	cool_print(hit_rate);
-	std::cout << "POM IDs: [";
-	for (unsigned int i = 0; i < num_clbs; ++i) std::cout << range[i] << ' ';
-	std::cout << "]" << std::endl << std::endl;
+    // Log the setup to elasticsearch
+    std::string setup = "Packet Generators Start (" + daq_address + ",";
+	setup += std::to_string(daq_opt_pot) + ",";
+	setup += std::to_string(daq_mon_pot) + ",";
+	setup += std::to_string(deltaTS) + ",";
+	setup += std::to_string(MTU) + ",";
+	setup += std::to_string(run_number) + ",";
+	setup += std::to_string(hit_rate) + ",";
+	setup += configuration_filename + ")"; 
+    g_elastic.log(INFO, setup);
 
 	// Create optical packet generator
 	raw_data_t opt_data;
@@ -97,7 +95,7 @@ int main(int argc, char* argv[]) {
     optThread.join();
 	monThread.join();
 
-	BOOST_LOG_TRIVIAL(info) << "DAQulator: Stopped packet generators";
+	g_elastic.log(INFO, "Packet Generators Stop");
 }
 
 void generatorLoop(PacketGenerator* generator, raw_data_t* data, std::string address, int port, unsigned int num_clbs) {

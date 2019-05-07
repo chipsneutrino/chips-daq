@@ -50,20 +50,17 @@ PacketGenerator::PacketGenerator(
 		m_payload_size = (sizeof(int)*31) + sizeof(SCData);
 		m_mon_data.pad = htonl(0);
 		m_mon_data.valid = htonl(0);
-	} else {
-		std::cout << "daqulator: error: No matching data type\n";		
 	}
 
 	m_tv.tv_sec  = 0;
 	m_tv.tv_usec = 0;
 	target.resize(sizeof(CLBCommonHeader) + m_payload_size);
 
-	// Print out the configuration
-	std::cout << "PacketGenerator: \n";
-	cool_print(m_max_seqnumber);
-	cool_print(m_payload_size);
-	cool_print(m_type);
-	std::cout << "\n";
+    // Log the setup to elasticsearch
+    std::string setup = "Packet Generator (" + std::to_string(m_max_seqnumber) + ",";
+	setup += std::to_string(m_payload_size) + ",";
+	setup += std::to_string(m_type) + ")";
+    g_elastic.log(INFO, setup);
 }
 
 void PacketGenerator::getNext(raw_data_t& target) {
