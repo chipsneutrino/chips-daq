@@ -93,8 +93,6 @@ class MonitoringServer {
         TFile*      fFile;                                              ///< Output ROOT file for saving monitoring data
         TTree*      fCLB_tree;                                          ///< ROOT TTree to store CLB monitoring data
 
-        // Old monitoring GUI
-
         // CLB Socket
         boost::asio::ip::udp::socket fCLB_socket;                       ///< Socket to send CLB monitoring data to
         char fCLB_buffer[BUFFERSIZE] __attribute__((aligned(8)));       ///< CLB monitoring socket buffer
@@ -102,7 +100,7 @@ class MonitoringServer {
 
         int 	fCLB_run_num;		                                    ///< Mon CLB: Header Run Num (4 bytes)
 		int 	fCLB_pom_id;		                                    ///< Mon CLB: Header POM ID (4 bytes)
-		int 	fCLB_timestamp_s;                                       ///< Mon CLB: Header timestamp (4 bytes)
+		long 	fCLB_timestamp;                                         ///< Mon CLB: Header timestamp in ms (8 bytes)
 		int 	fCLB_temperature; 	                                    ///< Mon CLB: Temperature data (2 bytes)
 		int 	fCLB_humidity;	                                        ///< Mon CLB: Humidity data (2 bytes)
 		int 	fCLB_hits[30];  	                                    ///< Mon CLB: Channel Hits (4 bytes)

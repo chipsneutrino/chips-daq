@@ -85,7 +85,7 @@ void MonitoringServer::setupTree() {
 	}
 
 	fCLB_tree->Branch("pom_id", 		&fCLB_pom_id, 		"fCLB_pom_id/i");
-	fCLB_tree->Branch("timestamp_s", 	&fCLB_timestamp_s, 	"fCLB_timestamp_s/i");
+	fCLB_tree->Branch("timestamp_s", 	&fCLB_timestamp, 	"fCLB_timestamp/l");
 	fCLB_tree->Branch("temperature", 	&fCLB_temperature, 	"fCLB_temperature/s");
 	fCLB_tree->Branch("humidity", 		&fCLB_humidity, 	"fCLB_humidity/s");
     fCLB_tree->Branch("hits",			&fCLB_hits,			"fCLB_hits[30]/i");
@@ -127,7 +127,7 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
 
 		fCLB_run_num = (int)header.runNumber();
 		fCLB_pom_id = (int)header.pomIdentifier();
-		fCLB_timestamp_s =(int)header.timeStamp().sec();
+		fCLB_timestamp =(long)header.timeStamp().inMilliSeconds();
 
 		// Get the monitoring hits data
 		for (int i = 0; i < 30; ++i) {
@@ -148,8 +148,8 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
 		if (fSave_file && fCLB_tree!=NULL) { fCLB_tree->Fill(); }
 
 		// Save the monitoring data to elasticsearch
-		std::string message = "test";
-		if (fSave_elastic) { g_elastic.monitoringPacket(fCLB_run_num, fCLB_pom_id, fCLB_timestamp_s, 
+		std::string message = "";
+		if (fSave_elastic) { g_elastic.monitoringPacket(fCLB_run_num, fCLB_pom_id, fCLB_timestamp, 
                                         				fCLB_temperature, fCLB_humidity, 
                                         				message, &fCLB_hits[0]); }
 

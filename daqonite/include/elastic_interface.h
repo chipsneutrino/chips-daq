@@ -12,6 +12,7 @@
 #include <string>
 #include <sys/types.h>
 #include <unistd.h>
+#include <chrono>
  
 #include <cpr/response.h>
 #include <elasticlient/client.h>
@@ -22,9 +23,6 @@
 
 ///< Define the elasticsearch address
 #define CLIENT "http://localhost:9200/"
-
-///< Define the length of the unique ID for new elasticsearch documents
-#define IDLENGTH 8
 
 /// Enum for describing the different logging severity levels
 enum severity{TRACE, DEBUG, INFO, WARNING, ERROR, FATAL}; 
@@ -58,15 +56,15 @@ class ElasticInterface {
 		/**
 		 * Indexes a "daqlog" index document to elasticsearch
 		 * Creates a log message and PUTS it to elasticsearch
-         * The timestamp (indexed_at) is added by elasticsearch
+         * Document ID is created by elasticsearch
          * 
-         * "_index":            "daqlog",
-         * "_type":             "standard",
-         * "_id":               a random sequence 8 long for the ID,
+         * "_index":            "daqlog"
+         * "_type":             "standard"
          * 
-         * "severity":          level,
-         * "process":           process sending the log,
-         * "pid":               pid of process sending the log,
+         * "@timestamp"         indexing timestamp
+         * "severity":          level
+         * "process":           process sending the log
+         * "pid":               pid of process sending the log
          * "message":           message
 		 * 
 		 * @param level         severity level of log
@@ -75,45 +73,53 @@ class ElasticInterface {
         void log(severity level, std::string message);
 
 		/**
-		 * Indexes a "pommon" index document to elasticsearch
-		 * Creates a monitoring message and PUTS it to elasticsearch
-         * The timestamp (indexed_at) is added by elasticsearch
+		 * Indexes a "daqmon" index document to elasticsearch of type "pommon"
+		 * Creates a message and PUTS it to elasticsearch
+         * Document ID is created by elasticsearch
          * 
-         * "_index":            "pommon",
-         * "_type":             "standard",
-         * "_id":               a random sequence 8 long for the ID,
+         * "_index":            "daqmon"
+         * "_type":             "pommon"
          * 
-         * "run_num":           current run number if any,
-         * "pom_id":            planar optical module id,
-         * "timestamp":         timestamp of monitoring packet,
-         * "temperature":       POM temperature,
-         * "humidity":          POM humidity,
+         * "@timestamp"         indexing timestamp
+         * "run_num":           current run number if any
+         * "pom_id":            planar optical module id
+         * "packet_time":       timestamp of monitoring packet in ms
+         * "temperature":       POM temperature
+         * "humidity":          POM humidity
          * "hits":              hits for all channels
-         * "message":           optional message,
+         * "message":           optional message
 		 */	
-        void monitoringPacket(int &run_num, int &pom_id, int &timestamp, 
+        void monitoringPacket(int &run_num, int &pom_id, long &timestamp, 
                               int &temperature, int &humidity,
                               std::string &message, int * hits);
 
-	    /// Generates a new random ID (length=IDLENGTH)
-        std::string genID();
+		/**
+		 * Indexes a document to elasticsearch of given type
+		 * Creates a message and PUTS it to elasticsearch
+         * Document ID is created by elasticsearch
+         * 
+         * "_index":            index
+         * "_type":             type
+         * 
+         * "@timestamp"         indexing timestamp
+         * "value":             value given
+		 */	
+        void monitoringValue(std::string index, std::string type, float value);
 
     private:
+        // Client
         elasticlient::Client fClient;       ///< The ElasticSearch client as provided by elasticlient library
-        Json::StreamWriterBuilder fBuilder; ///< Json writer to stream json object to string
 
-
-        boost::mutex fMutex;                ///< Mutex to keep everything thread safe
-
+        // Settings
         std::string fProcess_name;          ///< Name of the process using this interface
         pid_t fPid;                         ///< ID of the process using this interface
-        bool fStdoutPrint;                  ///< Should we print logs to stdout?      
+        bool fStdoutPrint;                  ///< Should we print logs to stdout?         
 
+        // Messaging
+        Json::StreamWriterBuilder fBuilder; ///< Json writer to stream json object to string
+        boost::mutex fMutex;                ///< Mutex to keep everything thread safe
         Json::Value fMonitor_message;       ///< Json monitoring message used to send monitoring data to elasticsearch
-
         Json::Value fLog_message;           ///< Json log message used to send logs to elasticsearch
-
-        int fRand_count;                    ///< Incrementing number to make sure IDs never collide
 };
 
 extern ElasticInterface g_elastic;          ///< Global instance of this class
