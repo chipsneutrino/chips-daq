@@ -1,8 +1,5 @@
 /**
  * ElasticInterface - Interfaces with elasticsearch for logging and monitoring
- * 
- * TODO: Retry connection to elasticsearch
- * TODO: How do I want to use the configuration for monitoring/alerting
  */
 
 #include "elastic_interface.h"

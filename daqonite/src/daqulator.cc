@@ -1,3 +1,10 @@
+/**
+ * Program name: DAQulator, by Josh Tingey MSci, JoshTingeyDAQDemon.Josh
+ *
+ * Author: Josh Tingey
+ * E-mail: j.tingey.16@ucl.ac.uk
+ */
+
 #include "packet_generator.h"
 #include "monitoring_config.h"
 

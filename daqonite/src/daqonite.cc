@@ -1,19 +1,8 @@
 /**
  * Program name: DAQonite, by Josh Tingey MSci, JoshTingeyDAQDemon.Josh
  *
- * This program is a modification of the CLBSwissKnife...
- * Original Author: Carmelo Pellegrino
- * E-mail: carmelo.pellegrino@bo.infn.it
- * Date:   27 October 2014
-
- * Modified Version Author: Josh Tingey
+ * Author: Josh Tingey
  * E-mail: j.tingey.16@ucl.ac.uk
- * Date:   18 September 2018
- *
- * Use
- * $ daqonite -h
- * for a detailed help.
- *
  */
 
 #include "daq_handler.h"

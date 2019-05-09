@@ -1,0 +1,103 @@
+### General Bits and bobs ###
+$ sudo yum update
+$ sudo yum install epel-release krb5-workstation krb5-libs krb5-auth-dialog gcc gcc-c++ java-1.8.0-openjdk python-devel python-pip
+$ sudo yum group install 'Development Tools'
+
+### Elastic Stack ###
+- Follow https://computingforgeeks.com/how-to-install-elk-stack-on-centos-7-fedora-29/
+- Start the services without the .service on the end
+
+PUT daqlog
+{
+  "mappings": {
+    "standard": {
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        },
+        "process": {
+          "type": "text"
+        },
+        "pid": {
+          "type": "integer"
+        },
+        "severity": {
+          "type": "integer"
+        },
+        "message": {
+          "type": "text"
+        }
+      }
+    }
+  }
+}
+
+PUT daqmon
+{
+  "mappings": {
+    "pommon": {
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        },
+        "run_num": {
+          "type": "integer"
+        },
+        "pom_id": {
+          "type": "integer"
+        },
+        "packet_time": {
+          "type": "date"
+        },
+        "temperature": {
+          "type": "integer"
+        },
+        "humidity": {
+          "type": "integer"
+        },
+        "message": {
+          "type": "text"
+        },
+        "hits": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}
+
+### ROOT ###
+$ wget https://root.cern.ch/download/root_v5.34.36.Linux-centos7-x86_64-gcc4.8.tar.gz
+$ tar xzvf root_v5.34.36.Linux-centos7-x86_64-gcc4.8.tar.gz
+$ . root/bin/thisroot.sh
+
+### BOOST ###
+$ wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
+$ tar -xzf boost_1_*
+$ cd boost_1_*
+$ sudo ./bootstrap.sh --prefix=/opt/boost
+$ sudo ./b2 install --prefix=/opt/boost --with=all
+- Add boost lib and include paths to MAKEFILE
+
+### MetricBeat ###
+$ curl -L -O https://artifacts.elastic.co/downloads/beats/metricbeat/metricbeat-6.7.1-x86_64.rpm
+$ sudo rpm -vi metricbeat-6.7.1-x86_64.rpm
+- edit /etc/metricbeat/metricbeat.yml to configure elasticsearch and kibana
+$ sudo metricbeat modules enable system
+$ sudo metricbeat setup
+$ sudo service metricbeat start
+
+### Alerting (ElastAlert) ###
+$ sudo pip install "setuptools>=11.3"
+$ sudo pip install elastalert
+
+### elasticclient ###
+$ sudo yum install perl-core libtemplate-perl zlib-devel openssl-devel libssh2-devel libmicrohttpd-devel curl-devel gtest-devel
+- Then just follow instructions on https://github.com/seznam/elasticlient
+
+### chips-daq code ###
+$ . root/bin/thisroot.sh
+$ LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/jtingey/elasticlient/build/lib/
+$ LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/boost/lib
+
+### Java Gui Usage ###
