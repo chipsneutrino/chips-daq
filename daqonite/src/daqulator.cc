@@ -3,12 +3,13 @@
 
 namespace po = boost::program_options;
 
-void generatorLoop(PacketGenerator* generator, raw_data_t* data, std::string address, int port, unsigned int num_clbs);
+void generatorLoop(PacketGenerator* generator, raw_data_t* data, std::string address, 
+				   int port, unsigned int num_clbs, unsigned int packetType);
 
 int main(int argc, char* argv[]) {
 
     // Initialise the elasticsearch interface
-    g_elastic.init("daqulator", true, false);  // We want log message to be printed to stdout
+    g_elastic.init("daqulator", true, false, 5);  // We want log message to be printed to stdout
 
 	// Default settings
 	int daq_opt_pot = 56015;
@@ -16,7 +17,7 @@ int main(int argc, char* argv[]) {
 	std::string daq_address = "localhost";
 	std::string configuration_filename("../data/config.opt");
 	unsigned int hit_rate = 1; // kHz
-	unsigned int deltaTS = 1000;
+	unsigned int deltaTS = 100;
 	unsigned int MTU = 9600;
 	unsigned int run_number = 1;
 
@@ -89,8 +90,8 @@ int main(int argc, char* argv[]) {
 	PacketGenerator mon_generator(range, deltaTS, run_number, MTU, hit_rate, mon_data, tmch);
 
 	// Start the two generators on seperate threads
-    boost::thread optThread(generatorLoop, &opt_generator, &opt_data, daq_address, daq_opt_pot, num_clbs);
-	boost::thread monThread(generatorLoop, &mon_generator, &mon_data, daq_address, daq_mon_pot, num_clbs);
+    boost::thread optThread(generatorLoop, &opt_generator, &opt_data, daq_address, daq_opt_pot, num_clbs, ttdc);
+	boost::thread monThread(generatorLoop, &mon_generator, &mon_data, daq_address, daq_mon_pot, num_clbs, tmch);
 
     optThread.join();
 	monThread.join();
@@ -98,7 +99,8 @@ int main(int argc, char* argv[]) {
 	g_elastic.log(INFO, "Packet Generators Stop");
 }
 
-void generatorLoop(PacketGenerator* generator, raw_data_t* data, std::string address, int port, unsigned int num_clbs) {
+void generatorLoop(PacketGenerator* generator, raw_data_t* data, std::string address, 
+				   int port, unsigned int num_clbs, unsigned int type) {
 	// Setup the socket to send generate packets to
 	boost::asio::io_service service;
 	boost::asio::ip::udp::socket sock(service, boost::asio::ip::udp::udp::v4());
@@ -115,8 +117,8 @@ void generatorLoop(PacketGenerator* generator, raw_data_t* data, std::string add
 			generator->getNext(*data);
 			sock.send_to(boost::asio::buffer(*data), destination);
 		}
-		if (((++windows) % 500) == 0) {
-			 std::cout << "Thread (" << boost::this_thread::get_id() << ") windows -> " << windows << std::endl;
+		if (((++windows) % 1000) == 0) {
+			g_elastic.log(INFO, "Packet Generator ("+std::to_string(type)+") Windows -> "+std::to_string(windows));
 		}
 	}	
 }

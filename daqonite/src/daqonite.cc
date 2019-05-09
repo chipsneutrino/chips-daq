@@ -21,7 +21,7 @@
 int main(int argc, char* argv[]) {
 
     // Initialise the elasticsearch interface
-    g_elastic.init("daqonite", true, false);  // We want log message to be printed to stdout
+    g_elastic.init("daqonite", true, false, 5);  // We want log message to be printed to stdout
 
 	// Default settings
 	bool collect_clb_data			= true;

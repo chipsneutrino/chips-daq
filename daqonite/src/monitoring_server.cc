@@ -149,9 +149,9 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
 
 		// Save the monitoring data to elasticsearch
 		std::string message = "";
-		if (fSave_elastic) { g_elastic.monitoringPacket(fCLB_run_num, fCLB_pom_id, fCLB_timestamp, 
-                                        				fCLB_temperature, fCLB_humidity, 
-                                        				message, &fCLB_hits[0]); }
+		if (fSave_elastic) { g_elastic.packet(fCLB_run_num, fCLB_pom_id, fCLB_timestamp, 
+                                        	  fCLB_temperature, fCLB_humidity, 
+                                        	  message, &fCLB_hits[0]); }
 
 	} else {
 		g_elastic.log(WARNING, "MonitoringServer: CLB socket packet error");

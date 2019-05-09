@@ -1,8 +1,6 @@
 /**
  * ElasticInterface - Interfaces with elasticsearch for logging and monitoring
  * 
- * TODO: Implement file logging if elasticsearch unavailable
- * TODO: Supression of repeating logs
  * TODO: Retry connection to elasticsearch
  * TODO: How do I want to use the configuration for monitoring/alerting
  */
@@ -13,7 +11,7 @@ ElasticInterface g_elastic; ///< Global instance of this class
 
 /// Create a ElasticInterface
 ElasticInterface::ElasticInterface() :
-    fClient({CLIENT}), fMode(ELASTIC) {
+    fMode(ELASTIC), fLog_counter(0), fClient({CLIENT}){
     fBuilder["indentation"] = "";   // If you want whitespace-less output
 }
 
@@ -23,10 +21,11 @@ ElasticInterface::~ElasticInterface() {
 }
 
 /// Initialises the elasticsearch interface
-void ElasticInterface::init(std::string processName, bool stdoutPrint, bool commsLog) {
+void ElasticInterface::init(std::string processName, bool stdoutPrint, bool commsLog, int maxRate) {
     srand(time(NULL));
 
     fStdoutPrint = stdoutPrint;
+    fMax_rate = maxRate;
 
     //initFile("test", false);
 
@@ -36,10 +35,35 @@ void ElasticInterface::init(std::string processName, bool stdoutPrint, bool comm
     if (commsLog) { elasticlient::setLogFunction(elasticlient_callback); }
 }
 
-/// Indexes a "daqlog" index document to elasticsearch
 void ElasticInterface::log(severity level, std::string message) {
-
     fMutex.lock();
+    monitoringLog(level, message);
+    fMutex.unlock();
+}
+
+/// Indexes a "daqlog" index document to elasticsearch
+void ElasticInterface::monitoringLog(severity level, std::string message) {
+
+    // Check for suppression
+    if (fLog_counter == 0) { 
+        fTimer_start = std::chrono::system_clock::now(); 
+        fLog_counter++;
+    } else if (fLog_counter < fMax_rate) {
+        fLog_counter++;
+    } else {
+        std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
+        int diff = std::chrono::duration_cast<std::chrono::milliseconds>(now-fTimer_start).count();
+        if (diff < 1000) {
+            fLog_counter++;
+            return;
+        } else if (fLog_counter > fMax_rate) {
+            int tempRate = fLog_counter;
+            fLog_counter = 0;
+            monitoringLog(WARNING, "ElasticInterface supressed a rate of: " + std::to_string(tempRate));
+        } else {
+            fLog_counter = 0;
+        }
+    }
 
     // Get time since epoch in ms
     long value_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -62,7 +86,8 @@ void ElasticInterface::log(severity level, std::string message) {
 
             // check response
             if (response.status_code != 201) { 
-                std::cout << "ElasticInterface::log Error: " << response.text << std::endl;
+                std::cout << "LOG (4): ElasticInterface::log Error: " << response.status_code << std::endl;
+                //std::cout << response.text << std::endl;
             }
 
         } catch(std::runtime_error& e) {
@@ -74,7 +99,14 @@ void ElasticInterface::log(severity level, std::string message) {
         file << Json::writeString(fBuilder, fLog_message) << "\n";
         file.close();
     }
+}
 
+void ElasticInterface::packet(int &run_num, int &pom_id, long &timestamp, 
+                              int &temperature, int &humidity,
+                              std::string &message, int * hits) {
+    
+    fMutex.lock();
+    monitoringPacket(run_num, pom_id, timestamp, temperature, humidity, message, hits);
     fMutex.unlock();
 }
 
@@ -82,8 +114,6 @@ void ElasticInterface::log(severity level, std::string message) {
 void ElasticInterface::monitoringPacket(int &run_num, int &pom_id, long &timestamp, 
                                         int &temperature, int &humidity, 
                                         std::string &message, int* hits) {
-
-    fMutex.lock();
 
     // Only send monitoring packet if the elasticsearch client is up
     if (fMode == ELASTIC) {
@@ -113,22 +143,25 @@ void ElasticInterface::monitoringPacket(int &run_num, int &pom_id, long &timesta
 
             // Check response
             if (response.status_code != 201) {
-                std::cout << "ElasticInterface::monitoringPacket: " << response.text << std::endl;
+                log(ERROR, "MonitoringPacket Error: " + std::to_string(response.status_code));
+                //std::cout << response.text << std::endl;
             }
 
         } catch(std::runtime_error& e) {
             initFile(e.what(), false);
         }
     }
+}
 
+void ElasticInterface::value(std::string &index, std::string &type, float &value) {
+    fMutex.lock();
+    monitoringValue(index, type, value);
     fMutex.unlock();
 }
 
 
 /// Indexes a document to elasticsearch of given type
-void ElasticInterface::monitoringValue(std::string index, std::string type, float value) {
-
-    fMutex.lock();      // lock mutex
+void ElasticInterface::monitoringValue(std::string &index, std::string &type, float &value) {
 
     // Only send monitoring packet if the elasticsearch client is up
     if (fMode == ELASTIC) {
@@ -151,15 +184,14 @@ void ElasticInterface::monitoringValue(std::string index, std::string type, floa
 
             // Check response
             if (response.status_code != 201) {
-                std::cout << "ElasticInterface::monitoringPacket: " << response.text << std::endl;
+                log(ERROR, "monitoringValue Error: " + std::to_string(response.status_code));
+                //std::cout << response.text << std::endl;
             }
 
         } catch(std::runtime_error& e) {
             initFile(e.what(), false);
         }
     }
-
-    fMutex.unlock();    // unlock mutex
 }
 
 /// Initialise file logging
