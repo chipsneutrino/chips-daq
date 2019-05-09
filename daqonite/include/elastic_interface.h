@@ -9,6 +9,7 @@
 #define ELASTIC_INTERFACE_H_
 
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <sys/types.h>
 #include <unistd.h>
@@ -27,7 +28,10 @@
 /// Enum for describing the different logging severity levels
 enum severity{TRACE, DEBUG, INFO, WARNING, ERROR, FATAL}; 
 
-/// Very simple log callback (only print message to stdout)
+/// Enum for describing the different logging modes
+enum log_mode{ELASTIC, FILE_LOG}; 
+
+/// Callback for elasticlient logs
 inline void elasticlient_callback(elasticlient::LogLevel logLevel, const std::string &msg) {
 	if (logLevel != elasticlient::LogLevel::DEBUG) {
 		std::cout << "LOG " << (unsigned) logLevel << ": " << msg << std::endl;
@@ -49,9 +53,9 @@ class ElasticInterface {
 		 * 
 		 * @param processName   name of the process
          * @param stdoutPrint   print logs to stdout
-         * @param clientLog     print client log message
+         * @param commsLog      print elasticlient log message
 		 */	
-        void init(std::string processName, bool stdoutPrint, bool clientLog);
+        void init(std::string processName, bool stdoutPrint, bool commsLog);
 
 		/**
 		 * Indexes a "daqlog" index document to elasticsearch
@@ -107,12 +111,28 @@ class ElasticInterface {
         void monitoringValue(std::string index, std::string type, float value);
 
     private:
+
+		/**
+		 * Initialise file logging
+		 * Opens a logging file and writes reason for switching
+         * 
+         * @param error         error that caused switch to file logging
+         * @param writeLog      write the current log to file
+		 */	
+        void initFile(std::string error, bool writeLog);
+
+		/**
+		 * Generate a filename for the .txt log file
+		 * Uses the current time for generation
+		 */	
+        void generateFilename();
+
         // Client
         elasticlient::Client fClient;       ///< The ElasticSearch client as provided by elasticlient library
+        log_mode fMode;                     ///< What logging mode are we in {ELASTIC, FILE_LOG}
+        std::string fFile_name;             ///< file name used when in FILE_LOG mode
 
         // Settings
-        std::string fProcess_name;          ///< Name of the process using this interface
-        pid_t fPid;                         ///< ID of the process using this interface
         bool fStdoutPrint;                  ///< Should we print logs to stdout?         
 
         // Messaging
