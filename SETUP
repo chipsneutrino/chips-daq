@@ -1,11 +1,45 @@
 ### General Bits and bobs ###
 $ sudo yum update
-$ sudo yum install epel-release krb5-workstation krb5-libs krb5-auth-dialog gcc gcc-c++ java-1.8.0-openjdk python-devel python-pip
+$ sudo yum install epel-release
+$ sudo yum install krb5-workstation krb5-libs krb5-auth-dialog gcc gcc-c++ java-1.8.0-openjdk python-devel python-pip
+$ sudo yum install cmake3 perl-core libtemplate-perl zlib-devel openssl-devel libssh2-devel libmicrohttpd-devel curl-devel gtest-devel
 $ sudo yum group install 'Development Tools'
+
+- Add the following to /etc/environment
+
+LC_ALL="en_US.UTF-8"
+LC_CTYPE="en_US.UTF-8"
+LANGUAGE="en_US.UTF-8"
+
+### Ports ###
+$ sudo firewall-cmd --permanent --add-port=56015/udp
+$ sudo firewall-cmd --permanent --add-port=56017/udp
+$ sudo firewall-cmd --permanent --add-port=5601/tcp
+$ sudo firewall-cmd --permanent --add-port=5900/tcp
+$ sudo firewall-cmd --reload
+
+### ROOT_5 ###
+$ wget https://root.cern.ch/download/root_v5.34.36.Linux-centos7-x86_64-gcc4.8.tar.gz
+$ tar xzvf root_v5.34.36.Linux-centos7-x86_64-gcc4.8.tar.gz
+
+### ROOT_6 ###
+$ wget https://root.cern.ch/download/root_v6.16.00.Linux-centos7-x86_64-gcc4.8.tar.gz
+$ tar xzvf root_v6.16.00.Linux-centos7-x86_64-gcc4.8.tar.gz
+
+### BOOST ###
+$ wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
+$ tar -xzf boost_1_*
+$ cd boost_1_*
+$ sudo ./bootstrap.sh
+$ sudo ./b2 install --with=all
+
+### VNC Server ###
+$ yum -y install tigervnc-server xorg-x11-fonts-Type1
+$ sudo vncpasswd
+$ vncserver -localhost -nolisten tcp -geometry 1280x1024 -rfbport 5900
 
 ### Elastic Stack ###
 - Follow https://computingforgeeks.com/how-to-install-elk-stack-on-centos-7-fedora-29/
-- Start the services without the .service on the end
 
 PUT daqlog
 {
@@ -66,38 +100,26 @@ PUT daqmon
   }
 }
 
-### ROOT ###
-$ wget https://root.cern.ch/download/root_v5.34.36.Linux-centos7-x86_64-gcc4.8.tar.gz
-$ tar xzvf root_v5.34.36.Linux-centos7-x86_64-gcc4.8.tar.gz
-$ . root/bin/thisroot.sh
-
-### BOOST ###
-$ wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
-$ tar -xzf boost_1_*
-$ cd boost_1_*
-$ sudo ./bootstrap.sh --prefix=/opt/boost
-$ sudo ./b2 install --prefix=/opt/boost --with=all
-- Add boost lib and include paths to MAKEFILE
-
 ### MetricBeat ###
-$ curl -L -O https://artifacts.elastic.co/downloads/beats/metricbeat/metricbeat-6.7.1-x86_64.rpm
-$ sudo rpm -vi metricbeat-6.7.1-x86_64.rpm
-- edit /etc/metricbeat/metricbeat.yml to configure elasticsearch and kibana
-$ sudo metricbeat modules enable system
-$ sudo metricbeat setup
-$ sudo service metricbeat start
+- Just follow the instructions given on Kibana
 
 ### Alerting (ElastAlert) ###
 $ sudo pip install "setuptools>=11.3"
 $ sudo pip install elastalert
 
 ### elasticclient ###
-$ sudo yum install perl-core libtemplate-perl zlib-devel openssl-devel libssh2-devel libmicrohttpd-devel curl-devel gtest-devel
-- Then just follow instructions on https://github.com/seznam/elasticlient
+- Just follow instructions on https://github.com/seznam/elasticlient installing external dependencies using git
 
 ### chips-daq code ###
-$ . root/bin/thisroot.sh
-$ LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/jtingey/elasticlient/build/lib/
-$ LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/boost/lib
+$ kinit
+$ git clone ssh://p-chips@cdcvs.fnal.gov/cvs/projects/chips-daq --branch monitoring_dev
 
-### Java Gui Usage ###
+- Put this in bash_profile and bashrc
+
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/daq/software/elasticlient/build/lib/
+export ROOTSYS=/home/daq/software/root_6
+export PATH=$ROOTSYS/bin:$PATH
+export LD_LIBRARY_PATH=$ROOTSYS/lib:$LD_LIBRARY_PATH
+export DYLD_LIBRARY_PATH=$ROOTSYS/lib:$DYLD_LIBRARY_PATH
+
+- Need to add -DBOOST_ERROR_CODE_HEADER_ONLY to cxxflags due to boost_system error

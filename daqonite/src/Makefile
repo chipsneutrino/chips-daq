@@ -1,10 +1,10 @@
-CC=g++
+CC=gcc
 
-INCDIRS = 		../../fh_message/include ../include /home/jtingey/root/include /opt/boost/include /home/jtingey/elasticlient/external/cpr/include /home/jtingey/elasticlient/include /home/jtingey/elasticlient/external/jsoncpp/include
-LIBDIRS = 		../../fh_message/src /opt/boost/lib /home/jtingey/elasticlient/build/lib
-LIBS = 			fh_message boost_system boost_chrono boost_program_options boost_thread elasticlient cpr jsoncpp
+INCDIRS = 		../../fh_message/include ../include /home/daq/software/root_6/include /home/daq/software/elasticlient/external/cpr/include /home/daq/software/elasticlient/include /home/daq/software/elasticlient/external/jsoncpp/include
+LIBDIRS = 		../../fh_message/src /home/daq/software/elasticlient/build/lib
+LIBS = 			fh_message boost_system boost_chrono boost_program_options boost_thread elasticlient cpr jsoncpp stdc++
 
-CXXFLAGS =		$(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0 -std=c++0x
+CXXFLAGS =		$(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0 -std=c++0x -DBOOST_ERROR_CODE_HEADER_ONLY 
 ROOTFLAGS = 	`root-config --cflags --glibs`
 
 OBJS =          monitoring_config.o monitoring_server.o data_handler.o clb_handler.o bbb_handler.o daq_handler.o packet_generator.o elastic_interface.o
