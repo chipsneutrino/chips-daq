@@ -9,6 +9,7 @@ ElasticInterface g_elastic; ///< Global instance of this class
 /// Create a ElasticInterface
 ElasticInterface::ElasticInterface() :
     fMode(ELASTIC), fLog_counter(0), fClient({CLIENT}){
+    fBuilder["commentStyle"] = "None";    
     fBuilder["indentation"] = "";   // If you want whitespace-less output
 }
 
@@ -129,7 +130,7 @@ void ElasticInterface::monitoringPacket(int &run_num, int &pom_id, long &timesta
         fMonitor_message["humidity"]    = humidity;     // planar optical module humidity
         fMonitor_message["message"]     = message;      // optional message
         for (int i=0; i<30; i++) { 
-            fMonitor_message["hits"][i] = hits[i];      // hits on each channel
+            fMonitor_message["hits"][std::to_string(i)] = hits[i];      // hits on each channel
         } 
 
         // Index message to Elasticsearch
@@ -140,8 +141,8 @@ void ElasticInterface::monitoringPacket(int &run_num, int &pom_id, long &timesta
 
             // Check response
             if (response.status_code != 201) {
-                log(ERROR, "MonitoringPacket Error: " + std::to_string(response.status_code));
-                //std::cout << response.text << std::endl;
+                monitoringLog(ERROR, "MonitoringPacket Error: " + std::to_string(response.status_code));
+                std::cout << response.text << std::endl;
             }
 
         } catch(std::runtime_error& e) {
@@ -181,7 +182,7 @@ void ElasticInterface::monitoringValue(std::string &index, std::string &type, fl
 
             // Check response
             if (response.status_code != 201) {
-                log(ERROR, "monitoringValue Error: " + std::to_string(response.status_code));
+                monitoringLog(ERROR, "monitoringValue Error: " + std::to_string(response.status_code));
                 //std::cout << response.text << std::endl;
             }
 

@@ -103,9 +103,16 @@ PUT daqmon
 ### MetricBeat ###
 - Just follow the instructions given on Kibana
 
+### HeartBeat ###
+$ curl -L -O https://artifacts.elastic.co/downloads/beats/heartbeat/heartbeat-7.0.1-x86_64.rpm
+$ sudo rpm -vi heartbeat-7.0.1-x86_64.rpm
+
 ### Alerting (ElastAlert) ###
+$ git clone https://github.com/Yelp/elastalert.git
 $ sudo pip install "setuptools>=11.3"
-$ sudo pip install elastalert
+$ sudo python setup.py install
+$ elastalert-create-index
+- need to add "timestamp_type: unix_ms" to all rules
 
 ### elasticclient ###
 - Just follow instructions on https://github.com/seznam/elasticlient installing external dependencies using git
