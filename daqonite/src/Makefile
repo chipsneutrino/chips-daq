@@ -7,7 +7,7 @@ LIBS = 			fh_message boost_system boost_chrono boost_program_options boost_threa
 CXXFLAGS =		$(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0 -std=c++0x -DBOOST_ERROR_CODE_HEADER_ONLY 
 ROOTFLAGS = 	`root-config --cflags --glibs`
 
-OBJS =          monitoring_config.o monitoring_server.o data_handler.o clb_handler.o bbb_handler.o daq_handler.o packet_generator.o elastic_interface.o
+OBJS =          daq_config.o monitoring_server.o data_handler.o clb_handler.o bbb_handler.o daq_handler.o packet_generator.o elastic_interface.o
 
 DAQ =        	daqonite
 COMMAND = 		daqommand

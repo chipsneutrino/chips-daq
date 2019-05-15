@@ -6,7 +6,7 @@
  */
 
 #include "packet_generator.h"
-#include "monitoring_config.h"
+#include "daq_config.h"
 
 namespace po = boost::program_options;
 
@@ -19,42 +19,26 @@ int main(int argc, char* argv[]) {
     g_elastic.init("daqulator", true, false, 5);  // We want log message to be printed to stdout
 
 	// Default settings
-	int daq_opt_pot = 56015;
-	int daq_mon_pot = 56017;
-	std::string daq_address = "localhost";
-	std::string configuration_filename("../data/config.opt");
+	int opt_port = 56015;
+	int mon_port = 56017;
+	std::string address = "localhost";
+	std::string config_file("../data/config.opt");
 	unsigned int hit_rate = 1; // kHz
 	unsigned int deltaTS = 100;
 	unsigned int MTU = 9600;
-	unsigned int run_number = 1;
+	unsigned int run_num = 1;
 
 	po::options_description desc("Options");
 	desc.add_options()
-		("help,h", "Print this help and exit.")
-		("optport,o",
-			po::value<int>(&daq_opt_pot)->default_value(daq_opt_pot),
-			"Set the port to send optical data trough.")
-		("monport,m",
-			po::value<int>(&daq_mon_pot)->default_value(daq_mon_pot),
-			"Set the port to send monitoring data trough.")
-		("address,a",
-			po::value<std::string>(&daq_address)->default_value(daq_address),
-			"Set the IP address to send data to.")
-		("timeslice,t",
-			po::value<unsigned int>(&deltaTS)->default_value(deltaTS),
-			"Set the value of the time slice duration in milliseconds.")
-		("hitrate,r",
-			po::value<unsigned int>(&hit_rate)->default_value(hit_rate),
-			"Set the desired hit rate in kHz.")
-		("runnnumber,n",
-			po::value<unsigned int>(&run_number)->default_value(run_number),
-			"Set the run number.")
-		("mtu,m",
-			po::value<unsigned int>(&MTU)->default_value(MTU),
-			"Set the Maximum Transfer Unit (MTU), i.e. the maximum UDP packet size.")
-		("conf,c",
-			po::value<std::string>(&configuration_filename)->default_value(configuration_filename),
-			"Provide a config file");
+		("help,h", "DAQulator help...")
+		("optport,o", po::value<int>(&opt_port)->default_value(opt_port), "Optical port")
+		("monport,m", po::value<int>(&mon_port)->default_value(mon_port), "Monitoring port")
+		("address,a", po::value<std::string>(&address)->default_value(address), "SDAQ address")
+		("timeslice,t", po::value<unsigned int>(&deltaTS)->default_value(deltaTS), "Time slice duration (ms)")
+		("hitrate,r", po::value<unsigned int>(&hit_rate)->default_value(hit_rate), "Hit rate (KHz)")
+		("runnum,n", po::value<unsigned int>(&run_num)->default_value(run_num), "Run number")
+		("mtu,m", po::value<unsigned int>(&MTU)->default_value(MTU), "Maximum transfer unit size")
+		("config,c", po::value<std::string>(&config_file)->default_value(config_file), "Config file");
 
 	try {
 		po::variables_map vm;
@@ -71,34 +55,36 @@ int main(int argc, char* argv[]) {
 	} catch (const po::error& e) { throw std::runtime_error("DAQulator: Argument error"); 
 	} catch (const std::runtime_error& e) { throw std::runtime_error("DAQulator: Argument error"); }
 
-	MonitoringConfig config(configuration_filename.c_str());
+	DAQConfig config(config_file.c_str());
 	POMRange_t range = config.getCLBeIDs();
 	unsigned int num_clbs = range.size();
+
+	config.printConfig();
 
 	if (range.empty()) { throw std::runtime_error("DAQulator: Found no POMS in file"); }
 
     // Log the setup to elasticsearch
-    std::string setup = "Packet Generators Start (" + daq_address + ",";
-	setup += std::to_string(daq_opt_pot) + ",";
-	setup += std::to_string(daq_mon_pot) + ",";
+    std::string setup = "Packet Generators Start (" + address + ",";
+	setup += std::to_string(opt_port) + ",";
+	setup += std::to_string(mon_port) + ",";
 	setup += std::to_string(deltaTS) + ",";
 	setup += std::to_string(MTU) + ",";
-	setup += std::to_string(run_number) + ",";
+	setup += std::to_string(run_num) + ",";
 	setup += std::to_string(hit_rate) + ",";
-	setup += configuration_filename + ")"; 
+	setup += config_file + ")"; 
     g_elastic.log(INFO, setup);
 
 	// Create optical packet generator
 	raw_data_t opt_data;
-	PacketGenerator opt_generator(range, deltaTS, run_number, MTU, hit_rate, opt_data, ttdc);
+	PacketGenerator opt_generator(range, deltaTS, run_num, MTU, hit_rate, opt_data, ttdc);
 
 	// Create moitoring packet generator
 	raw_data_t mon_data;
-	PacketGenerator mon_generator(range, deltaTS, run_number, MTU, hit_rate, mon_data, tmch);
+	PacketGenerator mon_generator(range, deltaTS, run_num, MTU, hit_rate, mon_data, tmch);
 
 	// Start the two generators on seperate threads
-    boost::thread optThread(generatorLoop, &opt_generator, &opt_data, daq_address, daq_opt_pot, num_clbs, ttdc);
-	boost::thread monThread(generatorLoop, &mon_generator, &mon_data, daq_address, daq_mon_pot, num_clbs, tmch);
+    boost::thread optThread(generatorLoop, &opt_generator, &opt_data, address, opt_port, num_clbs, ttdc);
+	boost::thread monThread(generatorLoop, &mon_generator, &mon_data, address, mon_port, num_clbs, tmch);
 
     optThread.join();
 	monThread.join();
