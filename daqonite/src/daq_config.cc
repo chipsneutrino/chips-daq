@@ -38,6 +38,16 @@ void DAQConfig::printConfig() {
 	std::cout << "**********************************************\n" << std::endl;
 }
 
+/// Print a short summary of the DAQConfig
+void DAQConfig::printShortConfig() {
+	std::cout << "\n***************** DAQ Config *****************" << std::endl;
+	std::cout << "Mining Plan -> " << fConf_name << std::endl;
+	std::cout << "Number of Miners -> " << fNum_clbs << std::endl;
+	std::cout << "Number of Miners on Shift -> " << fEnabled_clbs << std::endl;
+	std::cout << "Number of Pickaxes being used -> " << fEnabled_channels << std::endl;
+	std::cout << "**********************************************\n" << std::endl;
+}
+
 /// Read the configuration text file specified by fConf_name
 void DAQConfig::loadConfig() {
 

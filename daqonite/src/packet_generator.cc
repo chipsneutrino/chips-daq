@@ -12,113 +12,206 @@ void swap_endianness(CLBCommonHeader& header) {
 	inplaceEndianSwap32(header.Timestamp.Tics);
 }
 
-PacketGenerator::PacketGenerator(
-	const POMRange_t& pom_range,
-	unsigned int time_slice_duration,
-	unsigned int run_number,
-	unsigned int MTU,
-	unsigned int hitR,
-	raw_data_t& target,
-	unsigned int type) :
-	m_type(type),
-	m_delta_ts(time_slice_duration),
-	m_selected((srand(time(0)), rand() % pom_range.size())) {
+PacketGenerator::PacketGenerator(std::string config_file, std::string dataFile,
+								 std::string address, int time_slice_duration,
+								 int runNum, int MTU, int hitR) :
+								 fConfig(config_file.c_str()),
+								 fSock_clb_opt(fIO_service, boost::asio::ip::udp::udp::v4()),
+								 fSock_clb_mon(fIO_service, boost::asio::ip::udp::udp::v4()),
+								 fDelta_ts(time_slice_duration*1000),
+								 fHit_dist(hitR*time_slice_duration, (hitR*time_slice_duration)/10),
+								 fTemperature_dist(3000,500),
+								 fHumidity_dist(5000,500) {
 
-	// Set up the CLB packet headers
-	m_headers.reserve(pom_range.size());
-	for (unsigned int i = 0; i < pom_range.size(); i++) {
-		CLBCommonHeader header;
-		header.RunNumber = htonl(run_number);
-		header.DataType = htonl(m_type);
-		header.UDPSequenceNumber = 0;
-		header.Timestamp.Sec = time(0);
-		header.Timestamp.Tics = 0;
-		header.POMIdentifier = htonl(pom_range[i]);
-		header.POMStatus1 = 128;
-		header.POMStatus2 = 0;
-		header.POMStatus3 = 0;
-		header.POMStatus4 = 0;
-		m_headers.push_back(header);
+	// Print the configuration
+	fConfig.printShortConfig();
+	
+	// Set up the CLB optical output
+	boost::asio::ip::udp::udp::resolver resolver_clb_opt(fIO_service);
+	boost::asio::ip::udp::udp::resolver::query query_clb_opt(boost::asio::ip::udp::udp::v4(), address,
+													 		 boost::lexical_cast<std::string>(56015));
+	fCLB_opt_endpoint = *resolver_clb_opt.resolve(query_clb_opt);
+
+	// Set up the CLB monitoring output
+	boost::asio::ip::udp::udp::resolver resolver_clb_mon(fIO_service);
+	boost::asio::ip::udp::udp::resolver::query query_clb_mon(boost::asio::ip::udp::udp::v4(), address,
+													 		 boost::lexical_cast<std::string>(56017));
+	fCLB_mon_endpoint = *resolver_clb_mon.resolve(query_clb_mon);
+
+	// Setup the generation vectors
+	fCLB_opt_headers.reserve(fConfig.fNum_clbs);
+	fCLB_mon_headers.reserve(fConfig.fNum_clbs);
+	fWindow_hits.reserve(fConfig.fNum_clbs);
+
+	for (int i = 0; i<fConfig.fNum_clbs; i++) {
+		// Optical packet headers
+		CLBCommonHeader header_opt;
+		header_opt.RunNumber = htonl(runNum);
+		header_opt.DataType = htonl(ttdc);
+		header_opt.UDPSequenceNumber = htonl(0);
+		header_opt.Timestamp.Sec = htonl(time(0));
+		header_opt.Timestamp.Tics = htonl(0);
+		header_opt.POMIdentifier = htonl(fConfig.fCLB_eids[i]);
+		header_opt.POMStatus1 = htonl(0);
+		header_opt.POMStatus2 = htonl(0);
+		header_opt.POMStatus3 = htonl(0);
+		header_opt.POMStatus4 = htonl(0);
+		fCLB_opt_headers.push_back(header_opt);
+
+		// Monitoring packet headers
+		CLBCommonHeader header_mon;
+		header_mon.RunNumber = htonl(runNum);
+		header_mon.DataType = htonl(tmch);
+		header_mon.UDPSequenceNumber = htonl(0);
+		header_mon.Timestamp.Sec = htonl(time(0));
+		header_mon.Timestamp.Tics = htonl(0);
+		header_mon.POMIdentifier = htonl(fConfig.fCLB_eids[i]);
+		header_mon.POMStatus1 = htonl(0);
+		header_mon.POMStatus2 = htonl(0);
+		header_mon.POMStatus3 = htonl(0);
+		header_mon.POMStatus4 = htonl(0);
+		fCLB_mon_headers.push_back(header_mon);
+
+		// Window hits
+		std::array<int,31> temp;
+		fWindow_hits.push_back(temp);
 	}
 
-	if (m_type == ttdc) {
-		// max seqnumber  = NPMT * kHz  * Bytes/Hit *   ms TS duration    / (MTU - size of CLB Common Header)
-		m_max_seqnumber =  31  * hitR * sizeof(hit_t) * time_slice_duration / (MTU - sizeof(CLBCommonHeader)) + 1;
-		m_payload_size = sizeof(hit_t) * ((MTU - sizeof(CLBCommonHeader)) / sizeof(hit_t));
-	} else if (m_type == tmch) {
-		m_max_seqnumber = 0;
-		m_payload_size = (sizeof(int)*31) + sizeof(SCData);
-		m_mon_data.pad = htonl(0);
-		m_mon_data.valid = htonl(0);
-	}
+	// Setup generator variables
+    fMax_packet_hits = (MTU - sizeof(CLBCommonHeader)) / sizeof(hit_t);
+	fMax_payload_size = sizeof(hit_t) * ((MTU - sizeof(CLBCommonHeader)) / sizeof(hit_t));
+	fMax_seqnumber =  30  * hitR * sizeof(hit_t) * time_slice_duration / (MTU - sizeof(CLBCommonHeader)) + 1;
 
-	m_tv.tv_sec  = 0;
-	m_tv.tv_usec = 0;
-	target.resize(sizeof(CLBCommonHeader) + m_payload_size);
+	std::cout << "Max_packet_hits: " << fMax_packet_hits << std::endl;
+	std::cout << "Max_payload_size: " << fMax_payload_size << std::endl;
+	std::cout << "Max_seqnumber: " << fMax_seqnumber << std::endl << std::endl;
+
+	// Setup the size of the packets
+	fCLB_opt_data.resize(sizeof(CLBCommonHeader) + fMax_payload_size);;
+	fCLB_mon_data.resize(sizeof(CLBCommonHeader) + (sizeof(int)*31) + sizeof(SCData));
+
+	// Setup the monitoring data
+	AHRSData ahrs;
+	ahrs.yaw = htonl(0.0);    		// Yaw in deg (Float)
+	ahrs.pitch = htonl(0.0);  		// Pitch in deg (Float)
+	ahrs.roll = htonl(0.0);   		// Roll in deg (Float)
+	ahrs.ax = htonl(0.0);    	 	// Ax in g (Float)
+	ahrs.ay = htonl(0.0);     		// Ay in g (Float)
+	ahrs.az = htonl(0.0);    	 	// Az in g (Float)
+	ahrs.gx = htonl(0.0);     		// Gx in deg/sec (Float)
+	ahrs.gy = htonl(0.0);     		// Gy in deg/sec (Float)
+	ahrs.gz = htonl(0.0);     		// Gz in deg/sec (Float)
+	ahrs.hx = htonl(0.0);     		// Hx in gauss (Float)
+	ahrs.hy = htonl(0.0);     		// Hy in gauss (Float)
+	ahrs.hz = htonl(0.0);     		// Hz in gauss (Float)
+
+	fMon_data.pad = htonl(0);
+	fMon_data.valid = htonl(0);
+	fMon_data.ahrs = ahrs;
+	fMon_data.temp = htons(0);		// Temperature in 100th of degrees
+	fMon_data.humidity = htonl(0);  // Humidity in 100th RH
 
     // Log the setup to elasticsearch
-    std::string setup = "Packet Generator (" + std::to_string(m_max_seqnumber) + ",";
-	setup += std::to_string(m_payload_size) + ",";
-	setup += std::to_string(m_type) + ")";
-    g_elastic.log(INFO, setup);
+    g_elastic.log(INFO, "Packet Generator Start");
+
+	// Start generation
+	// Should do the timing differently use boost timers on this thread
+	// And then have another thread that goes away and does the work
+	while(1) { 
+		generatePackets(); 
+		//long value_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+		//	std::chrono::time_point_cast<std::chrono::milliseconds>(
+		//		std::chrono::high_resolution_clock::now()).time_since_epoch()).count();
+		//std::cout << value_ms << std::endl;
+	}	
 }
 
-void PacketGenerator::getNext(raw_data_t& target) {
-	++m_selected;
-	m_selected %= m_headers.size();
+void PacketGenerator::generatePackets() {
 
-	CLBCommonHeader& common_header = m_headers[m_selected];
-	common_header.UDPSequenceNumber = common_header.UDPSequenceNumber + 1;
+	// Get the generation start time
+	std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
 
-	if (common_header.UDPSequenceNumber == m_max_seqnumber) {
-		common_header.POMStatus2 = 128;
-		target.resize(sizeof(common_header));
-	} else if (common_header.UDPSequenceNumber == m_max_seqnumber + 1) {
-		// Removed check that the last packet was trailer if (isTrailer(common_header))
-		common_header.UDPSequenceNumber = 0;
-		common_header.POMStatus2 = 0;
-		common_header.Timestamp.Tics += 62500 * m_delta_ts;
-		if (common_header.Timestamp.Tics >= 62500000) {
-			++common_header.Timestamp.Sec;
-			common_header.Timestamp.Tics = 0;
+	// First we send all the optical packets from the CLBs
+	// We send all sequenceNumber=0 then all sequenceNumber=1 etc...
+	// Then we send the monitoring packets for each
+
+	// Generate the number of hits on each channel will have this window
+	for (int clb=0; clb<1; clb++) { 
+		for (int channel=0; channel<30; channel++) {
+			fWindow_hits[clb][channel] = (int)fHit_dist(fGenerator); 
 		}
-		target.resize(sizeof(CLBCommonHeader) + m_payload_size);
+		fWindow_hits[clb][30] = 0; 
 	}
 
-	// Copy the header to the data to send in the packet and swap the endianness
-	memcpy(target.data(), &common_header, sizeof(CLBCommonHeader));
-	swap_endianness(
-		*static_cast<CLBCommonHeader*>(
-			static_cast<void*>(
-				target.data()
-			)
-		)
-	);
+	// Send the optical packets
+	int seqNum = 0;
+	do {
+		for (int clb=0; clb<1; clb++) {
+			CLBCommonHeader& common_header = fCLB_opt_headers[clb];
 
-	if (m_type == tmch) {
-		for (int i=0; i<31; i++) m_mon_hits[i] = htonl(rand() % 10000);
-		m_mon_data.temp = (uint16_t)(rand() % 50);
-		m_mon_data.humidity = (uint16_t)(rand() % 50);
-		memcpy(target.data() + sizeof(CLBCommonHeader), &m_mon_hits, (sizeof(int)*31));
-		memcpy(target.data() + sizeof(CLBCommonHeader) + (sizeof(int)*31), &m_mon_data, sizeof(SCData));
-	}
+			if (ntohl(common_header.UDPSequenceNumber) == (unsigned)fMax_seqnumber) {
+				// Make a trailer packet
+				common_header.POMStatus2 = htonl(128);
+				fCLB_opt_data.resize(sizeof(common_header));
+			} else if (ntohl(common_header.UDPSequenceNumber) == (unsigned)fMax_seqnumber + 1) {
+				// Reset the header to a normal optical packet and update the timestamp
+				common_header.UDPSequenceNumber = htonl(0);
+				common_header.POMStatus2 = htonl(0);
+				int tics = ntohl(common_header.Timestamp.Tics) + 62500*(fDelta_ts/1000);
+				common_header.Timestamp.Tics = htonl(tics);
+				if (tics >= 62500000) {
+					int secs = ntohl(common_header.Timestamp.Sec) + 1;
+					common_header.Timestamp.Sec = htonl(secs);
+					common_header.Timestamp.Tics = htonl(0);
+				}
+				fCLB_opt_data.resize(sizeof(CLBCommonHeader) + fMax_payload_size);	
+				continue;			
+			}
 
-	// This delays the packets till the next window
-	if (common_header.UDPSequenceNumber == 0 && m_selected == 0) {
-		int sleep_time = m_delta_ts * 1000;
+			// Copy the header to the data to send in the packet and swap the endianness
+			memcpy(fCLB_opt_data.data(), &common_header, sizeof(CLBCommonHeader));
+			swap_endianness(*static_cast<CLBCommonHeader*>(static_cast<void*>(fCLB_opt_data.data())));
 
-		if (m_tv.tv_sec) {
-		timeval tv;
-		gettimeofday(&tv, 0);
-		sleep_time -=
-			(tv.tv_sec - m_tv.tv_sec) * 1000000
-			+ (tv.tv_usec - m_tv.tv_usec);
+			// Send the optical packet
+			fSock_clb_opt.send_to(boost::asio::buffer(fCLB_opt_data), fCLB_opt_endpoint);
+			//std::cout << common_header << std::endl;
+
+			// Increment the sequence number for this CLB
+			int num = ntohl(common_header.UDPSequenceNumber);
+			common_header.UDPSequenceNumber = htonl(num + 1);
 		}
 
-		if (sleep_time > 0) {
-		usleep(sleep_time);
+		// Increment the sequence number we now send
+		seqNum++;
+
+	} while (seqNum < (fMax_seqnumber+1));
+
+	// Send the monitoring packets
+	for (int clb=0; clb<1; clb++) {
+		fMon_data.temp = htons((short)fTemperature_dist(fGenerator)); 
+		fMon_data.humidity = htons((short)fHumidity_dist(fGenerator));
+
+		// Update the time in the header
+		CLBCommonHeader& common_header = fCLB_mon_headers[clb];
+		int tics = ntohl(common_header.Timestamp.Tics) + 62500*(fDelta_ts/1000);
+		common_header.Timestamp.Tics = htonl(tics);
+		if (tics >= 62500000) {
+			int secs = ntohl(common_header.Timestamp.Sec) + 1;
+			common_header.Timestamp.Sec = htonl(secs);
+			common_header.Timestamp.Tics = htonl(0);
 		}
 
-		gettimeofday(&m_tv, 0);
+		memcpy(fCLB_mon_data.data(), &common_header, sizeof(CLBCommonHeader));
+		memcpy(fCLB_mon_data.data() + sizeof(CLBCommonHeader), &fWindow_hits[clb], (sizeof(int)*31));
+		memcpy(fCLB_mon_data.data() + sizeof(CLBCommonHeader) + (sizeof(int)*31), &fMon_data, sizeof(SCData));
+
+		// Send the monitoring packet
+		fSock_clb_mon.send_to(boost::asio::buffer(fCLB_mon_data), fCLB_mon_endpoint);
+		//std::cout << common_header << std::endl;
 	}
+
+	// Get the generation end time and then sleep till the end of the window
+    std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
+    int diff = std::chrono::duration_cast<std::chrono::microseconds>(end-start).count();
+	usleep(fDelta_ts-diff);
 }

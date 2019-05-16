@@ -14,6 +14,7 @@
 #include "clb_header_structs.h"
 #include "clb_data_structs.h"
 #include "elastic_interface.h"
+#include "daq_config.h"
 
 #include <unistd.h>
 #include <string>
@@ -25,6 +26,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <random>
+#include <chrono>
 
 #include <boost/asio.hpp>
 #include <boost/lexical_cast.hpp>
@@ -34,35 +36,48 @@
 typedef std::vector<unsigned int> POMRange_t;
 typedef std::vector<char> raw_data_t;
 
-#define cool_print(a) { std::cout << #a" = " << a << std::endl; }
-
 class PacketGenerator{
 	public:
-		PacketGenerator(
-			const POMRange_t& dom_range,
-			unsigned int time_slice_duration,
-			unsigned int run_number,
-			unsigned int MTU,
-			unsigned int hitR,
-			raw_data_t& target,
-			unsigned int type
-		);
-
-		void getNext(raw_data_t& opt_target);
+		PacketGenerator(std::string config_file, 
+						std::string dataFile,
+						std::string address,
+						int time_slice_duration,
+						int runNum,
+						int MTU,
+						int hitR);
 
 	private:
-		unsigned int m_type;
-		unsigned int m_max_seqnumber;
-		unsigned int m_delta_ts;
-		unsigned int m_payload_size;
-		unsigned int m_selected;
-		timeval m_tv;
-		std::vector<CLBCommonHeader> m_headers;
 
-		// Hit data
+		void generatePackets();
 
-		// Monitoring data
-		unsigned int m_mon_hits[32];
-		SCData m_mon_data;
+		// Config
+		DAQConfig fConfig;
+
+		// Output
+		boost::asio::io_service fIO_service;
+		boost::asio::ip::udp::socket fSock_clb_opt;
+		boost::asio::ip::udp::socket fSock_clb_mon;
+		boost::asio::ip::udp::udp::endpoint fCLB_opt_endpoint;
+		boost::asio::ip::udp::udp::endpoint fCLB_mon_endpoint;
+
+		// Data Packets
+		raw_data_t fCLB_opt_data;
+		raw_data_t fCLB_mon_data;
+
+		// Generator Variables
+		int fDelta_ts;
+		int fMax_packet_hits;
+		int fMax_payload_size;
+		int fMax_seqnumber;
+		std::vector<CLBCommonHeader> fCLB_opt_headers;
+		std::vector<CLBCommonHeader> fCLB_mon_headers;
+		SCData fMon_data;
+		std::vector< std::array<int,31> > fWindow_hits;
+
+		// Generator distributions
+		std::default_random_engine fGenerator;
+		std::normal_distribution<float> fHit_dist;
+		std::normal_distribution<float> fTemperature_dist;
+		std::normal_distribution<float> fHumidity_dist;
 };
 #endif

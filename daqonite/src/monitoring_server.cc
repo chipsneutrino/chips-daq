@@ -101,6 +101,7 @@ void MonitoringServer::workCLBSocket() {
 
 void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, std::size_t size) {
 	if (!error) {
+
         // Shall we skip this packet?
         if (((float)rand()/RAND_MAX)>fCLB_frac) {
 			workCLBSocket();
@@ -125,15 +126,15 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
 			return;
         }
 
-		fCLB_run_num = (int)header.runNumber();
-		fCLB_pom_id = (int)header.pomIdentifier();
-		fCLB_timestamp =(long)header.timeStamp().inMilliSeconds();
+		fCLB_run_num = header.runNumber();
+		fCLB_pom_id = header.pomIdentifier();
+		fCLB_timestamp = header.timeStamp().inMilliSeconds();
 
 		// Get the monitoring hits data
 		for (int i = 0; i < 30; ++i) {
 			const uint32_t * const field = static_cast<const uint32_t* const >
 									(static_cast<const void* const >(&fCLB_buffer[0] + sizeof(CLBCommonHeader) + i * 4));
-			fCLB_hits[i] = (int)htonl(*field);
+			fCLB_hits[i] = *field;
 		}
 
 		// Get the other monitoring info by casting into the SCData struct
@@ -141,8 +142,8 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
 						static_cast<const SCData* const > (static_cast<const void* const > (&fCLB_buffer[0]
 								+ clb_minimum_size));
 
-		fCLB_temperature = (int)((uint16_t)ntohs(scData->temp) / (uint16_t)100.0);
-		fCLB_humidity = (int)((uint16_t)ntohs(scData->humidity) / (uint16_t)100.0);
+		fCLB_temperature = (int)(ntohs(scData->temp)/100.0);
+		fCLB_humidity = (int)(ntohs(scData->humidity)/100.0);
 
 		// If we are saving to ROOT file, fill the TTree
 		if (fSave_file && fCLB_tree!=NULL) { fCLB_tree->Fill(); }

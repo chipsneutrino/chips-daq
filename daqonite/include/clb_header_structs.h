@@ -75,12 +75,12 @@ inline std::ostream& operator <<(std::ostream& stream, const CLBCommonHeader& he
 	return stream <<  "DataType:          " << header.dataType()          << '\n'
 					<<  "RunNumber:         " << header.runNumber()         << '\n'
 					<<  "UDPSequenceNumber: " << header.udpSequenceNumber() << '\n'
-					<<  "Timestamp:       \n" << header.timeStamp()         << '\n'
+					<<  header.timeStamp()         << '\n'
 					<<  "POMIdentifier:     " << header.pomIdentifier()     << '\n'
 					<<  "POMStatus1:        " << header.pomStatus(1)        << '\n'
 					<<  "POMStatus2:        " << header.pomStatus(2)        << '\n'
 					<<  "POMStatus3:        " << header.pomStatus(3)        << '\n'
-					<<  "POMStatus4:        " << header.pomStatus(4);
+					<<  "POMStatus4:        " << header.pomStatus(4)				<< '\n';
 }
 
 inline std::pair<int, std::string> getType(CLBCommonHeader const& header) {

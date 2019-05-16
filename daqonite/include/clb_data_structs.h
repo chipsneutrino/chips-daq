@@ -149,8 +149,8 @@ struct UTCTime {
 
 /// << print operator for the CLB time structure
 inline std::ostream& operator <<(std::ostream& stream, const UTCTime& t) {
-	return stream << "Seconds: " << t.sec() << '\n'
-					<< "Tics:    " << t.tics();
+	return stream << "Seconds:           " << t.sec() << '\n'
+				  << "Tics:              " << t.tics();
 }
 
 /// Struct for human readable time from UTCTime
