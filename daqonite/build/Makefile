@@ -32,7 +32,15 @@ CXXFLAGS  = $(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0 -std=$(CPP_STANDARD
 ROOTFLAGS = `root-config --cflags --glibs`
 
 # Objects
-OBJS      = monitoring_config.o monitoring_server.o data_handler.o clb_handler.o bbb_handler.o daq_handler.o packet_generator.o elastic_interface.o
+OBJS     += monitoring_config.o
+OBJS     += monitoring_server.o
+OBJS     += data_handler.o
+OBJS     += clb_handler.o
+OBJS     += bbb_handler.o
+OBJS     += daq_handler.o
+OBJS     += packet_generator.o
+OBJS     += elastic_interface.o
+OBJS     += merge_sorter.o
 
 DAQ       = daqonite
 COMMAND   = daqommand

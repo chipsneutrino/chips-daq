@@ -9,6 +9,8 @@
 #define CLB_EVENT_H
 
 #include <cstdint>
+#include <vector>
+#include <unordered_map>
 
 struct CLBEvent {
     std::uint32_t  	PomId;			///< Header POM ID (4 bytes)
@@ -24,6 +26,14 @@ struct CLBEvent {
         return SortKey < other.SortKey;
     }
 
+};
+
+class CLBEventQueue : public std::vector<CLBEvent> {
+};
+
+class CLBEventMultiQueue : public std::unordered_map<std::uint32_t, CLBEventQueue> {
+public:
+    //pmt_event_queue& get_queue_for_writing(std::uint32_t pom_id);
 };
 
 #endif /* CLB_EVENT_H */
