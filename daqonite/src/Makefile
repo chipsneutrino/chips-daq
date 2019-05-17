@@ -1,20 +1,27 @@
 CC = g++
 
+# These are just default values for Josh.
+# Setting them in env. variables will override them.
+ELASTICLIENT_PATH ?= /home/jtingey/elasticlient
+BOOST_PATH        ?= /opt/boost
+ROOT_PATH         ?= /home/jtingey/root
+CPP_STANDARD      ?= c++0x
+
 INCDIRS  += ../../fh_message/include
 INCDIRS  += ../include
-INCDIRS  += /home/jtingey/root/include
-INCDIRS  += /opt/boost/include
-INCDIRS  += /home/jtingey/elasticlient/external/cpr/include
-INCDIRS  += /home/jtingey/elasticlient/include
-INCDIRS  += /home/jtingey/elasticlient/external/jsoncpp/include
+INCDIRS  += $(ROOT_PATH)/include
+INCDIRS  += $(BOOST_PATH)/include
+INCDIRS  += $(ELASTICLIENT_PATH)/external/cpr/include
+INCDIRS  += $(ELASTICLIENT_PATH)/external/jsoncpp/include
+INCDIRS  += $(ELASTICLIENT_PATH)/include
 
 LIBDIRS  += ../../fh_message/src
-LIBDIRS  += /opt/boost/lib
-LIBDIRS  += /home/jtingey/elasticlient/build/lib
+LIBDIRS  += $(BOOST_PATH)/lib
+LIBDIRS  += $(ELASTICLIENT_PATH)/build/lib
 
 LIBS      = fh_message boost_system boost_chrono boost_program_options boost_thread elasticlient cpr jsoncpp
 
-CXXFLAGS  = $(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0 -std=c++0x
+CXXFLAGS  = $(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0 -std=$(CPP_STANDARD)
 ROOTFLAGS = `root-config --cflags --glibs`
 
 OBJS      = monitoring_config.o monitoring_server.o data_handler.o clb_handler.o bbb_handler.o daq_handler.o packet_generator.o elastic_interface.o
