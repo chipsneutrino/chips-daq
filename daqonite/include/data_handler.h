@@ -44,9 +44,6 @@ class DataHandler {
 		 */
         void stopRun();
 
-        /// Fill the optical CLB TTree
-        void fillOptCLBTree();
-
         /// Fill the monitoring CLB TTree
         void fillMonCLBTree();
 
@@ -90,6 +87,8 @@ class DataHandler {
 		uint32_t 	fTimestamp_s_opt_clb;	///< Opt CLB: Header timestamp (4 bytes)
 		uint32_t 	fTimestamp_ns_opt_clb;	///< Opt CLB: Hit timestamp (4 bytes)
 		int8_t 		fTot_opt_clb;			///< Opt CLB: Hit TOT value (1 bytes)
+
+        MergeSorter fMerge_sorter;
 
         /**
 		 * Finds the run number of the given run type from file

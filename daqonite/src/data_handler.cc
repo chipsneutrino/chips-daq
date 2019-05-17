@@ -6,6 +6,7 @@
 
 DataHandler::DataHandler(bool collect_clb_data, bool collect_bbb_data) :
 								   fCLB_events(),
+								   fMerge_sorter(),
                                    fCollect_clb_data(collect_clb_data),
                                    fCollect_bbb_data(collect_bbb_data) {
 
@@ -58,6 +59,37 @@ void DataHandler::startRun(int run_type) {
 }
 
 void DataHandler::stopRun() {
+	{
+		// Calculate complete timestamps & pre-sort
+		for (auto& key_value : fCLB_events) {
+			CLBEventQueue& queue = key_value.second;
+
+			// Calculate sort keys
+			for (CLBEvent& event : queue) {
+				// TODO: vectorize?
+				event.SortKey = event.Timestamp_s + 1e-9 * event.Timestamp_ns;
+			}
+
+			// TODO: use O(N_swaps) sort here
+			std::sort(queue.begin(), queue.end());
+		}
+
+		// Merge-sort CLB events.
+		CLBEventQueue merged_events{};
+		fMerge_sorter.merge(fCLB_events, merged_events);
+		fCLB_events.clear();
+
+		// Write sorted events out to TTree.
+		for (const CLBEvent& event : merged_events) {
+			fPomId_opt_clb = event.PomId;
+			fChannel_opt_clb = event.Channel;
+			fTimestamp_s_opt_clb = event.Timestamp_s;
+			fTimestamp_ns_opt_clb = event.Timestamp_ns;
+			fTot_opt_clb = event.Tot;
+			fOpt_tree_clb->Fill();
+		}
+	}
+
     // Write the TTree's to the output file
     if (fCollect_clb_data && fOpt_tree_clb != NULL && fMon_tree_clb != NULL) {
         fOpt_tree_clb->Write();
@@ -85,11 +117,6 @@ void DataHandler::stopRun() {
     fRun_type = -1;
 	fRun_num = -1;
     fFile_name = "";
-}
-
-void DataHandler::fillOptCLBTree() {
-    // Need mutex lock/unlock
-    fOpt_tree_clb->Fill();
 }
 
 void DataHandler::fillMonCLBTree() {
