@@ -1,24 +1,34 @@
-CC=g++
+CC = g++
 
-INCDIRS = 		../../fh_message/include ../include /home/jtingey/root/include /opt/boost/include /home/jtingey/elasticlient/external/cpr/include /home/jtingey/elasticlient/include /home/jtingey/elasticlient/external/jsoncpp/include
-LIBDIRS = 		../../fh_message/src /opt/boost/lib /home/jtingey/elasticlient/build/lib
-LIBS = 			fh_message boost_system boost_chrono boost_program_options boost_thread elasticlient cpr jsoncpp
+INCDIRS  += ../../fh_message/include
+INCDIRS  += ../include
+INCDIRS  += /home/jtingey/root/include
+INCDIRS  += /opt/boost/include
+INCDIRS  += /home/jtingey/elasticlient/external/cpr/include
+INCDIRS  += /home/jtingey/elasticlient/include
+INCDIRS  += /home/jtingey/elasticlient/external/jsoncpp/include
 
-CXXFLAGS =		$(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0 -std=c++0x
-ROOTFLAGS = 	`root-config --cflags --glibs`
+LIBDIRS  += ../../fh_message/src
+LIBDIRS  += /opt/boost/lib
+LIBDIRS  += /home/jtingey/elasticlient/build/lib
 
-OBJS =          monitoring_config.o monitoring_server.o data_handler.o clb_handler.o bbb_handler.o daq_handler.o packet_generator.o elastic_interface.o
+LIBS      = fh_message boost_system boost_chrono boost_program_options boost_thread elasticlient cpr jsoncpp
 
-DAQ =        	daqonite
-COMMAND = 		daqommand
-SIM = 			daqulator
-MON = 			daqsitter
+CXXFLAGS  = $(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0 -std=c++0x
+ROOTFLAGS = `root-config --cflags --glibs`
 
-all: 		$(DAQ) $(COMMAND) $(SIM) $(MON)
-daq: 		$(DAQ)
-command: 	$(COMMAND)
-sim: 		$(SIM)
-mon: 		$(MON)
+OBJS      = monitoring_config.o monitoring_server.o data_handler.o clb_handler.o bbb_handler.o daq_handler.o packet_generator.o elastic_interface.o
+
+DAQ       = daqonite
+COMMAND   = daqommand
+SIM       = daqulator
+MON       = daqsitter
+
+all:        $(DAQ) $(COMMAND) $(SIM) $(MON)
+daq:        $(DAQ)
+command:    $(COMMAND)
+sim:        $(SIM)
+mon:        $(MON)
 .PHONY: all daq command sim mon
 
 clean:
