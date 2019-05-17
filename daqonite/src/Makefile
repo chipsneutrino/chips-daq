@@ -25,12 +25,15 @@ $(SIM): $(OBJS) daqulator.cc
 
 $(MON): $(OBJS) daqsitter.cc
 	$(CC) -o $(MON) daqsitter.cc $(OBJS) $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
-	
+
 all: 		$(DAQ) $(COMMAND) $(SIM) $(MON)
 daq: 		$(DAQ)
 command: 	$(COMMAND)
 sim: 		$(SIM)
 mon: 		$(MON)
+.PHONY: all daq command sim mon
 
 clean:
 	rm -f $(OBJS) $(DAQ) $(COMMAND) $(SIM) $(MON)
+.PHONY: clean
+
