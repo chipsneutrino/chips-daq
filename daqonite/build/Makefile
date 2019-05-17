@@ -1,12 +1,16 @@
-CC = g++
+# Compilers
+CC  = gcc
+CXX = g++
 
 # These are just default values for Josh.
 # Setting them in env. variables will override them.
-ELASTICLIENT_PATH ?= /home/jtingey/elasticlient
+ELASTICLIENT_PATH ?= ../lib/elasticlient
 BOOST_PATH        ?= /opt/boost
 ROOT_PATH         ?= /home/jtingey/root
 CPP_STANDARD      ?= c++0x
+SRC_PATH          ?= ../src
 
+# Include directories
 INCDIRS  += ../../fh_message/include
 INCDIRS  += ../include
 INCDIRS  += $(ROOT_PATH)/include
@@ -15,21 +19,30 @@ INCDIRS  += $(ELASTICLIENT_PATH)/external/cpr/include
 INCDIRS  += $(ELASTICLIENT_PATH)/external/jsoncpp/include
 INCDIRS  += $(ELASTICLIENT_PATH)/include
 
+# Library directories
 LIBDIRS  += ../../fh_message/src
 LIBDIRS  += $(BOOST_PATH)/lib
 LIBDIRS  += $(ELASTICLIENT_PATH)/build/lib
 
+# Libraries
 LIBS      = fh_message boost_system boost_chrono boost_program_options boost_thread elasticlient cpr jsoncpp
 
+# Compiler Flags
 CXXFLAGS  = $(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0 -std=$(CPP_STANDARD)
 ROOTFLAGS = `root-config --cflags --glibs`
 
+# Objects
 OBJS      = monitoring_config.o monitoring_server.o data_handler.o clb_handler.o bbb_handler.o daq_handler.o packet_generator.o elastic_interface.o
 
 DAQ       = daqonite
 COMMAND   = daqommand
 SIM       = daqulator
 MON       = daqsitter
+
+
+###########################################################
+# Build Targets & Rules
+###########################################################
 
 all:        $(DAQ) $(COMMAND) $(SIM) $(MON)
 daq:        $(DAQ)
@@ -42,15 +55,22 @@ clean:
 	rm -f $(OBJS) $(DAQ) $(COMMAND) $(SIM) $(MON)
 .PHONY: clean
 
-$(DAQ): $(OBJS) *.cc ../include/*.h
-	$(CC) -o $(DAQ) daqonite.cc $(OBJS) $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
+%.o: $(SRC_PATH)/%.cc
+	@echo "CXX $@"
+	@$(CXX) -o $@ -c $< $(CPPFLAGS) $(CXXFLAGS)
 
-$(COMMAND): daqommand.cc
-	$(CC) -o $(COMMAND) daqommand.cc $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
+$(DAQ): $(OBJS) $(SRC_PATH)/*.cc ../include/*.h
+	@echo "LD  $@"
+	@$(CXX) -o $@ $(SRC_PATH)/$(DAQ).cc $(OBJS) $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
 
-$(SIM): $(OBJS) daqulator.cc
-	$(CC) -o $(SIM) daqulator.cc $(OBJS) $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
+$(COMMAND): $(SRC_PATH)/$(COMMAND).cc
+	@echo "LD  $@"
+	@$(CXX) -o $@ $< $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
 
-$(MON): $(OBJS) daqsitter.cc
-	$(CC) -o $(MON) daqsitter.cc $(OBJS) $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
+$(SIM): $(OBJS) $(SRC_PATH)/$(SIM).cc
+	@echo "LD  $@"
+	@$(CXX) -o $@ $(SRC_PATH)/$(SIM).cc $(OBJS) $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
 
+$(MON): $(OBJS) $(SRC_PATH)/$(MON).cc
+	@echo "LD  $@"
+	@$(CXX) -o $@ $(SRC_PATH)/$(MON).cc $(OBJS) $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
