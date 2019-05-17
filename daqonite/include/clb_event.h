@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <vector>
 #include <unordered_map>
+#include <iostream>
 
 struct CLBEvent {
     std::uint32_t  	PomId;			///< Header POM ID (4 bytes)
