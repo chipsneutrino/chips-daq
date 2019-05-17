@@ -5,6 +5,7 @@
 #include "data_handler.h"
 
 DataHandler::DataHandler(bool collect_clb_data, bool collect_bbb_data) :
+								   fCLB_events(),
                                    fCollect_clb_data(collect_clb_data),
                                    fCollect_bbb_data(collect_bbb_data) {
 

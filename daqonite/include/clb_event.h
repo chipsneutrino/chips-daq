@@ -33,7 +33,17 @@ class CLBEventQueue : public std::vector<CLBEvent> {
 
 class CLBEventMultiQueue : public std::unordered_map<std::uint32_t, CLBEventQueue> {
 public:
-    //pmt_event_queue& get_queue_for_writing(std::uint32_t pom_id);
+    inline CLBEventQueue& get_queue_for_writing(std::uint32_t pom_id)
+    {
+        auto it = find(pom_id);
+        if (it == end()) {
+            std::tie(it, std::ignore) = emplace(pom_id, CLBEventQueue{});
+
+            std::cout << "Creating queue for POM ID: " << pom_id << std::endl;
+        }
+
+        return it->second;
+    }
 };
 
 #endif /* CLB_EVENT_H */

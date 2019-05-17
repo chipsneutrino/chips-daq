@@ -14,10 +14,13 @@
 #include <iostream>
 #include <stdexcept>
 #include <fstream>
+
 #include "TFile.h"
 #include "TTree.h"
 
 #include "elastic_interface.h"
+#include "clb_event.h"
+#include "merge_sorter.h"
 
 #define NUMRUNTYPES 4
 
@@ -65,12 +68,7 @@ class DataHandler {
             return fFile_name;
         }
 
-        // fOpt_tree_clb Variables
-		uint32_t  	fPomId_opt_clb;			///< Opt CLB: Header POM ID (4 bytes)
-		uint8_t 	fChannel_opt_clb;		///< Opt CLB: Hit Channel ID (1 bytes)
-		uint32_t 	fTimestamp_s_opt_clb;	///< Opt CLB: Header timestamp (4 bytes)
-		uint32_t 	fTimestamp_ns_opt_clb;	///< Opt CLB: Hit timestamp (4 bytes)
-		int8_t 		fTot_opt_clb;			///< Opt CLB: Hit TOT value (1 bytes)
+        CLBEventMultiQueue fCLB_events;
 
         // fMon_tree_clb Variables
 		uint32_t 	fPomId_mon_clb;		    ///< Mon CLB: Header POM ID (4 bytes)
@@ -86,6 +84,13 @@ class DataHandler {
         // fMon_tree_bbb Variables (TODO)
 
 	private:
+        // fOpt_tree_clb Variables
+		uint32_t  	fPomId_opt_clb;			///< Opt CLB: Header POM ID (4 bytes)
+		uint8_t 	fChannel_opt_clb;		///< Opt CLB: Hit Channel ID (1 bytes)
+		uint32_t 	fTimestamp_s_opt_clb;	///< Opt CLB: Header timestamp (4 bytes)
+		uint32_t 	fTimestamp_ns_opt_clb;	///< Opt CLB: Hit timestamp (4 bytes)
+		int8_t 		fTot_opt_clb;			///< Opt CLB: Hit TOT value (1 bytes)
+
         /**
 		 * Finds the run number of the given run type from file
 		 * and the updates the file having incremented the run number

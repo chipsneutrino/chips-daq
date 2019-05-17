@@ -59,10 +59,14 @@ void CLBHandler::handleOpticalData(boost::system::error_code const& error, std::
 			return;
 		}
 
+		CLBEvent new_event{};
+
 		// Assign the variables we need from the header
-		fData_handler->fPomId_opt_clb = header_optical.pomIdentifier();
-		fData_handler->fTimestamp_s_opt_clb = header_optical.timeStamp().sec();
+		new_event.PomId = header_optical.pomIdentifier();
+		new_event.Timestamp_s = header_optical.timeStamp().sec();
 		uint32_t time_stamp_ns_ticks = header_optical.timeStamp().tics();
+
+		CLBEventQueue& event_queue = fData_handler->fCLB_events.get_queue_for_writing(new_event.PomId);
 
 		// Find the number of hits this packet contains and loop over them all
 		const unsigned int num_hits = (size - sizeof(CLBCommonHeader)) / sizeof(hit_t);
@@ -75,19 +79,21 @@ void CLBHandler::handleOpticalData(boost::system::error_code const& error, std::
 										+ sizeof(CLBCommonHeader) + i * sizeof(hit_t)));
 
 				// Assign the hit channel
-				fData_handler->fChannel_opt_clb = hit->channel;
+				new_event.Channel = hit->channel;
 
 				uint8_t time1 = hit->timestamp1; uint8_t time2 = hit->timestamp2; 
 				uint8_t time3 = hit->timestamp3; uint8_t time4 = hit->timestamp4;
 
 				// Need to change the ordering of the bytes to get the correct hit time
 				uint32_t ordered_time = (((uint32_t)time1) << 24) + (((uint32_t)time2) << 16) + (((uint32_t)time3) << 8) + ((uint32_t)time4);
-				fData_handler->fTimestamp_ns_opt_clb = (time_stamp_ns_ticks * 16) + ordered_time;
+				new_event.Timestamp_ns = (time_stamp_ns_ticks * 16) + ordered_time;
 
 				// Assign the hit TOT
-				fData_handler->fTot_opt_clb = hit->ToT;
+				new_event.Tot = hit->ToT;
 
-				if (*fMode == true) { fData_handler->fillOptCLBTree(); }
+				if (*fMode == true) {
+					event_queue.emplace_back(std::cref(new_event));
+				}
 			}
 		}
 
