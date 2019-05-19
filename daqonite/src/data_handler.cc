@@ -60,7 +60,7 @@ void DataHandler::startRun(int run_type) {
 
 void DataHandler::stopRun() {
 	{
-		// Calculate complete timestamps & pre-sort
+		// Calculate complete timestamps & make sure sequence is sorted
 		for (auto& key_value : fCLB_events) {
 			CLBEventQueue& queue = key_value.second;
 
@@ -70,8 +70,8 @@ void DataHandler::stopRun() {
 				event.SortKey = event.Timestamp_s + 1e-9 * event.Timestamp_ns;
 			}
 
-			// TODO: use O(N_swaps) sort here
-			std::sort(queue.begin(), queue.end());
+			// TODO: report disorder measure
+			insertSort(queue);
 		}
 
 		// Merge-sort CLB events.
@@ -202,4 +202,20 @@ void DataHandler::addOptBBBBranches() {
 
 void DataHandler::addMonBBBBranches() {
     // Empty
+}
+
+std::size_t DataHandler::insertSort(CLBEventQueue& queue) noexcept {
+	// Just your conventional O(n^2) insert-sort implementation.
+	// Here utilized because insert-sort is actually O(n+k*n) for k-sorted sequences.
+	// Since event queue should already be sorted, insert-sort will frequently only scan it in O(n).
+
+	std::size_t n_swaps{0};
+    for (std::size_t i = 1; i < queue.size(); ++i) {
+        for (std::size_t j = i; j > 0 && queue[j - 1] > queue[j]; --j) {
+			std::swap(queue[j], queue[j - 1]);
+			++n_swaps;
+        }
+    }
+
+	return n_swaps;
 }

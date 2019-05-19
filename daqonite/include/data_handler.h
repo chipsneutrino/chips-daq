@@ -90,6 +90,8 @@ class DataHandler {
 
         MergeSorter fMerge_sorter;
 
+        static std::size_t insertSort(CLBEventQueue& queue) noexcept;
+
         /**
 		 * Finds the run number of the given run type from file
 		 * and the updates the file having incremented the run number

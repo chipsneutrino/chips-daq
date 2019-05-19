@@ -27,6 +27,11 @@ struct CLBEvent {
         return SortKey < other.SortKey;
     }
 
+    inline bool operator>(const CLBEvent& other) const noexcept
+    {
+        return SortKey > other.SortKey;
+    }
+
 };
 
 class CLBEventQueue : public std::vector<CLBEvent> {
