@@ -2,6 +2,7 @@
  * Merge-sorter - Algorithm to sort CLB event queues and merge them into a single queue
  */
 
+#include <functional>
 #include <limits>
 
 #include "merge_sorter.h"
@@ -16,9 +17,9 @@ MergeSorter::MergeSorter()
 
 void MergeSorter::merge(CLBEventMultiQueue& input, CLBEventQueue& output)
 {
-    // configure depth of internal buffer
-    unsigned int N = 0;
-    for (unsigned int i = input.size(); i != 0; i >>= 1) {
+    // configure depth of internal buffer: nearest power of two
+    std::size_t N = 0;
+    for (std::size_t i = input.size(); i != 0; i >>= 1) {
         ++N;
     }
 
@@ -31,7 +32,7 @@ void MergeSorter::merge(CLBEventMultiQueue& input, CLBEventQueue& output)
             keys.push_back(key_value.first);
 
             // insert marker at the end of each queue
-            key_value.second.emplace_back(marker_);
+            key_value.second.emplace_back(std::cref(marker_));
         }
 
         // merge data
@@ -46,7 +47,7 @@ void MergeSorter::merge(CLBEventMultiQueue& input, CLBEventQueue& output)
 
 void MergeSorter::copy_to_buffer(const CLBEventQueue& input, CLBEventQueue& output)
 {
-    int n = input.size();
+    std::size_t n = input.size();
     output.resize(n); // allocate memory
 
     auto in = input.cbegin();
@@ -83,7 +84,7 @@ void MergeSorter::merge_to_buffer(const CLBEventQueue& first, const CLBEventQueu
 
 void MergeSorter::merge(CLBEventMultiQueue& input, key_array::const_iterator begin, key_array::const_iterator end, const unsigned int level, const left_right side) const
 {
-    const int N = std::distance(begin, end);
+    const std::ptrdiff_t N = std::distance(begin, end);
 
     switch (N) {
     case 0:
@@ -99,11 +100,15 @@ void MergeSorter::merge(CLBEventMultiQueue& input, key_array::const_iterator beg
 
     default:
         // recursion
-        merge(input, begin, begin + N / 2, level + 1, left_right::LEFT);
-        merge(input, begin + N / 2, end, level + 1, left_right::RIGHT);
+        merge(input, begin,         begin + N / 2,  level + 1, left_right::LEFT);
+        merge(input, begin + N / 2, end,            level + 1, left_right::RIGHT);
 
         // combination
-        merge_to_buffer(get_buffer(level + 1, left_right::LEFT), get_buffer(level + 1, left_right::RIGHT), get_buffer(level, side));
+        merge_to_buffer(
+            get_buffer(level + 1, left_right::LEFT), 
+            get_buffer(level + 1, left_right::RIGHT),
+            get_buffer(level, side)
+            );
         break;
     }
 }
