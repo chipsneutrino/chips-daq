@@ -1,3 +1,16 @@
+/**
+ * RunFile - Wrapper class for file output
+ * 
+ * This class writes the output of data taking to output
+ * files on per-run basis.
+ *
+ * Author: Petr Manek
+ * Contact: pmanek@fnal.gov
+ */
+
+#ifndef RUN_FILE_H_
+#define RUN_FILE_H_
+
 #include <cstdint>
 
 #include "TFile.h"
@@ -51,3 +64,5 @@ private:
     void addMonCLBBranches();
 
 };
+
+#endif /* RUN_FILE_H_ */
