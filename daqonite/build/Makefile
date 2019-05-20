@@ -6,9 +6,10 @@ CXX = g++
 # Setting them in env. variables will override them.
 ELASTICLIENT_PATH ?= ../lib/elasticlient
 BOOST_PATH        ?= /opt/boost
-ROOT_PATH         ?= /home/jtingey/root
+ROOT_PATH         ?= /home/daq/software/root
 CPP_STANDARD      ?= c++0x
 SRC_PATH          ?= ../src
+ADDITIONAL_FLAGS  ?=
 
 # Include directories
 INCDIRS  += ../../fh_message/include
@@ -28,11 +29,11 @@ LIBDIRS  += $(ELASTICLIENT_PATH)/build/lib
 LIBS      = fh_message boost_system boost_chrono boost_program_options boost_thread elasticlient cpr jsoncpp
 
 # Compiler Flags
-CXXFLAGS  = $(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0 -std=$(CPP_STANDARD)
+CXXFLAGS  = $(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0 -std=$(CPP_STANDARD) $(ADDITIONAL_FLAGS)
 ROOTFLAGS = `root-config --cflags --glibs`
 
 # Objects
-OBJS     += monitoring_config.o
+OBJS     += daq_config.o
 OBJS     += monitoring_server.o
 OBJS     += data_handler.o
 OBJS     += clb_handler.o
