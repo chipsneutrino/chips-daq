@@ -16,6 +16,7 @@ $ sudo firewall-cmd --permanent --add-port=56015/udp
 $ sudo firewall-cmd --permanent --add-port=56017/udp
 $ sudo firewall-cmd --permanent --add-port=5601/tcp
 $ sudo firewall-cmd --permanent --add-port=5900/tcp
+$ sudo firewall-cmd --permanent --add-port=9200/tcp
 $ sudo firewall-cmd --reload
 
 ### ROOT_5 ###
@@ -40,6 +41,9 @@ $ vncserver -localhost -nolisten tcp -geometry 1280x1024 -rfbport 5900
 
 ### Elastic Stack ###
 - Follow https://computingforgeeks.com/how-to-install-elk-stack-on-centos-7-fedora-29/
+In /etc/elasticsearch/elasticsearch.yml set the following:
+network.host: 0.0.0.0
+network.publish_host: 192.167.1.130
 
 PUT daqlog
 {
