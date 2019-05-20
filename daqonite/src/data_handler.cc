@@ -95,9 +95,9 @@ void DataHandler::getRunNumAndName() {
 	}  
 
 	file_name_ = "../data/type";
-    file_name_ += run_type_;
+    file_name_ += std::to_string(run_type_);
     file_name_ += "_run";
-	file_name_ += run_num_;
+	file_name_ += std::to_string(run_num_);
 	file_name_ += ".root";   
 }
 
