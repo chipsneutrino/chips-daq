@@ -133,8 +133,10 @@ std::shared_ptr<CLBEventMultiQueue> DataHandler::findCLBOpticalQueue(double time
 	}
 
 	// TODO: if current_schedule_ is sorted, use binary search
-	for (const Batch& batch : current_schedule_) {
+	for (Batch& batch : current_schedule_) {
 		if (timestamp >= batch.start_time && timestamp <= batch.end_time) {
+			batch.started = true;
+			batch.last_updated_time = Clock::now();
 			return batch.clb_opt_data;
 		}
 	}

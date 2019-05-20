@@ -21,10 +21,10 @@ struct Batch {
     double start_time{};
     double end_time{};
     
-    bool started{};
-    std::chrono::steady_clock::time_point last_updated_time{};
+    bool started{false};
+    std::chrono::steady_clock::time_point last_updated_time{std::chrono::steady_clock::now()};
 
-    std::shared_ptr<CLBEventMultiQueue> clb_opt_data{};
+    std::shared_ptr<CLBEventMultiQueue> clb_opt_data{std::make_shared<CLBEventMultiQueue>()};
 
 };
 
