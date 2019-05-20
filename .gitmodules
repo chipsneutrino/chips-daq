@@ -1,0 +1,3 @@
+[submodule "daqonite/lib/elasticlient"]
+	path = daqonite/lib/elasticlient
+	url = https://github.com/seznam/elasticlient.git
