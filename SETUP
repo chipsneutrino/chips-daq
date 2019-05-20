@@ -117,6 +117,10 @@ $ elastalert-create-index
 ### elasticclient ###
 - Just follow instructions on https://github.com/seznam/elasticlient installing external dependencies using git
 
+### Grafana ###
+$ sudo yum install https://dl.grafana.com/oss/release/grafana-5.4.2-1.x86_64.rpm
+$ sudo service grafana-server start
+
 ### chips-daq code ###
 $ kinit
 $ git clone ssh://p-chips@cdcvs.fnal.gov/cvs/projects/chips-daq --branch monitoring_dev
