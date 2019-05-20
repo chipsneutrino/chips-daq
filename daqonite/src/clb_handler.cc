@@ -66,33 +66,39 @@ void CLBHandler::handleOpticalData(boost::system::error_code const& error, std::
 		new_event.Timestamp_s = header_optical.timeStamp().sec();
 		uint32_t time_stamp_ns_ticks = header_optical.timeStamp().tics();
 
-		CLBEventQueue& event_queue = fData_handler->fCLB_events.get_queue_for_writing(new_event.PomId);
+		std::shared_ptr<CLBEventMultiQueue> multi_queue = fData_handler->findCLBOpticalQueue(
+			new_event.Timestamp_s + 1e-9 * (time_stamp_ns_ticks * 16)
+			);
 
-		// Find the number of hits this packet contains and loop over them all
-		const unsigned int num_hits = (size - sizeof(CLBCommonHeader)) / sizeof(hit_t);
-		if (num_hits) {
-			for (int i = 0; i<(int)num_hits; ++i) {
-				// Cast the hits individually to the hit_t struct
-				const hit_t
-						* const hit =
-								static_cast<const hit_t* const > (static_cast<const void* const > (&fBuffer_optical[0]
-										+ sizeof(CLBCommonHeader) + i * sizeof(hit_t)));
+		if (multi_queue) {
+			CLBEventQueue& event_queue = multi_queue->get_queue_for_writing(new_event.PomId);
 
-				// Assign the hit channel
-				new_event.Channel = hit->channel;
+			// Find the number of hits this packet contains and loop over them all
+			const unsigned int num_hits = (size - sizeof(CLBCommonHeader)) / sizeof(hit_t);
+			if (num_hits) {
+				for (int i = 0; i<(int)num_hits; ++i) {
+					// Cast the hits individually to the hit_t struct
+					const hit_t
+							* const hit =
+									static_cast<const hit_t* const > (static_cast<const void* const > (&fBuffer_optical[0]
+											+ sizeof(CLBCommonHeader) + i * sizeof(hit_t)));
 
-				uint8_t time1 = hit->timestamp1; uint8_t time2 = hit->timestamp2; 
-				uint8_t time3 = hit->timestamp3; uint8_t time4 = hit->timestamp4;
+					// Assign the hit channel
+					new_event.Channel = hit->channel;
 
-				// Need to change the ordering of the bytes to get the correct hit time
-				uint32_t ordered_time = (((uint32_t)time1) << 24) + (((uint32_t)time2) << 16) + (((uint32_t)time3) << 8) + ((uint32_t)time4);
-				new_event.Timestamp_ns = (time_stamp_ns_ticks * 16) + ordered_time;
+					uint8_t time1 = hit->timestamp1; uint8_t time2 = hit->timestamp2; 
+					uint8_t time3 = hit->timestamp3; uint8_t time4 = hit->timestamp4;
 
-				// Assign the hit TOT
-				new_event.Tot = hit->ToT;
+					// Need to change the ordering of the bytes to get the correct hit time
+					uint32_t ordered_time = (((uint32_t)time1) << 24) + (((uint32_t)time2) << 16) + (((uint32_t)time3) << 8) + ((uint32_t)time4);
+					new_event.Timestamp_ns = (time_stamp_ns_ticks * 16) + ordered_time;
 
-				if (*fMode == true) {
-					event_queue.emplace_back(std::cref(new_event));
+					// Assign the hit TOT
+					new_event.Tot = hit->ToT;
+
+					if (*fMode == true) {
+						event_queue.emplace_back(std::cref(new_event));
+					}
 				}
 			}
 		}

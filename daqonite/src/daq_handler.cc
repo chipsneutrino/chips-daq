@@ -11,7 +11,7 @@ DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data,
 					   fNum_threads(numThreads),
 					   fSignal_set(fIO_service, SIGINT),
 					   fLocal_socket(fIO_service, udp::endpoint(udp::v4(), 1096)),
-					   fData_handler(fCollect_clb_data, fCollect_bbb_data) {
+					   fData_handler() {
 
 	// Set to not-running mode
 	fMode = false;

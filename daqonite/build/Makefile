@@ -41,6 +41,7 @@ OBJS     += daq_handler.o
 OBJS     += packet_generator.o
 OBJS     += elastic_interface.o
 OBJS     += merge_sorter.o
+OBJS     += run_file.o
 
 DAQ       = daqonite
 COMMAND   = daqommand
