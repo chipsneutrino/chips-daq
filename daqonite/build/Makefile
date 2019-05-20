@@ -42,6 +42,7 @@ OBJS     += packet_generator.o
 OBJS     += elastic_interface.o
 OBJS     += merge_sorter.o
 OBJS     += run_file.o
+OBJS     += batch_scheduler.o
 
 DAQ       = daqonite
 COMMAND   = daqommand

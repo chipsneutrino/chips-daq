@@ -9,13 +9,18 @@
 
 DataHandler::DataHandler()
 	:output_thread_{},
-	 running_{false},
+	 scheduling_thread_{},
+	 input_running_{false},
+	 output_running_{false},
+	 scheduling_running_{false},
 	 run_type_{-1},
 	 run_num_{-1},
 	 file_name_{},
 	 waiting_batches_{},
 	 waiting_batches_mtx_{},
-	 waiting_batches_cv_{}
+	 waiting_batches_cv_{},
+	 batch_scheduler_{},
+	 current_schedule_{}
 {
 	run_type_ = -1;
 	run_num_ = -1;
@@ -27,27 +32,31 @@ void DataHandler::startRun(int run_type) {
     run_type_ = run_type;
     getRunNumAndName();
 
-	// Prepare queues
+	// Prepare queues and schedule.
 	{
 		std::lock_guard<std::mutex> l{waiting_batches_mtx_};
 		waiting_batches_.clear();
 	}
 
-	current_batch_start_time_ = Clock::now();
-	current_batch_ = std::make_shared<CLBEventMultiQueue>();
+	// TODO: determine this from run_type
+	batch_scheduler_ = std::make_shared<InfiniteScheduler>();
+
+	current_schedule_.clear();
+	batch_scheduler_->updateSchedule(current_schedule_);
 
 	// Start output thread.
 	g_elastic.log(WARNING, "Start mining into container " + file_name_);
-	running_ = true;
+	input_running_ = output_running_ = scheduling_running_ = true;
 	output_thread_ = std::make_shared<std::thread>(std::bind(&DataHandler::outputThread, this));
+	scheduling_thread_ = std::make_shared<std::thread>(std::bind(&DataHandler::schedulingThread, this));
 }
 
 void DataHandler::stopRun() {
+	input_running_ = false;
 	g_elastic.log(WARNING, "Signal stop mining into container " + file_name_);
-	closeBatch();
 
 	// Wait for the output thread to end
-	joinOutputThread();
+	joinThreads();
 	g_elastic.log(WARNING, "Stop mining into container " + file_name_);
 
     // Reset the run variables
@@ -119,29 +128,62 @@ std::size_t DataHandler::insertSort(CLBEventQueue& queue) noexcept {
 
 std::shared_ptr<CLBEventMultiQueue> DataHandler::findCLBOpticalQueue(double timestamp)
 {
-	static constexpr auto MAX_DIFF = std::chrono::minutes{2};
-	const auto diff = Clock::now() - current_batch_start_time_;
-	
-	if (diff > MAX_DIFF) {
-		closeBatch();
+	if (!input_running_) {
+		return nullptr;
 	}
 
-	return current_batch_;
+	// TODO: if current_schedule_ is sorted, use binary search
+	for (const Batch& batch : current_schedule_) {
+		if (timestamp >= batch.start_time && timestamp <= batch.end_time) {
+			return batch.clb_opt_data;
+		}
+	}
+
+	return nullptr;
 }
 
-void DataHandler::closeBatch()
+void DataHandler::closeBatch(Batch&& batch)
 {
-	auto new_batch = std::make_shared<CLBEventMultiQueue>();
-	current_batch_.swap(new_batch);
+	std::lock_guard<std::mutex> l{waiting_batches_mtx_};
+	g_elastic.log(INFO, "Scheduling batch for processing (" + std::to_string(waiting_batches_.size()) + " waiting)");
+	waiting_batches_.push_back(std::move(batch));
+	waiting_batches_cv_.notify_one();
+}
 
-	current_batch_start_time_ = Clock::now();
+void DataHandler::closeOldBatches(BatchSchedule& schedule)
+{
+	static constexpr std::chrono::seconds MATURATION_PERIOD{20};
+	const auto close_time = Clock::now() - MATURATION_PERIOD;
 
-	{
-		std::lock_guard<std::mutex> l{waiting_batches_mtx_};
-		g_elastic.log(INFO, "Scheduling batch for processing (" + std::to_string(waiting_batches_.size()) + " waiting)");
-		waiting_batches_.push_back(std::move(new_batch));
-		waiting_batches_cv_.notify_one();
+	for (auto it = schedule.begin(); it != schedule.end(); ) {
+		if (it->started && it->last_updated_time < close_time) {
+			closeBatch(std::move(*it));
+			it = schedule.erase(it);
+		} else {
+			++it;
+		}
 	}
+}
+
+void DataHandler::schedulingThread()
+{
+	g_elastic.log(INFO, "Scheduling thread up and running");
+
+	while (scheduling_running_) {
+		// Copy current schedule
+		BatchSchedule new_schedule{std::cref(current_schedule_)};
+
+		// Remove old batches from the schedule
+		closeOldBatches(new_schedule);
+		
+		// Add some more
+		batch_scheduler_->updateSchedule(new_schedule);
+		current_schedule_.swap(new_schedule);
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	}
+
+	g_elastic.log(INFO, "Scheduling thread signing off");
 }
 
 void DataHandler::outputThread()
@@ -159,6 +201,7 @@ void DataHandler::outputThread()
 
 	do {
 		// Obtain a batch to process.
+		bool have_batch = false;
 		Batch current_batch{};
 		{
 			std::unique_lock<std::mutex> l{waiting_batches_mtx_};
@@ -167,7 +210,8 @@ void DataHandler::outputThread()
 				// If there's something to process, dequeue.
 				current_batch = std::move(waiting_batches_.front());
 				waiting_batches_.pop_front();
-			} else if (!running_) {
+				have_batch = true;
+			} else if (!output_running_) {
 				// If not, and we're done, stop.
 				break;
 			} else {
@@ -176,12 +220,12 @@ void DataHandler::outputThread()
 			}
 		}
 
-		if (!current_batch) {
+		if (!have_batch) {
 			continue;
 		}
 
 		// At this point, we always have a valid batch.
-		CLBEventMultiQueue& events{*current_batch};
+		CLBEventMultiQueue& events{*current_batch.clb_opt_data};
 		g_elastic.log(INFO, "Have a batch from " + std::to_string(events.size()) + " POMs");
 
 		// Calculate complete timestamps & make sure sequence is sorted
@@ -221,10 +265,11 @@ void DataHandler::outputThread()
 	g_elastic.log(INFO, "Output thread signing off");
 }
 
-void DataHandler::joinOutputThread()
+void DataHandler::joinThreads()
 {
-	// Wake thread.
-	running_ = false;
+	// Wake output thread.
+	output_running_ = false;
+	scheduling_running_ = false;
 	waiting_batches_cv_.notify_all();
 
 	// Wait until it terminates.
@@ -232,6 +277,11 @@ void DataHandler::joinOutputThread()
 		output_thread_->join();
 	}
 
+	if (scheduling_thread_ && scheduling_thread_->joinable()) {
+		scheduling_thread_->join();
+	}
+
 	// Kill it.
 	output_thread_.reset();
+	scheduling_thread_.reset();
 }

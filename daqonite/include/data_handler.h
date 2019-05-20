@@ -27,6 +27,7 @@
 #include "elastic_interface.h"
 #include "clb_event.h"
 #include "merge_sorter.h"
+#include "batch_scheduler.h"
 
 #define NUMRUNTYPES 4
 
@@ -53,26 +54,31 @@ class DataHandler {
         std::shared_ptr<CLBEventMultiQueue> findCLBOpticalQueue(double timestamp);
 
 	private:
-        void closeBatch();
-
         std::shared_ptr<std::thread> output_thread_;        ///< Thread for merge-sorting and saving
-
-        std::atomic_bool running_;
+        std::shared_ptr<std::thread> scheduling_thread_;    ///< Thread for scheduling and closing batches
+        void joinThreads();                                 ///< Synchronously terminate all threads
+        
+        std::atomic_bool input_running_;
+        std::atomic_bool output_running_;
+        std::atomic_bool scheduling_running_;
 		int 		run_type_;				                ///< Type of run (data, test, etc...)
 		int         run_num_;                               ///< Run number found from "../data/runNumbers.dat"
         std::string	file_name_;				                ///< Output file name
 
         using Clock = std::chrono::steady_clock;
-        using Batch = std::shared_ptr<CLBEventMultiQueue>;
         using BatchList = std::list<Batch>;
-        Batch current_batch_;
-        Clock::time_point current_batch_start_time_;
         BatchList waiting_batches_;
         std::mutex waiting_batches_mtx_;
         std::condition_variable waiting_batches_cv_;
 
         void outputThread();                              ///< Main entry point of the output thread
-        void joinOutputThread();                          ///< Synchronously terminate the output thread
+
+        std::shared_ptr<BatchScheduler> batch_scheduler_;
+        BatchSchedule current_schedule_;
+        
+        void closeOldBatches(BatchSchedule& schedule);
+        void closeBatch(Batch&& batch);
+        void schedulingThread();
         
         static std::size_t insertSort(CLBEventQueue& queue) noexcept;
         
