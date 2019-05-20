@@ -17,10 +17,10 @@ int main(int argc, char* argv[]) {
 
 	// Default settings
 	std::string address = "localhost";
-	std::string config_file("../data/fakeConf.opt");
+	std::string config_file("../data/config.opt");
 	std::string data_file("../data/testData.root");
 	unsigned int hit_rate = 1; // kHz
-	unsigned int deltaTS = 100; // ms
+	unsigned int deltaTS = 10; // ms
 	unsigned int MTU = 9600;
 	unsigned int run_num = 1;
 

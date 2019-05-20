@@ -28,6 +28,9 @@
 #include <random>
 #include <chrono>
 
+#include "TFile.h"
+#include "TTree.h"
+
 #include <boost/asio.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/program_options.hpp>
@@ -46,12 +49,20 @@ class PacketGenerator{
 						int MTU,
 						int hitR);
 
+		~PacketGenerator();
+
 	private:
 
-		void generatePackets();
+		void workGeneration();
+
+		void opticalSend(raw_data_t data);
+		void monitoringSend(raw_data_t data);
+
+		void generate();
 
 		// Config
 		DAQConfig fConfig;
+		TFile fFile;
 
 		// Output
 		boost::asio::io_service fIO_service;
@@ -59,6 +70,8 @@ class PacketGenerator{
 		boost::asio::ip::udp::socket fSock_clb_mon;
 		boost::asio::ip::udp::udp::endpoint fCLB_opt_endpoint;
 		boost::asio::ip::udp::udp::endpoint fCLB_mon_endpoint;
+
+		boost::asio::deadline_timer fTimer;
 
 		// Data Packets
 		raw_data_t fCLB_opt_data;
@@ -73,6 +86,7 @@ class PacketGenerator{
 		std::vector<CLBCommonHeader> fCLB_mon_headers;
 		SCData fMon_data;
 		std::vector< std::array<int,31> > fWindow_hits;
+		long fTime_taken;
 
 		// Generator distributions
 		std::default_random_engine fGenerator;
