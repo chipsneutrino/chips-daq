@@ -29,10 +29,16 @@ public:
     RunFile&& operator=(const RunFile& other) = delete;
     RunFile&& operator=(RunFile&& other) = delete;
 
+    /// Save sorted queue of CLB events to the file.
     void writeEventQueue(const CLBEventQueue& queue) const;
 
+    /// Is the file open?
     bool isOpen() const;
+
+    /// Make sure data written so far is propagated to disk.
     void flush();
+
+    /// Close the file.
     void close();
 
 private:

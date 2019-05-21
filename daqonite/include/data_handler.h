@@ -49,34 +49,46 @@ class DataHandler {
 		 */
         void stopRun();
 
+        /// Find a queue for CLB data coming at a specific time.
         CLBEventMultiQueue* findCLBOpticalQueue(double timestamp);
+
+        /// Bump up last approximate timestamp.
         void updateLastApproxTimestamp(std::uint32_t timestamp);
 
 	private:
         std::shared_ptr<std::thread> output_thread_;        ///< Thread for merge-sorting and saving
         std::shared_ptr<std::thread> scheduling_thread_;    ///< Thread for scheduling and closing batches
-        void joinThreads();                                 ///< Synchronously terminate all threads
+
+        /// Synchronously terminate all threads.
+        void joinThreads();
         
-        std::atomic_bool output_running_;
-        std::atomic_bool scheduling_running_;
+        std::atomic_bool output_running_;                   ///< Is output thread supposed to be running?
+        std::atomic_bool scheduling_running_;               ///< Is scheduling thread supposed to be running?
 		int 		run_type_;				                ///< Type of run (data, test, etc...)
 		int         run_num_;                               ///< Run number found from "../data/runNumbers.dat"
         std::string	file_name_;				                ///< Output file name
 
         using Clock = std::chrono::steady_clock;
         using BatchQueue = boost::lockfree::queue<Batch, boost::lockfree::capacity<16>>;
-        BatchQueue waiting_batches_;
+        BatchQueue waiting_batches_;                        ///< Thread-safe FIFO queue for closed batches pending merge-sort
 
-        void outputThread();                              ///< Main entry point of the output thread
+        /// Main entry point of the output thread.
+        void outputThread();
 
-        std::atomic_uint32_t last_approx_timestamp_;
-        std::shared_ptr<BatchScheduler> batch_scheduler_;
-        BatchSchedule current_schedule_;
+        std::atomic_uint32_t last_approx_timestamp_;        ///< Latest timestamp sufficiently in the past (used by scheduler)
+        std::shared_ptr<BatchScheduler> batch_scheduler_;   ///< Scheduler of batch intervals.
+        BatchSchedule current_schedule_;                    ///< Batches open for data writing.
 
+        /// Close all batches which were not modified for a sufficiently long duration.
         void closeOldBatches(BatchSchedule& schedule);
+
+        /// Close one specific batch.
         void closeBatch(Batch&& batch);
+
+        /// Main entry point of the scheduling thread.
         void schedulingThread();
         
+        /// Implementation of conventional insert-sort algorithm used to pre-sort CLB queues.
         static std::size_t insertSort(CLBEventQueue& queue) noexcept;
         
         /**

@@ -30,6 +30,7 @@ struct Batch {
 
 using BatchSchedule = std::list<Batch>;
 
+/// Base class for all schedulers, needs to be inherited and implemented.
 class BatchScheduler {
 public:
     virtual ~BatchScheduler() = default;
@@ -37,12 +38,14 @@ public:
 
 };
 
+/// Scheduler which produces only one infinite batch.
 class InfiniteScheduler: public BatchScheduler {
 public:
     void updateSchedule(BatchSchedule& schedule, std::uint32_t last_approx_timestamp) override;
 
 };
 
+/// Scheduler which produces batches of uniform length.
 class RegularScheduler: public BatchScheduler {
     std::size_t n_batches_ahead_;
     double batch_duration_s_;
