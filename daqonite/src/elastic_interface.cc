@@ -39,7 +39,7 @@ void ElasticInterface::log(severity level, std::string message) {
     fMutex.unlock();
 }
 
-/// Indexes a "daqlog" index document to elasticsearch
+/// Indexes a "daqlog" document
 void ElasticInterface::monitoringLog(severity level, std::string message) {
 
     // Check for suppression
@@ -79,13 +79,13 @@ void ElasticInterface::monitoringLog(severity level, std::string message) {
     if (fMode == ELASTIC) { // Log to Elasticsearch
         try {
 
-            cpr::Response response = fClient.index("daqlog", "standard", "", 
+            cpr::Response response = fClient.index("daqlog", "_doc", "", 
                                                    Json::writeString(fBuilder, fLog_message));
 
             // check response
             if (response.status_code != 201) { 
                 std::cout << "LOG (4): ElasticInterface::log Error: " << response.status_code << std::endl;
-                //std::cout << response.text << std::endl;
+                std::cout << response.text << std::endl;
             }
 
         } catch(std::runtime_error& e) {
@@ -108,7 +108,7 @@ void ElasticInterface::packet(int &run_num, int &pom_id, long &timestamp,
     fMutex.unlock();
 }
 
-/// Indexes a "daqmon" index document to elasticsearch of type "pommon"
+/// Indexes a "daqmon" document
 void ElasticInterface::monitoringPacket(int &run_num, int &pom_id, long &timestamp, 
                                         int &temperature, int &humidity, 
                                         std::string &message, int* hits) {
@@ -136,13 +136,13 @@ void ElasticInterface::monitoringPacket(int &run_num, int &pom_id, long &timesta
         // Index message to Elasticsearch
         try {
 
-            cpr::Response response = fClient.index("daqmon", "pommon", "",
+            cpr::Response response = fClient.index("daqmon", "_doc", "",
                                                    Json::writeString(fBuilder, fMonitor_message));
 
             // Check response
             if (response.status_code != 201) {
                 monitoringLog(ERROR, "MonitoringPacket Error: " + std::to_string(response.status_code));
-                std::cout << response.text << std::endl;
+                //std::cout << response.text << std::endl;
             }
 
         } catch(std::runtime_error& e) {
@@ -151,15 +151,15 @@ void ElasticInterface::monitoringPacket(int &run_num, int &pom_id, long &timesta
     }
 }
 
-void ElasticInterface::value(std::string &index, std::string &type, float &value) {
+void ElasticInterface::value(std::string &index, float &value) {
     fMutex.lock();
-    monitoringValue(index, type, value);
+    monitoringValue(index, value);
     fMutex.unlock();
 }
 
 
-/// Indexes a document to elasticsearch of given type
-void ElasticInterface::monitoringValue(std::string &index, std::string &type, float &value) {
+/// Indexes a document to elasticsearch
+void ElasticInterface::monitoringValue(std::string &index, float &value) {
 
     // Only send monitoring packet if the elasticsearch client is up
     if (fMode == ELASTIC) {
@@ -177,7 +177,7 @@ void ElasticInterface::monitoringValue(std::string &index, std::string &type, fl
         // Index message to Elasticsearch
         try {
 
-            cpr::Response response = fClient.index(index, type, "",
+            cpr::Response response = fClient.index(index, "_doc", "",
                                                    Json::writeString(fBuilder, message));
 
             // Check response

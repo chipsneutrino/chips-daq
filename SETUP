@@ -33,8 +33,8 @@ $ cd boost_1_*
 $ sudo ./bootstrap.sh
 $ sudo ./b2 install --with=all
 
-# Install Grafana
-$ sudo yum install https://dl.grafana.com/oss/release/grafana-5.4.2-1.x86_64.rpm
+# Install Grafana (Need beta version for elasticsearch 7 compatibility)
+$ sudo yum install https://dl.grafana.com/oss/release/grafana-6.2.0-beta1.x86_64.rpm
 $ sudo service grafana-server start
 
 # Open required ports on the firewall
@@ -48,12 +48,11 @@ $ sudo firewall-cmd --reload
 
 # Install and configure the Elastic Stack
 # Mainly taken from https://computingforgeeks.com/how-to-install-elk-stack-on-centos-fedora/
-# Can't seem to get 7.1 working at the moment, for now use 6.8
 
 # In /etc/yum.repos.d/elasticsearch.repo set the following:
-[elasticsearch-6.x]
-name=Elasticsearch repository for 6.x packages
-baseurl=https://artifacts.elastic.co/packages/6.x/yum
+[elasticsearch-7.x]
+name=Elasticsearch repository for 7.x packages
+baseurl=https://artifacts.elastic.co/packages/7.x/yum
 gpgcheck=1
 gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
 enabled=1
@@ -66,47 +65,71 @@ $ sudo yum clean all
 $ sudo yum makecache
 $ sudo yum -y install elasticsearch kibana metricbeat heartbeat-elastic
 
-# Create the 
+# Create the elastic certificates
 $ cd /usr/share/elasticsearch
-$ bin/elasticsearch-certutil cert -out /etc/elasticsearch/elastic-certificates.p12 -pass ""
+$ sudo bin/elasticsearch-certutil cert -out /etc/elasticsearch/elastic-certificates.p12 -pass ""
+$ sudo chown elasticsearch -R /etc/elasticsearch
+$ sudo chown elasticsearch -R /etc/elasticsearch/elastic-certificates.p12
 
 # In /etc/elasticsearch/elasticsearch.yml set the following:
-network.host: 0.0.0.0
-network.publish_host: 192.167.1.130
+xpack.ml.enabled: false   # For some reason the machine learning keeps failing, so disable
 xpack.security.enabled: true
 xpack.security.transport.ssl.enabled: true
 xpack.security.transport.ssl.verification_mode: certificate
 xpack.security.transport.ssl.keystore.path: elastic-certificates.p12
 xpack.security.transport.ssl.truststore.path: elastic-certificates.p12
 
-# Start the elasticsearch server and check it is running
+# Start the elasticsearch server, check its running, setup passwords (set all to default root password)
 $ sudo systemctl enable --now elasticsearch.service 
 $ curl http://127.0.0.1:9200 
+$ sudo /usr/share/elasticsearch/bin/elasticsearch-setup-passwords interactive
 
+# If password have already been setup and you have not taken note of them, use this to change passwords
+$ sudo /usr/share/elasticsearch/bin/elasticsearch-users useradd newUser -p newPass -r superuser
+$ curl -u newUser -XPUT 'http://localhost:9200/_xpack/security/user/elastic/_password?pretty' -H 'Content-Type: application/json' -d'{"password" : "newPass"}'
 
+# In /etc/kibana/kibana.yml set the following:
+server.host: "192.168.1.130"
+elasticsearch.username: "kibana"
+elasticsearch.password: "default root password"
 
-$ sudo systemctl enable --now elasticsearch.service 
+# In /etc/metricbeat/metricbeat.yml and /etc/heartbeat/heartbeat.yml set the following:
+output.elasticsearch:
+  username: "elastic"
+  password: "default root password"
+setup.kibana:
+  host: "192.168.1.130"
+
+# Start Kibana/Metricbeat/Heartbeat
+$ sudo systemctl enable --now kibana
+$ sudo metricbeat modules enable system
+$ sudo metricbeat setup
+$ sudo systemctl enable --now metricbeat
+$ sudo heartbeat setup
+$ sudo systemctl enable --now heartbeat-elastic
+
+# In Kibana "Dev Tools" put the indexes to the elasticsearch database
+# There are no longer different types of document per index from version 7
+# Every index only has a single mapping
 
 PUT daqlog
 {
   "mappings": {
-    "standard": {
-      "properties": {
-        "@timestamp": {
-          "type": "date"
-        },
-        "process": {
-          "type": "text"
-        },
-        "pid": {
-          "type": "integer"
-        },
-        "severity": {
-          "type": "integer"
-        },
-        "message": {
-          "type": "text"
-        }
+    "properties": {
+      "@timestamp": {
+        "type": "date"
+      },
+      "process": {
+        "type": "text"
+      },
+      "pid": {
+        "type": "integer"
+      },
+      "severity": {
+        "type": "integer"
+      },
+      "message": {
+        "type": "text"
       }
     }
   }
@@ -115,32 +138,30 @@ PUT daqlog
 PUT daqmon
 {
   "mappings": {
-    "pommon": {
-      "properties": {
-        "@timestamp": {
-          "type": "date"
-        },
-        "run_num": {
-          "type": "integer"
-        },
-        "pom_id": {
-          "type": "integer"
-        },
-        "packet_time": {
-          "type": "date"
-        },
-        "temperature": {
-          "type": "integer"
-        },
-        "humidity": {
-          "type": "integer"
-        },
-        "message": {
-          "type": "text"
-        },
-        "hits": {
-          "type": "integer"
-        }
+    "properties": {
+      "@timestamp": {
+        "type": "date"
+      },
+      "run_num": {
+        "type": "integer"
+      },
+      "pom_id": {
+        "type": "integer"
+      },
+      "packet_time": {
+        "type": "date"
+      },
+      "temperature": {
+        "type": "integer"
+      },
+      "humidity": {
+        "type": "integer"
+      },
+      "message": {
+        "type": "text"
+      },
+      "hits": {
+        "type": "integer"
       }
     }
   }
@@ -152,9 +173,5 @@ $ sudo pip install "setuptools>=11.3"
 $ sudo python setup.py install
 $ elastalert-create-index
 - need to add "timestamp_type: unix_ms" to all rules
-
-### Grafana ###
-$ sudo yum install https://dl.grafana.com/oss/release/grafana-5.4.2-1.x86_64.rpm
-$ sudo service grafana-server start
 
 - Need to add -DBOOST_ERROR_CODE_HEADER_ONLY to cxxflags due to boost_system error

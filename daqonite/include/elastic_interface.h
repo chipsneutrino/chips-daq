@@ -23,7 +23,7 @@
 #include <boost/thread.hpp>
 
 ///< Define the elasticsearch address (TODO: Get password from environment variable)
-#define CLIENT "http://elastic:rkaZOBDgeYfOPupaeaec@192.168.1.130:9200/"
+#define CLIENT "http://elastic:chipsShore@localhost:9200/"
 
 /// Enum for describing the different logging severity levels
 enum severity{TRACE, DEBUG, INFO, WARNING, ERROR, FATAL}; 
@@ -67,7 +67,6 @@ class ElasticInterface {
          * Document ID is created by elasticsearch
          * 
          * "_index":            "daqlog"
-         * "_type":             "standard"
          * 
          * "@timestamp"         indexing timestamp
          * "severity":          level
@@ -86,12 +85,11 @@ class ElasticInterface {
                     std::string &message, int * hits);
 
 		/**
-		 * Indexes a "daqmon" index document to elasticsearch of type "pommon"
+		 * Indexes a "daqmon" index document to elasticsearch
 		 * Creates a message and PUTS it to elasticsearch
          * Document ID is created by elasticsearch
          * 
          * "_index":            "daqmon"
-         * "_type":             "pommon"
          * 
          * "@timestamp"         indexing timestamp
          * "run_num":           current run number if any
@@ -107,7 +105,7 @@ class ElasticInterface {
                               std::string &message, int * hits);
 
         /// Keep the mutex lock/unlock outside of main monitoringValue method
-        void value(std::string &index, std::string &type, float &value);
+        void value(std::string &index, float &value);
 
 		/**
 		 * Indexes a document to elasticsearch of given type
@@ -115,12 +113,11 @@ class ElasticInterface {
          * Document ID is created by elasticsearch
          * 
          * "_index":            index
-         * "_type":             type
          * 
          * "@timestamp"         indexing timestamp
          * "value":             value given
 		 */	
-        void monitoringValue(std::string &index, std::string &type, float &value);
+        void monitoringValue(std::string &index, float &value);
 
     private:
 
