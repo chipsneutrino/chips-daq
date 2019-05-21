@@ -66,11 +66,15 @@ void CLBHandler::handleOpticalData(boost::system::error_code const& error, std::
 		new_event.Timestamp_s = header_optical.timeStamp().sec();
 		uint32_t time_stamp_ns_ticks = header_optical.timeStamp().tics();
 
-		std::shared_ptr<CLBEventMultiQueue> multi_queue = fData_handler->findCLBOpticalQueue(
+		CLBEventMultiQueue *multi_queue = fData_handler->findCLBOpticalQueue(
 			new_event.Timestamp_s + 1e-9 * (time_stamp_ns_ticks * 16)
 			);
 
 		if (multi_queue) {
+			// FIXME: This is terribly slow and we need to get rid of it!
+			std::lock_guard<std::mutex> l{multi_queue->write_mutex};
+			
+			// Find/create queue for this POM
 			CLBEventQueue& event_queue = multi_queue->get_queue_for_writing(new_event.PomId);
 
 			// Find the number of hits this packet contains and loop over them all

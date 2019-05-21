@@ -18,13 +18,13 @@
 #include "clb_event.h"
 
 struct Batch {
-    double start_time{};
-    double end_time{};
+    double start_time;
+    double end_time;
     
-    bool started{false};
-    std::chrono::steady_clock::time_point last_updated_time{std::chrono::steady_clock::now()};
+    bool started;
+    std::chrono::steady_clock::time_point last_updated_time;
 
-    std::shared_ptr<CLBEventMultiQueue> clb_opt_data{std::make_shared<CLBEventMultiQueue>()};
+    CLBEventMultiQueue* clb_opt_data;
 
 };
 
