@@ -50,6 +50,7 @@ class DataHandler {
         void stopRun();
 
         CLBEventMultiQueue* findCLBOpticalQueue(double timestamp);
+        void updateLastApproxTimestamp(std::uint32_t timestamp);
 
 	private:
         std::shared_ptr<std::thread> output_thread_;        ///< Thread for merge-sorting and saving
@@ -68,6 +69,7 @@ class DataHandler {
 
         void outputThread();                              ///< Main entry point of the output thread
 
+        std::atomic_uint32_t last_approx_timestamp_;
         std::shared_ptr<BatchScheduler> batch_scheduler_;
         BatchSchedule current_schedule_;
 

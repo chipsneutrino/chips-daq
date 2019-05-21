@@ -33,19 +33,19 @@ using BatchSchedule = std::list<Batch>;
 class BatchScheduler {
 public:
     virtual ~BatchScheduler() = default;
-    virtual void updateSchedule(BatchSchedule& schedule) = 0;
+    virtual void updateSchedule(BatchSchedule& schedule, std::uint32_t last_approx_timestamp) = 0;
 
 };
 
 class InfiniteScheduler: public BatchScheduler {
 public:
-    void updateSchedule(BatchSchedule& schedule) override;
+    void updateSchedule(BatchSchedule& schedule, std::uint32_t last_approx_timestamp) override;
 
 };
 
 class RegularScheduler: public BatchScheduler {
 public:
-    void updateSchedule(BatchSchedule& schedule) override;
+    void updateSchedule(BatchSchedule& schedule, std::uint32_t last_approx_timestamp) override;
 
 };
 

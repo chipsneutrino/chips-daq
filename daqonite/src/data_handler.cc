@@ -16,12 +16,10 @@ DataHandler::DataHandler()
 	 run_num_{-1},
 	 file_name_{},
 	 waiting_batches_{},
+	 last_approx_timestamp_{0},
 	 batch_scheduler_{},
 	 current_schedule_{}
 {
-	run_type_ = -1;
-	run_num_ = -1;
-    file_name_ = "";
 }
 
 void DataHandler::startRun(int run_type) {
@@ -34,8 +32,9 @@ void DataHandler::startRun(int run_type) {
 	current_schedule_.clear();
 
 	// TODO: determine this from run_type
-	batch_scheduler_ = std::make_shared<InfiniteScheduler>();
-	batch_scheduler_->updateSchedule(current_schedule_);
+	last_approx_timestamp_ = 0;
+	batch_scheduler_ = std::make_shared<RegularScheduler>();
+	batch_scheduler_->updateSchedule(current_schedule_, last_approx_timestamp_);
 
 	// Start output thread.
 	g_elastic.log(WARNING, "Start mining into container " + file_name_);
@@ -122,7 +121,7 @@ CLBEventMultiQueue* DataHandler::findCLBOpticalQueue(double timestamp)
 {
 	// TODO: if current_schedule_ is sorted, use binary search
 	for (Batch& batch : current_schedule_) {
-		if (timestamp >= batch.start_time && timestamp <= batch.end_time) {
+		if (timestamp >= batch.start_time && timestamp < batch.end_time) {
 			batch.started = true;
 			batch.last_updated_time = Clock::now();
 			return batch.clb_opt_data;
@@ -153,6 +152,13 @@ void DataHandler::closeOldBatches(BatchSchedule& schedule)
 	}
 }
 
+void DataHandler::updateLastApproxTimestamp(std::uint32_t timestamp)
+{
+	if (timestamp > last_approx_timestamp_) {
+		last_approx_timestamp_ = timestamp;
+	}
+}
+
 void DataHandler::schedulingThread()
 {
 	g_elastic.log(INFO, "Scheduling thread up and running");
@@ -165,7 +171,7 @@ void DataHandler::schedulingThread()
 		closeOldBatches(new_schedule);
 		
 		// Add some more
-		batch_scheduler_->updateSchedule(new_schedule);
+		batch_scheduler_->updateSchedule(new_schedule, last_approx_timestamp_);
 
 		// TODO: current_schedule_ is accessed from multiple threads, synchronize!
 		current_schedule_.swap(new_schedule);

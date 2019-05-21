@@ -66,6 +66,7 @@ void CLBHandler::handleOpticalData(boost::system::error_code const& error, std::
 		new_event.Timestamp_s = header_optical.timeStamp().sec();
 		uint32_t time_stamp_ns_ticks = header_optical.timeStamp().tics();
 
+		fData_handler->updateLastApproxTimestamp(new_event.Timestamp_s);
 		CLBEventMultiQueue *multi_queue = fData_handler->findCLBOpticalQueue(
 			new_event.Timestamp_s + 1e-9 * (time_stamp_ns_ticks * 16)
 			);
