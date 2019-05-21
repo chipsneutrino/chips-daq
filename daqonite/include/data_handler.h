@@ -63,7 +63,7 @@ class DataHandler {
         std::string	file_name_;				                ///< Output file name
 
         using Clock = std::chrono::steady_clock;
-        using BatchQueue = boost::lockfree::queue<Batch>;
+        using BatchQueue = boost::lockfree::queue<Batch, boost::lockfree::capacity<16>>;
         BatchQueue waiting_batches_;
 
         void outputThread();                              ///< Main entry point of the output thread
