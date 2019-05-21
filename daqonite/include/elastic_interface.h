@@ -22,8 +22,8 @@
 
 #include <boost/thread.hpp>
 
-///< Define the elasticsearch address
-#define CLIENT "http://192.168.1.130:9200/"
+///< Define the elasticsearch address (TODO: Get password from environment variable)
+#define CLIENT "http://elastic:rkaZOBDgeYfOPupaeaec@192.168.1.130:9200/"
 
 /// Enum for describing the different logging severity levels
 enum severity{TRACE, DEBUG, INFO, WARNING, ERROR, FATAL}; 
