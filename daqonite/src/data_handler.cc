@@ -173,9 +173,16 @@ void DataHandler::schedulingThread()
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	}
 
+	// Close remaining batches.
+	BatchSchedule new_schedule{std::cref(current_schedule_)};
+	for (auto it = new_schedule.begin(); it != new_schedule.end(); ) {
+		closeBatch(std::move(*it));
+		it = new_schedule.erase(it);
+	}
+
 	// TODO: current_schedule_ is accessed from multiple threads, synchronize!
-	// TODO: batches in current_schedule_ contain raw pointers which need to be deleted
-	current_schedule_.clear();
+	current_schedule_.swap(new_schedule);
+	
 	g_elastic.log(INFO, "Scheduling thread signing off");
 }
 
@@ -259,20 +266,19 @@ void DataHandler::outputThread()
 
 void DataHandler::joinThreads()
 {
-	// Signal threads.
-	output_running_ = false;
+	// Kill scheduling thread and wait until it's done.
 	scheduling_running_ = false;
-
-	// Wait until they terminate.
-	if (output_thread_ && output_thread_->joinable()) {
-		output_thread_->join();
-	}
-
 	if (scheduling_thread_ && scheduling_thread_->joinable()) {
 		scheduling_thread_->join();
 	}
 
-	// Kill them.
+	// Now that all batches are closed, we can signal termination of the output thread.
+	output_running_ = false;
+	if (output_thread_ && output_thread_->joinable()) {
+		output_thread_->join();
+	}
+
+	// Clean up.
 	output_thread_.reset();
 	scheduling_thread_.reset();
 }
