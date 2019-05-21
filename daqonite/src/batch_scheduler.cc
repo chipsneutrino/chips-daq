@@ -19,11 +19,14 @@ void InfiniteScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t la
     }
 }
 
+RegularScheduler::RegularScheduler(std::size_t n_batches_ahead, std::chrono::milliseconds batch_duration)
+    :n_batches_ahead_{n_batches_ahead},
+     batch_duration_s_{batch_duration.count() / 1000.}
+{
+}
+
 void RegularScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t last_approx_timestamp)
 {
-    static constexpr int n_batches = 8;
-    static constexpr double batch_duration = 5 * 60; // 5min
-
     if (last_approx_timestamp == 0) {
         // If there is no data, wait for more.
         return;
@@ -41,13 +44,13 @@ void RegularScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t las
         first.clb_opt_data = new CLBEventMultiQueue();
 
         first.start_time = last_approx_timestamp;
-        first.end_time = first.start_time + batch_duration;
+        first.end_time = first.start_time + batch_duration_s_;
 
         schedule.push_back(std::move(first));
     }
 
     // At this point, there's always a previous batch.
-    while (schedule.size() < n_batches) {
+    while (schedule.size() < n_batches_ahead_) {
         Batch next{};
 
         next.started = false;
@@ -56,7 +59,7 @@ void RegularScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t las
         next.clb_opt_data = new CLBEventMultiQueue();
 
         next.start_time = schedule.back().end_time;
-        next.end_time = next.start_time + batch_duration;
+        next.end_time = next.start_time + batch_duration_s_;
 
         schedule.push_back(std::move(next));
     }

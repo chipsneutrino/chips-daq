@@ -44,7 +44,11 @@ public:
 };
 
 class RegularScheduler: public BatchScheduler {
+    std::size_t n_batches_ahead_;
+    double batch_duration_s_;
+
 public:
+    explicit RegularScheduler(std::size_t n_batches_ahead, std::chrono::milliseconds batch_duration);
     void updateSchedule(BatchSchedule& schedule, std::uint32_t last_approx_timestamp) override;
 
 };

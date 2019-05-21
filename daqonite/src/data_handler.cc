@@ -33,7 +33,7 @@ void DataHandler::startRun(int run_type) {
 
 	// TODO: determine this from run_type
 	last_approx_timestamp_ = 0;
-	batch_scheduler_ = std::make_shared<RegularScheduler>();
+	batch_scheduler_ = std::make_shared<RegularScheduler>(8, std::chrono::minutes(5));
 	batch_scheduler_->updateSchedule(current_schedule_, last_approx_timestamp_);
 
 	// Start output thread.
