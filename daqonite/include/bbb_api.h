@@ -13,7 +13,9 @@
 #define MAX_MESSAGE_SIZE 4096
 
 /// enum for the different protocols availiable
-enum protocol_option { PLAIN, COBS_FRAME_V1, COBS_FRAME_V2 };
+enum protocol_option { PLAIN,
+    COBS_FRAME_V1,
+    COBS_FRAME_V2 };
 
 /**
  * Functions are grouped into services which have a unique type code assigned here.
@@ -23,8 +25,8 @@ enum protocol_option { PLAIN, COBS_FRAME_V1, COBS_FRAME_V2 };
 /**
  * Message Service contains functions related to the client/server messaging subsystem
  */
-#define MS_STATUS 1      // query status message
-#define MS_ECHO 2        // echo data
-#define MS_CLOSE 3       // close the message channel
+#define MS_STATUS 1 // query status message
+#define MS_ECHO 2 // echo data
+#define MS_CLOSE 3 // close the message channel
 
 #endif

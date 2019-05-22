@@ -8,9 +8,9 @@
 #include "merge_sorter.h"
 
 MergeSorter::MergeSorter()
-    :buffer_{},
-     mirror_{},
-     marker_{}
+    : buffer_ {}
+    , mirror_ {}
+    , marker_ {}
 {
     marker_.SortKey = std::numeric_limits<decltype(CLBEvent::SortKey)>::max();
 }
@@ -100,15 +100,14 @@ void MergeSorter::merge(CLBEventMultiQueue& input, key_array::const_iterator beg
 
     default:
         // recursion
-        merge(input, begin,         begin + N / 2,  level + 1, left_right::LEFT);
-        merge(input, begin + N / 2, end,            level + 1, left_right::RIGHT);
+        merge(input, begin, begin + N / 2, level + 1, left_right::LEFT);
+        merge(input, begin + N / 2, end, level + 1, left_right::RIGHT);
 
         // combination
         merge_to_buffer(
-            get_buffer(level + 1, left_right::LEFT), 
+            get_buffer(level + 1, left_right::LEFT),
             get_buffer(level + 1, left_right::RIGHT),
-            get_buffer(level, side)
-            );
+            get_buffer(level, side));
         break;
     }
 }

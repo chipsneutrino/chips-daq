@@ -11,92 +11,92 @@
 #ifndef DATA_HANDLER_H_
 #define DATA_HANDLER_H_
 
-#include <iostream>
-#include <stdexcept>
-#include <fstream>
-#include <memory>
-#include <thread>
 #include <chrono>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <thread>
 
 #include "TFile.h"
 #include "TTree.h"
 #include "boost/lockfree/queue.hpp"
 
-#include "elastic_interface.h"
-#include "clb_event.h"
-#include "merge_sorter.h"
 #include "batch_scheduler.h"
+#include "clb_event.h"
+#include "elastic_interface.h"
+#include "merge_sorter.h"
 
 #define NUMRUNTYPES 4
 
 class DataHandler {
-	public:
-		/// Create a DataHandler
-		DataHandler();
+public:
+    /// Create a DataHandler
+    DataHandler();
 
-		/// Destroy a DataHandler
-		virtual ~DataHandler() = default;
+    /// Destroy a DataHandler
+    virtual ~DataHandler() = default;
 
-        /**
+    /**
 		 * Start a data taking run
 		 * Sets the run variables, opens the output file, and adds TTrees and branches
 		 */
-        void startRun(int run_type);
+    void startRun(int run_type);
 
-        /**
+    /**
 		 * Stop a data taking run
 		 * Writes the TTrees to file, close the output file, and cleanup/reset variables
 		 */
-        void stopRun();
+    void stopRun();
 
-        /// Find a queue for CLB data coming at a specific time.
-        CLBEventMultiQueue* findCLBOpticalQueue(double timestamp);
+    /// Find a queue for CLB data coming at a specific time.
+    CLBEventMultiQueue* findCLBOpticalQueue(double timestamp);
 
-        /// Bump up last approximate timestamp.
-        void updateLastApproxTimestamp(std::uint32_t timestamp);
+    /// Bump up last approximate timestamp.
+    void updateLastApproxTimestamp(std::uint32_t timestamp);
 
-	private:
-        std::shared_ptr<std::thread> output_thread_;        ///< Thread for merge-sorting and saving
-        std::shared_ptr<std::thread> scheduling_thread_;    ///< Thread for scheduling and closing batches
+private:
+    std::shared_ptr<std::thread> output_thread_; ///< Thread for merge-sorting and saving
+    std::shared_ptr<std::thread> scheduling_thread_; ///< Thread for scheduling and closing batches
 
-        /// Synchronously terminate all threads.
-        void joinThreads();
-        
-        std::atomic_bool output_running_;                   ///< Is output thread supposed to be running?
-        std::atomic_bool scheduling_running_;               ///< Is scheduling thread supposed to be running?
-		int 		run_type_;				                ///< Type of run (data, test, etc...)
-		int         run_num_;                               ///< Run number found from "../data/runNumbers.dat"
-        std::string	file_name_;				                ///< Output file name
+    /// Synchronously terminate all threads.
+    void joinThreads();
 
-        using Clock = std::chrono::steady_clock;
-        using BatchQueue = boost::lockfree::queue<Batch, boost::lockfree::capacity<16>>;
-        BatchQueue waiting_batches_;                        ///< Thread-safe FIFO queue for closed batches pending merge-sort
+    std::atomic_bool output_running_; ///< Is output thread supposed to be running?
+    std::atomic_bool scheduling_running_; ///< Is scheduling thread supposed to be running?
+    int run_type_; ///< Type of run (data, test, etc...)
+    int run_num_; ///< Run number found from "../data/runNumbers.dat"
+    std::string file_name_; ///< Output file name
 
-        /// Main entry point of the output thread.
-        void outputThread();
+    using Clock = std::chrono::steady_clock;
+    using BatchQueue = boost::lockfree::queue<Batch, boost::lockfree::capacity<16>>;
+    BatchQueue waiting_batches_; ///< Thread-safe FIFO queue for closed batches pending merge-sort
 
-        std::atomic_uint32_t last_approx_timestamp_;        ///< Latest timestamp sufficiently in the past (used by scheduler)
-        std::shared_ptr<BatchScheduler> batch_scheduler_;   ///< Scheduler of batch intervals.
-        BatchSchedule current_schedule_;                    ///< Batches open for data writing.
+    /// Main entry point of the output thread.
+    void outputThread();
 
-        /// Close all batches which were not modified for a sufficiently long duration.
-        void closeOldBatches(BatchSchedule& schedule);
+    std::atomic_uint32_t last_approx_timestamp_; ///< Latest timestamp sufficiently in the past (used by scheduler)
+    std::shared_ptr<BatchScheduler> batch_scheduler_; ///< Scheduler of batch intervals.
+    BatchSchedule current_schedule_; ///< Batches open for data writing.
 
-        /// Close one specific batch.
-        void closeBatch(Batch&& batch);
+    /// Close all batches which were not modified for a sufficiently long duration.
+    void closeOldBatches(BatchSchedule& schedule);
 
-        /// Main entry point of the scheduling thread.
-        void schedulingThread();
-        
-        /// Implementation of conventional insert-sort algorithm used to pre-sort CLB queues.
-        static std::size_t insertSort(CLBEventQueue& queue) noexcept;
-        
-        /**
+    /// Close one specific batch.
+    void closeBatch(Batch&& batch);
+
+    /// Main entry point of the scheduling thread.
+    void schedulingThread();
+
+    /// Implementation of conventional insert-sort algorithm used to pre-sort CLB queues.
+    static std::size_t insertSort(CLBEventQueue& queue) noexcept;
+
+    /**
 		 * Finds the run number of the given run type from file
 		 * and the updates the file having incremented the run number
          * Then determines the output file name
 		 */
-        void getRunNumAndName();
+    void getRunNumAndName();
 };
 
 #endif
