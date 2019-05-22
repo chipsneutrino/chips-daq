@@ -13,7 +13,7 @@ namespace po = boost::program_options;
 int main(int argc, char* argv[]) {
 
     // Initialise the elasticsearch interface
-    g_elastic.init("daqulator", true, false, 5);  // We want log message to be printed to stdout
+    g_elastic.init("daqulator", true, false);  // We want log message to be printed to stdout
 
 	// Default settings
 	std::string address = "localhost";

@@ -29,6 +29,9 @@ enum severity{TRACE, DEBUG, INFO, WARNING, ERROR, FATAL};
 /// Enum for describing the different logging modes
 enum log_mode{ELASTIC, FILE_LOG}; 
 
+/// Maximum logging rate (Hz)
+#define MAX_LOG_RATE 5 
+
 /// Callback for elasticlient logs
 inline void elasticlient_callback(elasticlient::LogLevel logLevel, const std::string &msg) {
 	if (logLevel != elasticlient::LogLevel::DEBUG) {
@@ -51,10 +54,9 @@ class ElasticInterface {
 		 * 
 		 * @param processName   name of the process
          * @param stdoutPrint   print logs to stdout
-         * @param commsLog      print elasticlient log message
-         * @param maxRate       maximum logging rate before suppression
+         * @param debug         print debug messages
 		 */	
-        void init(std::string processName, bool stdoutPrint, bool commsLog, int maxRate);
+        void init(std::string processName, bool stdoutPrint, bool debug);
 
 		/// Keep the mutex lock/unlock outside of main monitoringLog method
         void log(severity level, std::string message);
@@ -137,8 +139,8 @@ class ElasticInterface {
         // Settings
         log_mode fMode;                     ///< What logging mode are we in {ELASTIC, FILE_LOG}
         std::string fFile_name;             ///< file name used when in FILE_LOG mode
+        bool fDebug;                        ///< Should we print debug messages to stdout?
         bool fStdoutPrint;                  ///< Should we print logs to stdout?        
-        int fMax_rate;                      ///< Maximum logging rate before suppression 
 
         int fLog_counter;                   ///< Number of logs counter
         std::chrono::time_point<std::chrono::system_clock> fTimer_start;    ///< Suppression window start time

@@ -11,6 +11,7 @@ ElasticInterface::ElasticInterface() :
     fMode(ELASTIC), fLog_counter(0), fClient({getenv("ELASTIC_CLIENT")}){
     fBuilder["commentStyle"] = "None";    
     fBuilder["indentation"] = "";   // If you want whitespace-less output
+    fDebug = false;
 }
 
 /// Destroy a ElasticInterface
@@ -19,18 +20,17 @@ ElasticInterface::~ElasticInterface() {
 }
 
 /// Initialises the elasticsearch interface
-void ElasticInterface::init(std::string processName, bool stdoutPrint, bool commsLog, int maxRate) {
-    srand(time(NULL));
+void ElasticInterface::init(std::string processName, bool stdoutPrint, bool debug) {
 
-    fStdoutPrint = stdoutPrint;
-    fMax_rate = maxRate;
-
-    //initFile("test", false);
-
+    // Setup the procees name and pid
     fLog_message["process"] = processName;      // Process name
     fLog_message["pid"]     = getpid();         // Process ID
 
-    if (commsLog) { elasticlient::setLogFunction(elasticlient_callback); }
+    // stdout settings
+    fDebug = debug;
+    fStdoutPrint = stdoutPrint;
+
+    if (fDebug) { elasticlient::setLogFunction(elasticlient_callback); }
 }
 
 void ElasticInterface::log(severity level, std::string message) {
@@ -46,7 +46,7 @@ void ElasticInterface::monitoringLog(severity level, std::string message) {
     if (fLog_counter == 0) { 
         fTimer_start = std::chrono::system_clock::now(); 
         fLog_counter++;
-    } else if (fLog_counter < fMax_rate) {
+    } else if (fLog_counter < MAX_LOG_RATE) {
         fLog_counter++;
     } else {
         std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
@@ -54,7 +54,7 @@ void ElasticInterface::monitoringLog(severity level, std::string message) {
         if (diff < 1000) {
             fLog_counter++;
             return;
-        } else if (fLog_counter > fMax_rate) {
+        } else if (fLog_counter > MAX_LOG_RATE) {
             int tempRate = fLog_counter;
             fLog_counter = 0;
             monitoringLog(WARNING, "ElasticInterface supressed a rate of: " + std::to_string(tempRate));
@@ -85,7 +85,7 @@ void ElasticInterface::monitoringLog(severity level, std::string message) {
             // check response
             if (response.status_code != 201) { 
                 std::cout << "LOG (4): ElasticInterface::log Error: " << response.status_code << std::endl;
-                std::cout << response.text << std::endl;
+                if (fDebug) { std::cout << response.text << std::endl; }
             }
 
         } catch(std::runtime_error& e) {
@@ -130,7 +130,7 @@ void ElasticInterface::monitoringPacket(int &run_num, int &pom_id, long &timesta
         fMonitor_message["humidity"]    = humidity;     // planar optical module humidity
         fMonitor_message["message"]     = message;      // optional message
         for (int i=0; i<30; i++) { 
-            fMonitor_message["hits"][std::to_string(i)] = hits[i];      // hits on each channel
+            fMonitor_message["hits"][i] = hits[i];      // hits on each channel
         } 
 
         // Index message to Elasticsearch
@@ -142,7 +142,7 @@ void ElasticInterface::monitoringPacket(int &run_num, int &pom_id, long &timesta
             // Check response
             if (response.status_code != 201) {
                 monitoringLog(ERROR, "MonitoringPacket Error: " + std::to_string(response.status_code));
-                //std::cout << response.text << std::endl;
+                if (fDebug) { std::cout << response.text << std::endl; }
             }
 
         } catch(std::runtime_error& e) {
@@ -183,7 +183,7 @@ void ElasticInterface::monitoringValue(std::string &index, float &value) {
             // Check response
             if (response.status_code != 201) {
                 monitoringLog(ERROR, "monitoringValue Error: " + std::to_string(response.status_code));
-                //std::cout << response.text << std::endl;
+                if (fDebug) { std::cout << response.text << std::endl; }
             }
 
         } catch(std::runtime_error& e) {
