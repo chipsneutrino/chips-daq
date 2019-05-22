@@ -56,13 +56,13 @@ struct CLBCommonHeader {
     uint32_t pomStatus(int n = 1) const {
 		switch (n) {
 			case 1:
-				return ntohl(POMStatus1);
+				return POMStatus1;
 			case 2:
-				return ntohl(POMStatus2);
+				return POMStatus2;
 			case 3:
-				return ntohl(POMStatus3);
+				return POMStatus3;
 			case 4:
-				return ntohl(POMStatus4);
+				return POMStatus4;
 			default:
 				assert(!"Programming error: invalid field requested");
 				abort();

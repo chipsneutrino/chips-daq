@@ -108,8 +108,8 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
 			return;           
         }
 
-		// Check the packet has atleast a CLB header in it
-		if (size!=clb_max_size) {
+		// Check the packet is atleast of the sufficient size
+		if (size<clb_max_size) {
 			g_elastic.log(WARNING, "MonitoringServer: CLB socket invalid packet size");
 			workCLBSocket();
 			return;
@@ -124,7 +124,7 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
 			g_elastic.log(WARNING, "MonitoringServer: CLB socket incorrect packet type");
 			workCLBSocket();
 			return;
-        }
+        }	
 
 		fCLB_run_num = header.runNumber();
 		fCLB_pom_id = header.pomIdentifier();
@@ -134,7 +134,7 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
 		for (int i = 0; i < 30; ++i) {
 			const uint32_t * const field = static_cast<const uint32_t* const >
 									(static_cast<const void* const >(&fCLB_buffer[0] + sizeof(CLBCommonHeader) + i * 4));
-			fCLB_hits[i] = *field;
+			fCLB_hits[i] = ntohl(*field);
 		}
 
 		// Get the other monitoring info by casting into the SCData struct
