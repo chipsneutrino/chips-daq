@@ -8,14 +8,14 @@
 #ifndef ELASTIC_INTERFACE_H_
 #define ELASTIC_INTERFACE_H_
 
-#include <iostream>
+#include <chrono>
 #include <fstream>
+#include <iostream>
+#include <stdlib.h>
 #include <string>
 #include <sys/types.h>
 #include <unistd.h>
-#include <chrono>
-#include <stdlib.h> 
- 
+
 #include <cpr/response.h>
 #include <elasticlient/client.h>
 #include <elasticlient/logging.h>
@@ -24,27 +24,34 @@
 #include <boost/thread.hpp>
 
 /// Enum for describing the different logging severity levels
-enum severity{TRACE, DEBUG, INFO, WARNING, ERROR, FATAL}; 
+enum severity { TRACE,
+    DEBUG,
+    INFO,
+    WARNING,
+    ERROR,
+    FATAL };
 
 /// Enum for describing the different logging modes
-enum log_mode{ELASTIC, FILE_LOG}; 
+enum log_mode { ELASTIC,
+    FILE_LOG };
 
 /// Callback for elasticlient logs
-inline void elasticlient_callback(elasticlient::LogLevel logLevel, const std::string &msg) {
-	if (logLevel != elasticlient::LogLevel::DEBUG) {
-		std::cout << "LOG " << (unsigned) logLevel << ": " << msg << std::endl;
-	}
+inline void elasticlient_callback(elasticlient::LogLevel logLevel, const std::string& msg)
+{
+    if (logLevel != elasticlient::LogLevel::DEBUG) {
+        std::cout << "LOG " << (unsigned)logLevel << ": " << msg << std::endl;
+    }
 }
 
 class ElasticInterface {
-    public:
-        /// Create a ElasticInterface
-        ElasticInterface();
+public:
+    /// Create a ElasticInterface
+    ElasticInterface();
 
-        /// Destroy a ElasticInterface
-        ~ElasticInterface();
+    /// Destroy a ElasticInterface
+    ~ElasticInterface();
 
-		/**
+    /**
 		 * Initialises the elasticsearch interface
 		 * Sets up the process specific bits we need for logging 
          * and monitoring.
@@ -53,13 +60,13 @@ class ElasticInterface {
          * @param stdoutPrint   print logs to stdout
          * @param commsLog      print elasticlient log message
          * @param maxRate       maximum logging rate before suppression
-		 */	
-        void init(std::string processName, bool stdoutPrint, bool commsLog, int maxRate);
+		 */
+    void init(std::string processName, bool stdoutPrint, bool commsLog, int maxRate);
 
-		/// Keep the mutex lock/unlock outside of main monitoringLog method
-        void log(severity level, std::string message);
+    /// Keep the mutex lock/unlock outside of main monitoringLog method
+    void log(severity level, std::string message);
 
-		/**
+    /**
 		 * Indexes a "daqlog" index document to elasticsearch
 		 * Creates a log message and PUTS it to elasticsearch
          * Document ID is created by elasticsearch
@@ -74,15 +81,15 @@ class ElasticInterface {
 		 * 
 		 * @param level         severity level of log
 		 * @param message       log Message
-		 */	
-        void monitoringLog(severity level, std::string message);
+		 */
+    void monitoringLog(severity level, std::string message);
 
-        /// Keep the mutex lock/unlock outside of main monitoringPacket method
-        void packet(int &run_num, int &pom_id, long &timestamp, 
-                    int &temperature, int &humidity,
-                    std::string &message, int * hits);
+    /// Keep the mutex lock/unlock outside of main monitoringPacket method
+    void packet(int& run_num, int& pom_id, long& timestamp,
+        int& temperature, int& humidity,
+        std::string& message, int* hits);
 
-		/**
+    /**
 		 * Indexes a "daqmon" index document to elasticsearch
 		 * Creates a message and PUTS it to elasticsearch
          * Document ID is created by elasticsearch
@@ -97,15 +104,15 @@ class ElasticInterface {
          * "humidity":          POM humidity
          * "hits":              hits for all channels
          * "message":           optional message
-		 */	
-        void monitoringPacket(int &run_num, int &pom_id, long &timestamp, 
-                              int &temperature, int &humidity,
-                              std::string &message, int * hits);
+		 */
+    void monitoringPacket(int& run_num, int& pom_id, long& timestamp,
+        int& temperature, int& humidity,
+        std::string& message, int* hits);
 
-        /// Keep the mutex lock/unlock outside of main monitoringValue method
-        void value(std::string &index, float &value);
+    /// Keep the mutex lock/unlock outside of main monitoringValue method
+    void value(std::string& index, float& value);
 
-		/**
+    /**
 		 * Indexes a document to elasticsearch of given type
 		 * Creates a message and PUTS it to elasticsearch
          * Document ID is created by elasticsearch
@@ -114,43 +121,42 @@ class ElasticInterface {
          * 
          * "@timestamp"         indexing timestamp
          * "value":             value given
-		 */	
-        void monitoringValue(std::string &index, float &value);
+		 */
+    void monitoringValue(std::string& index, float& value);
 
-    private:
-
-		/**
+private:
+    /**
 		 * Initialise file logging
 		 * Opens a logging file and writes reason for switching
          * 
          * @param error         error that caused switch to file logging
          * @param writeLog      write the current log to file
-		 */	
-        void initFile(std::string error, bool writeLog);
+		 */
+    void initFile(std::string error, bool writeLog);
 
-		/**
+    /**
 		 * Generate a filename for the .txt log file
 		 * Uses the current time for generation
-		 */	
-        void generateFilename();
+		 */
+    void generateFilename();
 
-        // Settings
-        log_mode fMode;                     ///< What logging mode are we in {ELASTIC, FILE_LOG}
-        std::string fFile_name;             ///< file name used when in FILE_LOG mode
-        bool fStdoutPrint;                  ///< Should we print logs to stdout?        
-        int fMax_rate;                      ///< Maximum logging rate before suppression 
+    // Settings
+    log_mode fMode; ///< What logging mode are we in {ELASTIC, FILE_LOG}
+    std::string fFile_name; ///< file name used when in FILE_LOG mode
+    bool fStdoutPrint; ///< Should we print logs to stdout?
+    int fMax_rate; ///< Maximum logging rate before suppression
 
-        int fLog_counter;                   ///< Number of logs counter
-        std::chrono::time_point<std::chrono::system_clock> fTimer_start;    ///< Suppression window start time
+    int fLog_counter; ///< Number of logs counter
+    std::chrono::time_point<std::chrono::system_clock> fTimer_start; ///< Suppression window start time
 
-        // Messaging
-        elasticlient::Client fClient;       ///< The ElasticSearch client as provided by elasticlient library
-        Json::StreamWriterBuilder fBuilder; ///< Json writer to stream json object to string
-        boost::mutex fMutex;                ///< Mutex to keep everything thread safe
-        Json::Value fMonitor_message;       ///< Json monitoring message used to send monitoring data to elasticsearch
-        Json::Value fLog_message;           ///< Json log message used to send logs to elasticsearch
+    // Messaging
+    elasticlient::Client fClient; ///< The ElasticSearch client as provided by elasticlient library
+    Json::StreamWriterBuilder fBuilder; ///< Json writer to stream json object to string
+    boost::mutex fMutex; ///< Mutex to keep everything thread safe
+    Json::Value fMonitor_message; ///< Json monitoring message used to send monitoring data to elasticsearch
+    Json::Value fLog_message; ///< Json log message used to send logs to elasticsearch
 };
 
-extern ElasticInterface g_elastic;          ///< Global instance of this class
+extern ElasticInterface g_elastic; ///< Global instance of this class
 
 #endif

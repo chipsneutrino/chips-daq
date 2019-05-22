@@ -11,22 +11,18 @@
 #ifndef PACKET_GENERATOR_H_
 #define PACKET_GENERATOR_H_
 
-#include "clb_header_structs.h"
 #include "clb_data_structs.h"
-#include "elastic_interface.h"
+#include "clb_header_structs.h"
 #include "daq_config.h"
+#include "elastic_interface.h"
 
-#include <unistd.h>
-#include <string>
+#include <arpa/inet.h>
+#include <chrono>
 #include <fstream>
-#include <vector>
-#include <sys/time.h>
 #include <iostream>
+#include <random>
 #include <stdlib.h>
 #include <string.h>
-#include <arpa/inet.h>
-#include <random>
-#include <chrono>
 
 #include "TFile.h"
 #include "TTree.h"
@@ -39,59 +35,58 @@
 typedef std::vector<unsigned int> POMRange_t;
 typedef std::vector<char> raw_data_t;
 
-class PacketGenerator{
-	public:
-		PacketGenerator(std::string config_file, 
-						std::string dataFile,
-						std::string address,
-						int time_slice_duration,
-						int runNum,
-						int MTU,
-						int hitR);
+class PacketGenerator {
+public:
+    PacketGenerator(std::string config_file,
+        std::string dataFile,
+        std::string address,
+        int time_slice_duration,
+        int runNum,
+        int MTU,
+        int hitR);
 
-		~PacketGenerator();
+    ~PacketGenerator();
 
-	private:
+private:
+    void workGeneration();
 
-		void workGeneration();
+    void opticalSend(raw_data_t data);
+    void monitoringSend(raw_data_t data);
 
-		void opticalSend(raw_data_t data);
-		void monitoringSend(raw_data_t data);
+    void generate();
 
-		void generate();
+    // Config
+    DAQConfig fConfig;
+    TFile fFile;
 
-		// Config
-		DAQConfig fConfig;
-		TFile fFile;
+    // Output
+    boost::asio::io_service fIO_service;
+    boost::asio::ip::udp::socket fSock_clb_opt;
+    boost::asio::ip::udp::socket fSock_clb_mon;
+    boost::asio::ip::udp::udp::endpoint fCLB_opt_endpoint;
+    boost::asio::ip::udp::udp::endpoint fCLB_mon_endpoint;
 
-		// Output
-		boost::asio::io_service fIO_service;
-		boost::asio::ip::udp::socket fSock_clb_opt;
-		boost::asio::ip::udp::socket fSock_clb_mon;
-		boost::asio::ip::udp::udp::endpoint fCLB_opt_endpoint;
-		boost::asio::ip::udp::udp::endpoint fCLB_mon_endpoint;
+    boost::asio::deadline_timer fTimer;
 
-		boost::asio::deadline_timer fTimer;
+    // Data Packets
+    raw_data_t fCLB_opt_data;
+    raw_data_t fCLB_mon_data;
 
-		// Data Packets
-		raw_data_t fCLB_opt_data;
-		raw_data_t fCLB_mon_data;
+    // Generator Variables
+    int fDelta_ts;
+    int fMax_packet_hits;
+    int fMax_payload_size;
+    int fMax_seqnumber;
+    std::vector<CLBCommonHeader> fCLB_opt_headers;
+    std::vector<CLBCommonHeader> fCLB_mon_headers;
+    SCData fMon_data;
+    std::vector<std::array<int, 31>> fWindow_hits;
+    long fTime_taken;
 
-		// Generator Variables
-		int fDelta_ts;
-		int fMax_packet_hits;
-		int fMax_payload_size;
-		int fMax_seqnumber;
-		std::vector<CLBCommonHeader> fCLB_opt_headers;
-		std::vector<CLBCommonHeader> fCLB_mon_headers;
-		SCData fMon_data;
-		std::vector< std::array<int,31> > fWindow_hits;
-		long fTime_taken;
-
-		// Generator distributions
-		std::default_random_engine fGenerator;
-		std::normal_distribution<float> fHit_dist;
-		std::normal_distribution<float> fTemperature_dist;
-		std::normal_distribution<float> fHumidity_dist;
+    // Generator distributions
+    std::default_random_engine fGenerator;
+    std::normal_distribution<float> fHit_dist;
+    std::normal_distribution<float> fTemperature_dist;
+    std::normal_distribution<float> fHumidity_dist;
 };
 #endif

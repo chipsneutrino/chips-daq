@@ -11,115 +11,92 @@
 #ifndef DATA_HANDLER_H_
 #define DATA_HANDLER_H_
 
-#include <iostream>
-#include <stdexcept>
+#include <chrono>
 #include <fstream>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <thread>
+
 #include "TFile.h"
 #include "TTree.h"
+#include "boost/lockfree/queue.hpp"
 
+#include "batch_scheduler.h"
+#include "clb_event.h"
 #include "elastic_interface.h"
+#include "merge_sorter.h"
 
 #define NUMRUNTYPES 4
 
 class DataHandler {
-	public:
-		/// Create a DataHandler
-		DataHandler(bool collect_clb_data, bool collect_bbb_data);
+public:
+    /// Create a DataHandler
+    DataHandler();
 
-		/// Destroy a DataHandler
-		~DataHandler();
+    /// Destroy a DataHandler
+    virtual ~DataHandler() = default;
 
-        /**
+    /**
 		 * Start a data taking run
 		 * Sets the run variables, opens the output file, and adds TTrees and branches
 		 */
-        void startRun(int run_type);
+    void startRun(int run_type);
 
-        /**
+    /**
 		 * Stop a data taking run
 		 * Writes the TTrees to file, close the output file, and cleanup/reset variables
 		 */
-        void stopRun();
+    void stopRun();
 
-        /// Fill the optical CLB TTree
-        void fillOptCLBTree();
+    /// Find a queue for CLB data coming at a specific time.
+    CLBEventMultiQueue* findCLBOpticalQueue(double timestamp);
 
-        /// Fill the monitoring CLB TTree
-        void fillMonCLBTree();
+    /// Bump up last approximate timestamp.
+    void updateLastApproxTimestamp(std::uint32_t timestamp);
 
-        /// Fill the optical BBB TTree (TODO)
-        void fillOptBBBTree();
+private:
+    std::shared_ptr<std::thread> output_thread_; ///< Thread for merge-sorting and saving
+    std::shared_ptr<std::thread> scheduling_thread_; ///< Thread for scheduling and closing batches
 
-        /// Fill the monitoring BBB TTree (TODO)
-        void fillMonBBBTree();
+    /// Synchronously terminate all threads.
+    void joinThreads();
 
-        int getRunType() {
-            return fRun_type;
-        }
+    std::atomic_bool output_running_; ///< Is output thread supposed to be running?
+    std::atomic_bool scheduling_running_; ///< Is scheduling thread supposed to be running?
+    int run_type_; ///< Type of run (data, test, etc...)
+    int run_num_; ///< Run number found from "../data/runNumbers.dat"
+    std::string file_name_; ///< Output file name
 
-        int getRunNum() {
-            return fRun_num;
-        }
+    using Clock = std::chrono::steady_clock;
+    using BatchQueue = boost::lockfree::queue<Batch, boost::lockfree::capacity<16>>;
+    BatchQueue waiting_batches_; ///< Thread-safe FIFO queue for closed batches pending merge-sort
 
-        TString getOutputName() {
-            return fFile_name;
-        }
+    /// Main entry point of the output thread.
+    void outputThread();
 
-        // fOpt_tree_clb Variables
-		uint32_t  	fPomId_opt_clb;			///< Opt CLB: Header POM ID (4 bytes)
-		uint8_t 	fChannel_opt_clb;		///< Opt CLB: Hit Channel ID (1 bytes)
-		uint32_t 	fTimestamp_s_opt_clb;	///< Opt CLB: Header timestamp (4 bytes)
-		uint32_t 	fTimestamp_ns_opt_clb;	///< Opt CLB: Hit timestamp (4 bytes)
-		int8_t 		fTot_opt_clb;			///< Opt CLB: Hit TOT value (1 bytes)
+    std::atomic_uint32_t last_approx_timestamp_; ///< Latest timestamp sufficiently in the past (used by scheduler)
+    std::shared_ptr<BatchScheduler> batch_scheduler_; ///< Scheduler of batch intervals.
+    BatchSchedule current_schedule_; ///< Batches open for data writing.
 
-        // fMon_tree_clb Variables
-		uint32_t 	fPomId_mon_clb;		    ///< Mon CLB: Header POM ID (4 bytes)
-		uint32_t 	fTimestamp_s_mon_clb;   ///< Mon CLB: Header timestamp (4 bytes)
-		uint32_t 	fPad_mon_clb;   		///< Mon CLB: Header Pad (4 bytes)
-		uint32_t 	fValid_mon_clb; 		///< Mon CLB: Header Valid (4 bytes)
-		uint16_t 	fTemperate_mon_clb; 	///< Mon CLB: Temperature data (2 bytes)
-		uint16_t 	fHumidity_mon_clb;	    ///< Mon CLB: Humidity data (2 bytes)
-		uint32_t 	fHits_mon_clb[30];  	///< Mon CLB: Channel Hits (4 bytes)
+    /// Close all batches which were not modified for a sufficiently long duration.
+    void closeOldBatches(BatchSchedule& schedule);
 
-        // fOpt_tree_bbb Variables (TODO)
+    /// Close one specific batch.
+    void closeBatch(Batch&& batch);
 
-        // fMon_tree_bbb Variables (TODO)
+    /// Main entry point of the scheduling thread.
+    void schedulingThread();
 
-	private:
-        /**
+    /// Implementation of conventional insert-sort algorithm used to pre-sort CLB queues.
+    static std::size_t insertSort(CLBEventQueue& queue) noexcept;
+
+    /**
 		 * Finds the run number of the given run type from file
 		 * and the updates the file having incremented the run number
          * Then determines the output file name
 		 */
-        void getRunNumAndName();
-
-        /// Add the branches to the optical CLB TTree
-        void addOptCLBBranches();
-
-        /// Add the branches to the monitoring CLB TTree
-        void addMonCLBBranches();
-
-        /// Add the branches to the optical BBB TTree (TODO)
-        void addOptBBBBranches();
-
-        /// Add the branches to the monitoring BBB TTree (TODO)
-        void addMonBBBBranches();
-
-        // Settings
-        bool        fCollect_clb_data;      ///< Are we going to collect clb data?
-        bool        fCollect_bbb_data;      ///< Are we going to collect bbb data?
-
-        // Run Variables
-		int 		fRun_type;				///< Type of run (data, test, etc...)
-		int         fRun_num;               ///< Run number found from "../data/runNumbers.dat"
-        TString 	fFile_name;				///< Output file name
-
-        // ROOT File and Tree's
-		TFile* 		fOutput_file;			///< ROOT output file
-		TTree* 	    fOpt_tree_clb;			///< ROOT CLB optical output TTree
-		TTree* 		fMon_tree_clb;			///< ROOT CLB monitoring output TTree
-		TTree* 		fOpt_tree_bbb;			///< ROOT BBB optical output TTree
-		TTree* 		fMon_tree_bbb;			///< ROOT BBB monitoring output TTree
+    void getRunNumAndName();
 };
 
 #endif
