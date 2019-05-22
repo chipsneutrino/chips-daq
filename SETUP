@@ -63,7 +63,7 @@ type=rpm-md
 $ sudo rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
 $ sudo yum clean all
 $ sudo yum makecache
-$ sudo yum -y install elasticsearch kibana metricbeat heartbeat-elastic
+$ sudo yum -y install elasticsearch kibana metricbeat heartbeat-elastic filebeat
 
 # Create the elastic certificates
 $ cd /usr/share/elasticsearch
@@ -71,8 +71,13 @@ $ sudo bin/elasticsearch-certutil cert -out /etc/elasticsearch/elastic-certifica
 $ sudo chown elasticsearch -R /etc/elasticsearch
 $ sudo chown elasticsearch -R /etc/elasticsearch/elastic-certificates.p12
 
+# See the following for useful node and network docs:
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-network.html
+# https://www.elastic.co/guide/en/elasticsearch/reference/master/bootstrap-checks.html
 # In /etc/elasticsearch/elasticsearch.yml set the following:
-xpack.ml.enabled: false   # For some reason the machine learning keeps failing, so disable
+network.host: 192.168.1.130
+discovery.type: single-node   # Just for now while we are running with a single node
+xpack.ml.enabled: false       # For some reason the machine learning keeps failing, so disable
 xpack.security.enabled: true
 xpack.security.transport.ssl.enabled: true
 xpack.security.transport.ssl.verification_mode: certificate
@@ -81,7 +86,7 @@ xpack.security.transport.ssl.truststore.path: elastic-certificates.p12
 
 # Start the elasticsearch server, check its running, setup passwords (set all to default root password)
 $ sudo systemctl enable --now elasticsearch.service 
-$ curl http://127.0.0.1:9200 
+$ curl http://192.168.1.130:9200 
 $ sudo /usr/share/elasticsearch/bin/elasticsearch-setup-passwords interactive
 
 # If password have already been setup and you have not taken note of them, use this to change passwords
@@ -90,15 +95,17 @@ $ curl -u newUser -XPUT 'http://localhost:9200/_xpack/security/user/elastic/_pas
 
 # In /etc/kibana/kibana.yml set the following:
 server.host: "192.168.1.130"
+elasticsearch.hosts: ["http://192.168.1.130:9200"]
 elasticsearch.username: "kibana"
 elasticsearch.password: "default root password"
 
-# In /etc/metricbeat/metricbeat.yml and /etc/heartbeat/heartbeat.yml set the following:
+# In /etc/metricbeat/metricbeat.yml, /etc/heartbeat/heartbeat.yml and /etc/filebeat/filebeat.yml set the following:
 output.elasticsearch:
+  hosts: ["192.168.1.130:9200"]
   username: "elastic"
   password: "default root password"
 setup.kibana:
-  host: "192.168.1.130"
+  host: "192.168.1.130:5601"
 
 # Start Kibana/Metricbeat/Heartbeat
 $ sudo systemctl enable --now kibana
@@ -107,6 +114,9 @@ $ sudo metricbeat setup
 $ sudo systemctl enable --now metricbeat
 $ sudo heartbeat setup
 $ sudo systemctl enable --now heartbeat-elastic
+$ sudo filebeat modules enable system
+$ sudo filebeat setup
+$ sudo systemctl enable --now filebeat
 
 # In Kibana "Dev Tools" put the indexes to the elasticsearch database
 # There are no longer different types of document per index from version 7
@@ -167,11 +177,24 @@ PUT daqmon
   }
 }
 
-### Alerting (ElastAlert) ###
+# To get metricbeat setup on another machine and sending to the elasticsearch cluster
+$ curl -L -O https://artifacts.elastic.co/downloads/beats/metricbeat/metricbeat-7.1.0-linux-x86_64.tar.gz
+$ tar -xzvf metricbeat-7.1.0-linux-x86_64.tar.gz
+$ cd metricbeat-7.1.0-linux-x86_64/
+# In metricbeat.yml set the following:
+output.elasticsearch:
+  hosts: ["192.168.1.130:9200"]
+  username: "elastic"
+  password: "default root password"
+# Start metricbeat as root
+$ sudo chown root metricbeat.yml 
+$ sudo chown root modules.d/system.yml 
+$ sudo ./metricbeat -e
+
+# Install ElastAlert (need to add "timestamp_type: unix_ms" to all rules)
 $ git clone https://github.com/Yelp/elastalert.git
 $ sudo pip install "setuptools>=11.3"
 $ sudo python setup.py install
 $ elastalert-create-index
-- need to add "timestamp_type: unix_ms" to all rules
 
 - Need to add -DBOOST_ERROR_CODE_HEADER_ONLY to cxxflags due to boost_system error

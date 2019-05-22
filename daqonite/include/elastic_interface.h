@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <chrono>
+#include <stdlib.h> 
  
 #include <cpr/response.h>
 #include <elasticlient/client.h>
@@ -21,9 +22,6 @@
 #include <json/json.h>
 
 #include <boost/thread.hpp>
-
-///< Define the elasticsearch address (TODO: Get password from environment variable)
-#define CLIENT "http://elastic:chipsShore@localhost:9200/"
 
 /// Enum for describing the different logging severity levels
 enum severity{TRACE, DEBUG, INFO, WARNING, ERROR, FATAL}; 

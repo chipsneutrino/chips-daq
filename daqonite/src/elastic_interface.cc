@@ -8,7 +8,7 @@ ElasticInterface g_elastic; ///< Global instance of this class
 
 /// Create a ElasticInterface
 ElasticInterface::ElasticInterface() :
-    fMode(ELASTIC), fLog_counter(0), fClient({CLIENT}){
+    fMode(ELASTIC), fLog_counter(0), fClient({getenv("ELASTIC_CLIENT")}){
     fBuilder["commentStyle"] = "None";    
     fBuilder["indentation"] = "";   // If you want whitespace-less output
 }
