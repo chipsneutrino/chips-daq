@@ -61,25 +61,25 @@ mon:        $(MON)
 .PHONY: all daq command sim mon
 
 clean:
-    rm -f $(OBJS) $(DAQ) $(COMMAND) $(SIM) $(MON)
+	rm -f $(OBJS) $(DAQ) $(COMMAND) $(SIM) $(MON)
 .PHONY: clean
 
 %.o: $(SRC_PATH)/%.cc
-    @echo "CXX $@"
-    @$(CXX) -o $@ -c $< $(CPPFLAGS) $(CXXFLAGS)
+	@echo "CXX $@"
+	@$(CXX) -o $@ -c $< $(CPPFLAGS) $(CXXFLAGS)
 
 $(DAQ): $(OBJS) $(SRC_PATH)/*.cc ../include/*.h
-    @echo "LD  $@"
-    @$(CXX) -o $@ $(SRC_PATH)/$(DAQ).cc $(OBJS) $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
+	@echo "LD  $@"
+	@$(CXX) -o $@ $(SRC_PATH)/$(DAQ).cc $(OBJS) $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
 
 $(COMMAND): $(SRC_PATH)/$(COMMAND).cc
-    @echo "LD  $@"
-    @$(CXX) -o $@ $< $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
+	@echo "LD  $@"
+	@$(CXX) -o $@ $< $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
 
 $(SIM): $(OBJS) $(SRC_PATH)/$(SIM).cc
-    @echo "LD  $@"
-    @$(CXX) -o $@ $(SRC_PATH)/$(SIM).cc $(OBJS) $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
+	@echo "LD  $@"
+	@$(CXX) -o $@ $(SRC_PATH)/$(SIM).cc $(OBJS) $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
 
 $(MON): $(OBJS) $(SRC_PATH)/$(MON).cc
-    @echo "LD  $@"
-    @$(CXX) -o $@ $(SRC_PATH)/$(MON).cc $(OBJS) $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
+	@echo "LD  $@"
+	@$(CXX) -o $@ $(SRC_PATH)/$(MON).cc $(OBJS) $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
