@@ -118,8 +118,8 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const &error, s
             return;
         }
 
-        // Check the packet is atleast of the sufficient size
-        if (size < clb_max_size)
+        // Check the packet is of the correct size
+        if (size != clb_mon_size)
         {
             g_elastic.log(WARNING, "MonitoringServer: CLB socket invalid packet size");
             workCLBSocket();
@@ -129,6 +129,7 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const &error, s
         // Cast the beggining of the packet to the CLBCommonHeader
         CLBCommonHeader const &header =
             *static_cast<CLBCommonHeader const *>(static_cast<void const *>(&fCLB_buffer[0]));
+        //std::cout << header << std::endl;
 
         // Check the type of the packet is monitoring from the CLBCommonHeader
         if (getType(header).first != MONI)
@@ -138,22 +139,36 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const &error, s
             return;
         }
 
-        // Get the monitoring hits data
-        for (int i = 0; i < 30; ++i)
+        // Check the timestamp of the packet is valid
+        if (!validTimeStamp(header))
         {
-            const uint32_t *const field = static_cast<const uint32_t *const>(static_cast<const void *const>(&fCLB_buffer[0] + sizeof(CLBCommonHeader) + i * 4));
-            fCLB_hits[i] = ntohl(*field);
+            g_elastic.log(WARNING, "MonitoringServer: CLB socket invalid timestamp");
+            workCLBSocket();
+            return;
         }
 
         fCLB_run_num = header.runNumber();
         fCLB_pom_id = header.pomIdentifier();
         fCLB_timestamp = header.timeStamp().inMilliSeconds();
 
-        // Get the other monitoring info by casting into the SCData struct
-        const SCData *const scData = static_cast<const SCData *const>(static_cast<const void *const>(&fCLB_buffer[0] + clb_minimum_size));
+        // Cast the next section of the packet to the monitoring hits
+        MONHits const &hits =
+            *static_cast<MONHits const *>(static_cast<void const *>(&fCLB_buffer[0] + sizeof(CLBCommonHeader)));
+        //std::cout << hits << std::endl;
 
-        fCLB_temperature = (int)(ntohs(scData->temp) / 100.0);
-        fCLB_humidity = (int)(ntohs(scData->humidity) / 100.0);
+        // Get the monitoring hits data
+        for (int i = 0; i < 30; ++i)
+        {
+            fCLB_hits[i] = hits.hit(i);
+        }
+
+        // Cast the next section of the packet to the SCData struct
+        SCData const &scData =
+            *static_cast<SCData const *>(static_cast<void const *>(&fCLB_buffer[0] + sizeof(CLBCommonHeader) + sizeof(MONHits)));
+        //std::cout << scData << std::endl;
+
+        fCLB_temperature = (int)scData.temp();
+        fCLB_humidity = (int)scData.humidity();
 
         // If we are saving to ROOT file, fill the TTree
         if (fSave_file && fCLB_tree != NULL)
