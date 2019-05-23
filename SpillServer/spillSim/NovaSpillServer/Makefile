@@ -1,7 +1,10 @@
 OBJS+=NssSpillInfo.o
 OBJS+=NssUtil.o
 
-CXXFLAGS += -std=c++11
+CXXFLAGS += -std=c++11 -fPIC
+
+all: libNovaSpillServer.so
+.PHONY: all
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -o $@ -c $<
@@ -9,7 +12,7 @@ CXXFLAGS += -std=c++11
 libNovaSpillServer.so: $(OBJS)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared -o $@ $(OBJS)
 
-all: libNovaSpillServer.so
-
 clean:
-	rm *.o *.so
+	rm -f *.o *.so
+.PHONY: clean
+

@@ -1,4 +1,6 @@
 
+#include <cstring>
+
 #include "XmlRpcSocket.h"
 #include "XmlRpcUtil.h"
 
