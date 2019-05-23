@@ -149,6 +149,11 @@ CLBEventMultiQueue* DataHandler::findCLBOpticalQueue(double timestamp)
 
 void DataHandler::closeBatch(Batch&& batch)
 {
+    if (!batch.started) {
+        delete batch.clb_opt_data;
+        return;
+    }
+
     g_elastic.log(INFO, "Scheduling batch for processing.");
     waiting_batches_.push(std::move(batch));
 }
