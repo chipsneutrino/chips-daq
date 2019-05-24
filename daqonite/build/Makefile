@@ -3,6 +3,7 @@
 CC                ?= gcc
 CXX               ?= g++
 ELASTICLIENT_PATH ?= ../lib/elasticlient
+ELASTICLIENT_PATH ?= ../lib/fmt/
 BOOST_PATH        ?= /opt/boost
 ROOT_PATH         ?= /home/daq/software/root
 CPP_STANDARD      ?= c++0x
@@ -17,6 +18,7 @@ INCDIRS  += $(BOOST_PATH)/include
 INCDIRS  += $(ELASTICLIENT_PATH)/external/cpr/include
 INCDIRS  += $(ELASTICLIENT_PATH)/external/jsoncpp/include
 INCDIRS  += $(ELASTICLIENT_PATH)/include
+INCDIRS  += $(FMT_PATH)/include
 
 # Library directories
 LIBDIRS  += ../../fh_message/src
