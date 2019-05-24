@@ -1,5 +1,3 @@
-OBJS += fakeSpillSender.o
-
 LIBS += NovaSpillServer
 LIBS += NovaTimingUtilities
 LIBS += XmlRpc
@@ -13,11 +11,11 @@ LDFLAGS += -l boost_program_options
 LDFLAGS += $(addprefix -L./,$(LIBS))
 LDFLAGS += $(addprefix -l,$(LIBS))
 
-all: fakeSpillSender
+all: fakeSpillSender spillReceiver
 .PHONY: all
 
 clean:
-	rm -f *.o fakeSpillSender
+	rm -f *.o fakeSpillSender spillReceiver
 	$(LIBS:%=cd % && $(MAKE) clean && cd ..;)
 .PHONY: clean
 
@@ -27,6 +25,8 @@ clean:
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -o $@ -c $<
 
-fakeSpillSender: $(OBJS) $(join $(addsuffix /,$(LIBS)),$(LIBS:%=lib%.so))
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJS)
+fakeSpillSender: fakeSpillSender.o $(join $(addsuffix /,$(LIBS)),$(LIBS:%=lib%.so))
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
 
+spillReceiver: spillReceiver.o $(join $(addsuffix /,$(LIBS)),$(LIBS:%=lib%.so))
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
