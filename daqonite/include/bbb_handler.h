@@ -8,8 +8,7 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef BBB_HANDLER_H_
-#define BBB_HANDLER_H_
+#pragma once
 
 #include "assert.h"
 #include <iostream>
@@ -54,5 +53,3 @@ private:
     fh_transport_t* fTransport; ///< fh_library transport for message IO
     fh_message_t* fMsg; ///< fh_library message implementation
 };
-
-#endif

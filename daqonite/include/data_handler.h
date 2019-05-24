@@ -8,8 +8,7 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef DATA_HANDLER_H_
-#define DATA_HANDLER_H_
+#pragma once
 
 #include <chrono>
 #include <fstream>
@@ -111,5 +110,3 @@ private:
 		 */
     void getRunNumAndName();
 };
-
-#endif

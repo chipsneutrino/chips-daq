@@ -10,8 +10,7 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef DAQ_HANDLER_H_
-#define DAQ_HANDLER_H_
+#pragma once
 
 #include <boost/asio.hpp>
 #include <boost/date_time/gregorian/gregorian_types.hpp>
@@ -92,5 +91,3 @@ private:
     CLBHandler* fCLB_handler; ///< Pointer to CLBHandler
     BBBHandler* fBBB_handler; ///< Pointer to BBBHandler
 };
-
-#endif

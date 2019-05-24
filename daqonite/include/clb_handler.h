@@ -9,8 +9,7 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef CLB_HANDLER_H_
-#define CLB_HANDLER_H_
+#pragma once
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
@@ -67,5 +66,3 @@ private:
     boost::asio::ip::udp::socket fSocket_optical; ///< Optical data UDP socket
     char fBuffer_optical[buffer_size_opt] __attribute__((aligned(8))); ///< Optical data buffer
 };
-
-#endif

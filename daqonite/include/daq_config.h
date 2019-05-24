@@ -7,8 +7,7 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef DAQ_CONFIG_H_
-#define DAQ_CONFIG_H_
+#pragma once
 
 #include <string>
 #include <map>
@@ -90,5 +89,3 @@ class DAQConfig {
 			// Setup all the vectors given the number of CLBs in the config file
 			void setupVectors();
 };
-
-#endif

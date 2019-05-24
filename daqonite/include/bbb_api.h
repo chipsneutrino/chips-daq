@@ -5,8 +5,7 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef BBB_API_H_
-#define BBB_API_H_
+#pragma once
 
 #define DEFAULT_PORT 6060
 #define DEFAULT_SERVER_IP "127.0.0.1"
@@ -28,5 +27,3 @@ enum protocol_option { PLAIN,
 #define MS_STATUS 1 // query status message
 #define MS_ECHO 2 // echo data
 #define MS_CLOSE 3 // close the message channel
-
-#endif

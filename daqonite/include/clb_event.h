@@ -5,8 +5,7 @@
  * Contact: pmanek@fnal.gov
  */
 
-#ifndef CLB_EVENT_H
-#define CLB_EVENT_H
+#pragma once
 
 #include <cstdint>
 #include <mutex>
@@ -38,17 +37,15 @@ class CLBEventQueue : public std::vector<CLBEvent> {
 
 class CLBEventMultiQueue : public std::unordered_map<std::uint32_t, CLBEventQueue> {
 public:
-    std::mutex write_mutex {};
+    std::mutex write_mutex{};
 
     inline CLBEventQueue& get_queue_for_writing(std::uint32_t pom_id)
     {
         auto it = find(pom_id);
         if (it == end()) {
-            std::tie(it, std::ignore) = emplace(pom_id, CLBEventQueue {});
+            std::tie(it, std::ignore) = emplace(pom_id, CLBEventQueue{});
         }
 
         return it->second;
     }
 };
-
-#endif /* CLB_EVENT_H */

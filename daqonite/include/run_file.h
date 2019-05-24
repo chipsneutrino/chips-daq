@@ -8,8 +8,7 @@
  * Contact: pmanek@fnal.gov
  */
 
-#ifndef RUN_FILE_H_
-#define RUN_FILE_H_
+#pragma once
 
 #include <cstdint>
 
@@ -69,5 +68,3 @@ private:
     /// Add the branches to the monitoring CLB TTree
     void addMonCLBBranches();
 };
-
-#endif /* RUN_FILE_H_ */

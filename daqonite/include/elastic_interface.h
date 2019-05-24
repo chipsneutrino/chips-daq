@@ -5,8 +5,7 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef ELASTIC_INTERFACE_H_
-#define ELASTIC_INTERFACE_H_
+#pragma once
 
 #include <chrono>
 #include <fstream>
@@ -172,5 +171,3 @@ private:
 };
 
 extern ElasticInterface g_elastic; ///< Global instance of this class
-
-#endif

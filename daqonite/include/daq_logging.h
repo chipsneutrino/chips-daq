@@ -5,8 +5,7 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef DAQ_LOGGING_H_
-#define DAQ_LOGGING_H_
+#pragma once
 
 #include <boost/log/core.hpp>
 #include <boost/log/expressions.hpp>
@@ -50,5 +49,3 @@ inline void init_syslog_log()
     // Wrap it into the frontend and register in the core.
     core->add_sink(boost::make_shared<sink_t>(backend));
 }
-
-#endif

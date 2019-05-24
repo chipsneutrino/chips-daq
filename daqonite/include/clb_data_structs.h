@@ -8,8 +8,7 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef CLB_DATA_STRUCTS_H
-#define CLB_DATA_STRUCTS_H
+#pragma once
 
 #include <arpa/inet.h>
 #include <assert.h>
@@ -219,5 +218,3 @@ inline std::ostream& operator<<(std::ostream& stream, const UTCTime_h& timestamp
     }
     return stream;
 }
-
-#endif

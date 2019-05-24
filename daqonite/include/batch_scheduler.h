@@ -8,8 +8,7 @@
  * Contact: pmanek@fnal.gov
  */
 
-#ifndef BATCH_SCHEDULER_H_
-#define BATCH_SCHEDULER_H_
+#pragma once
 
 #include <chrono>
 #include <list>
@@ -52,5 +51,3 @@ public:
     explicit RegularScheduler(std::size_t n_batches_ahead, std::chrono::milliseconds batch_duration);
     void updateSchedule(BatchSchedule& schedule, std::uint32_t last_approx_timestamp) override;
 };
-
-#endif /* BATCH_SCHEDULER_H_ */

@@ -7,8 +7,7 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef MONITORING_CONFIG_H_
-#define MONITORING_CONFIG_H_
+#pragma once
 
 #include <algorithm>
 #include <bitset>
@@ -133,5 +132,3 @@ private:
     int fTotal_num_channels; ///< Total number of active channels
     std::vector<std::bitset<32>> fActive_channels; ///< Which channels are active
 };
-
-#endif
