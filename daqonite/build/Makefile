@@ -4,6 +4,7 @@ CC                ?= gcc
 CXX               ?= g++
 ELASTICLIENT_PATH ?= ../lib/elasticlient
 FMT_PATH          ?= ../lib/fmt/
+XMLRPC_PATH       ?= ../lib/XmlRpc/
 BOOST_PATH        ?= /opt/boost
 ROOT_PATH         ?= /home/daq/software/root
 CPP_STANDARD      ?= c++0x
@@ -19,14 +20,24 @@ INCDIRS  += $(ELASTICLIENT_PATH)/external/cpr/include
 INCDIRS  += $(ELASTICLIENT_PATH)/external/jsoncpp/include
 INCDIRS  += $(ELASTICLIENT_PATH)/include
 INCDIRS  += $(FMT_PATH)/include
+INCDIRS  += $(XMLRPC_PATH)/include
 
 # Library directories
 LIBDIRS  += ../../fh_message/src
 LIBDIRS  += $(BOOST_PATH)/lib
 LIBDIRS  += $(ELASTICLIENT_PATH)/build/lib
+LIBDIRS  += $(XMLRPC_PATH)/lib
 
 # Libraries
-LIBS      = fh_message boost_system boost_chrono boost_program_options boost_thread elasticlient cpr jsoncpp
+LIBS     += fh_message
+LIBS     += boost_system
+LIBS     += boost_chrono
+LIBS     += boost_program_options
+LIBS     += boost_thread
+LIBS     += elasticlient
+LIBS     += cpr
+LIBS     += jsoncpp
+LIBS     += XmlRpc
 
 # Compiler Flags
 CXXFLAGS  = $(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0 -std=$(CPP_STANDARD) $(ADDITIONAL_FLAGS)

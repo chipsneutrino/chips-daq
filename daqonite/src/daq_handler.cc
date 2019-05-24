@@ -47,6 +47,7 @@ DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data,
 
     // 9) Wait for all the threads to finish
     fThread_group.join_all();
+    fData_handler.join();
 }
 
 DAQHandler::~DAQHandler()

@@ -18,6 +18,9 @@ DataHandler::DataHandler()
     , waiting_batches_{}
     , last_approx_timestamp_{ 0 }
     , batch_scheduler_{}
+    , infinite_scheduler_{ new InfiniteScheduler }
+    , regular_scheduler_{ new RegularScheduler(8, std::chrono::minutes(1)) }
+    , spill_scheduler_{ new SpillScheduler(55812) }
     , current_schedule_{}
 {
 }
@@ -34,8 +37,7 @@ void DataHandler::startRun(int run_type)
 
     // TODO: determine this from run_type
     last_approx_timestamp_ = 0;
-    batch_scheduler_ = std::make_shared<RegularScheduler>(8, std::chrono::minutes(1));
-    batch_scheduler_->updateSchedule(current_schedule_, last_approx_timestamp_);
+    batch_scheduler_ = static_cast<const std::shared_ptr<SpillScheduler>&>(spill_scheduler_);
 
     // Start output thread.
     g_elastic.log(WARNING, "Start mining into container {}", file_name_);
@@ -183,6 +185,7 @@ void DataHandler::updateLastApproxTimestamp(std::uint32_t timestamp)
 void DataHandler::schedulingThread()
 {
     g_elastic.log(INFO, "Scheduling thread up and running");
+    batch_scheduler_->beginScheduling();
 
     while (scheduling_running_) {
         // Copy current schedule
@@ -210,6 +213,7 @@ void DataHandler::schedulingThread()
     // TODO: current_schedule_ is accessed from multiple threads, synchronize!
     current_schedule_.swap(new_schedule);
 
+    batch_scheduler_->endScheduling();
     g_elastic.log(INFO, "Scheduling thread signing off");
 }
 
@@ -308,4 +312,10 @@ void DataHandler::joinThreads()
     // Clean up.
     output_thread_.reset();
     scheduling_thread_.reset();
+    batch_scheduler_.reset();
+}
+
+void DataHandler::join()
+{
+    spill_scheduler_->join();
 }

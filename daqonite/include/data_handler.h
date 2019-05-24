@@ -34,6 +34,12 @@ public:
     /// Create a DataHandler
     DataHandler();
 
+    DataHandler(const DataHandler& other) = delete;
+    DataHandler(DataHandler&& other) = delete;
+
+    DataHandler& operator=(const DataHandler& other) = delete;
+    DataHandler& operator=(DataHandler&& other) = delete;
+
     /// Destroy a DataHandler
     virtual ~DataHandler() = default;
 
@@ -54,6 +60,9 @@ public:
 
     /// Bump up last approximate timestamp.
     void updateLastApproxTimestamp(std::uint32_t timestamp);
+
+    /// Wait for threads to terminate.
+    void join();
 
 private:
     std::shared_ptr<std::thread> output_thread_; ///< Thread for merge-sorting and saving
@@ -77,6 +86,9 @@ private:
 
     std::atomic_uint32_t last_approx_timestamp_; ///< Latest timestamp sufficiently in the past (used by scheduler)
     std::shared_ptr<BatchScheduler> batch_scheduler_; ///< Scheduler of batch intervals.
+    std::shared_ptr<InfiniteScheduler> infinite_scheduler_;
+    std::shared_ptr<RegularScheduler> regular_scheduler_;
+    std::shared_ptr<SpillScheduler> spill_scheduler_;
     BatchSchedule current_schedule_; ///< Batches open for data writing.
 
     /// Close all batches which were not modified for a sufficiently long duration.
