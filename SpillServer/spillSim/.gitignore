@@ -3,3 +3,4 @@
 fakeSpillSender
 spillReceiver
 .env
+.DS_Store
