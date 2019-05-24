@@ -11,7 +11,9 @@
 #ifndef BATCH_SCHEDULER_H_
 #define BATCH_SCHEDULER_H_
 
+#include <atomic>
 #include <chrono>
+#include <ctime>
 #include <list>
 #include <memory>
 #include <thread>
@@ -59,8 +61,35 @@ public:
 
 class SpillScheduler : public BatchScheduler {
     int port_;
+    std::size_t trigger_memory_size_;
+    double init_period_guess_;
+    std::size_t n_batches_ahead_;
+    double time_window_radius_;
+
     std::shared_ptr<std::thread> spill_server_thread_;
-    std::shared_ptr<XmlRpc::XmlRpcServer> spill_server_;
+
+    class TriggerPredictor {
+        std::vector<double> observed_;
+        mutable std::vector<double> sorted_;
+        double last_timestamp_;
+        double learned_interval_;
+        std::size_t next_;
+
+    public:
+        explicit TriggerPredictor(std::size_t n_last, double init_interval);
+        void addTrigger(double timestamp);
+        double learnedInterval() const;
+    };
+
+    class Spill : public XmlRpc::XmlRpcServerMethod {
+        std::shared_ptr<TriggerPredictor> predictor_;
+
+        static void convertNovaTimeToUnixTime(const std::uint64_t& inputNovaTime, struct timeval& outputUnixTime);
+
+    public:
+        Spill(XmlRpc::XmlRpcServer* server, std::shared_ptr<TriggerPredictor> predictor);
+        void execute(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result) override;
+    };
 
     enum SpillType {
         kNuMI, //MIBS $74 proton extraction into NuMI
@@ -79,16 +108,12 @@ class SpillScheduler : public BatchScheduler {
     };
     static std::string getSpillNameFromType(int type);
 
+    std::shared_ptr<XmlRpc::XmlRpcServer> spill_server_;
+    std::shared_ptr<TriggerPredictor> predictor_;
     void workSpillServer();
 
-    class Spill : public XmlRpc::XmlRpcServerMethod {
-    public:
-        Spill(XmlRpc::XmlRpcServer* server);
-        void execute(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result) override;
-    };
-
 public:
-    explicit SpillScheduler(int port);
+    explicit SpillScheduler(int port, std::size_t trigger_memory_size, double init_period_guess, std::size_t n_batches_ahead, double time_window_radius);
     void updateSchedule(BatchSchedule& schedule, std::uint32_t last_approx_timestamp) override;
 
     void join();

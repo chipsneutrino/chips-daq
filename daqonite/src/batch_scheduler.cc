@@ -37,8 +37,6 @@ void RegularScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t las
 
     // Initialize the very first batch.
     if (schedule.empty()) {
-        // get starting timestamp
-
         Batch first{};
 
         first.started = false;
@@ -68,8 +66,12 @@ void RegularScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t las
     }
 }
 
-SpillScheduler::SpillScheduler(int port)
+SpillScheduler::SpillScheduler(int port, std::size_t trigger_memory_size, double init_period_guess, std::size_t n_batches_ahead, double time_window_radius)
     : port_{ port }
+    , trigger_memory_size_{ trigger_memory_size }
+    , init_period_guess_{ init_period_guess }
+    , n_batches_ahead_{ n_batches_ahead }
+    , time_window_radius_{ time_window_radius }
     , spill_server_thread_{}
     , spill_server_{}
 {
@@ -88,7 +90,13 @@ void SpillScheduler::join()
 
 void SpillScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t last_approx_timestamp)
 {
-    // TODO
+    const double learned_interval = predictor_->learnedInterval();
+
+    // TODO: set up intervals based on the predicted triggers
+    // This can be done once:
+    //   (1) we know what time representation we'll use
+    //   (2) we know how trigger predictions and signals will be matched
+    //   (3) white rabbits start giving sensible timestamps
 }
 
 void SpillScheduler::workSpillServer()
@@ -97,9 +105,10 @@ void SpillScheduler::workSpillServer()
 
     g_elastic.log(INFO, "SpillServer up and running at port {}!", port_);
     spill_server_ = std::make_shared<XmlRpcServer>();
+    predictor_ = std::make_shared<TriggerPredictor>(trigger_memory_size_, init_period_guess_);
 
     {
-        Spill spill_method{ spill_server_.get() };
+        Spill spill_method{ spill_server_.get(), predictor_ };
         XmlRpc::setVerbosity(0);
         spill_server_->bindAndListen(port_);
 
@@ -134,9 +143,41 @@ std::string SpillScheduler::getSpillNameFromType(int type)
     return ret;
 }
 
-SpillScheduler::Spill::Spill(XmlRpc::XmlRpcServer* server)
+SpillScheduler::Spill::Spill(XmlRpc::XmlRpcServer* server, std::shared_ptr<TriggerPredictor> predictor)
     : XmlRpc::XmlRpcServerMethod("Spill", server)
+    , predictor_{ predictor }
 {
+}
+
+void SpillScheduler::Spill::convertNovaTimeToUnixTime(const std::uint64_t& inputNovaTime, struct timeval& outputUnixTime)
+{
+    // *time_t* of start of Nova epoch, 01-Jan-2010 00:00:00, UTC
+    // This is the value subtracted from the UNIX time_t, timeval or timespec
+    // seconds field. Since "novatime" does not have leap seconds and
+    // "unixtime" does, leap seconds which happen _after_ the nova epoch will
+    // need to be factored in to get the correct novatime which corresponds to
+    // the time after the leap second.
+    static constexpr std::uint32_t NOVA_EPOCH = 1262304000;
+
+    // conversion factor (related to clock frequency)
+    static constexpr std::uint64_t NOVA_TIME_FACTOR = 64000000;
+
+    double doubleTime = (double)inputNovaTime / (double)NOVA_TIME_FACTOR;
+    time_t time_sec = (time_t)doubleTime;
+
+    outputUnixTime.tv_sec = NOVA_EPOCH + time_sec;
+    outputUnixTime.tv_usec = (suseconds_t)((doubleTime - (double)time_sec) * 1000000);
+
+    // test in chrono order
+
+    if (outputUnixTime.tv_sec > 1341100799) // Jun 30 23:59:59 2012 UTC
+        --outputUnixTime.tv_sec;
+
+    if (outputUnixTime.tv_sec > 1435708799) // Jun 30 23:59:59 2015 UTC
+        --outputUnixTime.tv_sec;
+
+    if (outputUnixTime.tv_sec > 1483228799) // Dec 31 23:59:59 2016 UTC
+        --outputUnixTime.tv_sec;
 }
 
 void SpillScheduler::Spill::execute(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result)
@@ -151,17 +192,54 @@ void SpillScheduler::Spill::execute(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcV
         return;
     }
 
-    std::uint64_t ttime{};
+    struct timeval unixTime {
+    };
     {
         // Don't trust XmlRpc with large int's.
+        std::uint64_t ttime{};
         std::istringstream ss{ static_cast<std::string>(params[0]) };
         ss >> ttime;
+        convertNovaTimeToUnixTime(ttime, unixTime);
     }
 
     const int ttype{ params[1] };
-    g_elastic.log(INFO, "SpillServer received spill of type '{}' ({}) at time: {}", getSpillNameFromType(ttype), ttype, ttime);
 
-    // TODO: do something with the spill
+    // TODO: do something with the spill type
 
+    // FIXME: decide on standardized time representation
+    const double botchedTime = unixTime.tv_sec + 1e-6 * unixTime.tv_usec;
+    predictor_->addTrigger(botchedTime);
     result = ok;
+}
+
+SpillScheduler::TriggerPredictor::TriggerPredictor(std::size_t n_last, double init_interval)
+    : observed_{}
+    , sorted_{}
+    , last_timestamp_{ -1 }
+    , next_{ 0 }
+{
+    observed_.resize(n_last);
+    sorted_.resize(n_last);
+    std::fill(observed_.begin(), observed_.end(), init_interval);
+}
+
+void SpillScheduler::TriggerPredictor::addTrigger(double timestamp)
+{
+    if (last_timestamp_ < 0) {
+        last_timestamp_ = timestamp;
+        return;
+    }
+
+    observed_[next_] = timestamp - last_timestamp_;
+    next_ = (next_ + 1) % observed_.size();
+    last_timestamp_ = timestamp;
+
+    std::copy(observed_.begin(), observed_.end(), sorted_.begin());
+    std::sort(sorted_.begin(), sorted_.end());
+    learned_interval_ = sorted_[sorted_.size() / 2];
+}
+
+double SpillScheduler::TriggerPredictor::learnedInterval() const
+{
+    return learned_interval_;
 }
