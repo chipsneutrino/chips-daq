@@ -55,6 +55,8 @@ OBJS     += elastic_interface.o
 OBJS     += merge_sorter.o
 OBJS     += run_file.o
 OBJS     += batch_scheduler.o
+OBJS     += trigger_predictor.o
+OBJS     += spill_scheduler.o
 
 DAQ       = daqonite
 COMMAND   = daqommand

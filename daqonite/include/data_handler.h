@@ -26,6 +26,7 @@
 #include "clb_event.h"
 #include "elastic_interface.h"
 #include "merge_sorter.h"
+#include "spill_scheduler.h"
 
 #define NUMRUNTYPES 4
 
