@@ -38,7 +38,7 @@ void CLBHandler::handleOpticalData(boost::system::error_code const& error, std::
     if (!error) {
         // Check the packet has atleast a CLB header in it
         if (size - sizeof(CLBCommonHeader) < 0) {
-            g_elastic.log(WARNING, "CLB Handler invalid packet size");
+            g_elastic.log(WARNING, "CLB Handler invalid packet size (expected {}, got {})", sizeof(CLBCommonHeader), size);
             workOpticalData();
             return;
         }
@@ -56,12 +56,12 @@ void CLBHandler::handleOpticalData(boost::system::error_code const& error, std::
         // Check the type of the packet is optical from the CLBCommonHeader
         std::pair<int, std::string> const& type = getType(header_optical);
         if (type.first != OPTO) {
-            g_elastic.log(WARNING, "CLB Handler not optical packet");
+            g_elastic.log(WARNING, "CLB Handler not optical packet (expected {}, got {})", OPTO, type.first);
             workOpticalData();
             return;
         }
 
-        CLBEvent new_event {};
+        CLBEvent new_event{};
 
         // Assign the variables we need from the header
         new_event.PomId = header_optical.pomIdentifier();
@@ -74,7 +74,7 @@ void CLBHandler::handleOpticalData(boost::system::error_code const& error, std::
 
         if (multi_queue) {
             // FIXME: This is terribly slow and we need to get rid of it!
-            std::lock_guard<std::mutex> l { multi_queue->write_mutex };
+            std::lock_guard<std::mutex> l{ multi_queue->write_mutex };
 
             // Find/create queue for this POM
             CLBEventQueue& event_queue = multi_queue->get_queue_for_writing(new_event.PomId);

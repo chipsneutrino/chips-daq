@@ -40,7 +40,7 @@ DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data,
     }
 
     // 8) Setup the thread group and call io_service.run() in each
-    g_elastic.log(INFO, "DAQ Handler Starting io_service");
+    g_elastic.log(INFO, "DAQ Handler Starting io_service on {} threads", fNum_threads);
     for (int threadCount = 0; threadCount < fNum_threads; threadCount++) {
         fThread_group.create_thread(boost::bind(&DAQHandler::ioServiceThread, this));
     }

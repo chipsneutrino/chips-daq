@@ -3,12 +3,12 @@
 CC                ?= gcc
 CXX               ?= g++
 ELASTICLIENT_PATH ?= ../lib/elasticlient
-ELASTICLIENT_PATH ?= ../lib/fmt/
+FMT_PATH          ?= ../lib/fmt/
 BOOST_PATH        ?= /opt/boost
 ROOT_PATH         ?= /home/daq/software/root
 CPP_STANDARD      ?= c++0x
 SRC_PATH          ?= ../src
-ADDITIONAL_FLAGS  ?=
+ADDITIONAL_FLAGS  ?= -DFMT_HEADER_ONLY
 
 # Include directories
 INCDIRS  += ../../fh_message/include
