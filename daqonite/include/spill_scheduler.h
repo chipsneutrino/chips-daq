@@ -49,7 +49,7 @@ class SpillScheduler : public BatchScheduler {
     std::size_t n_batches_ahead_;
     double time_window_radius_;
 
-    std::shared_ptr<std::thread> spill_server_thread_;
+    std::unique_ptr<std::thread> spill_server_thread_;
 
     class Spill : public XmlRpc::XmlRpcServerMethod {
         std::shared_ptr<TriggerPredictor> predictor_;
@@ -59,7 +59,7 @@ class SpillScheduler : public BatchScheduler {
         void execute(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result) override;
     };
 
-    std::shared_ptr<XmlRpc::XmlRpcServer> spill_server_;
+    std::unique_ptr<XmlRpc::XmlRpcServer> spill_server_;
     std::shared_ptr<TriggerPredictor> predictor_;
     void workSpillServer();
 

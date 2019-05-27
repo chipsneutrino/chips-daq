@@ -13,7 +13,7 @@ SpillScheduler::SpillScheduler(int port, std::size_t trigger_memory_size, double
     , spill_server_thread_{}
     , spill_server_{}
 {
-    spill_server_thread_ = std::make_shared<std::thread>(std::bind(&SpillScheduler::workSpillServer, this));
+    spill_server_thread_ = std::unique_ptr<std::thread>{ new std::thread(std::bind(&SpillScheduler::workSpillServer, this)) };
 }
 
 void SpillScheduler::join()
@@ -42,7 +42,7 @@ void SpillScheduler::workSpillServer()
     using namespace XmlRpc;
 
     g_elastic.log(INFO, "SpillServer up and running at port {}!", port_);
-    spill_server_ = std::make_shared<XmlRpcServer>();
+    spill_server_ = std::unique_ptr<XmlRpcServer>(new XmlRpcServer);
     predictor_ = std::make_shared<TriggerPredictor>(trigger_memory_size_, init_period_guess_);
 
     {

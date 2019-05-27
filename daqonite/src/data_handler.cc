@@ -42,8 +42,8 @@ void DataHandler::startRun(int run_type)
     // Start output thread.
     g_elastic.log(WARNING, "Start mining into container {}", file_name_);
     output_running_ = scheduling_running_ = true;
-    output_thread_ = std::make_shared<std::thread>(std::bind(&DataHandler::outputThread, this));
-    scheduling_thread_ = std::make_shared<std::thread>(std::bind(&DataHandler::schedulingThread, this));
+    output_thread_ = std::unique_ptr<std::thread>{ new std::thread(std::bind(&DataHandler::outputThread, this)) };
+    scheduling_thread_ = std::unique_ptr<std::thread>{ new std::thread(std::bind(&DataHandler::schedulingThread, this)) };
 }
 
 void DataHandler::stopRun()

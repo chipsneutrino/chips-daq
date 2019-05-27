@@ -65,8 +65,8 @@ public:
     void join();
 
 private:
-    std::shared_ptr<std::thread> output_thread_; ///< Thread for merge-sorting and saving
-    std::shared_ptr<std::thread> scheduling_thread_; ///< Thread for scheduling and closing batches
+    std::unique_ptr<std::thread> output_thread_; ///< Thread for merge-sorting and saving
+    std::unique_ptr<std::thread> scheduling_thread_; ///< Thread for scheduling and closing batches
 
     /// Synchronously terminate all threads.
     void joinThreads();
