@@ -30,13 +30,17 @@ using boost::asio::ip::udp;
 
 class CLBHandler {
 public:
-    /// Create a CLBHandler
     CLBHandler(boost::asio::io_service* io_service,
-        DataHandler* data_handler,
-        bool* mode);
+        DataHandler* data_handler, bool* mode);
 
-    /// Destroy a CLBHandler
-    ~CLBHandler();
+    virtual ~CLBHandler() = default;
+
+    // for safety, no copy- or move-semantics
+    CLBHandler(const CLBHandler& other) = delete;
+    CLBHandler(CLBHandler&& other) = delete;
+
+    CLBHandler& operator=(const CLBHandler& other) = delete;
+    CLBHandler& operator=(CLBHandler&& other) = delete;
 
     /**
 		 * IO_service optical data work function.

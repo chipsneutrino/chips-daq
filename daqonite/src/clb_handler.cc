@@ -5,22 +5,15 @@
 #include "clb_handler.h"
 
 CLBHandler::CLBHandler(boost::asio::io_service* io_service,
-    DataHandler* data_handler,
-    bool* mode)
+    DataHandler* data_handler, bool* mode)
     : fData_handler(data_handler)
     , fMode(mode)
     , fBuffer_size(buffer_size_opt)
     , fSocket_optical(*io_service, udp::endpoint(udp::v4(), default_opto_port))
 {
-
     // Setup the sockets
     udp::socket::receive_buffer_size option_clb(33554432);
     fSocket_optical.set_option(option_clb);
-}
-
-CLBHandler::~CLBHandler()
-{
-    // Empty
 }
 
 void CLBHandler::workOpticalData()
