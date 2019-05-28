@@ -10,16 +10,18 @@ SpillScheduler::SpillScheduler(int port, std::size_t trigger_memory_size, double
     , init_period_guess_{ init_period_guess }
     , n_batches_ahead_{ n_batches_ahead }
     , time_window_radius_{ time_window_radius }
+    , spill_server_running_{}
     , spill_server_thread_{}
     , spill_server_{}
 {
+    spill_server_running_ = true;
     spill_server_thread_ = std::unique_ptr<std::thread>{ new std::thread(std::bind(&SpillScheduler::workSpillServer, this)) };
 }
 
 void SpillScheduler::join()
 {
     if (spill_server_thread_ && spill_server_thread_->joinable()) {
-        spill_server_->exit();
+        spill_server_running_ = false;
         spill_server_thread_->join();
     }
 
@@ -50,8 +52,10 @@ void SpillScheduler::workSpillServer()
         XmlRpc::setVerbosity(0);
         spill_server_->bindAndListen(port_);
 
-        // This will block thread until exit() is called.
-        spill_server_->work(-1.0);
+        while (spill_server_running_) {
+            spill_server_->work(1);
+        }
+
         spill_server_->shutdown();
     }
 

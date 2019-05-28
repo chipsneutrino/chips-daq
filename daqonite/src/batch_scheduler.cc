@@ -6,12 +6,7 @@ void InfiniteScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t la
 {
     if (schedule.empty()) {
         Batch single_window{};
-
-        single_window.started = false;
-        single_window.last_updated_time = std::chrono::steady_clock::now();
-
-        single_window.clb_opt_data = new CLBEventMultiQueue();
-
+        single_window.created = true;
         single_window.start_time = 0;
         single_window.end_time = std::numeric_limits<decltype(Batch::end_time)>::max();
 
@@ -35,12 +30,7 @@ void RegularScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t las
     // Initialize the very first batch.
     if (schedule.empty()) {
         Batch first{};
-
-        first.started = false;
-        first.last_updated_time = std::chrono::steady_clock::now();
-
-        first.clb_opt_data = new CLBEventMultiQueue();
-
+        first.created = true;
         first.start_time = last_approx_timestamp;
         first.end_time = first.start_time + batch_duration_s_;
 
@@ -50,12 +40,7 @@ void RegularScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t las
     // At this point, there's always a previous batch.
     while (schedule.size() < n_batches_ahead_) {
         Batch next{};
-
-        next.started = false;
-        next.last_updated_time = std::chrono::steady_clock::now();
-
-        next.clb_opt_data = new CLBEventMultiQueue();
-
+        next.created = true;
         next.start_time = schedule.back().end_time;
         next.end_time = next.start_time + batch_duration_s_;
 

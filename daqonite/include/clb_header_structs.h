@@ -47,7 +47,7 @@ struct CLBCommonHeader {
         return ntohl(UDPSequenceNumber);
     }
 
-    UTCTime timeStamp() const
+    const UTCTime& timeStamp() const
     {
         return Timestamp;
     }

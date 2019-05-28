@@ -5,6 +5,7 @@
 #include <functional>
 
 #include "data_handler.h"
+#include "elastic_interface.h"
 #include "run_file.h"
 
 DataHandler::DataHandler()
@@ -22,6 +23,9 @@ DataHandler::DataHandler()
     , regular_scheduler_{ new RegularScheduler(8, std::chrono::minutes(1)) }
     , spill_scheduler_{ new SpillScheduler(55812, 20, 1.5, 8, 0.5) }
     , current_schedule_{}
+    , current_schedule_mtx_{}
+    , n_slots_{ 0 }
+    , n_batches_{ 0 }
 {
 }
 
@@ -33,10 +37,14 @@ void DataHandler::startRun(int run_type)
 
     // Prepare queues and schedule.
     waiting_batches_.consume_all([](Batch& b) { ; });
-    current_schedule_.clear();
+    {
+        boost::unique_lock<boost::upgrade_mutex> l{ current_schedule_mtx_ };
+        current_schedule_.clear();
+    }
 
     // TODO: determine this from run_type
     last_approx_timestamp_ = 0;
+    n_batches_ = 0;
     batch_scheduler_ = static_cast<const std::shared_ptr<RegularScheduler>&>(regular_scheduler_);
 
     // Start output thread.
@@ -111,11 +119,7 @@ void DataHandler::getRunNumAndName()
         }
     }
 
-    file_name_ = "../data/type";
-    file_name_ += std::to_string(run_type_);
-    file_name_ += "_run";
-    file_name_ += std::to_string(run_num_);
-    file_name_ += ".root";
+    file_name_ = fmt::format("../data/type{}_run{}.root", run_type_, run_num_);
 }
 
 std::size_t DataHandler::insertSort(CLBEventQueue& queue) noexcept
@@ -135,14 +139,17 @@ std::size_t DataHandler::insertSort(CLBEventQueue& queue) noexcept
     return n_swaps;
 }
 
-CLBEventMultiQueue* DataHandler::findCLBOpticalQueue(double timestamp)
+CLBEventMultiQueue* DataHandler::findCLBOpticalQueue(double timestamp, int data_slot_idx)
 {
+    // For reading schedule, we need reader's access.
+    boost::shared_lock<boost::upgrade_mutex> lk{ current_schedule_mtx_ };
+
     // TODO: if current_schedule_ is sorted, use binary search
     for (Batch& batch : current_schedule_) {
         if (timestamp >= batch.start_time && timestamp < batch.end_time) {
             batch.started = true;
             batch.last_updated_time = Clock::now();
-            return batch.clb_opt_data;
+            return batch.clb_opt_data + data_slot_idx;
         }
     }
 
@@ -151,12 +158,25 @@ CLBEventMultiQueue* DataHandler::findCLBOpticalQueue(double timestamp)
 
 void DataHandler::closeBatch(Batch&& batch)
 {
+    // Signal to CLB threads that no writes should be performed.
+    for (int i = 0; i < n_slots_; ++i) {
+        batch.clb_opt_data[i].closed_for_writing = true;
+    }
+
+    // Wait for any ongoing writes to finish.
+    for (int i = 0; i < n_slots_; ++i) {
+        std::lock_guard<std::mutex> lk{ batch.clb_opt_data[i].write_mutex };
+    }
+
+    // At this point, no thread should be writing data to any of the queues.
+
     if (!batch.started) {
-        delete batch.clb_opt_data;
+        g_elastic.log(INFO, "Batch {} was discarded because it was not started at the time of closing.", batch.idx);
+        disposeBatch(batch);
         return;
     }
 
-    g_elastic.log(INFO, "Scheduling batch for processing.");
+    g_elastic.log(INFO, "Closing batch {} for processing.", batch.idx);
     waiting_batches_.push(std::move(batch));
 }
 
@@ -188,17 +208,24 @@ void DataHandler::schedulingThread()
     batch_scheduler_->beginScheduling();
 
     while (scheduling_running_) {
-        // Copy current schedule
-        BatchSchedule new_schedule{ std::cref(current_schedule_) };
+        {
+            boost::upgrade_lock<boost::upgrade_mutex> lk{ current_schedule_mtx_ };
 
-        // Remove old batches from the schedule
-        closeOldBatches(new_schedule);
+            // Copy current schedule
+            BatchSchedule new_schedule{ std::cref(current_schedule_) };
 
-        // Add some more
-        batch_scheduler_->updateSchedule(new_schedule, last_approx_timestamp_);
+            // Remove old batches from the schedule
+            closeOldBatches(new_schedule);
 
-        // TODO: current_schedule_ is accessed from multiple threads, synchronize!
-        current_schedule_.swap(new_schedule);
+            // Add some more
+            batch_scheduler_->updateSchedule(new_schedule, last_approx_timestamp_);
+            prepareNewBatches(new_schedule);
+
+            {
+                boost::upgrade_to_unique_lock<boost::upgrade_mutex> ulk{ lk };
+                current_schedule_.swap(new_schedule);
+            }
+        }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
@@ -210,11 +237,34 @@ void DataHandler::schedulingThread()
         it = new_schedule.erase(it);
     }
 
-    // TODO: current_schedule_ is accessed from multiple threads, synchronize!
-    current_schedule_.swap(new_schedule);
+    {
+        boost::unique_lock<boost::upgrade_mutex> ulk{ current_schedule_mtx_ };
+        current_schedule_.swap(new_schedule);
+    }
 
     batch_scheduler_->endScheduling();
     g_elastic.log(INFO, "Scheduling thread signing off");
+}
+
+void DataHandler::prepareNewBatches(BatchSchedule& schedule)
+{
+    for (Batch& batch : schedule) {
+        if (batch.created) {
+            batch.created = false;
+
+            batch.idx = n_batches_++;
+            batch.started = false;
+            batch.last_updated_time = Clock::now();
+            batch.clb_opt_data = new CLBEventMultiQueue[n_slots_];
+
+            g_elastic.log(INFO, "Scheduling batch {} at with time interval: [{}, {}]", batch.idx, batch.start_time, batch.end_time);
+        }
+    }
+}
+
+void DataHandler::disposeBatch(Batch& batch)
+{
+    delete[] batch.clb_opt_data;
 }
 
 void DataHandler::outputThread()
@@ -251,11 +301,17 @@ void DataHandler::outputThread()
         }
 
         // At this point, we always have a valid batch.
-        CLBEventMultiQueue& events{ *current_batch.clb_opt_data };
 
-        // Wait until all writing is done.
-        std::lock_guard<std::mutex> l{ events.write_mutex };
-        g_elastic.log(INFO, "Have a batch from {} POMs", events.size());
+        // Consolidate multi-queue by moving it into a single instance.
+        CLBEventMultiQueue events{};
+        for (int i = 0; i < n_slots_; ++i) {
+            CLBEventMultiQueue& slot_multiqueue = current_batch.clb_opt_data[i];
+            for (auto it = slot_multiqueue.begin(); it != slot_multiqueue.end(); ++it) {
+                events.emplace(it->first, std::move(it->second));
+            }
+        }
+
+        g_elastic.log(INFO, "Processing batch {} (from {} POMs)", current_batch.idx, events.size());
 
         // Calculate complete timestamps & make sure sequence is sorted
         std::size_t n_hits{ 0 };
@@ -263,30 +319,29 @@ void DataHandler::outputThread()
             CLBEventQueue& queue = key_value.second;
             n_hits += queue.size();
 
-            for (CLBEvent& event : queue) {
-                // TODO: vectorize?
-                event.SortKey = event.Timestamp_s + 1e-9 * event.Timestamp_ns;
-            }
-
             // TODO: report disorder measure to backend
             const std::size_t n_swaps = insertSort(queue);
             g_elastic.log(INFO, "POM #{} ({} hits) required {} swaps to achieve time ordering", key_value.first, queue.size(), n_swaps);
         }
 
-        // Merge-sort CLB events.
-        out_queue.clear();
-        g_elastic.log(INFO, "Merge-sorting {} hits", n_hits);
-        sorter.merge(events, out_queue);
+        if (n_hits > 0) {
+            // Merge-sort CLB events.
+            out_queue.clear();
+            g_elastic.log(INFO, "Merge-sorting {} hits", n_hits);
+            sorter.merge(events, out_queue);
 
-        // Write sorted events out.
-        out_file.writeEventQueue(out_queue);
-        out_file.flush();
-        out_queue.clear();
+            // Write sorted events out.
+            out_file.writeEventQueue(out_queue);
+            out_file.flush();
+            out_queue.clear();
 
-        // TODO: report metrics to backend
+            // TODO: report metrics to backend
+        } else {
+            g_elastic.log(INFO, "Batch {} is empty.", current_batch.idx);
+        }
 
-        delete current_batch.clb_opt_data;
-        g_elastic.log(INFO, "Batch done and written");
+        g_elastic.log(INFO, "Batch {} done and written", current_batch.idx);
+        disposeBatch(current_batch);
     }
 
     // Close output file.
@@ -318,4 +373,9 @@ void DataHandler::joinThreads()
 void DataHandler::join()
 {
     spill_scheduler_->join();
+}
+
+int DataHandler::assignNewSlot()
+{
+    return n_slots_++;
 }

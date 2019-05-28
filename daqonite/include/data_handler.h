@@ -6,6 +6,9 @@
  *
  * Author: Josh Tingey
  * Contact: j.tingey.16@ucl.ac.uk
+ *
+ * Co-author: Petr Manek
+ * Contact: pmanek@fnal.gov
  */
 
 #pragma once
@@ -17,13 +20,11 @@
 #include <stdexcept>
 #include <thread>
 
-#include "TFile.h"
-#include "TTree.h"
-#include "boost/lockfree/queue.hpp"
+#include <boost/lockfree/queue.hpp>
+#include <boost/thread.hpp>
 
 #include "batch_scheduler.h"
 #include "clb_event.h"
-#include "elastic_interface.h"
 #include "merge_sorter.h"
 #include "spill_scheduler.h"
 
@@ -44,25 +45,27 @@ public:
     virtual ~DataHandler() = default;
 
     /**
-		 * Start a data taking run
-		 * Sets the run variables, opens the output file, and adds TTrees and branches
-		 */
+     * Start a data taking run
+     * Sets the run variables, opens the output file, and adds TTrees and branches
+     */
     void startRun(int run_type);
 
     /**
-		 * Stop a data taking run
-		 * Writes the TTrees to file, close the output file, and cleanup/reset variables
-		 */
+     * Stop a data taking run
+     * Writes the TTrees to file, close the output file, and cleanup/reset variables
+     */
     void stopRun();
 
     /// Find a queue for CLB data coming at a specific time.
-    CLBEventMultiQueue* findCLBOpticalQueue(double timestamp);
+    CLBEventMultiQueue* findCLBOpticalQueue(double timestamp, int data_slot_idx);
 
     /// Bump up last approximate timestamp.
     void updateLastApproxTimestamp(std::uint32_t timestamp);
 
     /// Wait for threads to terminate.
     void join();
+
+    int assignNewSlot();
 
 private:
     std::unique_ptr<std::thread> output_thread_; ///< Thread for merge-sorting and saving
@@ -90,6 +93,10 @@ private:
     std::shared_ptr<RegularScheduler> regular_scheduler_;
     std::shared_ptr<SpillScheduler> spill_scheduler_;
     BatchSchedule current_schedule_; ///< Batches open for data writing.
+    boost::upgrade_mutex current_schedule_mtx_; ///< Multiple-reader / single-writer mutex for current schedule.
+
+    int n_slots_;
+    int n_batches_;
 
     /// Close all batches which were not modified for a sufficiently long duration.
     void closeOldBatches(BatchSchedule& schedule);
@@ -100,13 +107,17 @@ private:
     /// Main entry point of the scheduling thread.
     void schedulingThread();
 
+    void prepareNewBatches(BatchSchedule& schedule);
+
+    static void disposeBatch(Batch& batch);
+
     /// Implementation of conventional insert-sort algorithm used to pre-sort CLB queues.
     static std::size_t insertSort(CLBEventQueue& queue) noexcept;
 
     /**
-		 * Finds the run number of the given run type from file
-		 * and the updates the file having incremented the run number
-         * Then determines the output file name
-		 */
+     * Finds the run number of the given run type from file
+     * and the updates the file having incremented the run number
+     * Then determines the output file name
+     */
     void getRunNumAndName();
 };

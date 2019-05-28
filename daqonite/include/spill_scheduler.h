@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <ctime>
 #include <memory>
 #include <thread>
@@ -49,6 +50,7 @@ class SpillScheduler : public BatchScheduler {
     std::size_t n_batches_ahead_;
     double time_window_radius_;
 
+    std::atomic_bool spill_server_running_;
     std::unique_ptr<std::thread> spill_server_thread_;
 
     class Spill : public XmlRpc::XmlRpcServerMethod {

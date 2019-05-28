@@ -19,6 +19,8 @@ struct Batch {
     double start_time;
     double end_time;
 
+    int idx;
+    bool created;
     bool started;
     std::chrono::steady_clock::time_point last_updated_time;
 

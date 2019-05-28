@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <cstdint>
 #include <mutex>
 #include <unordered_map>
@@ -37,7 +38,8 @@ class CLBEventQueue : public std::vector<CLBEvent> {
 
 class CLBEventMultiQueue : public std::unordered_map<std::uint32_t, CLBEventQueue> {
 public:
-    std::mutex write_mutex{};
+    std::mutex write_mutex{}; ///< Used by CLBHandlers and DataManager, serves to make sure no-one is writing to a closed queue.
+    std::atomic_bool closed_for_writing{ false }; ///< Is this queue not to be written into?
 
     inline CLBEventQueue& get_queue_for_writing(std::uint32_t pom_id)
     {
