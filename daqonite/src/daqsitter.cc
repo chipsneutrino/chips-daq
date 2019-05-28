@@ -23,13 +23,7 @@ int main(int argc, char *argv[])
 
     // Argument handling
     boost::program_options::options_description desc("Options");
-    desc.add_options()("help,h", "DAQsitter...")
-        ("elastic", "Save monitoring data to elasticsearch")
-        ("file", "Save monitoring data to ROOT file")
-        ("gui", "Show the old monitoring GUI")
-        ("config,c", boost::program_options::value<std::string>(&config_file), "Configuration file (../data/config.opt)")
-        ("clb_frac", boost::program_options::value<float>(&clb_frac), "Fraction of CLB packets to use (1.0)")
-        ("bbb_frac", boost::program_options::value<float>(&bbb_frac), "Fraction of BBB packets to use (1.0)");
+    desc.add_options()("help,h", "DAQsitter...")("elastic", "Save monitoring data to elasticsearch")("file", "Save monitoring data to ROOT file")("gui", "Show the old monitoring GUI")("config,c", boost::program_options::value<std::string>(&config_file), "Configuration file (../data/config.opt)")("clb_frac", boost::program_options::value<float>(&clb_frac), "Fraction of CLB packets to use (1.0)")("bbb_frac", boost::program_options::value<float>(&bbb_frac), "Fraction of BBB packets to use (1.0)");
 
     try
     {

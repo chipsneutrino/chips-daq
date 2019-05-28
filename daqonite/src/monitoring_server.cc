@@ -10,7 +10,6 @@ MonitoringServer::MonitoringServer(std::string config_file,
                                    float clbFrac, float bbbFrac)
     : fSave_elastic(save_elastic), fSave_file(save_file), fShow_gui(show_gui), fSignal_set(fIO_service, SIGINT), fCLB_socket(fIO_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), CLBMONPORT)), fCLB_frac(clbFrac), fBBB_socket(fIO_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), BBBMONPORT)), fBBB_frac(bbbFrac)
 {
-
     // Initialise the random number generator
     srand((unsigned)time(NULL));
 
@@ -94,7 +93,7 @@ void MonitoringServer::setupTree()
     fCLB_tree->Branch("timestamp_s", &fCLB_timestamp, "fCLB_timestamp/l");
     fCLB_tree->Branch("temperature", &fCLB_temperature, "fCLB_temperature/s");
     fCLB_tree->Branch("humidity", &fCLB_humidity, "fCLB_humidity/s");
-    fCLB_tree->Branch("hits", &fCLB_hits, "fCLB_hits[30]/i");
+    fCLB_tree->Branch("rates", &fCLB_rates, "fCLB_rates[30]/f");
 }
 
 // Work/Handle the CLB monitoring socket
@@ -108,6 +107,7 @@ void MonitoringServer::workCLBSocket()
 
 void MonitoringServer::handleCLBSocket(boost::system::error_code const &error, std::size_t size)
 {
+
     if (!error)
     {
 
@@ -129,7 +129,6 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const &error, s
         // Cast the beggining of the packet to the CLBCommonHeader
         CLBCommonHeader const &header =
             *static_cast<CLBCommonHeader const *>(static_cast<void const *>(&fCLB_buffer[0]));
-        //std::cout << header << std::endl;
 
         // Check the type of the packet is monitoring from the CLBCommonHeader
         if (getType(header).first != MONI)
@@ -154,18 +153,22 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const &error, s
         // Cast the next section of the packet to the monitoring hits
         MONHits const &hits =
             *static_cast<MONHits const *>(static_cast<void const *>(&fCLB_buffer[0] + sizeof(CLBCommonHeader)));
-        //std::cout << hits << std::endl;
-
-        // Get the monitoring hits data
-        for (int i = 0; i < 30; ++i)
-        {
-            fCLB_hits[i] = hits.hit(i);
-        }
 
         // Cast the next section of the packet to the SCData struct
         SCData const &scData =
             *static_cast<SCData const *>(static_cast<void const *>(&fCLB_buffer[0] + sizeof(CLBCommonHeader) + sizeof(MONHits)));
-        //std::cout << scData << std::endl;
+
+        // Get the monitoring hits rate data
+        float rate_scale = 1000000 / scData.duration(); // Window length in microseconds
+        std::array<float, 30> rates;
+        for (int i = 0; i < 30; ++i)
+        {
+            fCLB_rates[i] = (float)hits.hit(i) * rate_scale;
+            rates[i] = fCLB_rates[i];
+        }
+
+        // See if there was a high rate veto in this packet
+        fRate_veto = highRate(hits);
 
         fCLB_temperature = (int)scData.temp();
         fCLB_humidity = (int)scData.humidity();
@@ -177,12 +180,11 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const &error, s
         }
 
         // Save the monitoring data to elasticsearch
-        std::string message = "";
         if (fSave_elastic)
         {
-            g_elastic.packet(fCLB_run_num, fCLB_pom_id, fCLB_timestamp,
-                             fCLB_temperature, fCLB_humidity,
-                             message, &fCLB_hits[0]);
+            g_elastic.mon(fCLB_timestamp, fCLB_pom_id, fCLB_run_num,
+                          fCLB_temperature, fCLB_humidity, fRate_veto,
+                          rates);
         }
     }
     else

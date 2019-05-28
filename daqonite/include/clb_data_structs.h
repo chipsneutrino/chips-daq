@@ -220,6 +220,13 @@ inline std::ostream &operator<<(std::ostream &stream, const MONHits &hits)
                   << "Veto:  " << hits.vetoBitset().to_string() << '\n';
 };
 
+/// Was there a high-rate veto
+inline bool highRate(MONHits const &hits)
+{
+    const static uint32_t mask = 0xFFFFFFFF;
+    return hits.veto() & mask;
+}
+
 /// Struct describing the CLB AHRS data
 struct __attribute__((packed)) AHRSData
 {

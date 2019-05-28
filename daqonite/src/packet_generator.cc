@@ -5,17 +5,9 @@
 #include "packet_generator.h"
 
 PacketGenerator::PacketGenerator(std::string config_file, std::string dataFile,
-    std::string address, int time_slice_duration,
-    int runNum, int MTU, int hitR)
-    : fConfig(config_file.c_str())
-    , fFile(dataFile.c_str())
-    , fSock_clb_opt(fIO_service, boost::asio::ip::udp::udp::v4())
-    , fSock_clb_mon(fIO_service, boost::asio::ip::udp::udp::v4())
-    , fTimer(fIO_service, boost::posix_time::millisec(time_slice_duration))
-    , fDelta_ts(time_slice_duration)
-    , fHit_dist(hitR * time_slice_duration, (hitR * time_slice_duration) / 10)
-    , fTemperature_dist(3000, 500)
-    , fHumidity_dist(5000, 500)
+                                 std::string address, int time_slice_duration,
+                                 int runNum, int MTU, int hitR)
+    : fConfig(config_file.c_str()), fFile(dataFile.c_str()), fSock_clb_opt(fIO_service, boost::asio::ip::udp::udp::v4()), fSock_clb_mon(fIO_service, boost::asio::ip::udp::udp::v4()), fTimer(fIO_service, boost::posix_time::millisec(time_slice_duration)), fDelta_ts(time_slice_duration), fHit_dist(hitR * time_slice_duration, (hitR * time_slice_duration) / 10), fTemperature_dist(3000, 500), fHumidity_dist(5000, 500)
 {
 
     // Print the configuration
@@ -24,13 +16,13 @@ PacketGenerator::PacketGenerator(std::string config_file, std::string dataFile,
     // Set up the CLB optical output
     boost::asio::ip::udp::udp::resolver resolver_clb_opt(fIO_service);
     boost::asio::ip::udp::udp::resolver::query query_clb_opt(boost::asio::ip::udp::udp::v4(), address,
-        boost::lexical_cast<std::string>(56015));
+                                                             boost::lexical_cast<std::string>(56015));
     fCLB_opt_endpoint = *resolver_clb_opt.resolve(query_clb_opt);
 
     // Set up the CLB monitoring output
     boost::asio::ip::udp::udp::resolver resolver_clb_mon(fIO_service);
     boost::asio::ip::udp::udp::resolver::query query_clb_mon(boost::asio::ip::udp::udp::v4(), address,
-        boost::lexical_cast<std::string>(56017));
+                                                             boost::lexical_cast<std::string>(56017));
     fCLB_mon_endpoint = *resolver_clb_mon.resolve(query_clb_mon);
 
     // Setup the generation vectors
@@ -38,7 +30,8 @@ PacketGenerator::PacketGenerator(std::string config_file, std::string dataFile,
     fCLB_mon_headers.reserve(fConfig.fNum_clbs);
     fWindow_hits.reserve(fConfig.fNum_clbs);
 
-    for (int i = 0; i < fConfig.fNum_clbs; i++) {
+    for (int i = 0; i < fConfig.fNum_clbs; i++)
+    {
         // Optical packet headers
         CLBCommonHeader header_opt;
         header_opt.RunNumber = htonl(runNum);
@@ -90,24 +83,23 @@ PacketGenerator::PacketGenerator(std::string config_file, std::string dataFile,
 
     // Setup the monitoring data
     AHRSData ahrs;
-    ahrs.yaw = htonl(0.0); // Yaw in deg (Float)
+    ahrs.yaw = htonl(0.0);   // Yaw in deg (Float)
     ahrs.pitch = htonl(0.0); // Pitch in deg (Float)
-    ahrs.roll = htonl(0.0); // Roll in deg (Float)
-    ahrs.ax = htonl(0.0); // Ax in g (Float)
-    ahrs.ay = htonl(0.0); // Ay in g (Float)
-    ahrs.az = htonl(0.0); // Az in g (Float)
-    ahrs.gx = htonl(0.0); // Gx in deg/sec (Float)
-    ahrs.gy = htonl(0.0); // Gy in deg/sec (Float)
-    ahrs.gz = htonl(0.0); // Gz in deg/sec (Float)
-    ahrs.hx = htonl(0.0); // Hx in gauss (Float)
-    ahrs.hy = htonl(0.0); // Hy in gauss (Float)
-    ahrs.hz = htonl(0.0); // Hz in gauss (Float)
+    ahrs.roll = htonl(0.0);  // Roll in deg (Float)
+    ahrs.ax = htonl(0.0);    // Ax in g (Float)
+    ahrs.ay = htonl(0.0);    // Ay in g (Float)
+    ahrs.az = htonl(0.0);    // Az in g (Float)
+    ahrs.gx = htonl(0.0);    // Gx in deg/sec (Float)
+    ahrs.gy = htonl(0.0);    // Gy in deg/sec (Float)
+    ahrs.gz = htonl(0.0);    // Gz in deg/sec (Float)
+    ahrs.hx = htonl(0.0);    // Hx in gauss (Float)
+    ahrs.hy = htonl(0.0);    // Hy in gauss (Float)
+    ahrs.hz = htonl(0.0);    // Hz in gauss (Float)
 
-    fMon_data.pad = htonl(0);
-    fMon_data.valid = htonl(0);
+    fMon_data.Valid = htonl(0);
     fMon_data.ahrs = ahrs;
-    fMon_data.temp = htons(0); // Temperature in 100th of degrees
-    fMon_data.humidity = htonl(0); // Humidity in 100th RH
+    fMon_data.Temp = htons(0);     // Temperature in 100th of degrees
+    fMon_data.Humidity = htonl(0); // Humidity in 100th RH
 
     // Log the setup to elasticsearch
     g_elastic.log(INFO, "Packet Generator Start");
@@ -117,7 +109,8 @@ PacketGenerator::PacketGenerator(std::string config_file, std::string dataFile,
 
     // Start on multiple threads
     boost::thread_group thread_group;
-    for (int threadCount = 0; threadCount < 10; threadCount++) {
+    for (int threadCount = 0; threadCount < 10; threadCount++)
+    {
         thread_group.create_thread(boost::bind(&boost::asio::io_service::run, &fIO_service));
     }
 
@@ -154,29 +147,37 @@ void PacketGenerator::generate()
     //std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
 
     // Generate the number of hits on each channel will have this window
-    for (int clb = 0; clb < fConfig.fNum_clbs; clb++) {
-        for (int channel = 0; channel < 30; channel++) {
+    for (int clb = 0; clb < fConfig.fNum_clbs; clb++)
+    {
+        for (int channel = 0; channel < 30; channel++)
+        {
             fWindow_hits[clb][channel] = (int)fHit_dist(fGenerator);
         }
     }
 
     // Send the optical packets
     int seqNum = 0;
-    do {
-        for (int clb = 0; clb < fConfig.fNum_clbs; clb++) {
-            CLBCommonHeader& common_header = fCLB_opt_headers[clb];
+    do
+    {
+        for (int clb = 0; clb < fConfig.fNum_clbs; clb++)
+        {
+            CLBCommonHeader &common_header = fCLB_opt_headers[clb];
 
-            if (ntohl(common_header.UDPSequenceNumber) == (unsigned)fMax_seqnumber) {
+            if (ntohl(common_header.UDPSequenceNumber) == (unsigned)fMax_seqnumber)
+            {
                 // Make a trailer packet
                 common_header.POMStatus2 = htonl(128);
                 fCLB_opt_data.resize(sizeof(common_header));
-            } else if (ntohl(common_header.UDPSequenceNumber) == (unsigned)fMax_seqnumber + 1) {
+            }
+            else if (ntohl(common_header.UDPSequenceNumber) == (unsigned)fMax_seqnumber + 1)
+            {
                 // Reset the header to a normal optical packet and update the timestamp
                 common_header.UDPSequenceNumber = htonl(0);
                 common_header.POMStatus2 = htonl(0);
                 int tics = ntohl(common_header.Timestamp.Tics) + 62500 * fDelta_ts;
                 common_header.Timestamp.Tics = htonl(tics);
-                if (tics >= 62500000) {
+                if (tics >= 62500000)
+                {
                     int secs = ntohl(common_header.Timestamp.Sec) + 1;
                     common_header.Timestamp.Sec = htonl(secs);
                     common_header.Timestamp.Tics = htonl(0);
@@ -202,15 +203,17 @@ void PacketGenerator::generate()
     } while (seqNum < (fMax_seqnumber + 1));
 
     // Send the monitoring packets
-    for (int clb = 0; clb < fConfig.fNum_clbs; clb++) {
-        fMon_data.temp = htons((short)fTemperature_dist(fGenerator));
-        fMon_data.humidity = htons((short)fHumidity_dist(fGenerator));
+    for (int clb = 0; clb < fConfig.fNum_clbs; clb++)
+    {
+        fMon_data.Temp = htons((short)fTemperature_dist(fGenerator));
+        fMon_data.Humidity = htons((short)fHumidity_dist(fGenerator));
 
         // Update the time in the header
-        CLBCommonHeader& common_header = fCLB_mon_headers[clb];
+        CLBCommonHeader &common_header = fCLB_mon_headers[clb];
         int tics = ntohl(common_header.Timestamp.Tics) + 62500 * fDelta_ts;
         common_header.Timestamp.Tics = htonl(tics);
-        if (tics >= 62500000) {
+        if (tics >= 62500000)
+        {
             int secs = ntohl(common_header.Timestamp.Sec) + 1;
             common_header.Timestamp.Sec = htonl(secs);
             common_header.Timestamp.Tics = htonl(0);

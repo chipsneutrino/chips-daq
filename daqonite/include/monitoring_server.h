@@ -102,7 +102,8 @@ private:
     long fCLB_timestamp;  ///< Mon CLB: Header timestamp in ms (8 bytes)
     int fCLB_temperature; ///< Mon CLB: Temperature data (2 bytes)
     int fCLB_humidity;    ///< Mon CLB: Humidity data (2 bytes)
-    int fCLB_hits[30];    ///< Mon CLB: Channel Hits (4 bytes)
+    float fCLB_rates[30];    ///< Mon CLB: Channel Hits (4 bytes)
+    bool fRate_veto;      ///< Mon CLB: Was a high rate veto present (bool)
 
     // BBB Socket
     boost::asio::ip::udp::socket fBBB_socket;                 ///< Socket to send BBB monitoring data to
