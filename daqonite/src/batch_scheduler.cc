@@ -5,7 +5,7 @@
 void InfiniteScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t last_approx_timestamp)
 {
     if (schedule.empty()) {
-        Batch single_window {};
+        Batch single_window{};
 
         single_window.started = false;
         single_window.last_updated_time = std::chrono::steady_clock::now();
@@ -20,8 +20,8 @@ void InfiniteScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t la
 }
 
 RegularScheduler::RegularScheduler(std::size_t n_batches_ahead, std::chrono::milliseconds batch_duration)
-    : n_batches_ahead_ { n_batches_ahead }
-    , batch_duration_s_ { batch_duration.count() / 1000. }
+    : n_batches_ahead_{ n_batches_ahead }
+    , batch_duration_s_{ batch_duration.count() / 1000. }
 {
 }
 
@@ -34,9 +34,7 @@ void RegularScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t las
 
     // Initialize the very first batch.
     if (schedule.empty()) {
-        // get starting timestamp
-
-        Batch first {};
+        Batch first{};
 
         first.started = false;
         first.last_updated_time = std::chrono::steady_clock::now();
@@ -51,7 +49,7 @@ void RegularScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t las
 
     // At this point, there's always a previous batch.
     while (schedule.size() < n_batches_ahead_) {
-        Batch next {};
+        Batch next{};
 
         next.started = false;
         next.last_updated_time = std::chrono::steady_clock::now();

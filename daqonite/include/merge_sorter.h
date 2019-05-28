@@ -5,8 +5,7 @@
  * Contact: pmanek@fnal.gov
  */
 
-#ifndef MERGE_SORTER_H
-#define MERGE_SORTER_H
+#pragma once
 
 #include <cstdlib>
 #include <stdexcept>
@@ -90,5 +89,3 @@ public:
 
     void merge(CLBEventMultiQueue& input, CLBEventQueue& output);
 };
-
-#endif /* MERGE_SORTER_H */

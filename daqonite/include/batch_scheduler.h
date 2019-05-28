@@ -8,12 +8,10 @@
  * Contact: pmanek@fnal.gov
  */
 
-#ifndef BATCH_SCHEDULER_H_
-#define BATCH_SCHEDULER_H_
+#pragma once
 
 #include <chrono>
 #include <list>
-#include <memory>
 
 #include "clb_event.h"
 
@@ -33,7 +31,9 @@ using BatchSchedule = std::list<Batch>;
 class BatchScheduler {
 public:
     virtual ~BatchScheduler() = default;
+    virtual void beginScheduling() {}
     virtual void updateSchedule(BatchSchedule& schedule, std::uint32_t last_approx_timestamp) = 0;
+    virtual void endScheduling() {}
 };
 
 /// Scheduler which produces only one infinite batch.
@@ -51,7 +51,3 @@ public:
     explicit RegularScheduler(std::size_t n_batches_ahead, std::chrono::milliseconds batch_duration);
     void updateSchedule(BatchSchedule& schedule, std::uint32_t last_approx_timestamp) override;
 };
-
-// TODO: SpillScheduler
-
-#endif /* BATCH_SCHEDULER_H_ */

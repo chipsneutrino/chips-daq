@@ -7,8 +7,7 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef MONITORING_SERVER_H_
-#define MONITORING_SERVER_H_
+#pragma once
 
 #include <ctime>
 #include <fstream>
@@ -110,5 +109,3 @@ private:
     char fBBB_buffer[BUFFERSIZE] __attribute__((aligned(8))); ///< BBB monitoring socket buffer
     float fBBB_frac;                                          ///< Fraction of BBB monitoring data to keep
 };
-
-#endif

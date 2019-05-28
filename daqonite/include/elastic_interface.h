@@ -5,8 +5,7 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef ELASTIC_INTERFACE_H_
-#define ELASTIC_INTERFACE_H_
+#pragma once
 
 #include <chrono>
 #include <fstream>
@@ -21,14 +20,14 @@
 #include <elasticlient/client.h>
 #include <elasticlient/logging.h>
 #include <elasticlient/bulk.h>
+#include <fmt/format.h>
 #include <json/json.h>
 
 #include <boost/thread.hpp>
 #include <boost/asio.hpp>
 
 /// Enum for describing the different logging severity levels
-enum severity
-{
+enum severity {
     TRACE,
     DEBUG,
     INFO,
@@ -38,8 +37,7 @@ enum severity
 };
 
 /// Enum for describing the different logging modes
-enum log_mode
-{
+enum log_mode {
     ELASTIC,
     FILE_LOG
 };
@@ -49,13 +47,12 @@ enum log_mode
 #define MAX_TRIES 3
 
 /// Callback for elasticlient logs
-inline void elasticlient_callback(elasticlient::LogLevel logLevel, const std::string &msg)
+inline void elasticlient_callback(elasticlient::LogLevel logLevel, const std::string& msg)
 {
     std::cout << "LOG (" << (unsigned)logLevel << "): " << msg << std::endl;
 }
 
-class ElasticInterface
-{
+class ElasticInterface {
 public:
     /// Create a ElasticInterface
     ElasticInterface();
@@ -73,6 +70,13 @@ public:
          * @param debug         print debug messages
 		 */
     void init(std::string processName, bool stdoutPrint, bool debug);
+
+    /// Nice pretty-print formatting using fmt.
+    template <typename S, typename... Args>
+    inline void log(severity level, const S& format_str, const Args&... args)
+    {
+        log(level, fmt::format(format_str, args...));
+    }
 
     /**
 		 * Indexes a "daqlog" index document to elasticsearch
@@ -191,5 +195,3 @@ private:
 };
 
 extern ElasticInterface g_elastic; ///< Global instance of this class
-
-#endif

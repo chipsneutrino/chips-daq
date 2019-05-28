@@ -8,8 +8,7 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef PACKET_GENERATOR_H_
-#define PACKET_GENERATOR_H_
+#pragma once
 
 #include "clb_data_structs.h"
 #include "clb_header_structs.h"
@@ -89,4 +88,3 @@ private:
     std::normal_distribution<float> fTemperature_dist;
     std::normal_distribution<float> fHumidity_dist;
 };
-#endif

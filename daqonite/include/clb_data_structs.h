@@ -8,8 +8,7 @@
  * Contact: j.tingey.16@ucl.ac.uk
  */
 
-#ifndef CLB_DATA_STRUCTS_H
-#define CLB_DATA_STRUCTS_H
+#pragma once
 
 #include <arpa/inet.h>
 #include <assert.h>
@@ -327,5 +326,3 @@ inline bool validAHRS(SCData const &data)
     const static uint32_t mask = 0x1;
     return data.valid() & mask;
 }
-
-#endif
