@@ -83,16 +83,22 @@ private:
     /// Calls the async_receive() on the local UDP control socket
     void workLocalSocket();
 
+    /// Create CLB and BBB handlers depending on configuration.
     void setupHandlers();
 
+    /// Start a run of particular type.
     void cmdStart(int run_type);
+
+    /// Stop ongoing run.
     void cmdStop();
+
+    /// Exit run loop, possibly stopping ongoing run.
     void cmdExit();
 
     // Settings
     bool collect_clb_data_; ///< Should we collect CLB data?
     bool collect_bbb_data_; ///< Should we collect BBB data?
-    std::list<int> clb_ports_;
+    std::list<int> clb_ports_; ///< Port numbers where CLB handlers are listening.
     int n_threads_; ///< The number of threads to use
 
     // Running mode

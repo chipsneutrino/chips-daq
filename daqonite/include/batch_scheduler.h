@@ -16,15 +16,15 @@
 #include "clb_event.h"
 
 struct Batch {
-    double start_time;
-    double end_time;
+    double start_time; ///< Start timestamp for events.
+    double end_time; ///< End timestamp for events.
 
-    int idx;
-    bool created;
-    bool started;
-    std::chrono::steady_clock::time_point last_updated_time;
+    int idx; ///< Batch index used for logging.
+    bool created; ///< Was the batch just created by the scheduler and needs DS allocation?
+    bool started; ///< Was the batch "touched" by any data taking thread?
+    std::chrono::steady_clock::time_point last_updated_time; ///< Time of last "touch"
 
-    CLBEventMultiQueue* clb_opt_data;
+    CLBEventMultiQueue* clb_opt_data; ///< Data queues, one for each slot. Managed by DataHandler.
 };
 
 using BatchSchedule = std::list<Batch>;

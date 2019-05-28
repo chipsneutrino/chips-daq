@@ -33,7 +33,7 @@
 class DataHandler {
 public:
     /// Create a DataHandler
-    DataHandler();
+    explicit DataHandler();
 
     DataHandler(const DataHandler& other) = delete;
     DataHandler(DataHandler&& other) = delete;
@@ -65,6 +65,7 @@ public:
     /// Wait for threads to terminate.
     void join();
 
+    /// Create new slot for CLB optical data. Must *not* be called during run.
     int assignNewSlot();
 
 private:
@@ -95,8 +96,8 @@ private:
     BatchSchedule current_schedule_; ///< Batches open for data writing.
     boost::upgrade_mutex current_schedule_mtx_; ///< Multiple-reader / single-writer mutex for current schedule.
 
-    int n_slots_;
-    int n_batches_;
+    int n_slots_; ///< Number of open data slots. Must be constant during runs.
+    int n_batches_; ///< Number of opened batches. Used for indexing.
 
     /// Close all batches which were not modified for a sufficiently long duration.
     void closeOldBatches(BatchSchedule& schedule);
@@ -107,8 +108,10 @@ private:
     /// Main entry point of the scheduling thread.
     void schedulingThread();
 
+    /// Allocate data structures for newly created batches.
     void prepareNewBatches(BatchSchedule& schedule);
 
+    /// Dispose of data structures associated with a bathc.
     static void disposeBatch(Batch& batch);
 
     /// Implementation of conventional insert-sort algorithm used to pre-sort CLB queues.

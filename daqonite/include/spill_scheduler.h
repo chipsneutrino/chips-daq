@@ -44,30 +44,35 @@ std::string getSpillNameFromType(int type);
 void convertNovaTimeToUnixTime(const std::uint64_t& inputNovaTime, struct timeval& outputUnixTime);
 
 class SpillScheduler : public BatchScheduler {
-    int port_;
-    std::size_t trigger_memory_size_;
-    double init_period_guess_;
-    std::size_t n_batches_ahead_;
-    double time_window_radius_;
+    int port_; ///< Port where spill messages are expected to come.
+    std::size_t trigger_memory_size_; ///< How many past triggers to remember (more = robust, less = quickly adapting)
+    double init_period_guess_; ///< Initial guess of trigger period in seconds. Will be eventually overwritten.
+    std::size_t n_batches_ahead_; ///< How many batches to open in the future?
+    double time_window_radius_; ///< Duration around spill time for batches.
 
-    std::atomic_bool spill_server_running_;
-    std::unique_ptr<std::thread> spill_server_thread_;
+    std::atomic_bool spill_server_running_; ///< Is the spill server supposed to be running?
+    std::unique_ptr<std::thread> spill_server_thread_; ///< Spill server thread.
 
     class Spill : public XmlRpc::XmlRpcServerMethod {
-        std::shared_ptr<TriggerPredictor> predictor_;
+        std::shared_ptr<TriggerPredictor> predictor_; ///< Spill interval predictor.
 
     public:
         Spill(XmlRpc::XmlRpcServer* server, std::shared_ptr<TriggerPredictor> predictor);
+
+        /// Receive spill XML-RPC message.
         void execute(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result) override;
     };
 
-    std::unique_ptr<XmlRpc::XmlRpcServer> spill_server_;
-    std::shared_ptr<TriggerPredictor> predictor_;
+    std::unique_ptr<XmlRpc::XmlRpcServer> spill_server_; ///< XML-RPC server handling spill requests.
+    std::shared_ptr<TriggerPredictor> predictor_; ///< Spill interval predictor.
+
+    /// Main loop of the spill server thread.
     void workSpillServer();
 
 public:
     explicit SpillScheduler(int port, std::size_t trigger_memory_size, double init_period_guess, std::size_t n_batches_ahead, double time_window_radius);
     void updateSchedule(BatchSchedule& schedule, std::uint32_t last_approx_timestamp) override;
 
+    /// Wait until spill server terminates.
     void join();
 };

@@ -61,6 +61,7 @@ private:
      */
     void handleOpticalData(boost::system::error_code const& error, std::size_t size);
 
+    /// Process CLB optical data packet.
     bool processPacket(const CLBCommonHeader& header, int n_hits, const hit_t* hit) const;
 
     // CLBHandler settings/input
@@ -72,6 +73,6 @@ private:
     udp::socket socket_optical_; ///< Optical data UDP socket
     char buffer_optical_[buffer_size_opt] __attribute__((aligned(8))); ///< Optical data buffer
 
-    int data_slot_idx_;
-    int handler_id_;
+    int data_slot_idx_; ///< Unique data slot index assigned by DataHandler to prevent overwrites
+    int handler_id_; ///< Logging ID
 };
