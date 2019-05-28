@@ -1,6 +1,6 @@
 [submodule "daqonite/lib/elasticlient"]
 	path = daqonite/lib/elasticlient
-	url = https://github.com/seznam/elasticlient.git
+	url = https://github.com/jooosh25/elasticlient.git
 [submodule "daqonite/lib/fmt"]
 	path = daqonite/lib/fmt
 	url = https://github.com/fmtlib/fmt.git
