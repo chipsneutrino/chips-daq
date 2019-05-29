@@ -10,3 +10,6 @@
 [submodule "daqonite/lib/nng"]
 	path = daqonite/lib/nng
 	url = https://github.com/nanomsg/nng.git
+[submodule "daqonite/lib/tinyfsm"]
+	path = daqonite/lib/tinyfsm
+	url = https://github.com/digint/tinyfsm.git
