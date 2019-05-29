@@ -154,5 +154,3 @@ inline bool fullFIFO(CLBCommonHeader const &header)
     const static uint32_t mask = 0x7FFFFFFF;
     return header.pomStatus(2) & mask;
 }
-
-#endif
