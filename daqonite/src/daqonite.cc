@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
     readSettings(argc, argv);
 
     // Initialise the elasticsearch interface.
-    g_elastic.init("daqonite", true, false); // We want log message to be printed to stdout
+    g_elastic.init(true, false, 10); // log to stdout and use 10 threads for indexing
     g_elastic.log(INFO, "Checking hard hats, high-vis, boots and gloves!");
 
     {

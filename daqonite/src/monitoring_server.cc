@@ -1,5 +1,5 @@
 /**
- * MonitoringServer - Stores histograms and provides the ROOT THttpServer 
+ * MonitoringServer - Reads monitoring packets and forwards them to elasticsearch or file
  */
 
 #include "monitoring_server.h"
@@ -17,7 +17,6 @@ MonitoringServer::MonitoringServer(std::string config_file,
     , fBBB_socket(fIO_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), BBBMONPORT))
     , fBBB_frac(bbbFrac)
 {
-
     // Initialise the random number generator
     srand((unsigned)time(NULL));
 
@@ -94,7 +93,7 @@ void MonitoringServer::setupTree()
     fCLB_tree->Branch("timestamp_s", &fCLB_timestamp, "fCLB_timestamp/l");
     fCLB_tree->Branch("temperature", &fCLB_temperature, "fCLB_temperature/s");
     fCLB_tree->Branch("humidity", &fCLB_humidity, "fCLB_humidity/s");
-    fCLB_tree->Branch("hits", &fCLB_hits, "fCLB_hits[30]/i");
+    fCLB_tree->Branch("rates", &fCLB_rates, "fCLB_rates[30]/f");
 }
 
 // Work/Handle the CLB monitoring socket
@@ -108,7 +107,9 @@ void MonitoringServer::workCLBSocket()
 
 void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, std::size_t size)
 {
-    if (!error) {
+
+    if (!error)
+    {
 
         // Shall we skip this packet?
         if (((float)rand() / RAND_MAX) > fCLB_frac) {
@@ -116,9 +117,10 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
             return;
         }
 
-        // Check the packet is atleast of the sufficient size
-        if (size < clb_max_size) {
-            g_elastic.log(WARNING, "MonitoringServer: CLB socket invalid packet size (maximum {}, got {})", clb_max_size, size);
+        // Check the packet is of the correct size
+        if (size != clb_mon_size)
+        {
+            g_elastic.log(WARNING, "MonitoringServer: CLB socket invalid packet size");
             workCLBSocket();
             return;
         }
@@ -133,21 +135,40 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
             return;
         }
 
-        // Get the monitoring hits data
-        for (int i = 0; i < 30; ++i) {
-            const uint32_t* const field = static_cast<const uint32_t* const>(static_cast<const void* const>(&fCLB_buffer[0] + sizeof(CLBCommonHeader) + i * 4));
-            fCLB_hits[i] = ntohl(*field);
+        // Check the timestamp of the packet is valid
+        if (!validTimeStamp(header))
+        {
+            g_elastic.log(WARNING, "MonitoringServer: CLB socket invalid timestamp");
+            workCLBSocket();
+            return;
         }
 
         fCLB_run_num = header.runNumber();
         fCLB_pom_id = header.pomIdentifier();
         fCLB_timestamp = header.timeStamp().inMilliSeconds();
 
-        // Get the other monitoring info by casting into the SCData struct
-        const SCData* const scData = static_cast<const SCData* const>(static_cast<const void* const>(&fCLB_buffer[0] + clb_minimum_size));
+        // Cast the next section of the packet to the monitoring hits
+        MONHits const &hits =
+            *static_cast<MONHits const *>(static_cast<void const *>(&fCLB_buffer[0] + sizeof(CLBCommonHeader)));
 
-        fCLB_temperature = (int)(ntohs(scData->temp) / 100.0);
-        fCLB_humidity = (int)(ntohs(scData->humidity) / 100.0);
+        // Cast the next section of the packet to the SCData struct
+        SCData const &scData =
+            *static_cast<SCData const *>(static_cast<void const *>(&fCLB_buffer[0] + sizeof(CLBCommonHeader) + sizeof(MONHits)));
+
+        // Get the monitoring hits rate data
+        float rate_scale = 1000000 / scData.duration(); // Window length in microseconds
+        std::array<float, 30> rates;
+        for (int i = 0; i < 30; ++i)
+        {
+            fCLB_rates[i] = (float)hits.hit(i) * rate_scale;
+            rates[i] = fCLB_rates[i];
+        }
+
+        // See if there was a high rate veto in this packet
+        fRate_veto = highRate(hits);
+
+        fCLB_temperature = (int)scData.temp();
+        fCLB_humidity = (int)scData.humidity();
 
         // If we are saving to ROOT file, fill the TTree
         if (fSave_file && fCLB_tree != NULL) {
@@ -155,11 +176,11 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
         }
 
         // Save the monitoring data to elasticsearch
-        std::string message = "";
-        if (fSave_elastic) {
-            g_elastic.packet(fCLB_run_num, fCLB_pom_id, fCLB_timestamp,
-                fCLB_temperature, fCLB_humidity,
-                message, &fCLB_hits[0]);
+        if (fSave_elastic)
+        {
+            g_elastic.mon(fCLB_timestamp, fCLB_pom_id, fCLB_run_num,
+                          fCLB_temperature, fCLB_humidity, fRate_veto,
+                          rates);                     
         }
     } else {
         g_elastic.log(WARNING, "MonitoringServer: CLB socket packet error");

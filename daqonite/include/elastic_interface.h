@@ -14,14 +14,17 @@
 #include <string>
 #include <sys/types.h>
 #include <unistd.h>
+#include <array>
 
 #include <cpr/response.h>
 #include <elasticlient/client.h>
 #include <elasticlient/logging.h>
+#include <elasticlient/bulk.h>
 #include <fmt/format.h>
 #include <json/json.h>
 
 #include <boost/thread.hpp>
+#include <boost/asio.hpp>
 
 /// Enum for describing the different logging severity levels
 enum severity {
@@ -39,15 +42,13 @@ enum log_mode {
     FILE_LOG
 };
 
-/// Maximum logging rate (Hz)
 #define MAX_LOG_RATE 5
+#define MAX_ATTEMPTS 3
 
 /// Callback for elasticlient logs
 inline void elasticlient_callback(elasticlient::LogLevel logLevel, const std::string& msg)
 {
-    if (logLevel != elasticlient::LogLevel::DEBUG) {
-        std::cout << "LOG " << (unsigned)logLevel << ": " << msg << std::endl;
-    }
+    std::cout << "LOG (" << (unsigned)logLevel << "): " << msg << std::endl;
 }
 
 class ElasticInterface {
@@ -59,18 +60,13 @@ public:
     ~ElasticInterface();
 
     /**
-		 * Initialises the elasticsearch interface
-		 * Sets up the process specific bits we need for logging 
-         * and monitoring.
+		 * Initialises the ElasticInterface
 		 * 
-		 * @param processName   name of the process
-         * @param stdoutPrint   print logs to stdout
-         * @param debug         print debug messages
+         * @param print_logs    print logs to stdout
+         * @param print_debug   print debug messages to stdout
+         * @param index_threads number of threads to use for indexing
 		 */
-    void init(std::string processName, bool stdoutPrint, bool debug);
-
-    /// Keep the mutex lock/unlock outside of main monitoringLog method
-    void log(severity level, std::string message);
+    void init(bool print_logs, bool print_debug, int index_threads);
 
     /// Nice pretty-print formatting using fmt.
     template <typename S, typename... Args>
@@ -81,71 +77,96 @@ public:
 
     /**
 		 * Indexes a "daqlog" index document to elasticsearch
-		 * Creates a log message and PUTS it to elasticsearch
-         * Document ID is created by elasticsearch
-         * 
-         * "_index":            "daqlog"
-         * 
-         * "@timestamp"         indexing timestamp
-         * "severity":          level
-         * "process":           process sending the log
-         * "pid":               pid of process sending the log
-         * "message":           message
+		 * Checks for suppression and creates JSON document
+         * Adds indexing work to PUT it to elasticsearch
 		 * 
 		 * @param level         severity level of log
 		 * @param message       log Message
 		 */
-    void monitoringLog(severity level, std::string message);
-
-    /// Keep the mutex lock/unlock outside of main monitoringPacket method
-    void packet(int& run_num, int& pom_id, long& timestamp,
-        int& temperature, int& humidity,
-        std::string& message, int* hits);
-
-    /**
-		 * Indexes a "daqmon" index document to elasticsearch
-		 * Creates a message and PUTS it to elasticsearch
-         * Document ID is created by elasticsearch
-         * 
-         * "_index":            "daqmon"
-         * 
-         * "@timestamp"         indexing timestamp
-         * "run_num":           current run number if any
-         * "pom_id":            planar optical module id
-         * "packet_time":       timestamp of monitoring packet in ms
-         * "temperature":       POM temperature
-         * "humidity":          POM humidity
-         * "hits":              hits for all channels
-         * "message":           optional message
-		 */
-    void monitoringPacket(int& run_num, int& pom_id, long& timestamp,
-        int& temperature, int& humidity,
-        std::string& message, int* hits);
-
-    /// Keep the mutex lock/unlock outside of main monitoringValue method
-    void value(std::string& index, float& value);
+    void log(severity level, std::string message);
 
     /**
 		 * Indexes a document to elasticsearch of given type
-		 * Creates a message and PUTS it to elasticsearch
-         * Document ID is created by elasticsearch
+		 * Adds indexing work to PUT it to elasticsearch
          * 
-         * "_index":            index
-         * 
-         * "@timestamp"         indexing timestamp
-         * "value":             value given
+         * @param index         name of the elasticsearch index
+         * @param document      Json::Value document ready to be indexed
 		 */
-    void monitoringValue(std::string& index, float& value);
+    void doc(std::string index, Json::Value document);
+
+    /**
+		 * Indexes a single value document to elasticsearch of given type
+		 * Creates the JSON message and adds indexing work to PUT it to elasticsearch
+         * 
+         * @param index         name of the elasticsearch index
+         * @param value         value for this document
+		 */
+    void val(std::string index, float value);    
+
+    /**
+		 * Indexes a "daqmon" document and "daqhits" documents to elasticsearch
+		 * Creates the JSON messages and adds indexing work to PUT them to elasticsearch
+         * 
+         * @param timestamp     monitoring packet timestamp
+         * @param pom_id        POM electronic ID
+         * @param run_num       run number
+         * @param temperature   monitoring packet temperature
+         * @param humidity      monitoring packet humidity
+         * @param rate_veto     was a high rate veto active in this packet?
+         * @param rates         array of hit rates
+		 */
+    void mon(long timestamp, int pom_id, int run_num,
+             int temperature, int humidity, bool rate_veto, 
+             std::array<float, 30> rates);
 
 private:
+    /**
+		 * Binded to thread creation
+		 * Allows us to modify how the worker thread operates and what it does
+		 */
+    void indexThread();
+
+    /**
+		 * Checks if we need to suppress this log
+		 */
+    bool suppress();
+
+    /**
+		 * Indexes a "daqlog" index document to elasticsearch
+		 * Creates the JSON message and PUTS it to elasticsearch
+         * Document ID is created by elasticsearch
+		 * 
+		 * @param level         severity level of log
+		 * @param message       log Message
+		 */
+    void logInLock(severity level, std::string message);
+
+    /**
+		 * Indexes a single document to elasticsearch
+         * Will route the document through "indextime" pipeline if no timestamp
+         * 
+         * @param index         name of index
+         * @param document      JSON document
+         * @param add_time      should elasticsearch add "indextime" timestamp
+		 */
+    void index(std::string index, Json::Value document, bool add_time);
+
+    /**
+		 * Does a bulk indexing of monhits to elasticsearch
+         * 
+         * @param timestamp     monitoring packet timestamp
+         * @param pom_id        POM electronic ID
+         * @param rates         std::array of hit rates
+		 */
+    void indexHits(long timestamp, int pom_id, std::array<float,30> rates);
+
     /**
 		 * Initialise file logging
 		 * Opens a logging file and writes reason for switching
          * 
          * @param error         error that caused switch to file logging
-         * @param writeLog      write the current log to file
 		 */
-    void initFile(std::string error, bool writeLog);
+    void initFile(std::string error);
 
     /**
 		 * Generate a filename for the .txt log file
@@ -153,21 +174,26 @@ private:
 		 */
     void generateFilename();
 
+    // General
+    log_mode fMode;                             ///< Logging mode {ELASTIC, FILE_LOG}
+    std::vector<std::string> fClient_list;      ///< List of elasticsearch clients
+    Json::StreamWriterBuilder fBuilder;         ///< Json writer to stream json value to string
+
+    // Indexing
+    boost::asio::io_service fIndex_service;     ///< Indexing io_service
+    boost::asio::io_service::work fIndex_work;  ///< Work for the indexing io_service
+    boost::thread_group fIndex_threads;         ///< Group of indexing threads to do the work
+    boost::mutex fMutex;                        ///< Mutex for posting to indexing io_service
+
     // Settings
-    log_mode fMode; ///< What logging mode are we in {ELASTIC, FILE_LOG}
-    std::string fFile_name; ///< file name used when in FILE_LOG mode
-    bool fDebug; ///< Should we print debug messages to stdout?
-    bool fStdoutPrint; ///< Should we print logs to stdout?
+    std::string fProcess_name;                  ///< Process name for using in log messages
+    int fPid;                                   ///< Process pid for using in log messages
+    std::string fFile_name;                     ///< file name used when in FILE_LOG mode
+    bool fPrint_logs;                           ///< Should we print logs to stdout?
 
-    int fLog_counter; ///< Number of logs counter
+    // Log suppression
+    int fLog_counter;                                                ///< Log counter
     std::chrono::time_point<std::chrono::system_clock> fTimer_start; ///< Suppression window start time
-
-    // Messaging
-    elasticlient::Client fClient; ///< The ElasticSearch client as provided by elasticlient library
-    Json::StreamWriterBuilder fBuilder; ///< Json writer to stream json object to string
-    boost::mutex fMutex; ///< Mutex to keep everything thread safe
-    Json::Value fMonitor_message; ///< Json monitoring message used to send monitoring data to elasticsearch
-    Json::Value fLog_message; ///< Json log message used to send logs to elasticsearch
 };
 
 extern ElasticInterface g_elastic; ///< Global instance of this class

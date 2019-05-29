@@ -122,13 +122,23 @@ $ sudo systemctl enable --now filebeat
 # There are no longer different types of document per index from version 7
 # Every index only has a single mapping
 
+PUT _ingest/pipeline/indextime
+{
+  "description": "Adds indextime timestamp to documents",
+  "processors": [
+    {
+      "set": {
+        "field": "_source.indextime",
+        "value": "{{_ingest.timestamp}}"
+      }
+    }
+  ]
+}
+
 PUT daqlog
 {
   "mappings": {
     "properties": {
-      "@timestamp": {
-        "type": "date"
-      },
       "process": {
         "type": "text"
       },
@@ -142,24 +152,26 @@ PUT daqlog
         "type": "text"
       }
     }
+  },
+  "settings": {
+    "index.default_pipeline": "indextime"
   }
 }
+
+
 
 PUT daqmon
 {
   "mappings": {
     "properties": {
-      "@timestamp": {
+      "timestamp": {
         "type": "date"
       },
-      "run_num": {
+      "pom": {
         "type": "integer"
       },
-      "pom_id": {
+      "run": {
         "type": "integer"
-      },
-      "packet_time": {
-        "type": "date"
       },
       "temperature": {
         "type": "integer"
@@ -167,13 +179,36 @@ PUT daqmon
       "humidity": {
         "type": "integer"
       },
-      "message": {
-        "type": "text"
-      },
-      "hits": {
-        "type": "integer"
+      "rate_veto": {
+        "type": "boolean"
       }
     }
+  },
+  "settings": {
+    "index.default_pipeline": "indextime"
+  }
+}
+
+PUT daqhits
+{
+  "mappings": {
+    "properties": {
+      "timestamp": {
+        "type": "date"
+      },
+      "pom": {
+        "type": "integer"
+      },
+      "channel": {
+        "type": "integer"
+      },
+      "rate": {
+        "type": "float"
+      }
+    }
+  },
+  "settings": {
+    "index.default_pipeline": "indextime"
   }
 }
 

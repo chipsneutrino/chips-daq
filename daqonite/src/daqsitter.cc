@@ -10,20 +10,30 @@
 
 int main(int argc, char* argv[])
 {
-    // Initialise the elasticsearch interface
-    g_elastic.init("daqsitter", true, false); // We want log message to be printed to stdout
-
     // Default settings
     std::string config_file = "../data/config.opt";
     bool save_elastic = false;
     bool save_file = false;
     bool use_gui = false;
-    float clb_frac = 1.0;
-    float bbb_frac = 1.0;
+    float clb_frac = 0.01;
+    float bbb_frac = 0.01;
+
+    bool print_logs = true;
+    bool print_debug = false;
+    int  index_threads = 100;
 
     // Argument handling
     boost::program_options::options_description desc("Options");
-    desc.add_options()("help,h", "DAQsitter...")("elastic", "Save monitoring data to elasticsearch")("file", "Save monitoring data to ROOT file")("gui", "Show the old monitoring GUI")("config,c", boost::program_options::value<std::string>(&config_file), "Configuration file (../data/config.opt)")("clb_frac", boost::program_options::value<float>(&clb_frac), "Fraction of CLB packets to use (1.0)")("bbb_frac", boost::program_options::value<float>(&bbb_frac), "Fraction of BBB packets to use (1.0)");
+    desc.add_options()("help,h", "DAQsitter...")
+    ("elastic", "Save monitoring data to elasticsearch")
+    ("file", "Save monitoring data to ROOT file")
+    ("gui", "Show the old monitoring GUI")
+    ("config,c", boost::program_options::value<std::string>(&config_file), "Configuration file (../data/config.opt)")
+    ("clb_frac", boost::program_options::value<float>(&clb_frac), "Fraction of CLB packets to use (1.0)")
+    ("bbb_frac", boost::program_options::value<float>(&bbb_frac), "Fraction of BBB packets to use (1.0)")
+    ("logs", boost::program_options::value<bool>(&print_logs), "Print logs to stdout (true)")
+    ("debug", boost::program_options::value<bool>(&print_debug), "Print ElasticInterface debug messages (false)")
+    ("threads", boost::program_options::value<int>(&index_threads), "Number of ElasticInterface indexing threads (100)");
 
     try {
         boost::program_options::variables_map vm;
@@ -48,6 +58,8 @@ int main(int argc, char* argv[])
     } catch (const std::runtime_error& e) {
         throw std::runtime_error("DAQsitter - runtime Argument Error");
     }
+
+    g_elastic.init(print_logs, print_debug, index_threads); // Initialise the ElasticInterface
 
     // Log the setup to elasticsearch
     std::string setup{};
