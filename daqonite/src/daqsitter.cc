@@ -15,8 +15,8 @@ int main(int argc, char* argv[])
     bool save_elastic = false;
     bool save_file = false;
     bool use_gui = false;
-    float clb_frac = 1.0;
-    float bbb_frac = 1.0;
+    float clb_frac = 0.01;
+    float bbb_frac = 0.01;
 
     bool print_logs = true;
     bool print_debug = false;

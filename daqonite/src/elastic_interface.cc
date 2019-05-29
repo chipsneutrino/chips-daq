@@ -9,8 +9,9 @@
  * ElasticInterface::indexHits takes ~ 100 milliseconds for the 30 monhits documents
  * 
  * log() from the external view takes ~0.1 milliseconds
+ * doc() from the external view takes ~0.05 milliseconds
+ * val() from the external view takes ~0.01 milliseconds
  * mon() from the external view takes ~0.05 milliseconds
- * value() from the external view takes ~0.01 milliseconds
  * 
  * Timing done with the following code:
  * std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
@@ -72,6 +73,35 @@ void ElasticInterface::log(severity level, std::string message)
     fMutex.unlock();
 }
 
+void ElasticInterface::doc(std::string index, Json::Value document)
+{
+    fMutex.lock();
+
+    if (fMode == ELASTIC) // Only index documents if in ELASTIC mode
+    {
+        // Post indexing to the indexing io_service
+        fIndex_service.post(boost::bind(&ElasticInterface::index, this, index, document, true));
+    }
+
+    fMutex.unlock();    
+}
+
+void ElasticInterface::val(std::string index, float value)
+{
+    fMutex.lock();
+
+    if (fMode == ELASTIC) // Only index values if in ELASTIC mode
+    {
+        Json::Value document;      // Populate JSON document
+        document["value"] = value; // monitoring value
+
+        // Post indexing to the indexing io_service
+        fIndex_service.post(boost::bind(&ElasticInterface::index, this, index, document, true));
+    }
+
+    fMutex.unlock();
+}
+
 void ElasticInterface::mon(long timestamp, int pom_id, int run_num,
                            int temperature, int humidity, bool rate_veto, 
                            std::array<float, 30> rates)
@@ -93,22 +123,6 @@ void ElasticInterface::mon(long timestamp, int pom_id, int run_num,
 
         // Post the bulk indexing to the indexing io_service
         fIndex_service.post(boost::bind(&ElasticInterface::indexHits, this, timestamp, pom_id, rates));
-    }
-
-    fMutex.unlock();
-}
-
-void ElasticInterface::value(std::string index, float value)
-{
-    fMutex.lock();
-
-    if (fMode == ELASTIC) // Only index values if in ELASTIC mode
-    {
-        Json::Value document;      // Populate JSON document
-        document["value"] = value; // monitoring value
-
-        // Post indexing to the indexing io_service
-        fIndex_service.post(boost::bind(&ElasticInterface::index, this, index, document, true));
     }
 
     fMutex.unlock();

@@ -77,8 +77,8 @@ public:
 
     /**
 		 * Indexes a "daqlog" index document to elasticsearch
-		 * Creates the JSON message and PUTS it to elasticsearch
-         * Document ID is created by elasticsearch
+		 * Checks for suppression and creates JSON document
+         * Adds indexing work to PUT it to elasticsearch
 		 * 
 		 * @param level         severity level of log
 		 * @param message       log Message
@@ -86,9 +86,26 @@ public:
     void log(severity level, std::string message);
 
     /**
+		 * Indexes a document to elasticsearch of given type
+		 * Adds indexing work to PUT it to elasticsearch
+         * 
+         * @param index         name of the elasticsearch index
+         * @param document      Json::Value document ready to be indexed
+		 */
+    void doc(std::string index, Json::Value document);
+
+    /**
+		 * Indexes a single value document to elasticsearch of given type
+		 * Creates the JSON message and adds indexing work to PUT it to elasticsearch
+         * 
+         * @param index         name of the elasticsearch index
+         * @param value         value for this document
+		 */
+    void val(std::string index, float value);    
+
+    /**
 		 * Indexes a "daqmon" document and "daqhits" documents to elasticsearch
-		 * Creates the JSON messages and PUTS them to elasticsearch
-         * Document IDs are created by elasticsearch
+		 * Creates the JSON messages and adds indexing work to PUT them to elasticsearch
          * 
          * @param timestamp     monitoring packet timestamp
          * @param pom_id        POM electronic ID
@@ -101,16 +118,6 @@ public:
     void mon(long timestamp, int pom_id, int run_num,
              int temperature, int humidity, bool rate_veto, 
              std::array<float, 30> rates);
-
-    /**
-		 * Indexes a document to elasticsearch of given type
-		 * Creates the JSON message and PUTS it to elasticsearch
-         * Document ID is created by elasticsearch
-         * 
-         * @param index         name of the elasticsearch index
-         * @param value         value for this document
-		 */
-    void value(std::string index, float value);
 
 private:
     /**

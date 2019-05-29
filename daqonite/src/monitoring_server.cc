@@ -1,5 +1,5 @@
 /**
- * MonitoringServer - Stores histograms and provides the ROOT THttpServer 
+ * MonitoringServer - Reads monitoring packets and forwards them to elasticsearch or file
  */
 
 #include "monitoring_server.h"
@@ -180,7 +180,7 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
         {
             g_elastic.mon(fCLB_timestamp, fCLB_pom_id, fCLB_run_num,
                           fCLB_temperature, fCLB_humidity, fRate_veto,
-                          rates);
+                          rates);                     
         }
     } else {
         g_elastic.log(WARNING, "MonitoringServer: CLB socket packet error");

@@ -1,7 +1,5 @@
 /**
- * MonitoringServer - Stores histograms and provides the ROOT THttpServer 
- * 
- * Allows for the viewing of histograms and plots via a web server
+ * MonitoringServer - Reads monitoring packets and forwards them to elasticsearch or file
  *
  * Author: Josh Tingey
  * Contact: j.tingey.16@ucl.ac.uk
