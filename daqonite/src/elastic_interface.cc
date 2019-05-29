@@ -252,9 +252,6 @@ void ElasticInterface::indexHits(long timestamp, int pom_id, std::array<float,30
             if (errors == 0)
             {
                 return;
-            } else {
-                std::cout << "When indexing " << data.size() << " documents, "
-                    << errors << " errors occured" << std::endl;
             }
         }
         catch(const std::runtime_error &e) {}
