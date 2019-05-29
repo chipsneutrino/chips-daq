@@ -42,9 +42,8 @@ enum log_mode {
     FILE_LOG
 };
 
-#define NUM_THREADS 100
 #define MAX_LOG_RATE 5
-#define MAX_TRIES 3
+#define MAX_ATTEMPTS 3
 
 /// Callback for elasticlient logs
 inline void elasticlient_callback(elasticlient::LogLevel logLevel, const std::string& msg)
@@ -61,15 +60,13 @@ public:
     ~ElasticInterface();
 
     /**
-		 * Initialises the elasticsearch interface
-		 * Sets up the process specific bits we need for logging 
-         * and monitoring.
+		 * Initialises the ElasticInterface
 		 * 
-		 * @param processName   name of the process
-         * @param stdoutPrint   print logs to stdout
-         * @param debug         print debug messages
+         * @param print_logs    print logs to stdout
+         * @param print_debug   print debug messages to stdout
+         * @param index_threads number of threads to use for indexing
 		 */
-    void init(std::string processName, bool stdoutPrint, bool debug);
+    void init(bool print_logs, bool print_debug, int index_threads);
 
     /// Nice pretty-print formatting using fmt.
     template <typename S, typename... Args>
@@ -143,9 +140,9 @@ private:
          * 
          * @param index         name of index
          * @param document      JSON document
-         * @param timestamp     do documents contain timestamp?
+         * @param add_time      should elasticsearch add "indextime" timestamp
 		 */
-    void index(std::string index, Json::Value document, bool timestamp);
+    void index(std::string index, Json::Value document, bool add_time);
 
     /**
 		 * Does a bulk indexing of monhits to elasticsearch
@@ -170,27 +167,25 @@ private:
 		 */
     void generateFilename();
 
-    // Control
-    boost::asio::io_service fIndex_service; ///< BOOST io_service
-    boost::asio::io_service::work fIndex_work; ///< Work for the io_service
-    boost::thread_group fIndex_threads;   ///< Group of threads to do the work
-    boost::mutex fMutex_e;               ///< Mutex for external threads
+    // General
+    log_mode fMode;                             ///< Logging mode {ELASTIC, FILE_LOG}
+    std::vector<std::string> fClient_list;      ///< List of elasticsearch clients
+    Json::StreamWriterBuilder fBuilder;         ///< Json writer to stream json value to string
 
-    log_mode fMode; ///< What logging mode are we in {ELASTIC, FILE_LOG}
-    
-    std::vector<std::string> fClient_list; ///< List of clients
-    //elasticlient::Client fClient;       ///< The ElasticSearch client as provided by elasticlient library
-    Json::StreamWriterBuilder fBuilder; ///< Json writer to stream json object to string
-    Json::Value fLog_message;           ///< Json log message used to send logs to elasticsearch
+    // Indexing
+    boost::asio::io_service fIndex_service;     ///< Indexing io_service
+    boost::asio::io_service::work fIndex_work;  ///< Work for the indexing io_service
+    boost::thread_group fIndex_threads;         ///< Group of indexing threads to do the work
+    boost::mutex fMutex;                        ///< Mutex for posting to indexing io_service
 
     // Settings
-    std::string fProcess_name;
-    int fPid;
-    std::string fFile_name; ///< file name used when in FILE_LOG mode
-    bool fStdoutPrint;      ///< Should we print logs to stdout?
+    std::string fProcess_name;                  ///< Process name for using in log messages
+    int fPid;                                   ///< Process pid for using in log messages
+    std::string fFile_name;                     ///< file name used when in FILE_LOG mode
+    bool fPrint_logs;                           ///< Should we print logs to stdout?
 
     // Log suppression
-    int fLog_counter;                                                ///< Number of logs counter
+    int fLog_counter;                                                ///< Log counter
     std::chrono::time_point<std::chrono::system_clock> fTimer_start; ///< Suppression window start time
 };
 

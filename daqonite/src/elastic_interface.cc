@@ -12,6 +12,7 @@
  * mon() from the external view takes ~0.05 milliseconds
  * value() from the external view takes ~0.01 milliseconds
  * 
+ * Timing done with the following code:
  * std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
  * std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
  * auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
@@ -22,40 +23,38 @@
 
 ElasticInterface g_elastic; ///< Global instance of this class
 
-/// Create a ElasticInterface
-ElasticInterface::ElasticInterface() : fIndex_work(fIndex_service), fMode(ELASTIC), fLog_counter(0)
+ElasticInterface::ElasticInterface() : fMode(ELASTIC), fIndex_work(fIndex_service), fLog_counter(0)
 {
-    fBuilder["commentStyle"] = "None";
-    fBuilder["indentation"] = ""; // If you want whitespace-less output
-
+    // elasticlient requires a vector of elasticsearch nodes, for now we just add the one
     fClient_list.clear();
     fClient_list.push_back(getenv("ELASTIC_CLIENT"));
+
+    // Set options for JSON string builder
+    fBuilder["commentStyle"] = "None";
+    fBuilder["indentation"] = ""; // If you want whitespace-less output
 }
 
-/// Destroy a ElasticInterface
 ElasticInterface::~ElasticInterface()
 {
     fIndex_service.stop();
     fIndex_threads.join_all();
 }
 
-/// Initialises the elasticsearch interface
-void ElasticInterface::init(std::string processName, bool stdoutPrint, bool debug)
+void ElasticInterface::init(bool print_logs, bool print_debug, int index_threads)
 {
-    // Setup the procees name and pid
-    fProcess_name = processName;
+    // Get the application name and pid
+    std::ifstream comm("/proc/self/comm");
+    getline(comm, fProcess_name);
     fPid = getpid();
 
-    // stdout settings
-    fStdoutPrint = stdoutPrint;
+    fPrint_logs = print_logs; // stdout settings
 
-    // If debug, then set the elasticlient callback function for logging
-    if (debug)
+    if (print_debug) // if print_debug, then set the elasticlient logging callback function
     {
         elasticlient::setLogFunction(elasticlient_callback);
     }
 
-    for (int threadCount = 0; threadCount < NUM_THREADS; threadCount++) // run() io_service in threads
+    for (int threadCount = 0; threadCount < index_threads; threadCount++) // start indexing threads
     {
         fIndex_threads.create_thread(boost::bind(&ElasticInterface::indexThread, this));
     }
@@ -63,51 +62,56 @@ void ElasticInterface::init(std::string processName, bool stdoutPrint, bool debu
 
 void ElasticInterface::log(severity level, std::string message)
 {
-    fMutex_e.lock();
-    if (suppress())
-        return; // Suppress logs
+    fMutex.lock();
+
+    if (suppress()) // suppress logs
+        return;
 
     logInLock(level, message);
 
-    fMutex_e.unlock();
+    fMutex.unlock();
 }
 
 void ElasticInterface::mon(long timestamp, int pom_id, int run_num,
                            int temperature, int humidity, bool rate_veto, 
                            std::array<float, 30> rates)
 {
-    fMutex_e.lock();
+    fMutex.lock();
+
     if (fMode == ELASTIC) // Only index monitoring packets if in ELASTIC mode
     {
-        Json::Value document;                  // Populate daqmon JSON document
-        document["timestamp"] = timestamp;     // timestamp from the monitoring packet
-        document["pom"] = pom_id;           // planar optical module ID
-        document["run"] = run_num;         // run number
-        document["temperature"] = temperature; // planar optical module temperature
-        document["humidity"] = humidity;       // planar optical module humidity
-        document["rate_veto"] = rate_veto;     // High rate veto bool
+        Json::Value document;                   // Populate daqmon JSON document
+        document["timestamp"]   = timestamp;    // timestamp from the monitoring packet
+        document["pom"]         = pom_id;       // planar optical module ID
+        document["run"]         = run_num;      // run number
+        document["temperature"] = temperature;  // planar optical module temperature
+        document["humidity"]    = humidity;     // planar optical module humidity
+        document["rate_veto"]   = rate_veto;    // High rate veto bool
 
         // Post indexing to the indexing io_service
-        fIndex_service.post(boost::bind(&ElasticInterface::index, this, "daqmon", document, true));
+        fIndex_service.post(boost::bind(&ElasticInterface::index, this, "daqmon", document, false));
 
         // Post the bulk indexing to the indexing io_service
         fIndex_service.post(boost::bind(&ElasticInterface::indexHits, this, timestamp, pom_id, rates));
     }
-    fMutex_e.unlock();
+
+    fMutex.unlock();
 }
 
 void ElasticInterface::value(std::string index, float value)
 {
-    fMutex_e.lock();
+    fMutex.lock();
+
     if (fMode == ELASTIC) // Only index values if in ELASTIC mode
     {
         Json::Value document;      // Populate JSON document
         document["value"] = value; // monitoring value
 
         // Post indexing to the indexing io_service
-        fIndex_service.post(boost::bind(&ElasticInterface::index, this, index, document, false));
+        fIndex_service.post(boost::bind(&ElasticInterface::index, this, index, document, true));
     }
-    fMutex_e.unlock();
+
+    fMutex.unlock();
 }
 
 void ElasticInterface::indexThread()
@@ -137,7 +141,7 @@ bool ElasticInterface::suppress()
         }
         else if (fLog_counter > MAX_LOG_RATE)
         {
-            logInLock(WARNING, "ElasticInterface supressed a rate of: " + std::to_string(fLog_counter));
+            logInLock(WARNING, fmt::format("ElasticInterface supressed a rate of: {}", fLog_counter));
             fLog_counter = 0;
         }
         else
@@ -151,15 +155,13 @@ bool ElasticInterface::suppress()
 
 void ElasticInterface::logInLock(severity level, std::string message) 
 {
-    // Populate JSON message
     Json::Value document;                // Populate daqlog JSON document
     document["process"] = fProcess_name; // Process name
     document["pid"] = fPid;              // Process ID
     document["severity"] = level;        // severity level
     document["message"] = message;       // log message
 
-    // Print to stdout if required
-    if (fStdoutPrint)
+    if (fPrint_logs) // Print to stdout if required
     {
         std::cout << "LOG (" << level << "): " << message << std::endl;
     }
@@ -167,31 +169,32 @@ void ElasticInterface::logInLock(severity level, std::string message)
     if (fMode == ELASTIC) // Only index if in ELASTIC mode
     {
         // Post indexing to the indexing io_service
-        fIndex_service.post(boost::bind(&ElasticInterface::index, this, "daqlog", document, true));
+        fIndex_service.post(boost::bind(&ElasticInterface::index, this, "daqlog", document, false));
     }
     else if (fMode == FILE_LOG)
     { // Log to File
         std::ofstream file;
         file.open(fFile_name, std::ios_base::app);
-        file << Json::writeString(fBuilder, fLog_message) << "\n";
+        file << Json::writeString(fBuilder, document) << "\n";
         file.close();
     }
 }
 
-void ElasticInterface::index(std::string index, Json::Value document, bool timestamp)
+void ElasticInterface::index(std::string index, Json::Value document, bool add_time)
 {
-    // Now and again the client will not respond, therefore, we try a few times
     elasticlient::Client client(fClient_list);  /// Create the elasticsearch client
 
+    // So we need elasticsearch to at an "indextime" timestamp?
     std::string pipeline;
-    if (timestamp) 
+    if (add_time) 
     {
-        pipeline = "";
-    } else {
         pipeline = "?pipeline=indextime";
+    } else {
+        pipeline = "";
     }
 
-    for (int try_num=0; try_num<MAX_TRIES; try_num++) 
+    // Now and again the client will not respond, therefore, we try a few times
+    for (int attempt=0; attempt<MAX_ATTEMPTS; attempt++) 
     {
         try
         {
@@ -200,14 +203,13 @@ void ElasticInterface::index(std::string index, Json::Value document, bool times
             {
                 return;
             } else {
-                // If we get an error response from elasticsearch just print to stdout
-                std::cout << res.text << std::endl;
+                std::cout << res.text << std::endl; // Just print to stdout
             }
         }
         catch(const std::runtime_error &e) {}
     }
 
-    initFile("Exceeded MAX_TRIES in index()"); // Init file logging as we 
+    initFile("Exceeded MAX_ATTEMPTS in index()"); // Init file logging as elasticsearch unreachable
 }
 
 void ElasticInterface::indexHits(long timestamp, int pom_id, std::array<float,30> rates)
@@ -228,7 +230,7 @@ void ElasticInterface::indexHits(long timestamp, int pom_id, std::array<float,30
         data.indexDocument("_doc", "", Json::writeString(fBuilder, document));
     }
 
-    for (int try_num=0; try_num<MAX_TRIES; try_num++) 
+    for (int attempt=0; attempt<MAX_ATTEMPTS; attempt++) 
     {
         try
         {
@@ -244,7 +246,7 @@ void ElasticInterface::indexHits(long timestamp, int pom_id, std::array<float,30
         catch(const std::runtime_error &e) {}
     }
 
-    initFile("Exceeded MAX_TRIES in bulkIndex()"); // Init file logging as we 
+    initFile("Exceeded MAX_ATTEMPTS in bulkIndex()"); // Init file logging as elasticsearch unreachable
 }
 
 void ElasticInterface::initFile(std::string error)
@@ -260,7 +262,6 @@ void ElasticInterface::initFile(std::string error)
     file.close();
 }
 
-/// Generate a filename for the .txt log file
 void ElasticInterface::generateFilename()
 {
     time_t rawtime;

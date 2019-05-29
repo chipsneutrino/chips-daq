@@ -9,18 +9,22 @@
 
 int main(int argc, char* argv[])
 {
-    // Initialise the elasticsearch interface
-    g_elastic.init("daqonite", true, false); // We want log message to be printed to stdout
-
     // Default settings
     bool collect_clb_data = true;
     bool collect_bbb_data = false;
     unsigned int num_threads = 3;
 
+    bool print_logs = true;
+    bool print_debug = false;
+    int  index_threads = 10;
+
     // Argument handling
     boost::program_options::options_description desc("Options");
-    desc.add_options()("help,h", "DAQonite")("threads,t", boost::program_options::value<unsigned int>(&num_threads),
-        "Number of threads to use, default = 3");
+    desc.add_options()("help,h", "DAQonite")
+        ("threads,t", boost::program_options::value<unsigned int>(&num_threads),"Number of threads to use, default = 3")
+        ("logs", boost::program_options::value<bool>(&print_logs), "Print logs to stdout (true)")
+        ("debug", boost::program_options::value<bool>(&print_debug), "Print ElasticInterface debug messages (false)")
+        ("indexthreads", boost::program_options::value<int>(&index_threads), "Number of ElasticInterface indexing threads (10)");
 
     try {
         boost::program_options::variables_map vm;
@@ -40,6 +44,8 @@ int main(int argc, char* argv[])
     if (num_threads < 1 || num_threads > 8) {
         throw std::runtime_error("daqonite - Error: Invalid number of threads. Valid = [1,8]!");
     }
+
+    g_elastic.init(print_logs, print_debug, index_threads); // Initialise the ElasticInterface
 
     // Log the setup to elasticsearch
     g_elastic.log(INFO, "Checking hard hats, high-vis, boots and gloves!");
