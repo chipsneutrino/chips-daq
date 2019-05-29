@@ -4,3 +4,9 @@
 [submodule "daqonite/lib/elasticlient"]
 	path = daqonite/lib/elasticlient
 	url = https://github.com/jooosh25/elasticlient.git
+[submodule "daqonite/lib/nngpp"]
+	path = daqonite/lib/nngpp
+	url = https://github.com/cwzx/nngpp.git
+[submodule "daqonite/lib/nng"]
+	path = daqonite/lib/nng
+	url = https://github.com/nanomsg/nng.git

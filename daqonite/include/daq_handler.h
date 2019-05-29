@@ -23,12 +23,10 @@
 
 #include "bbb_handler.h"
 #include "clb_handler.h"
+#include "command_receiver.h"
 #include "data_handler.h"
 
-/// Buffer size in bytes for local data
-const static size_t buffer_size_local = 10000;
-
-class DAQHandler {
+class DAQHandler : public CommandHandler {
 public:
     /**
      * Create a DAQHandler
@@ -48,6 +46,10 @@ public:
     DAQHandler& operator=(const DAQHandler& other) = delete;
     DAQHandler& operator=(DAQHandler&& other) = delete;
 
+    virtual void handleStartCommand(control_msg::daq::start_run::run_type which) override;
+    virtual void handleStopCommand() override;
+    virtual void handleExitCommand() override;
+
     void run();
 
 private:
@@ -57,43 +59,8 @@ private:
      */
     void ioServiceThread();
 
-    /**
-     * Handles UNIX signals
-     * Handles the interupts from UNIX signals. Currently only ctrl-c is defined
-     * which calls exit() on the application.
-     * 
-     * @param error Signals error code
-     * @param signum Signal number
-     */
-    void handleSignals(boost::system::error_code const& error, int signum);
-
-    /// Calls the async_wait() on the signal_set
-    void workSignals();
-
-    /**
-     * Handles the local control socket
-     * Handles any commands sent from daq_command over the local control UDP socket.
-     * It reads the input buffer and determines the action to take.
-     * 
-     * @param error Error code from the async_receive()
-     * @param size Signal Number of bytes received
-     */
-    void handleLocalSocket(boost::system::error_code const& error, std::size_t size);
-
-    /// Calls the async_receive() on the local UDP control socket
-    void workLocalSocket();
-
     /// Create CLB and BBB handlers depending on configuration.
     void setupHandlers();
-
-    /// Start a run of particular type.
-    void cmdStart(int run_type);
-
-    /// Stop ongoing run.
-    void cmdStop();
-
-    /// Exit run loop, possibly stopping ongoing run.
-    void cmdExit();
 
     // Settings
     bool collect_clb_data_; ///< Should we collect CLB data?
@@ -106,10 +73,8 @@ private:
 
     // IO_service stuff
     std::shared_ptr<boost::asio::io_service> io_service_; ///< BOOST io_service. The heart of everything
+    std::unique_ptr<boost::asio::io_service::work> run_work_;
     boost::thread_group thread_group_; ///< Group of threads to do the work
-    boost::asio::signal_set signal_set_; ///< BOOST signal_set
-    udp::socket local_socket_; ///< Local UDP control socket
-    char buffer_local_[buffer_size_local] __attribute__((aligned(8))); ///< Local socket buffer
 
     // Other components
     std::shared_ptr<DataHandler> data_handler_; ///< DataHandler object

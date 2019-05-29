@@ -3,8 +3,10 @@
 CC                ?= gcc
 CXX               ?= g++
 ELASTICLIENT_PATH ?= ../lib/elasticlient
-FMT_PATH          ?= ../lib/fmt/
-XMLRPC_PATH       ?= ../lib/XmlRpc/
+FMT_PATH          ?= ../lib/fmt
+XMLRPC_PATH       ?= ../lib/XmlRpc
+NNG_PATH          ?= ../lib/nng
+NNGPP_PATH        ?= ../lib/nngpp
 BOOST_PATH        ?= /opt/boost
 ROOT_PATH         ?= /home/daq/software/root
 CPP_STANDARD      ?= c++0x
@@ -21,12 +23,15 @@ INCDIRS  += $(ELASTICLIENT_PATH)/external/jsoncpp/include
 INCDIRS  += $(ELASTICLIENT_PATH)/include
 INCDIRS  += $(FMT_PATH)/include
 INCDIRS  += $(XMLRPC_PATH)/include
+INCDIRS  += $(NNGPP_PATH)/include
+INCDIRS  += $(NNG_PATH)/include
 
 # Library directories
 LIBDIRS  += ../../fh_message/src
 LIBDIRS  += $(BOOST_PATH)/lib
 LIBDIRS  += $(ELASTICLIENT_PATH)/build/lib
 LIBDIRS  += $(XMLRPC_PATH)/lib
+LIBDIRS  += $(NNG_PATH)/build
 
 # Libraries
 LIBS     += fh_message
@@ -38,6 +43,7 @@ LIBS     += elasticlient
 LIBS     += cpr
 LIBS     += jsoncpp
 LIBS     += XmlRpc
+LIBS     += nng
 
 # Compiler Flags
 CXXFLAGS  = $(INCDIRS:%=-I%) -O2 -g -Wall -fmessage-length=0 -std=$(CPP_STANDARD) $(ADDITIONAL_FLAGS)
@@ -57,23 +63,27 @@ OBJS     += run_file.o
 OBJS     += batch_scheduler.o
 OBJS     += trigger_predictor.o
 OBJS     += spill_scheduler.o
+OBJS     += command_receiver.o
+OBJS     += signal_receiver.o
 
 DAQ       = daqonite
 COMMAND   = daqommand
 SIM       = daqulator
 MON       = daqsitter
+FSM       = chips_fsm
 
 
 ###########################################################
 # Build Targets & Rules
 ###########################################################
 
-all:        $(DAQ) $(COMMAND) $(SIM) $(MON)
+all:        daq command sim mon fsm
 daq:        $(DAQ)
 command:    $(COMMAND)
 sim:        $(SIM)
 mon:        $(MON)
-.PHONY: all daq command sim mon
+fsm:        $(FSM)
+.PHONY: all daq command sim mon fsm
 
 clean:
 	rm -f $(OBJS) $(DAQ) $(COMMAND) $(SIM) $(MON)
@@ -88,6 +98,10 @@ $(DAQ): $(OBJS) $(SRC_PATH)/*.cc ../include/*.h
 	@$(CXX) -o $@ $(SRC_PATH)/$(DAQ).cc $(OBJS) $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
 
 $(COMMAND): $(SRC_PATH)/$(COMMAND).cc
+	@echo "LD  $@"
+	@$(CXX) -o $@ $< $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
+
+$(FSM): $(SRC_PATH)/$(FSM).cc
 	@echo "LD  $@"
 	@$(CXX) -o $@ $< $(LIBDIRS:%=-L%) $(LIBS:%=-l%) $(ROOTFLAGS) $(CXXFLAGS)
 

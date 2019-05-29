@@ -11,8 +11,10 @@
 #include <boost/program_options.hpp>
 #include <memory>
 
+#include "command_receiver.h"
 #include "daq_handler.h"
 #include "elastic_interface.h"
+#include "signal_receiver.h"
 
 namespace exit_code {
 static constexpr int success = 0;
@@ -54,8 +56,20 @@ int main(int argc, char* argv[])
 
     {
         // Main entry point.
-        std::unique_ptr<DAQHandler> daq_handler{ new DAQHandler(settings::collect_clb_data, settings::collect_bbb_data) };
+        std::shared_ptr<DAQHandler> daq_handler{ new DAQHandler(settings::collect_clb_data, settings::collect_bbb_data) };
+
+        std::unique_ptr<SignalReceiver> signal_receiver{ new SignalReceiver };
+        signal_receiver->setHandler(daq_handler);
+        signal_receiver->runAsync();
+
+        std::unique_ptr<CommandReceiver> cmd_receiver{ new CommandReceiver };
+        cmd_receiver->setHandler(daq_handler);
+        cmd_receiver->runAsync();
+
         daq_handler->run();
+
+        cmd_receiver->join();
+        signal_receiver->join();
     }
 
     g_elastic.log(INFO, "Done for the day!");

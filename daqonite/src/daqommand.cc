@@ -6,84 +6,63 @@
  *
  * Author: Josh Tingey
  * Contact: j.tingey.16@ucl.ac.uk
+ *
+ * Co-author: Petr Manek
+ * Contact: pmanek@fnal.gov
  */
 
-#include <boost/array.hpp>
-#include <boost/asio.hpp>
 #include <iostream>
+#include <string>
 
-using boost::asio::ip::udp;
+#include <nngpp/nngpp.h>
+#include <nngpp/protocol/pub0.h>
 
-class DAQommand {
-public:
-    /// Create a DAQommand object
-    DAQommand(boost::asio::io_service& io_service,
-        const std::string& host,
-        const std::string& port)
-        : io_service_(io_service)
-        , socket_(io_service, udp::endpoint(udp::v4(), 0))
-    {
-        udp::resolver resolver(io_service_);
-        udp::resolver::query query(udp::v4(), host, port);
-        udp::resolver::iterator iter = resolver.resolve(query);
-        endpoint_ = *iter;
-    }
+#include "control_msg.h"
 
-    /// Destroy a DAQommand object
-    ~DAQommand()
-    {
-        socket_.close();
-    }
+namespace exit_code {
+static constexpr int success = 0;
 
-    // Send a message
-    void send(const std::string& msg)
-    {
-        socket_.send_to(boost::asio::buffer(msg, msg.size()), endpoint_);
-    }
+static constexpr int bad_args = 1;
+static constexpr int unknown_cmd = 2;
+}
 
-private:
-    boost::asio::io_service& io_service_; ///< BOOST io_service
-    udp::socket socket_; ///< Local UDP socket to communicate with DAQonite
-    udp::endpoint endpoint_; ///< Local UDP endpoint
-};
-
-int main(int argc, char** argv)
+int main(int argc, char* argv[])
 {
-    // Make the IO service and DAQommand object
-    boost::asio::io_service io_service;
-    DAQommand client(io_service, "localhost", "1096"); // Hardcode port 1096 for now
-
     // Check the command and additional arguments are valid
     if (argc < 2 || argc > 3) {
-        std::cout << "DAQommand - Error: You need to enter a valid command!" << std::endl;
-        std::cout << "DAQommand - Options: start [runType], new [runType], stop, exit" << std::endl;
-        return -1;
-    } else {
-        if (strncmp(argv[1], "start", 5) == 0 && argc == 3) {
-            if (((int)*argv[2] - 48) >= 4 || ((int)*argv[2] - 48) < 0) {
-                std::cout << "DAQommand - Error: - Error: Invalid run type!" << std::endl;
-                return -1;
-            }
-            std::cout << "DAQommand - Sending start command with run type -> " << argv[2] << std::endl;
-            char* combined = new char[strlen(argv[1]) + strlen(argv[2]) + 1];
-            strcpy(combined, argv[1]);
-            strcat(combined, argv[2]);
-            client.send(combined);
-            delete combined;
-
-        } else if (strncmp(argv[1], "stop", 4) == 0) {
-            std::cout << "DAQommand - Sending stop command... " << std::endl;
-            client.send(argv[1]);
-
-        } else if (strncmp(argv[1], "exit", 4) == 0) {
-            std::cout << "DAQommand - Sending exit command... " << std::endl;
-            client.send(argv[1]);
-
-        } else {
-            std::cout << "DAQommand - Error: You need to enter a valid command!" << std::endl;
-            std::cout << "DAQommand - Options: start [runType], new [runType], stop, exit" << std::endl;
-            return -1;
-        }
+        std::cerr << argv[0] << ": expected a command [ start N | stop | exit ]" << std::endl;
+        return exit_code::bad_args;
     }
-    return 0;
+
+    // Construct a message
+    control_msg::daq msg{};
+    const std::string command{ argv[1] };
+
+    if (command == "start") {
+        if (argc != 3) {
+            std::cerr << argv[0] << ": expected a run type [1-4]" << std::endl;
+            return exit_code::bad_args;
+        }
+
+        msg.disc = control_msg::daq::start_run::disc_value;
+
+        {
+            const std::string run_type_str{ argv[2] };
+            msg.payload.p_start_run.which = static_cast<control_msg::daq::start_run::run_type>(std::stoi(run_type_str));
+        }
+    } else if (command == "stop") {
+        msg.disc = control_msg::daq::stop_run::disc_value;
+    } else if (command == "exit") {
+        msg.disc = control_msg::daq::exit::disc_value;
+    } else {
+        std::cerr << argv[0] << ": expected a valid command" << std::endl;
+        return exit_code::unknown_cmd;
+    }
+
+    // Send the message
+    auto sock = nng::pub::open();
+    sock.listen(control_msg::daq::url);
+    sock.send(nng::view{ &msg, sizeof(msg) });
+
+    return exit_code::success;
 }

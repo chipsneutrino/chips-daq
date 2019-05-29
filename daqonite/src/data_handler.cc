@@ -13,8 +13,8 @@ DataHandler::DataHandler()
     , scheduling_thread_{}
     , output_running_{ false }
     , scheduling_running_{ false }
-    , run_type_{ -1 }
-    , run_num_{ -1 }
+    , run_type_{}
+    , run_num_{}
     , file_name_{}
     , waiting_batches_{}
     , last_approx_timestamp_{ 0 }
@@ -29,7 +29,7 @@ DataHandler::DataHandler()
 {
 }
 
-void DataHandler::startRun(int run_type)
+void DataHandler::startRun(control_msg::daq::start_run::run_type run_type)
 {
     // Set the fRun_type, fRun_num and fFile_name run variables
     run_type_ = run_type;
@@ -63,15 +63,14 @@ void DataHandler::stopRun()
     g_elastic.log(WARNING, "Stop mining into container {}", file_name_);
 
     // Reset the run variables
-    run_type_ = -1;
-    run_num_ = -1;
+    run_type_ = {};
+    run_num_ = {};
     file_name_ = "";
 }
 
 void DataHandler::getRunNumAndName()
 {
-    // 4 fRun_type -> 1) Data_normal, 2) Calibration, 3) Test_normal, 4) test_daq
-
+    const int run_type_no = static_cast<int>(run_type_);
     int runNums[NUMRUNTYPES];
     std::ifstream runNumFile("../data/runNumbers.dat");
     if (runNumFile.fail()) {
@@ -80,7 +79,7 @@ void DataHandler::getRunNumAndName()
         std::ofstream newFile("../data/runNumbers.dat");
         if (newFile.is_open()) {
             for (int i = 0; i < NUMRUNTYPES; i++) {
-                if (run_type_ == i) {
+                if (run_type_no == i) {
                     newFile << 2 << "\n";
                 } else {
                     newFile << 1 << "\n";
@@ -97,7 +96,7 @@ void DataHandler::getRunNumAndName()
             if (runNums[i] < 1) {
                 runNums[i] = 1;
             }
-            if (run_type_ == i) {
+            if (run_type_no == i) {
                 run_num_ = runNums[i];
             }
         }
@@ -107,7 +106,7 @@ void DataHandler::getRunNumAndName()
         std::ofstream updateFile("../data/runNumbers.dat");
         if (updateFile.is_open()) {
             for (int i = 0; i < NUMRUNTYPES; i++) {
-                if (run_type_ == i) {
+                if (run_type_no == i) {
                     updateFile << runNums[i] + 1 << "\n";
                 } else {
                     updateFile << 1 << "\n";
@@ -119,7 +118,7 @@ void DataHandler::getRunNumAndName()
         }
     }
 
-    file_name_ = fmt::format("../data/type{}_run{}.root", run_type_, run_num_);
+    file_name_ = fmt::format("../data/type{}_run{}.root", run_type_no, run_num_);
 }
 
 std::size_t DataHandler::insertSort(CLBEventQueue& queue) noexcept
