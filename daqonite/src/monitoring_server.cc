@@ -6,36 +6,26 @@
 
 /// Create a MonitoringServer
 MonitoringServer::MonitoringServer(std::string config_file,
-    bool save_elastic, bool save_file, bool show_gui,
-    float clbFrac, float bbbFrac)
-    : fSave_elastic(save_elastic)
-    , fSave_file(save_file)
-    , fShow_gui(show_gui)
-    , fSignal_set(fIO_service, SIGINT)
-    , fCLB_socket(fIO_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), CLBMONPORT))
-    , fCLB_frac(clbFrac)
-    , fBBB_socket(fIO_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), BBBMONPORT))
-    , fBBB_frac(bbbFrac)
+                                   bool save_elastic, bool save_file, float sample_frac)
+    : fSave_elastic(save_elastic), fSave_file(save_file), fSample_frac(sample_frac), fSignal_set(fIO_service, SIGINT), fCLB_socket(fIO_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), CLBMONPORT)), fBBB_socket(fIO_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), BBBMONPORT))
 {
     // Initialise the random number generator
     srand((unsigned)time(NULL));
 
-    if (fSave_file) {
+    if (fSave_file)
+    {
         // Open the monitoring file to save data to
         std::string fileName = generateFilename();
-        g_elastic.log(INFO, "MonitoringServer: Opening ROOT file {}", fileName);
+        g_elastic.log(INFO, "MonitoringServer: Opening monitoring file {}", fileName);
 
         fFile = new TFile(fileName.c_str(), "RECREATE");
-        if (!fFile) {
+        if (!fFile)
+        {
             g_elastic.log(FATAL, "MonitoringServer: Could not open fFile");
             throw std::runtime_error("MonitoringServer: Could not open fFile");
         }
 
         setupTree();
-    }
-
-    if (fShow_gui) {
-        // Setup the old ROOT monitoring GUI
     }
 
     // Setup CLB socket
@@ -65,7 +55,7 @@ MonitoringServer::~MonitoringServer()
 std::string MonitoringServer::generateFilename()
 {
     time_t rawtime;
-    struct tm* timeinfo;
+    struct tm *timeinfo;
     char buffer[80];
 
     time(&rawtime);
@@ -78,41 +68,48 @@ std::string MonitoringServer::generateFilename()
 /// Setup the ROOT file TTree with the needed branches
 void MonitoringServer::setupTree()
 {
-    if (fFile != NULL) {
+    if (fFile != NULL)
+    {
         fCLB_tree = new TTree("clb_tree", "clb_tree");
-        if (!fCLB_tree) {
+        if (!fCLB_tree)
+        {
             g_elastic.log(FATAL, "MonitoringServer: Could not create 'clb_tree'");
             throw std::runtime_error("MonitoringServer: Could not create 'clb_tree'");
         }
-    } else {
+    }
+    else
+    {
         g_elastic.log(FATAL, "MonitoringServer: Could not create 'clb_tree' as TFile does not exist");
         throw std::runtime_error("MonitoringServer: Could not create 'clb_tree' as TFile does not exist");
     }
 
-    fCLB_tree->Branch("pom_id", &fCLB_pom_id, "fCLB_pom_id/i");
-    fCLB_tree->Branch("timestamp_s", &fCLB_timestamp, "fCLB_timestamp/l");
-    fCLB_tree->Branch("temperature", &fCLB_temperature, "fCLB_temperature/s");
-    fCLB_tree->Branch("humidity", &fCLB_humidity, "fCLB_humidity/s");
-    fCLB_tree->Branch("rates", &fCLB_rates, "fCLB_rates[30]/f");
+    fCLB_tree->Branch("timestamp_ms", &fMon_data.timestamp, "fMon_data.timestamp/l");
+    fCLB_tree->Branch("pom", &fMon_data.pom, "fMon_data.pom/i");
+    fCLB_tree->Branch("run", &fMon_data.run, "fMon_data.run/i");
+    fCLB_tree->Branch("rate_veto", &fMon_data.rate_veto, "fMon_data.rate_veto/b");
+    fCLB_tree->Branch("temperature", &fMon_data.temperature, "fMon_data.temperature/s");
+    fCLB_tree->Branch("humidity", &fMon_data.humidity, "fMon_data.humidity/s");
+    fCLB_tree->Branch("rates", &fMon_rates.rates, "fMon_rates.rates[30]/f");
 }
 
 // Work/Handle the CLB monitoring socket
 void MonitoringServer::workCLBSocket()
 {
     fCLB_socket.async_receive(boost::asio::buffer(&fCLB_buffer[0], BUFFERSIZE),
-        boost::bind(&MonitoringServer::handleCLBSocket, this,
-            boost::asio::placeholders::error,
-            boost::asio::placeholders::bytes_transferred));
+                              boost::bind(&MonitoringServer::handleCLBSocket, this,
+                                          boost::asio::placeholders::error,
+                                          boost::asio::placeholders::bytes_transferred));
 }
 
-void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, std::size_t size)
+void MonitoringServer::handleCLBSocket(boost::system::error_code const &error, std::size_t size) // ~30 microseconds
 {
 
     if (!error)
     {
 
         // Shall we skip this packet?
-        if (((float)rand() / RAND_MAX) > fCLB_frac) {
+        if (((float)rand() / RAND_MAX) > fSample_frac)
+        {
             workCLBSocket();
             return;
         }
@@ -126,10 +123,11 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
         }
 
         // Cast the beggining of the packet to the CLBCommonHeader
-        CLBCommonHeader const& header = *static_cast<CLBCommonHeader const*>(static_cast<void const*>(&fCLB_buffer[0]));
+        CLBCommonHeader const &header = *static_cast<CLBCommonHeader const *>(static_cast<void const *>(&fCLB_buffer[0]));
 
         // Check the type of the packet is monitoring from the CLBCommonHeader
-        if (getType(header).first != MONI) {
+        if (getType(header).first != MONI)
+        {
             g_elastic.log(WARNING, "MonitoringServer: CLB socket incorrect packet type (expected {}, got {})", getType(header).first, MONI);
             workCLBSocket();
             return;
@@ -143,10 +141,6 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
             return;
         }
 
-        fCLB_run_num = header.runNumber();
-        fCLB_pom_id = header.pomIdentifier();
-        fCLB_timestamp = header.timeStamp().inMilliSeconds();
-
         // Cast the next section of the packet to the monitoring hits
         MONHits const &hits =
             *static_cast<MONHits const *>(static_cast<void const *>(&fCLB_buffer[0] + sizeof(CLBCommonHeader)));
@@ -155,34 +149,39 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
         SCData const &scData =
             *static_cast<SCData const *>(static_cast<void const *>(&fCLB_buffer[0] + sizeof(CLBCommonHeader) + sizeof(MONHits)));
 
-        // Get the monitoring hits rate data
+        // Fill the mon_data
+        fMon_data.timestamp = header.timeStamp().inMilliSeconds();
+        fMon_data.pom = header.pomIdentifier();
+        fMon_data.run = header.runNumber();
+        fMon_data.rate_veto = highRate(hits);
+        fMon_data.temperature = scData.temp();
+        fMon_data.humidity = scData.humidity();
+
+        // Fill the rate_data
+        fMon_rates.timestamp = header.timeStamp().inMilliSeconds();
+        fMon_rates.pom = header.pomIdentifier();
         float rate_scale = 1000000 / scData.duration(); // Window length in microseconds
-        std::array<float, 30> rates;
         for (int i = 0; i < 30; ++i)
         {
-            fCLB_rates[i] = (float)hits.hit(i) * rate_scale;
-            rates[i] = fCLB_rates[i];
+            fMon_rates.rates[i] = (float)hits.hit(i) * rate_scale;
         }
 
-        // See if there was a high rate veto in this packet
-        fRate_veto = highRate(hits);
-
-        fCLB_temperature = (int)scData.temp();
-        fCLB_humidity = (int)scData.humidity();
-
         // If we are saving to ROOT file, fill the TTree
-        if (fSave_file && fCLB_tree != NULL) {
+        if (fSave_file && fCLB_tree != NULL)
+        {
             fCLB_tree->Fill();
         }
 
         // Save the monitoring data to elasticsearch
         if (fSave_elastic)
         {
-            g_elastic.mon(fCLB_timestamp, fCLB_pom_id, fCLB_run_num,
-                          fCLB_temperature, fCLB_humidity, fRate_veto,
-                          rates);                     
+            g_elastic.val("test", 10.0);
+            g_elastic.mon(fMon_data);
+            g_elastic.rates(fMon_rates);
         }
-    } else {
+    }
+    else
+    {
         g_elastic.log(WARNING, "MonitoringServer: CLB socket packet error");
     }
 
@@ -193,20 +192,24 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const& error, s
 void MonitoringServer::workBBBSocket()
 {
     fBBB_socket.async_receive(boost::asio::buffer(&fBBB_buffer[0], BUFFERSIZE),
-        boost::bind(&MonitoringServer::handleBBBSocket, this,
-            boost::asio::placeholders::error,
-            boost::asio::placeholders::bytes_transferred));
+                              boost::bind(&MonitoringServer::handleBBBSocket, this,
+                                          boost::asio::placeholders::error,
+                                          boost::asio::placeholders::bytes_transferred));
 }
 
-void MonitoringServer::handleBBBSocket(boost::system::error_code const& error, std::size_t size)
+void MonitoringServer::handleBBBSocket(boost::system::error_code const &error, std::size_t size)
 {
-    if (!error) {
+    if (!error)
+    {
         // Shall we skip this packet?
-        if (((float)rand() / RAND_MAX) > fBBB_frac) {
+        if (((float)rand() / RAND_MAX) > fSample_frac)
+        {
             workBBBSocket();
             return;
         }
-    } else {
+    }
+    else
+    {
         g_elastic.log(WARNING, "MonitoringServer: BBB socket packet error");
     }
     workBBBSocket();
@@ -216,18 +219,21 @@ void MonitoringServer::handleBBBSocket(boost::system::error_code const& error, s
 void MonitoringServer::workSignals()
 {
     fSignal_set.async_wait(boost::bind(&MonitoringServer::handleSignals, this,
-        boost::asio::placeholders::error,
-        boost::asio::placeholders::signal_number));
+                                       boost::asio::placeholders::error,
+                                       boost::asio::placeholders::signal_number));
 }
 
-void MonitoringServer::handleSignals(boost::system::error_code const& error, int signum)
+void MonitoringServer::handleSignals(boost::system::error_code const &error, int signum)
 {
-    if (!error) {
-        if (signum == SIGINT) {
+    if (!error)
+    {
+        if (signum == SIGINT)
+        {
             std::cout << "\n";
 
-            if (fSave_file && fFile != NULL && fCLB_tree != NULL) {
-                g_elastic.log(INFO, "MonitoringServer: Closing fFile");
+            if (fSave_file && fFile != NULL && fCLB_tree != NULL)
+            {
+                g_elastic.log(INFO, "MonitoringServer: Closing monitoring file");
                 fCLB_tree->Write();
                 fFile->Close();
             }

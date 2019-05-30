@@ -44,9 +44,8 @@ class MonitoringServer
 {
 public:
     /// Create a MonitoringServer
-    MonitoringServer(std::string config_file,
-                     bool save_elastic, bool save_file, bool show_gui,
-                     float clbFrac, float bbbFrac);
+    MonitoringServer(std::string config_file, bool save_elastic,
+                     bool save_file, float sample_frac);
 
     /// Destroy a MonitoringServer
     ~MonitoringServer();
@@ -77,33 +76,26 @@ public:
 
 private:
     // settings
-    bool fSave_elastic;                     ///< Save data to elasticsearch
-    bool fSave_file;                        ///< Save data to ROOT file
-    bool fShow_gui;                         ///< Show old ROOT monitoring GUI
+    bool fSave_elastic; ///< Save data to elasticsearch
+    bool fSave_file;    ///< Save data to ROOT file
+    float fSample_frac; ///< Fraction of monitoring data to keep
 
     // io_service
-    boost::asio::io_service fIO_service;    ///< The BOOST io_service
-    boost::asio::signal_set fSignal_set;    ///< Signal set to deal with process killing
+    boost::asio::io_service fIO_service; ///< The BOOST io_service
+    boost::asio::signal_set fSignal_set; ///< Signal set to deal with process killing
 
     // ROOT file
-    TFile *fFile;                           ///< Output ROOT file for saving monitoring data
-    TTree *fCLB_tree;                       ///< ROOT TTree to store CLB monitoring data
+    TFile *fFile;     ///< Output ROOT file for saving monitoring data
+    TTree *fCLB_tree; ///< ROOT TTree to store CLB monitoring data
 
     // CLB Socket
     boost::asio::ip::udp::socket fCLB_socket;                 ///< Socket to send CLB monitoring data to
     char fCLB_buffer[BUFFERSIZE] __attribute__((aligned(8))); ///< CLB monitoring socket buffer
-    float fCLB_frac;                                          ///< Fraction of CLB monitoring data to keep
 
-    int fCLB_run_num;                       ///< Mon CLB: Header Run Num (4 bytes)
-    int fCLB_pom_id;                        ///< Mon CLB: Header POM ID (4 bytes)
-    long fCLB_timestamp;                    ///< Mon CLB: Header timestamp in ms (8 bytes)
-    int fCLB_temperature;                   ///< Mon CLB: Temperature data (2 bytes)
-    int fCLB_humidity;                      ///< Mon CLB: Humidity data (2 bytes)
-    float fCLB_rates[30];                   ///< Mon CLB: Channel Hits (4 bytes)
-    bool fRate_veto;                        ///< Mon CLB: Was a high rate veto present (bool)
+    mon_data fMon_data;
+    rate_data fMon_rates;
 
     // BBB Socket
     boost::asio::ip::udp::socket fBBB_socket;                 ///< Socket to send BBB monitoring data to
     char fBBB_buffer[BUFFERSIZE] __attribute__((aligned(8))); ///< BBB monitoring socket buffer
-    float fBBB_frac;                                          ///< Fraction of BBB monitoring data to keep
 };
