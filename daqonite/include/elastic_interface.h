@@ -91,8 +91,9 @@ public:
          * 
          * @param index         name of the elasticsearch index
          * @param document      Json::Value document ready to be indexed
+         * @param timestamp_now should we add timestamp now or let elasticsearch so it at indextime?
 		 */
-    void doc(std::string index, Json::Value document);
+    void doc(std::string index, Json::Value document, bool timestamp_now);
 
     /**
 		 * Indexes a single value document to elasticsearch of given type
@@ -100,8 +101,9 @@ public:
          * 
          * @param index         name of the elasticsearch index
          * @param value         value for this document
+         * @param timestamp_now should we add timestamp now or let elasticsearch so it at indextime?
 		 */
-    void val(std::string index, float value);    
+    void val(std::string index, float value, bool timestamp_now);    
 
     /**
 		 * Indexes a "daqmon" document and "daqhits" documents to elasticsearch
@@ -173,6 +175,12 @@ private:
 		 * Uses the current time for generation
 		 */
     void generateFilename();
+
+    inline long timestamp()
+    {
+        return std::chrono::duration_cast<std::chrono::milliseconds>
+                    (std::chrono::system_clock::now().time_since_epoch()).count();
+    }
 
     // General
     log_mode fMode;                             ///< Logging mode {ELASTIC, FILE_LOG}

@@ -5,6 +5,8 @@
  * - Elasticsearch assigns the document ID randomly
  * - Elasticsearch adds an "indextime" timestamp to every document
  * 
+ * 
+ * 
  * ElasticInterface::index takes ~50 milliseconds
  * ElasticInterface::indexHits takes ~ 100 milliseconds for the 30 monhits documents
  * 
@@ -73,30 +75,37 @@ void ElasticInterface::log(severity level, std::string message)
     fMutex.unlock();
 }
 
-void ElasticInterface::doc(std::string index, Json::Value document)
+void ElasticInterface::doc(std::string index, Json::Value document, bool timestamp_now)
 {
     fMutex.lock();
 
     if (fMode == ELASTIC) // Only index documents if in ELASTIC mode
     {
+        if (timestamp_now) {
+            document["timestamp"] = timestamp(); // Add timestamp now rather than elasticsearch indextime
+        }
+
         // Post indexing to the indexing io_service
-        fIndex_service.post(boost::bind(&ElasticInterface::index, this, index, document, true));
+        fIndex_service.post(boost::bind(&ElasticInterface::index, this, index, document, !timestamp_now));
     }
 
     fMutex.unlock();    
 }
 
-void ElasticInterface::val(std::string index, float value)
+void ElasticInterface::val(std::string index, float value, bool timestamp_now)
 {
     fMutex.lock();
 
     if (fMode == ELASTIC) // Only index values if in ELASTIC mode
     {
         Json::Value document;      // Populate JSON document
+        if (timestamp_now) {
+            document["timestamp"] = timestamp(); // Add timestamp now rather than elasticsearch indextime
+        }
         document["value"] = value; // monitoring value
 
         // Post indexing to the indexing io_service
-        fIndex_service.post(boost::bind(&ElasticInterface::index, this, index, document, true));
+        fIndex_service.post(boost::bind(&ElasticInterface::index, this, index, document, !timestamp_now));
     }
 
     fMutex.unlock();
@@ -170,6 +179,7 @@ bool ElasticInterface::suppress()
 void ElasticInterface::logInLock(severity level, std::string message) 
 {
     Json::Value document;                // Populate daqlog JSON document
+    document["timestamp"] = timestamp(); // Milliseconds since epoch timestamp
     document["process"] = fProcess_name; // Process name
     document["pid"] = fPid;              // Process ID
     document["severity"] = level;        // severity level

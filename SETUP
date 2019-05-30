@@ -139,6 +139,9 @@ PUT daqlog
 {
   "mappings": {
     "properties": {
+      "timestamp": {
+        "type": "date"
+      },      
       "process": {
         "type": "text"
       },
@@ -152,13 +155,8 @@ PUT daqlog
         "type": "text"
       }
     }
-  },
-  "settings": {
-    "index.default_pipeline": "indextime"
   }
 }
-
-
 
 PUT daqmon
 {
