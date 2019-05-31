@@ -72,7 +72,14 @@ void BusPublisher::publishStatus()
 {
     // TODO: synchronize?
     message_type message{};
-    message.RunMode = daq_handler_->getMode();
+
+    if (daq_handler_->getMode()) {
+        message.Discriminator = DaqoniteStateMessage::Mining::Discriminator;
+        message.Payload.pMining = DaqoniteStateMessage::Mining{};
+        message.Payload.pMining.Which = daq_handler_->getRunType();
+    } else {
+        message.Discriminator = DaqoniteStateMessage::Idle::Discriminator;
+    }
 
     std::lock_guard<std::mutex> lk{ mtx_publish_queue_ };
     publish_queue_.emplace_back(std::move(message));
@@ -93,7 +100,6 @@ void BusPublisher::communicationThread()
                 std::unique_lock<std::mutex> lk{ mtx_publish_queue_ };
 
                 while (!publish_queue_.empty()) {
-                    g_elastic.log(INFO, "BusPublisher '{}'", publish_queue_.front().RunMode);
                     sock.send(nng::view{ &publish_queue_.front(), sizeof(message_type) });
                     publish_queue_.pop_front();
                 }

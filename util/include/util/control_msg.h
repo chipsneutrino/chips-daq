@@ -2,50 +2,44 @@
 
 using disc_t = unsigned char;
 
-enum class RunType
-{
+enum class RunType {
     DataNormal = 1,
     Calibration,
     TestNormal,
     TestDAQ
 };
 
-struct OpsMessage
-{
-    static const char * const URL;
+struct OpsMessage {
+    static const char* const URL;
 
     disc_t Discriminator;
-    struct StartRun
-    {
+    struct StartRun {
         static constexpr disc_t Discriminator = 0;
     };
-    struct StopRun
-    {
+    struct StopRun {
         static constexpr disc_t Discriminator = 1;
     };
 };
 
-struct ControlMessage
-{
-    static const char * const URL;
+struct ControlMessage {
+    static const char* const URL;
+
+    const char Zero = '\0'; ///< The first bit must be '\0' otherwise NNG pub/sub discards the message.
     disc_t Discriminator;
 
     /// Start a new data run
-    struct StartRun
-    {
+    struct StartRun {
         static constexpr disc_t Discriminator = 0;
         RunType Which;
     };
 
     /// Stop current run
-    struct StopRun
-    {
+    struct StopRun {
         static constexpr disc_t Discriminator = 1;
     };
 
     /// Exit, possibly stopping current run
-    struct Exit
-    {
+    struct Exit {
         static constexpr disc_t Discriminator = 2;
     };
 
@@ -56,26 +50,25 @@ struct ControlMessage
     } Payload;
 };
 
-struct DaqoniteStateMessage
-{
-    static const char * const URL;
-    //disc_t Discriminator;
+struct DaqoniteStateMessage {
+    static const char* const URL;
 
-    bool RunMode;
+    const char Zero = '\0'; ///< The first bit must be '\0' otherwise NNG pub/sub discards the message.
+    disc_t Discriminator;
 
     /// Daqonite is just sitting there doing nothing
-    /*struct Idle {
+    struct Idle {
         static constexpr disc_t Discriminator = 0;
     };
 
     /// Daqonite is actively processing and saving data
-    struct RunInProgress {
+    struct Mining {
         static constexpr disc_t Discriminator = 1;
         RunType Which;
     };
 
     union {
         Idle pIdle;
-        RunInProgress pRunInProgress;
-    } Payload;*/
+        Mining pMining;
+    } Payload;
 };

@@ -23,10 +23,18 @@ void Observer::run()
             while (running_) {
                 sock.recv(nng::view{ &message, sizeof(message) });
 
-                if (message.RunMode) {
-                    global.sendEvent(events::Mining{});
-                } else {
+                switch (message.Discriminator) {
+                case DaqoniteStateMessage::Idle::Discriminator:
                     global.sendEvent(events::Idle{});
+                    break;
+
+                case DaqoniteStateMessage::Mining::Discriminator:
+                    global.sendEvent(events::Mining{});
+                    break;
+
+                default:
+                    g_elastic.log(WARNING, "Daqonite received unknown discriminator: {}", message.Discriminator);
+                    break;
                 }
             }
         } catch (const nng::exception& e) {
