@@ -30,6 +30,10 @@ namespace states {
         global.terminate();
     }
 
+    void Exit::react(StateUpdate const&)
+    {
+    }
+
     void Ready::entry()
     {
         g_elastic.log(INFO, "Experiment : Ready");
@@ -39,6 +43,10 @@ namespace states {
     void Ready::react(OpsCommands::StartRun const& e)
     {
         transit<states::StartingRun>();
+    }
+
+    void Ready::react(StateUpdate const&)
+    {
     }
 
     void StartingRun::entry()
@@ -79,16 +87,32 @@ namespace states {
         global.sendEvent(StateUpdate{});
     }
 
+    void Run::react(StateUpdate const&)
+    {
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::RunInProgress>()) {
+            transit<states::Error>();
+            return;
+        }
+    }
+
     void StoppingRun::entry()
     {
         g_elastic.log(INFO, "Experiment : StoppingRun");
         global.sendEvent(StateUpdate{});
     }
 
+    void StoppingRun::react(StateUpdate const&)
+    {
+    }
+
     void Error::entry()
     {
         g_elastic.log(INFO, "Experiment : Error");
         global.sendEvent(StateUpdate{});
+    }
+
+    void Error::react(StateUpdate const&)
+    {
     }
 }
 }
