@@ -14,6 +14,7 @@ public:
     void react(KillSignal const&);
     virtual void react(StateUpdate const& update) = 0;
     virtual void react(OpsCommands::StartRun const&) {}
+    virtual void react(OpsCommands::StopRun const&) {}
 
     void react(tinyfsm::Event const&) {}
 };

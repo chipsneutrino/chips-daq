@@ -21,6 +21,7 @@ namespace states {
     };
     class Run : public FSM {
         void entry() override;
+        void react(OpsCommands::StopRun const&) override;
         void react(StateUpdate const&) override;
     };
     class StoppingRun : public FSM {

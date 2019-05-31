@@ -95,14 +95,39 @@ namespace states {
         }
     }
 
+    void Run::react(OpsCommands::StopRun const& e)
+    {
+        transit<states::StoppingRun>();
+    }
+
     void StoppingRun::entry()
     {
         g_elastic.log(INFO, "Experiment : StoppingRun");
         global.sendEvent(StateUpdate{});
+
+        {
+            ControlMessage msg{};
+            msg.Discriminator = ControlMessage::StopRun::Discriminator;
+            global.sendControlMessage(std::move(msg));
+        }
     }
 
     void StoppingRun::react(StateUpdate const&)
     {
+        if (!ControlBus::FSM::is_in_state<ControlBus::states::Online>()) {
+            transit<states::Error>();
+            return;
+        }
+
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
+            transit<states::Error>();
+            return;
+        }
+
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Idle>()) {
+            transit<states::Ready>();
+            return;
+        }
     }
 
     void Error::entry()

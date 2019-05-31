@@ -45,7 +45,8 @@ void OpsUplink::handleMessage(nng::socket& sock, const OpsMessage& message)
     case OpsMessage::StartRun::Discriminator:
         global.sendEvent(OpsCommands::StartRun{});
 
-        if (Experiment::FSM::is_in_state<Experiment::states::StartingRun>()) {
+        if (Experiment::FSM::is_in_state<Experiment::states::StartingRun>()
+            || Experiment::FSM::is_in_state<Experiment::states::Run>()) {
             acknowledge(sock, true);
         } else {
             acknowledge(sock, false);
@@ -55,7 +56,14 @@ void OpsUplink::handleMessage(nng::socket& sock, const OpsMessage& message)
 
     case OpsMessage::StopRun::Discriminator:
         global.sendEvent(OpsCommands::StopRun{});
-        acknowledge(sock, true);
+
+        if (Experiment::FSM::is_in_state<Experiment::states::StoppingRun>()
+            || Experiment::FSM::is_in_state<Experiment::states::Ready>()) {
+            acknowledge(sock, true);
+        } else {
+            acknowledge(sock, false);
+        }
+
         break;
 
     default:
