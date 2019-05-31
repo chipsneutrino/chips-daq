@@ -23,9 +23,9 @@ namespace states {
         transit<states::Idle>();
     }
 
-    void Unknown::react(events::RunInProgress const& e)
+    void Unknown::react(events::Mining const& e)
     {
-        transit<states::RunInProgress>();
+        transit<states::Mining>();
     }
 
     void Idle::entry()
@@ -34,18 +34,18 @@ namespace states {
         global.sendEvent(StateUpdate{});
     }
 
-    void Idle::react(events::RunInProgress const& e)
+    void Idle::react(events::Mining const& e)
     {
-        transit<states::RunInProgress>();
+        transit<states::Mining>();
     }
 
-    void RunInProgress::entry()
+    void Mining::entry()
     {
-        g_elastic.log(INFO, "Daqonite : RunInProgress");
+        g_elastic.log(INFO, "Daqonite : Mining");
         global.sendEvent(StateUpdate{});
     }
 
-    void RunInProgress::react(events::Idle const& e)
+    void Mining::react(events::Idle const& e)
     {
         transit<states::Idle>();
     }

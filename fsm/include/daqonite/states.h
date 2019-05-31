@@ -13,16 +13,16 @@ namespace states {
     class Unknown : public FSM {
         void entry() override;
         void react(events::Idle const&) override;
-        void react(events::RunInProgress const&) override;
+        void react(events::Mining const&) override;
         void react(events::Connected const&) override {}
     };
 
     class Idle : public FSM {
         void entry() override;
-        void react(events::RunInProgress const&) override;
+        void react(events::Mining const&) override;
     };
 
-    class RunInProgress : public FSM {
+    class Mining : public FSM {
         void entry() override;
         void react(events::Idle const&) override;
     };

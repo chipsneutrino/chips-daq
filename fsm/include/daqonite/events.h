@@ -10,7 +10,7 @@ namespace events {
     };
     struct Idle : tinyfsm::Event {
     };
-    struct RunInProgress : tinyfsm::Event {
+    struct Mining : tinyfsm::Event {
     };
 }
 }

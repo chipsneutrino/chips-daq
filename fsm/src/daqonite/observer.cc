@@ -24,7 +24,7 @@ void Observer::run()
                 sock.recv(nng::view{ &message, sizeof(message) });
 
                 if (message.RunMode) {
-                    global.sendEvent(events::RunInProgress{});
+                    global.sendEvent(events::Mining{});
                 } else {
                     global.sendEvent(events::Idle{});
                 }

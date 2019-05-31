@@ -70,12 +70,12 @@ namespace states {
             return;
         }
 
-        if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqonite::FSM::is_in_state<Daqonite::states::RunInProgress>()) {
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
             transit<states::Error>();
             return;
         }
 
-        if (Daqonite::FSM::is_in_state<Daqonite::states::RunInProgress>()) {
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
             transit<states::Run>();
             return;
         }
@@ -89,7 +89,7 @@ namespace states {
 
     void Run::react(StateUpdate const&)
     {
-        if (!Daqonite::FSM::is_in_state<Daqonite::states::RunInProgress>()) {
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
             transit<states::Error>();
             return;
         }

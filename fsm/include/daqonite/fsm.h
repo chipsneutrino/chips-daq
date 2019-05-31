@@ -14,6 +14,6 @@ public:
     virtual void react(events::Disconnected const&);
     virtual void react(events::Connected const&);
     virtual void react(events::Idle const&) {}
-    virtual void react(events::RunInProgress const&) {}
+    virtual void react(events::Mining const&) {}
 };
 }
