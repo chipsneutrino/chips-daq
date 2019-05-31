@@ -1,0 +1,72 @@
+set(PUBLIC_HEADERS
+    include/fh_library.h
+    include/fh_frame_protocol.h
+    include/fh_msg_translator.h
+    include/fh_test_functions.h
+    include/fh_slow_ctrl_service.h
+    include/fh_dispatch.h
+    include/fh_connector.h
+    include/fh_msg_service.h
+    include/fh_stream.h
+    include/fh_data_access_service.h
+    include/fh_sorter.h
+    include/udaq_api/slow_ctrl_service_api.h
+    include/udaq_api/data_access_service_api.h
+    include/udaq_api/error_service_api.h
+    include/udaq_api/msg_service_api.h
+    include/udaq_api/udaq_comms_api.h
+    include/udaq_api/exp_ctrl_service_api.h
+    include/fh_message_util.h
+    include/fh_transport.h
+    include/fh_protocol.h
+    include/fh_exp_ctrl_service.h
+    include/fh_util.h
+    include/fh_message.h
+    include/fh_service.h
+)
+
+set(PRIVATE_HEADERS 
+    src/cobs.h
+    src/fh_socket_util.h
+    src/fh_frame_protocol_v1.h
+    src/fh_frame_protocol_v2.h
+    src/test/fh_rand.h
+    src/test/fh_error_stream.h
+    src/test/fh_selftest.h
+    src/test/fh_transport_test.h
+    src/fh_classes.h
+    src/uthash/utarray.h
+    src/uthash/uthash.h
+    src/uthash/utlist.h
+)
+
+set(SOURCES
+    src/fh_frame_protocol.c
+    src/fh_transport.c
+    src/fh_msg_service.c
+    src/fh_stream.c
+    src/fh_dispatch.c
+    src/cobs.c
+    src/fh_protocol.c
+    src/fh_msg_translator.c
+    src/fh_exp_ctrl_service.c
+    src/fh_data_access_service.c
+    src/fh_connector.c
+    src/fh_util.c
+    src/fh_message_util.c
+    src/test/fh_rand.c
+    src/test/fh_error_stream.c
+    src/test/fh_transport_test.c
+    src/test/fh_selftest.c
+    src/fh_slow_ctrl_service.c
+    src/fh_message.c
+    src/fh_service.c
+    src/fh_frame_protocol_v2.c
+    src/fh_sorter.c
+    src/fh_socket_util.c
+    src/fh_frame_protocol_v1.c
+)
+
+add_library(fh_message SHARED ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})
+target_include_directories(fh_message PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_include_directories(fh_message PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")

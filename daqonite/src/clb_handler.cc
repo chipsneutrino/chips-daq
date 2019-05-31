@@ -4,10 +4,11 @@
 
 #include <boost/bind.hpp>
 
-#include "clb_data_structs.h"
+#include <clb/data_structs.h>
+#include <clb/header_structs.h>
+#include <util/elastic_interface.h>
+
 #include "clb_handler.h"
-#include "clb_header_structs.h"
-#include "elastic_interface.h"
 
 CLBHandler::CLBHandler(std::shared_ptr<boost::asio::io_service> io_service,
     std::shared_ptr<DataHandler> data_handler, bool* mode, int opt_port, int handler_id)

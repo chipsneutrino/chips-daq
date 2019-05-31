@@ -46,11 +46,14 @@ public:
     DAQHandler& operator=(const DAQHandler& other) = delete;
     DAQHandler& operator=(DAQHandler&& other) = delete;
 
-    virtual void handleStartCommand(control_msg::daq::start_run::run_type which) override;
+    virtual void handleStartCommand(RunType which) override;
     virtual void handleStopCommand() override;
     virtual void handleExitCommand() override;
 
     void run();
+
+    bool getMode() const { return mode_; }
+    RunType getRunType() { return run_type_; }
 
 private:
     /**
@@ -70,6 +73,7 @@ private:
 
     // Running mode
     bool mode_; ///< false = Not Running, True = Running
+    RunType run_type_;
 
     // IO_service stuff
     std::shared_ptr<boost::asio::io_service> io_service_; ///< BOOST io_service. The heart of everything

@@ -1,7 +1,7 @@
 #include <functional>
 
-#include "elastic_interface.h"
 #include "signal_receiver.h"
+#include <util/elastic_interface.h>
 
 SignalReceiver::SignalReceiver()
     : handler_{}
@@ -80,7 +80,7 @@ void SignalReceiver::handleSignals(boost::system::error_code const& error, int s
         break;
     }
 
-    // Incase we want to add other signals, you need to call the work method again
+    // In case we want to add other signals, you need to call the work method again
     workSignals();
 }
 

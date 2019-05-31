@@ -10,10 +10,10 @@
 
 #pragma once
 
-#include "clb_data_structs.h"
-#include "clb_header_structs.h"
+#include <clb/data_structs.h>
+#include <clb/header_structs.h>
 #include "daq_config.h"
-#include "elastic_interface.h"
+#include <util/elastic_interface.h>
 
 #include <arpa/inet.h>
 #include <chrono>
@@ -34,15 +34,16 @@
 typedef std::vector<unsigned int> POMRange_t;
 typedef std::vector<char> raw_data_t;
 
-class PacketGenerator {
+class PacketGenerator
+{
 public:
     PacketGenerator(std::string config_file,
-        std::string dataFile,
-        std::string address,
-        int time_slice_duration,
-        int runNum,
-        int MTU,
-        int hitR);
+                    std::string dataFile,
+                    std::string address,
+                    int time_slice_duration,
+                    int runNum,
+                    int MTU,
+                    int hitR);
 
     ~PacketGenerator();
 

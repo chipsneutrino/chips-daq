@@ -1,15 +1,15 @@
-[submodule "daqonite/lib/fmt"]
-	path = daqonite/lib/fmt
+[submodule "lib/fmt"]
+	path = lib/fmt
 	url = https://github.com/fmtlib/fmt.git
-[submodule "daqonite/lib/elasticlient"]
-	path = daqonite/lib/elasticlient
+[submodule "lib/elasticlient"]
+	path = lib/elasticlient
 	url = https://github.com/jooosh25/elasticlient.git
-[submodule "daqonite/lib/nngpp"]
-	path = daqonite/lib/nngpp
+[submodule "lib/nngpp"]
+	path = lib/nngpp
 	url = https://github.com/cwzx/nngpp.git
-[submodule "daqonite/lib/nng"]
-	path = daqonite/lib/nng
+[submodule "lib/nng"]
+	path = lib/nng
 	url = https://github.com/nanomsg/nng.git
-[submodule "daqonite/lib/tinyfsm"]
-	path = daqonite/lib/tinyfsm
+[submodule "lib/tinyfsm"]
+	path = lib/tinyfsm
 	url = https://github.com/digint/tinyfsm.git

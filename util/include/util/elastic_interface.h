@@ -27,7 +27,8 @@
 #include <boost/thread.hpp>
 
 /// Enum for describing the different logging severity levels
-enum severity {
+enum severity
+{
     TRACE,
     DEBUG,
     INFO,
@@ -37,12 +38,14 @@ enum severity {
 };
 
 /// Enum for describing the different logging modes
-enum log_mode {
+enum log_mode
+{
     ELASTIC,
     FILE_LOG
 };
 
-struct mon_data {
+struct mon_data
+{
     long timestamp;
     int pom;
     int run;
@@ -51,7 +54,8 @@ struct mon_data {
     short humidity;
 };
 
-struct rate_data {
+struct rate_data
+{
     long timestamp;
     int pom;
     std::array<float, 30> rates;
@@ -61,12 +65,13 @@ struct rate_data {
 #define MAX_ATTEMPTS 3
 
 /// Callback for elasticlient logs
-inline void elasticlient_callback(elasticlient::LogLevel logLevel, const std::string& msg)
+inline void elasticlient_callback(elasticlient::LogLevel logLevel, const std::string &msg)
 {
     std::cout << "LOG (" << (unsigned)logLevel << "): " << msg << std::endl;
 }
 
-class ElasticInterface {
+class ElasticInterface
+{
 public:
     /// Create a ElasticInterface
     ElasticInterface();
@@ -85,7 +90,7 @@ public:
 
     /// Nice pretty-print formatting using fmt.
     template <typename S, typename... Args>
-    inline void log(severity level, const S& format_str, const Args&... args)
+    inline void log(severity level, const S &format_str, const Args &... args)
     {
         log(level, fmt::format(format_str, args...));
     }
@@ -215,25 +220,25 @@ private:
     }
 
     // General
-    log_mode fMode; ///< Logging mode {ELASTIC, FILE_LOG}
+    log_mode fMode;                        ///< Logging mode {ELASTIC, FILE_LOG}
     std::vector<std::string> fClient_list; ///< List of elasticsearch clients
-    Json::StreamWriterBuilder fBuilder; ///< Json writer to stream json value to string
+    Json::StreamWriterBuilder fBuilder;    ///< Json writer to stream json value to string
 
     // Indexing
-    boost::asio::io_service fIndex_service; ///< Indexing io_service
+    boost::asio::io_service fIndex_service;    ///< Indexing io_service
     boost::asio::io_service::work fIndex_work; ///< Work for the indexing io_service
-    boost::thread_group fIndex_threads; ///< Group of indexing threads to do the work
-    boost::mutex fPost_mutex; ///< Mutex for posting to indexing io_service
-    boost::mutex fWork_mutex; ///< Mutex for work inside indexing io_service
+    boost::thread_group fIndex_threads;        ///< Group of indexing threads to do the work
+    boost::mutex fPost_mutex;                  ///< Mutex for posting to indexing io_service
+    boost::mutex fWork_mutex;                  ///< Mutex for work inside indexing io_service
 
     // Settings
     std::string fProcess_name; ///< Process name for using in log messages
-    int fPid; ///< Process pid for using in log messages
-    std::string fFile_name; ///< file name used when in FILE_LOG mode
-    bool fPrint_logs; ///< Should we print logs to stdout?
+    int fPid;                  ///< Process pid for using in log messages
+    std::string fFile_name;    ///< file name used when in FILE_LOG mode
+    bool fPrint_logs;          ///< Should we print logs to stdout?
 
     // Log suppression
-    int fLog_counter; ///< Log counter
+    int fLog_counter;                                                ///< Log counter
     std::chrono::time_point<std::chrono::system_clock> fTimer_start; ///< Suppression window start time
 };
 

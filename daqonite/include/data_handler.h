@@ -25,9 +25,9 @@
 
 #include "batch_scheduler.h"
 #include "clb_event.h"
-#include "control_msg.h"
 #include "merge_sorter.h"
 #include "spill_scheduler.h"
+#include <util/control_msg.h>
 
 #define NUMRUNTYPES 4
 
@@ -49,7 +49,7 @@ public:
      * Start a data taking run
      * Sets the run variables, opens the output file, and adds TTrees and branches
      */
-    void startRun(control_msg::daq::start_run::run_type run_type);
+    void startRun(RunType which);
 
     /**
      * Stop a data taking run
@@ -78,7 +78,7 @@ private:
 
     std::atomic_bool output_running_; ///< Is output thread supposed to be running?
     std::atomic_bool scheduling_running_; ///< Is scheduling thread supposed to be running?
-    control_msg::daq::start_run::run_type run_type_; ///< Type of run (data, test, etc...)
+    RunType run_type_; ///< Type of run (data, test, etc...)
     int run_num_; ///< Run number found from "../data/runNumbers.dat"
     std::string file_name_; ///< Output file name
 

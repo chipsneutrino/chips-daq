@@ -4,12 +4,14 @@
 #include <nngpp/protocol/sub0.h>
 
 #include "command_receiver.h"
-#include "elastic_interface.h"
+#include <util/elastic_interface.h>
 
 CommandReceiver::CommandReceiver()
     : handler_{}
     , running_{ false }
     , receiver_thread_{}
+    , cv_receiver_thread_{}
+    , mtx_receiver_thread_{}
 {
 }
 
@@ -35,6 +37,7 @@ void CommandReceiver::join()
     }
 
     running_ = false;
+    cv_receiver_thread_.notify_one();
 
     if (receiver_thread_ && receiver_thread_->joinable()) {
         receiver_thread_->join();
@@ -55,16 +58,52 @@ void CommandReceiver::receiverThread()
     while (running_) {
         try {
             auto sock = nng::sub::open();
-            sock.set_opt_string(NNG_OPT_SUB_SUBSCRIBE, "");
-            sock.dial(control_msg::daq::url);
+            nng::sub::set_opt_subscribe(sock, "");
+            nng::set_opt_recv_timeout(sock, 200);
+            sock.dial(ControlMessage::URL);
 
-            // FIXME: listen here
+            ControlMessage message{};
+            while (running_) {
+                try {
+                    sock.recv(nng::view{ &message, sizeof(message) });
+                    g_elastic.log(INFO, "CommandReceiver has message");
+                } catch (const nng::exception& e) {
+                    switch (e.get_error()) {
+                    case nng::error::timedout:
+                        continue;
+                    default:
+                        throw;
+                    }
+                }
+
+                processMessage(message);
+            }
         } catch (const nng::exception& e) {
             g_elastic.log(ERROR, "CommandReceiver caught error when listening: {}", e.what());
-            g_elastic.log(INFO, "CommandReceiver reconnecting in 5 seconds");
-            std::this_thread::sleep_for(std::chrono::seconds(5));
+            g_elastic.log(INFO, "CommandReceiver will reconnect in 5 seconds");
+
+            std::unique_lock<std::mutex> lk{ mtx_receiver_thread_ };
+            cv_receiver_thread_.wait_for(lk, std::chrono::seconds(5), [this] { return !running_; });
         }
     }
 
     g_elastic.log(INFO, "CommandReceiver finished");
+}
+
+void CommandReceiver::processMessage(const ControlMessage& message)
+{
+    switch (message.Discriminator) {
+    case ControlMessage::StartRun::Discriminator:
+        handler_->handleStartCommand(message.Payload.pStartRun.Which);
+        break;
+    case ControlMessage::StopRun::Discriminator:
+        handler_->handleStopCommand();
+        break;
+    case ControlMessage::Exit::Discriminator:
+        handler_->handleExitCommand();
+        break;
+    default:
+        g_elastic.log(WARNING, "CommandReceiver got message with unknown discriminator: {}", message.Discriminator);
+        break;
+    }
 }

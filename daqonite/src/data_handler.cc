@@ -5,8 +5,8 @@
 #include <functional>
 
 #include "data_handler.h"
-#include "elastic_interface.h"
 #include "run_file.h"
+#include <util/elastic_interface.h>
 
 DataHandler::DataHandler()
     : output_thread_{}
@@ -29,10 +29,10 @@ DataHandler::DataHandler()
 {
 }
 
-void DataHandler::startRun(control_msg::daq::start_run::run_type run_type)
+void DataHandler::startRun(RunType which)
 {
     // Set the fRun_type, fRun_num and fFile_name run variables
-    run_type_ = run_type;
+    run_type_ = which;
     getRunNumAndName();
 
     // Prepare queues and schedule.

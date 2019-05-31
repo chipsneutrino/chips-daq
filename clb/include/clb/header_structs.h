@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "clb_data_structs.h"
+#include <clb/data_structs.h>
 
 #define MONI 0x1
 #define ACOU 0x2
@@ -26,12 +26,12 @@ struct CLBCommonHeader
     uint32_t DataType;          ///< Type of data optical, acoustic, monitoring
     uint32_t RunNumber;         ///< Run number
     uint32_t UDPSequenceNumber; ///< Packet sequence number to check for dropped packets
-    UTCTime Timestamp; ///< UTC timestamp, with seconds and tics
-    uint32_t POMIdentifier; ///< POM identification number
-    uint32_t POMStatus1; ///< Status indicator 1
-    uint32_t POMStatus2; ///< Status indicator 2
-    uint32_t POMStatus3; ///< Status indicator 3
-    uint32_t POMStatus4; ///< Status indicator 4
+    UTCTime Timestamp;          ///< UTC timestamp, with seconds and tics
+    uint32_t POMIdentifier;     ///< POM identification number
+    uint32_t POMStatus1;        ///< Status indicator 1
+    uint32_t POMStatus2;        ///< Status indicator 2
+    uint32_t POMStatus3;        ///< Status indicator 3
+    uint32_t POMStatus4;        ///< Status indicator 4
 
     uint32_t dataType() const
     {
@@ -48,7 +48,7 @@ struct CLBCommonHeader
         return ntohl(UDPSequenceNumber);
     }
 
-    const UTCTime& timeStamp() const
+    const UTCTime &timeStamp() const
     {
         return Timestamp;
     }
@@ -60,7 +60,8 @@ struct CLBCommonHeader
 
     uint32_t pomStatus(int n = 1) const
     {
-        switch (n) {
+        switch (n)
+        {
         case 1:
             return ntohl(POMStatus1);
         case 2:
@@ -102,11 +103,16 @@ inline std::pair<int, std::string> getType(CLBCommonHeader const &header)
     const static std::pair<int, std::string> optical = std::make_pair(OPTO, "optical data");
     const static std::pair<int, std::string> monitoring = std::make_pair(MONI, "monitoring data");
 
-    if (header.dataType() == tmch) {
+    if (header.dataType() == tmch)
+    {
         return monitoring;
-    } else if (header.dataType() == ttdc) {
+    }
+    else if (header.dataType() == ttdc)
+    {
         return optical;
-    } else if (header.dataType() == taes) {
+    }
+    else if (header.dataType() == taes)
+    {
         return acoustic;
     }
     return unknown;
@@ -128,14 +134,14 @@ inline std::ostream &operator<<(std::ostream &stream, const CLBCommonHeader &hea
 }
 
 /// Is the timestamp valid?
-inline bool validTimeStamp(CLBCommonHeader const& header)
+inline bool validTimeStamp(CLBCommonHeader const &header)
 {
     const static uint32_t mask = 0x80000000;
     return header.pomStatus() & mask;
 }
 
 /// Is it a trailer?
-inline bool isTrailer(CLBCommonHeader const& header)
+inline bool isTrailer(CLBCommonHeader const &header)
 {
     const static uint32_t mask = 0x80000000;
     return header.pomStatus(2) & mask;

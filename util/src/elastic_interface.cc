@@ -7,7 +7,8 @@
 
 ElasticInterface g_elastic; ///< Global instance of this class
 
-ElasticInterface::ElasticInterface() : fMode(ELASTIC), fIndex_work(fIndex_service), fLog_counter(0)
+ElasticInterface::ElasticInterface()
+    : fMode(ELASTIC), fIndex_work(fIndex_service), fLog_counter(0)
 {
     // elasticlient requires a vector of elasticsearch nodes, for now we just add the one
     fClient_list.clear();
@@ -257,6 +258,9 @@ void ElasticInterface::index(std::string index, Json::Value document, bool add_t
             {
                 fmt::print("{}\n", res.text);
             }
+        }
+        catch (const std::runtime_error &e)
+        {
         }
         catch (const std::runtime_error &e)
         {

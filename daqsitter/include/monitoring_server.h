@@ -29,9 +29,9 @@
 #include <TSystem.h>
 #include <TTree.h>
 
-#include "clb_data_structs.h"
-#include "clb_header_structs.h"
-#include "elastic_interface.h"
+#include <clb/data_structs.h>
+#include <clb/header_structs.h>
+#include <util/elastic_interface.h>
 
 #define BUFFERSIZE 10000
 

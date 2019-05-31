@@ -5,7 +5,7 @@
 #include <cstring>
 
 #include "daq_handler.h"
-#include "elastic_interface.h"
+#include <util/elastic_interface.h>
 
 DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data)
     : collect_clb_data_{ collect_clb_data }
@@ -13,6 +13,7 @@ DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data)
     , clb_ports_{}
     , n_threads_{}
     , mode_{ false }
+    , run_type_{}
     , io_service_{ new boost::asio::io_service }
     , run_work_{ new boost::asio::io_service::work(*io_service_) }
     , thread_group_{}
@@ -73,23 +74,19 @@ void DAQHandler::ioServiceThread()
     io_service_->run();
 }
 
-void DAQHandler::handleStartCommand(control_msg::daq::start_run::run_type which)
+void DAQHandler::handleStartCommand(RunType which)
 {
     // If we are currently running first stop the current run
     if (mode_ == true) {
         g_elastic.log(INFO, "DAQ Handler stopping current mine");
-
-        // Set the mode to monitoring
-        mode_ = false;
-
-        // Stop the data_handler run
-        data_handler_->stopRun();
+        handleStopCommand();
     }
 
     // Start a data_handler run
     data_handler_->startRun(which);
 
     // Set the mode to data taking
+    run_type_ = which;
     mode_ = true;
 
     // Call the first work method to the optical data

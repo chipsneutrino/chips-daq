@@ -1,8 +1,8 @@
 #include <functional>
 #include <sstream>
 
-#include "elastic_interface.h"
 #include "spill_scheduler.h"
+#include <util/elastic_interface.h>
 
 SpillScheduler::SpillScheduler(int port, std::size_t trigger_memory_size, double init_period_guess, std::size_t n_batches_ahead, double time_window_radius)
     : port_{ port }
