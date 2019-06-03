@@ -44,21 +44,23 @@ enum log_mode
     FILE_LOG
 };
 
-struct mon_data
+/// Struct for the general POM monitoring data
+struct pom_data
 {
     long timestamp;
     int pom;
-    int run;
-    bool rate_veto;
     short temperature;
     short humidity;
+    bool sync;
 };
 
-struct rate_data
+/// Struct for the channel specific monitoring data
+struct channel_data
 {
     long timestamp;
     int pom;
-    std::array<float, 30> rates;
+    std::array<float, 30> rate;
+    std::bitset<32> veto;
 };
 
 #define MAX_LOG_RATE 10
@@ -88,7 +90,7 @@ public:
 		 */
     void init(bool print_logs, bool print_debug, int index_threads);
 
-    /// Nice pretty-print formatting using fmt.
+    /// Nice pretty-print formatting using fmt for logging
     template <typename S, typename... Args>
     inline void log(severity level, const S &format_str, const Args &... args)
     {
@@ -96,7 +98,7 @@ public:
     }
 
     /**
-		 * Adds workLog() work to indexing io_service
+		 * Adds logWork() work to indexing io_service
          * Timestamp is added when called to maintain ordering
          * Takes ~50 microseconds (~20 without print)
 		 * @param level         severity level of log
@@ -105,40 +107,50 @@ public:
     void log(severity level, std::string message);
 
     /**
-		 * Adds workDoc() work to indexing io_service
+		 * Adds stateWork() work to indexing io_service
+         * Timestamp is added when called to maintain ordering
+         * Takes ~20 microseconds
+		 * @param process       process name
+		 * @param pid           process pid
+         * @param state         process state
+		 */
+    void state(std::string process, int pid, std::string state);
+
+    /**
+		 * Adds documentWork() work to indexing io_service
          * Timestamp is added when called to maintain ordering
          * Takes ~20 microseconds
          * @param index         name of the elasticsearch index
          * @param document      Json::Value document ready to be indexed
 		 */
-    void doc(std::string index, Json::Value document);
+    void document(std::string index, Json::Value document);
 
     /**
-		 * Adds workVal() work to indexing io_service
+		 * Adds valueWork() work to indexing io_service
          * Timestamp is added when called to maintain ordering
          * Takes ~20 microseconds
          * @param index         name of the elasticsearch index
          * @param value         value for this document
 		 */
-    void val(std::string index, float value);
+    void value(std::string index, float value);
 
     /**
-		 * Adds workMon() work to indexing io_service
+		 * Adds pomWork() work to indexing io_service
          * Takes ~20 microseconds
-         * @param data          monitoring data
+         * @param data          POM monitoring data
 		 */
-    void mon(mon_data data);
+    void pom(pom_data data);
 
     /**
-		 * Adds workRates() work to indexing io_service
+		 * Adds channelWork() work to indexing io_service
          * Takes ~20 microseconds
-         * @param rates         rates data
+         * @param rates         channel monitoring data
 		 */
-    void rates(rate_data rates);
+    void channel(channel_data data);
 
 private:
     /**
-		 * Logs "daqlog" document to elasticsearch
+		 * Indexes "daqlog" document to elasticsearch database
 		 * @param level         severity level of log
 		 * @param message       log Message
          * @param timestamp     timestamp when work was posted
@@ -146,36 +158,45 @@ private:
     void logWork(severity level, std::string message, long timestamp);
 
     /**
-		 * Logs JSON to elasticsearch
+		 * Indexes "daqstate" document to elasticsearch database
+		 * @param process       process name
+		 * @param pid           process pid
+         * @param state         process state
+         * @param timestamp     timestamp when work was posted
+		 */
+    void stateWork(std::string process, int pid, std::string state, long timestamp);
+
+    /**
+		 * Indexes JSON document to elasticsearch database
 		 * @param index         name of the elasticsearch index
 		 * @param document      Json::Value document ready to be indexed
          * @param timestamp     timestamp when work was posted
 		 */
-    void docWork(std::string name, Json::Value document, long timestamp);
+    void documentWork(std::string name, Json::Value document, long timestamp);
 
     /**
-		 * Logs value to elasticsearch
+		 * Indexes value to elasticsearch database
          * @param index         name of the elasticsearch index
          * @param value         value for this document
          * @param timestamp     timestamp when work was posted
 		 */
-    void valWork(std::string name, float value, long timestamp);
+    void valueWork(std::string name, float value, long timestamp);
 
     /**
-		 * Logs monitoring data to elasticsearch
-         * @param data          monitoring data
+		 * Indexes "monpom" document to elasticsearch database
+         * @param data          POM monitoring data
 		 */
-    void monWork(mon_data data);
+    void pomWork(pom_data data);
 
     /**
-		 * Logs rate data to elasticsearch
+		 * Indexes "monchannel" document to elasticsearch
          * Takes ~100000 microseconds
-         * @param rates         rates data
+         * @param rates         channel monitoring data
 		 */
-    void ratesWork(rate_data rates);
+    void channelWork(channel_data data);
 
     /// Calls run() in an indexing thread
-    void indexThread();
+    void runThread();
 
     /// Checks if we need to suppress this log
     bool suppress();
@@ -185,9 +206,8 @@ private:
          * Takes ~75000 microseconds
          * @param index         name of index
          * @param document      JSON document
-         * @param add_time      should elasticsearch add "indextime" timestamp
 		 */
-    void index(std::string index, Json::Value document, bool add_time);
+    void index(std::string index, Json::Value document);
 
     /**
 		 * Initialise file logging
@@ -228,7 +248,7 @@ private:
     boost::asio::io_service fIndex_service;    ///< Indexing io_service
     boost::asio::io_service::work fIndex_work; ///< Work for the indexing io_service
     boost::thread_group fIndex_threads;        ///< Group of indexing threads to do the work
-    boost::mutex fPost_mutex;                  ///< Mutex for posting to indexing io_service
+    boost::mutex fPrint_mutex;                 ///< Mutex for stdout printing
     boost::mutex fWork_mutex;                  ///< Mutex for work inside indexing io_service
 
     // Settings

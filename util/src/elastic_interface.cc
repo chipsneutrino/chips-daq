@@ -40,7 +40,7 @@ void ElasticInterface::init(bool print_logs, bool print_debug, int index_threads
 
     for (int threadCount = 0; threadCount < index_threads; threadCount++) // start indexing threads
     {
-        fIndex_threads.create_thread(boost::bind(&ElasticInterface::indexThread, this));
+        fIndex_threads.create_thread(boost::bind(&ElasticInterface::runThread, this));
     }
 }
 
@@ -48,39 +48,36 @@ void ElasticInterface::log(severity level, std::string message)
 {
     if (fPrint_logs) // Print to stdout if required
     {
+        fPrint_mutex.lock();
         fmt::print("LOG ({}): {}\n", level, message);
+        fPrint_mutex.unlock();
     }
-    fPost_mutex.lock();
     fIndex_service.post(boost::bind(&ElasticInterface::logWork, this, level, message, timestamp()));
-    fPost_mutex.unlock();
 }
 
-void ElasticInterface::doc(std::string index, Json::Value document)
+void ElasticInterface::state(std::string process, int pid, std::string state)
 {
-    fPost_mutex.lock();
-    fIndex_service.post(boost::bind(&ElasticInterface::docWork, this, index, document, timestamp()));
-    fPost_mutex.unlock();
+    fIndex_service.post(boost::bind(&ElasticInterface::stateWork, this, process, pid, state, timestamp()));
 }
 
-void ElasticInterface::val(std::string index, float value)
+void ElasticInterface::document(std::string index, Json::Value document)
 {
-    fPost_mutex.lock();
-    fIndex_service.post(boost::bind(&ElasticInterface::valWork, this, index, value, timestamp()));
-    fPost_mutex.unlock();
+    fIndex_service.post(boost::bind(&ElasticInterface::documentWork, this, index, document, timestamp()));
 }
 
-void ElasticInterface::mon(mon_data data)
+void ElasticInterface::value(std::string index, float value)
 {
-    fPost_mutex.lock();
-    fIndex_service.post(boost::bind(&ElasticInterface::monWork, this, data));
-    fPost_mutex.unlock();
+    fIndex_service.post(boost::bind(&ElasticInterface::valueWork, this, index, value, timestamp()));
 }
 
-void ElasticInterface::rates(rate_data rates)
+void ElasticInterface::pom(pom_data data)
 {
-    fPost_mutex.lock();
-    fIndex_service.post(boost::bind(&ElasticInterface::ratesWork, this, rates));
-    fPost_mutex.unlock();
+    fIndex_service.post(boost::bind(&ElasticInterface::pomWork, this, data));
+}
+
+void ElasticInterface::channel(channel_data data)
+{
+    fIndex_service.post(boost::bind(&ElasticInterface::channelWork, this, data));
 }
 
 void ElasticInterface::logWork(severity level, std::string message, long timestamp)
@@ -97,7 +94,7 @@ void ElasticInterface::logWork(severity level, std::string message, long timesta
 
     if (mode() == ELASTIC) // only ELASTIC mode
     {
-        index("daqlog", document, false); // Index to elasticsearch
+        index("daqlog", document); // Index to elasticsearch
     }
     else if (fMode == FILE_LOG)
     { // Log to File
@@ -110,45 +107,58 @@ void ElasticInterface::logWork(severity level, std::string message, long timesta
     }
 }
 
-void ElasticInterface::docWork(std::string name, Json::Value document, long timestamp)
+void ElasticInterface::stateWork(std::string process, int pid, std::string state, long timestamp) 
 {
+    Json::Value document;               // Populate daqstate JSON document
+    document["timestamp"] = timestamp;  // Milliseconds since epoch timestamp
+    document["process"] = process;      // Process name
+    document["pid"] = pid;              // Process ID
+    document["state"] = state;          // Process state keyword
+
     if (mode() == ELASTIC) // only ELASTIC mode
     {
-        document["post_time"] = timestamp; // add timestamp
-
-        index(name, document, true); // Index to elasticsearch
+        index("daqstate", document); // Index to elasticsearch
     }
 }
 
-void ElasticInterface::valWork(std::string name, float value, long timestamp)
+void ElasticInterface::documentWork(std::string name, Json::Value document, long timestamp)
+{
+    if (mode() == ELASTIC) // only ELASTIC mode
+    {
+        document["timestamp"] = timestamp; // add timestamp
+
+        index(name, document); // Index to elasticsearch
+    }
+}
+
+void ElasticInterface::valueWork(std::string name, float value, long timestamp)
 {
     if (mode() == ELASTIC) // only ELASTIC mode
     {
         Json::Value document;              // populate JSON document
-        document["post_time"] = timestamp; // timestamp
+        document["timestamp"] = timestamp; // timestamp
         document["value"] = value;         // monitoring value
 
-        index(name, document, true); // Index to elasticsearch
+        index(name, document); // Index to elasticsearch
     }
 }
 
-void ElasticInterface::monWork(mon_data data)
+void ElasticInterface::pomWork(pom_data data)
 {
     if (mode() == ELASTIC) // only ELASTIC mode
     {
         Json::Value document;                       // populate daqmon JSON document
         document["timestamp"] = data.timestamp;     // timestamp from the monitoring packet
         document["pom"] = data.pom;                 // planar optical module ID
-        document["run"] = data.run;                 // run number
         document["temperature"] = data.temperature; // planar optical module temperature
         document["humidity"] = data.humidity;       // planar optical module humidity
-        document["rate_veto"] = data.rate_veto;     // high rate veto bool
+        document["sync"] = data.sync;               // is planar optical module time synced?
 
-        index("daqmon", document, false); // Index to elasticsearch
+        index("monpom", document); // Index to elasticsearch
     }
 }
 
-void ElasticInterface::ratesWork(rate_data rates)
+void ElasticInterface::channelWork(channel_data data)
 {
     if (mode() == ELASTIC) // only ELASTIC mode
     {
@@ -157,22 +167,24 @@ void ElasticInterface::ratesWork(rate_data rates)
         elasticlient::Bulk bulkIndexer(client); /// Create the elasticsearch client bulk indexer
 
         // Populate the bulk data
-        elasticlient::SameIndexBulkData data("daqhits", 30);
+        elasticlient::SameIndexBulkData bulk("monchannel", 30);
         for (int i = 0; i < 30; i++)
         {
             Json::Value document;
-            document["timestamp"] = rates.timestamp; // timestamp from the monitoring packet
-            document["pom"] = rates.pom;             // planar optical module ID
+            document["timestamp"] = data.timestamp; // timestamp from the monitoring packet
+            document["pom"] = data.pom;             // planar optical module ID
             document["channel"] = i;
-            document["rate"] = rates.rates[i];
-            data.indexDocument("_doc", "", Json::writeString(fBuilder, document));
+            document["eid"] = 0;
+            document["rate"]["rate"] = data.rate[i];
+            document["rate"]["veto"] = (bool)data.veto[i];
+            bulk.indexDocument("_doc", "", Json::writeString(fBuilder, document));
         }
 
         for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++)
         {
             try
             {
-                size_t errors = bulkIndexer.perform(data);
+                size_t errors = bulkIndexer.perform(bulk);
                 if (errors == 0)
                 {
                     return;
@@ -187,7 +199,7 @@ void ElasticInterface::ratesWork(rate_data rates)
     }
 }
 
-void ElasticInterface::indexThread()
+void ElasticInterface::runThread()
 {
     fIndex_service.run();
 }
@@ -216,7 +228,9 @@ bool ElasticInterface::suppress()
         }
         else if (fLog_counter > MAX_LOG_RATE)
         {
+            fPrint_mutex.lock();
             fmt::print("ElasticInterface suppressed a rate of: {}\n", fLog_counter);
+            fPrint_mutex.unlock();
             fLog_counter = 0;
         }
         else
@@ -229,38 +243,26 @@ bool ElasticInterface::suppress()
     return false;
 }
 
-void ElasticInterface::index(std::string index, Json::Value document, bool add_time)
+void ElasticInterface::index(std::string index, Json::Value document)
 {
     elasticlient::Client client(fClient_list); /// Create the elasticsearch client
-
-    // So we need elasticsearch to at an "indextime" timestamp?
-    std::string pipeline;
-    if (add_time)
-    {
-        pipeline = "?pipeline=indextime";
-    }
-    else
-    {
-        pipeline = "";
-    }
 
     // Now and again the client will not respond, therefore, we try a few times
     for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++)
     {
         try
         {
-            cpr::Response res = client.index(index, "_doc", pipeline, Json::writeString(fBuilder, document));
+            cpr::Response res = client.index(index, "_doc", "?pipeline=info", Json::writeString(fBuilder, document));
             if (res.status_code == 201)
             {
                 return;
             }
             else
             {
+                fPrint_mutex.lock();
                 fmt::print("{}\n", res.text);
+                fPrint_mutex.unlock();
             }
-        }
-        catch (const std::runtime_error &e)
-        {
         }
         catch (const std::runtime_error &e)
         {

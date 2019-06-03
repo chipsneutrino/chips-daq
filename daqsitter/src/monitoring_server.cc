@@ -41,8 +41,13 @@ MonitoringServer::MonitoringServer(std::string config_file,
     // Start working signals
     workSignals();
 
-    // Start the BOOST io_service
-    fIO_service.run();
+    for (int threadCount = 0; threadCount < 4; threadCount++) // start indexing threads
+    {
+        fThread_group.create_thread(boost::bind(&MonitoringServer::runThread, this));
+    }
+
+    // Wait for all threads to finish working
+    fThread_group.join_all();
 }
 
 /// Destroy a MonitoringServer
@@ -83,13 +88,13 @@ void MonitoringServer::setupTree()
         throw std::runtime_error("MonitoringServer: Could not create 'clb_tree' as TFile does not exist");
     }
 
-    fCLB_tree->Branch("timestamp_ms", &fMon_data.timestamp, "fMon_data.timestamp/l");
-    fCLB_tree->Branch("pom", &fMon_data.pom, "fMon_data.pom/i");
-    fCLB_tree->Branch("run", &fMon_data.run, "fMon_data.run/i");
-    fCLB_tree->Branch("rate_veto", &fMon_data.rate_veto, "fMon_data.rate_veto/b");
-    fCLB_tree->Branch("temperature", &fMon_data.temperature, "fMon_data.temperature/s");
-    fCLB_tree->Branch("humidity", &fMon_data.humidity, "fMon_data.humidity/s");
-    fCLB_tree->Branch("rates", &fMon_rates.rates, "fMon_rates.rates[30]/f");
+    fCLB_tree->Branch("timestamp", &fPom_data.timestamp, "fPom_data.timestamp/l");
+    fCLB_tree->Branch("pom", &fPom_data.pom, "fPom_data.pom/i");
+    fCLB_tree->Branch("temperature", &fPom_data.temperature, "fPom_data.temperature/s");
+    fCLB_tree->Branch("humidity", &fPom_data.humidity, "fPom_data.humidity/s");
+    fCLB_tree->Branch("sync", &fPom_data.sync, "fPom_data.sync/b");
+    fCLB_tree->Branch("rate", &fChannel_data.rate, "fChannel_data.rate[30]/f");
+    fCLB_tree->Branch("veto", &fChannel_data.veto, "fChannel_data.veto[32]/b");
 }
 
 // Work/Handle the CLB monitoring socket
@@ -150,20 +155,20 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const &error, s
             *static_cast<SCData const *>(static_cast<void const *>(&fCLB_buffer[0] + sizeof(CLBCommonHeader) + sizeof(MONHits)));
 
         // Fill the mon_data
-        fMon_data.timestamp = header.timeStamp().inMilliSeconds();
-        fMon_data.pom = header.pomIdentifier();
-        fMon_data.run = header.runNumber();
-        fMon_data.rate_veto = highRate(hits);
-        fMon_data.temperature = scData.temp();
-        fMon_data.humidity = scData.humidity();
+        fPom_data.timestamp = header.timeStamp().inMilliSeconds();
+        fPom_data.pom = header.pomIdentifier();
+        fPom_data.temperature = scData.temp();
+        fPom_data.humidity = scData.humidity();
+        fPom_data.sync = validTimeStamp(header);
 
         // Fill the rate_data
-        fMon_rates.timestamp = header.timeStamp().inMilliSeconds();
-        fMon_rates.pom = header.pomIdentifier();
+        fChannel_data.timestamp = header.timeStamp().inMilliSeconds();
+        fChannel_data.pom = header.pomIdentifier();
+        fChannel_data.veto = hits.vetoBitset();
         float rate_scale = 1000000 / scData.duration(); // Window length in microseconds
         for (int i = 0; i < 30; ++i)
         {
-            fMon_rates.rates[i] = (float)hits.hit(i) * rate_scale;
+            fChannel_data.rate[i] = (float)hits.hit(i) * rate_scale;
         }
 
         // If we are saving to ROOT file, fill the TTree
@@ -175,9 +180,8 @@ void MonitoringServer::handleCLBSocket(boost::system::error_code const &error, s
         // Save the monitoring data to elasticsearch
         if (fSave_elastic)
         {
-            g_elastic.val("test", 10.0);
-            g_elastic.mon(fMon_data);
-            g_elastic.rates(fMon_rates);
+            g_elastic.pom(fPom_data);
+            g_elastic.channel(fChannel_data);
         }
     }
     else
@@ -245,3 +249,9 @@ void MonitoringServer::handleSignals(boost::system::error_code const &error, int
         workSignals();
     }
 }
+
+void MonitoringServer::runThread()
+{
+    fIO_service.run();
+}
+

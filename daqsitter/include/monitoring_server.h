@@ -74,6 +74,9 @@ public:
     void workSignals();
     void handleSignals(boost::system::error_code const &error, int signum);
 
+    /// run() io_service in a new thread
+    void runThread();
+
 private:
     // settings
     bool fSave_elastic; ///< Save data to elasticsearch
@@ -83,6 +86,7 @@ private:
     // io_service
     boost::asio::io_service fIO_service; ///< The BOOST io_service
     boost::asio::signal_set fSignal_set; ///< Signal set to deal with process killing
+    boost::thread_group fThread_group;   ///< Group of threads to read packets
 
     // ROOT file
     TFile *fFile;     ///< Output ROOT file for saving monitoring data
@@ -92,8 +96,8 @@ private:
     boost::asio::ip::udp::socket fCLB_socket;                 ///< Socket to send CLB monitoring data to
     char fCLB_buffer[BUFFERSIZE] __attribute__((aligned(8))); ///< CLB monitoring socket buffer
 
-    mon_data fMon_data;
-    rate_data fMon_rates;
+    pom_data fPom_data;
+    channel_data fChannel_data;
 
     // BBB Socket
     boost::asio::ip::udp::socket fBBB_socket;                 ///< Socket to send BBB monitoring data to

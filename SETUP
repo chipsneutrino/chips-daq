@@ -122,10 +122,22 @@ $ sudo systemctl enable --now filebeat
 # There are no longer different types of document per index from version 7
 # Every index only has a single mapping
 
-PUT _ingest/pipeline/indextime
+PUT _ingest/pipeline/info
 {
-  "description": "Adds indextime timestamp to documents",
+  "description": "Adds additional info to the documents",
   "processors": [
+    {
+      "set": {
+        "field": "run.num",
+        "value": 0
+      }
+    },
+    {
+      "set": {
+        "field": "run.type",
+        "value": 0
+      }
+    },
     {
       "set": {
         "field": "_source.indextime",
@@ -143,7 +155,7 @@ PUT daqlog
         "type": "date"
       },      
       "process": {
-        "type": "text"
+        "type": "keyword"
       },
       "pid": {
         "type": "integer"
@@ -155,10 +167,36 @@ PUT daqlog
         "type": "text"
       }
     }
+  },
+  "settings": {
+    "index.default_pipeline": "info"
   }
 }
 
-PUT daqmon
+PUT daqstate
+{
+  "mappings": {
+    "properties": {
+      "timestamp": {
+        "type": "date"
+      },      
+      "process": {
+        "type": "keyword"
+      },
+      "pid": {
+        "type": "integer"
+      },
+      "state": {
+        "type": "keyword"
+      }
+    }
+  },
+  "settings": {
+    "index.default_pipeline": "info"
+  }
+}
+
+PUT monpom
 {
   "mappings": {
     "properties": {
@@ -168,26 +206,23 @@ PUT daqmon
       "pom": {
         "type": "integer"
       },
-      "run": {
-        "type": "integer"
-      },
       "temperature": {
         "type": "integer"
       },
       "humidity": {
         "type": "integer"
       },
-      "rate_veto": {
+      "sync": {
         "type": "boolean"
       }
     }
   },
   "settings": {
-    "index.default_pipeline": "indextime"
+    "index.default_pipeline": "info"
   }
 }
 
-PUT daqhits
+PUT monchannel
 {
   "mappings": {
     "properties": {
@@ -200,13 +235,23 @@ PUT daqhits
       "channel": {
         "type": "integer"
       },
+      "eid": {
+        "type": "integer"
+      },
       "rate": {
-        "type": "float"
+        "properties": {
+          "rate": {
+            "type": "float"
+          },
+          "veto": {
+            "type": "boolean"
+          }
+        }
       }
     }
   },
   "settings": {
-    "index.default_pipeline": "indextime"
+    "index.default_pipeline": "info"
   }
 }
 
