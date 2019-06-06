@@ -12,9 +12,9 @@
 #include <memory>
 
 #include "bus_publisher.h"
-#include "command_receiver.h"
+#include "util/command_receiver.h"
 #include "daq_handler.h"
-#include "signal_receiver.h"
+#include "util/signal_receiver.h"
 #include <util/elastic_interface.h>
 
 namespace exit_code {

@@ -23,7 +23,7 @@
 
 #include "bbb_handler.h"
 #include "clb_handler.h"
-#include "command_receiver.h"
+#include "util/command_receiver.h"
 #include "data_handler.h"
 
 class DAQHandler : public CommandHandler {

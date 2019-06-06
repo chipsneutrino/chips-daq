@@ -5,6 +5,8 @@ add_library(util
     include/util/async_component.h              src/async_component.cc
     include/util/async_component_group.h        src/async_component_group.cc
     include/util/publisher.h
+    include/util/command_receiver.h             src/command_receiver.cc
+    include/util/signal_receiver.h             src/signal_receiver.cc
     )
 target_include_directories(util PUBLIC include)
 target_include_directories(util PRIVATE include/util)
@@ -14,3 +16,4 @@ target_include_directories(util PUBLIC ${ELASTICLIENT_INCLUDE_DIRS})
 
 target_link_libraries(util PUBLIC fmt)
 target_link_libraries(util PUBLIC Boost::thread)
+target_link_libraries(util PUBLIC nngpp)
