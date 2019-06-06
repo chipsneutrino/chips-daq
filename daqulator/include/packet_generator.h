@@ -12,7 +12,7 @@
 
 #include <clb/data_structs.h>
 #include <clb/header_structs.h>
-#include "daq_config.h"
+#include "util/daq_config.h"
 #include <util/elastic_interface.h>
 
 #include <arpa/inet.h>

@@ -14,6 +14,11 @@ namespace exit_code {
 static constexpr int success = 0;
 }
 
+namespace settings {
+// Default settings    
+static std::string config_name = "../data/config.opt";
+}
+
 int main(int argc, char* argv[])
 {
     // Initialise the elasticsearch interface.
@@ -23,7 +28,7 @@ int main(int argc, char* argv[])
 
     {
         // Main entry point.
-        std::shared_ptr<DAQControl> daq_control{ new DAQControl() };
+        std::shared_ptr<DAQControl> daq_control{ new DAQControl(settings::config_name) };
 
         std::unique_ptr<SignalReceiver> signal_receiver{ new SignalReceiver };
         signal_receiver->setHandler(daq_control);

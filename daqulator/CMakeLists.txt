@@ -1,6 +1,5 @@
 add_executable(daqulator
     src/daqulator.cc
-    include/daq_config.h               src/daq_config.cc
     include/packet_generator.h         src/packet_generator.cc
     )
 

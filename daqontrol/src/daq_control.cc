@@ -5,13 +5,17 @@
 #include "daq_control.h"
 #include <util/elastic_interface.h>
 
-DAQControl::DAQControl()
-    : controller_list_{}
+DAQControl::DAQControl(std::string config_file)
+    : config_(config_file.c_str())
+    , controller_list_{}
     , n_threads_{}
     , io_service_{ new boost::asio::io_service }
     , run_work_{ new boost::asio::io_service::work(*io_service_) }
     , thread_group_{}
 {
+
+    // Print the configuration
+    config_.printShortConfig();
 
     // TODO: Make this configurable
     controller_list_.emplace_back(0, "192.168.11.13");

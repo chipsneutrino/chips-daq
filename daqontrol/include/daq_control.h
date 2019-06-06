@@ -13,6 +13,7 @@
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 #include "util/command_receiver.h"
+#include "util/daq_config.h"
 
 class DAQControl : public CommandHandler {
 public:
@@ -22,7 +23,7 @@ public:
      * Initial work is then added to the IO_service before run() is called to
      * start to main loop.
      */
-    explicit DAQControl();
+    explicit DAQControl(std::string config_file);
 
     /// Destroy a DAQControl
     virtual ~DAQControl() = default;
@@ -51,6 +52,7 @@ private:
     void setupControllers();
 
     // Settings
+    DAQConfig config_;  ///< DAQConfig read from config file
     std::list<std::pair<int, std::string>> controller_list_; ///< List of controller type and ip address
     int n_threads_; ///< The number of threads to use
 

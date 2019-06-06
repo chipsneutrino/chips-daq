@@ -6,8 +6,10 @@ add_library(util
     include/util/async_component_group.h        src/async_component_group.cc
     include/util/publisher.h
     include/util/command_receiver.h             src/command_receiver.cc
-    include/util/signal_receiver.h             src/signal_receiver.cc
+    include/util/signal_receiver.h              src/signal_receiver.cc
+    include/util/daq_config.h                   src/daq_config.cc
     )
+    
 target_include_directories(util PUBLIC include)
 target_include_directories(util PRIVATE include/util)
 

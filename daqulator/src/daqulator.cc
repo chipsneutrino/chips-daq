@@ -5,7 +5,6 @@
  * E-mail: j.tingey.16@ucl.ac.uk
  */
 
-#include "daq_config.h"
 #include "packet_generator.h"
 
 namespace po = boost::program_options;
