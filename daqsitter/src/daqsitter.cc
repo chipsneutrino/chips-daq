@@ -5,8 +5,16 @@
  * E-mail: j.tingey.16@ucl.ac.uk
  */
 
+#include <boost/program_options.hpp>
+
+#include "util/command_receiver.h"
+#include "monitoring_handler.h"
+#include "util/signal_receiver.h"
 #include <util/elastic_interface.h>
-#include "monitoring_server.h"
+
+namespace exit_code {
+static constexpr int success = 0;
+}
 
 int main(int argc, char *argv[])
 {
@@ -22,7 +30,14 @@ int main(int argc, char *argv[])
 
     // Argument handling
     boost::program_options::options_description desc("Options");
-    desc.add_options()("help,h", "DAQsitter...")("elastic", "Save monitoring data to elasticsearch")("file", "Save monitoring data to ROOT file")("config,c", boost::program_options::value<std::string>(&config), "Configuration file (../data/config.opt)")("sample", boost::program_options::value<float>(&sample_frac), "Fraction of packets to use (0.01)")("logs", boost::program_options::value<bool>(&print_logs), "Print logs to stdout (true)")("debug", boost::program_options::value<bool>(&print_debug), "Print ElasticInterface debug messages (false)")("threads", boost::program_options::value<int>(&index_threads), "Number of ElasticInterface indexing threads (100)");
+    desc.add_options()("help,h", "DAQsitter...")
+        ("elastic", "Save monitoring data to elasticsearch")
+        ("file", "Save monitoring data to ROOT file")
+        ("config,c", boost::program_options::value<std::string>(&config), "Configuration file (../data/config.opt)")
+        ("sample", boost::program_options::value<float>(&sample_frac), "Fraction of packets to use (0.01)")
+        ("logs", boost::program_options::value<bool>(&print_logs), "Print logs to stdout (true)")
+        ("debug", boost::program_options::value<bool>(&print_debug), "Print ElasticInterface debug messages (false)")
+        ("threads", boost::program_options::value<int>(&index_threads), "Number of ElasticInterface indexing threads (100)");
 
     try
     {
@@ -55,12 +70,28 @@ int main(int argc, char *argv[])
 
     g_elastic.init(print_logs, print_debug, index_threads); // Initialise the ElasticInterface
 
-    g_elastic.log(INFO, "MonitoringServer: Start");
+    g_elastic.log(INFO, "Starting DAQsitter");
 
-    // Start the MonitoringServer
-    MonitoringServer server(config, elastic, file, sample_frac);
+    {
+        // Main entry point.
+        std::shared_ptr<MonitoringHandler> mon_handler{ new MonitoringHandler(config, elastic, file, sample_frac) };
 
-    g_elastic.log(INFO, "MonitoringServer: Stopped");
+        std::unique_ptr<SignalReceiver> signal_receiver{ new SignalReceiver };
+        signal_receiver->setHandler(mon_handler);
+        signal_receiver->runAsync();
 
-    return 0;
+        std::unique_ptr<CommandReceiver> cmd_receiver{ new CommandReceiver };
+        cmd_receiver->setHandler(mon_handler);
+        cmd_receiver->runAsync();
+
+        mon_handler->run();
+
+        cmd_receiver->join();
+        signal_receiver->join();
+    }
+
+
+
+    g_elastic.log(INFO, "Stopping DAQsitter");
+    return exit_code::success;
 }
