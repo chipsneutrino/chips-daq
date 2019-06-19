@@ -39,6 +39,7 @@ int main(int argc, char* argv[])
         cmd_receiver->runAsync();
 
         daq_control->run();
+        daq_control->testMessage();
 
         cmd_receiver->join();
         signal_receiver->join();

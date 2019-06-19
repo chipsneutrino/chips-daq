@@ -15,6 +15,12 @@
 #include "util/command_receiver.h"
 #include "util/daq_config.h"
 
+#include "msg_processor.h"
+#include "msg_types.h"
+#include "proc_var.h"
+
+#include <util/elastic_interface.h>
+
 class DAQControl : public CommandHandler {
 public:
     /**
@@ -41,6 +47,10 @@ public:
 
     void run();
 
+    void testMessage();
+
+    void join();
+
 private:
     /**
      * Bound to thread creation
@@ -48,20 +58,20 @@ private:
      */
     void ioServiceThread();
 
-    /// Create CLB and BBB controllers depending on configuration.
-    void setupControllers();
+    /// Create CLB and BBB processors depending on configuration.
+    void setupProcessors();
 
     // Settings
-    DAQConfig config_;  ///< DAQConfig read from config file
-    std::list<std::pair<int, std::string>> controller_list_; ///< List of controller type and ip address
-    int n_threads_; ///< The number of threads to use
+    DAQConfig config_;                      ///< DAQConfig read from config file
+    std::vector<MsgProcessor*> processors_; ///< List of processorts
+    int n_threads_;                         ///< The number of threads to use
 
     // Running mode
-    bool mode_; ///< false = Not Running, True = Running
-    RunType run_type_;
+    bool mode_;                             ///< false = Not Running, True = Running
+    RunType run_type_;                      ///< Current run type
 
     // IO_service stuff
-    std::shared_ptr<boost::asio::io_service> io_service_; ///< BOOST io_service. The heart of everything
-    std::unique_ptr<boost::asio::io_service::work> run_work_;
-    boost::thread_group thread_group_; ///< Group of threads to do the work
+    std::shared_ptr<boost::asio::io_service> io_service_;       ///< BOOST io_service. The heart of everything
+    std::unique_ptr<boost::asio::io_service::work> run_work_;   ///< Work for the io_service
+    boost::thread_group thread_group_;                          ///< Group of threads to do the work
 };

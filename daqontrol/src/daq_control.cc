@@ -3,11 +3,10 @@
  */
 
 #include "daq_control.h"
-#include <util/elastic_interface.h>
 
 DAQControl::DAQControl(std::string config_file)
     : config_(config_file.c_str())
-    , controller_list_{}
+    , processors_{}
     , n_threads_{}
     , mode_(false)
     , io_service_{ new boost::asio::io_service }
@@ -18,18 +17,22 @@ DAQControl::DAQControl(std::string config_file)
     // Print the configuration
     config_.printShortConfig();
 
-    // TODO: Make this configurable
-    controller_list_.emplace_back(0, "192.168.11.13");
-
-    // Calculate thread count
-    n_threads_ = controller_list_.size();
-
-    setupControllers();
+    setupProcessors();
 }
 
-void DAQControl::setupControllers()
+void DAQControl::setupProcessors()
 {
-    // Setup the controllers
+    // TODO: Make this configurable
+    processors_.push_back(new MsgProcessor("192.168.11.11", io_service_));
+    processors_.push_back(new MsgProcessor("192.168.11.12", io_service_));
+    processors_.push_back(new MsgProcessor("192.168.11.14", io_service_));
+    processors_.push_back(new MsgProcessor("192.168.11.15", io_service_));
+    processors_.push_back(new MsgProcessor("192.168.11.16", io_service_));
+    processors_.push_back(new MsgProcessor("192.168.11.17", io_service_));
+    processors_.push_back(new MsgProcessor("192.168.11.18", io_service_));
+
+    // Calculate thread count
+    n_threads_ = processors_.size();
 }
 
 void DAQControl::run()
@@ -39,11 +42,6 @@ void DAQControl::run()
     for (int i = 0; i < n_threads_; ++i) {
         thread_group_.create_thread(boost::bind(&DAQControl::ioServiceThread, this));
     }
-
-    // Wait for all the threads to finish
-    thread_group_.join_all();
-
-    g_elastic.log(INFO, "DAQ Control finished.");
 }
 
 void DAQControl::ioServiceThread()
@@ -81,4 +79,19 @@ void DAQControl::handleExitCommand()
     handleStopCommand();
     run_work_.reset();
     io_service_->stop();
+}
+
+void DAQControl::testMessage()
+{
+    // Get the Date of the hardware and software revisions from the CLBs
+    MsgWriter mw;
+    processors_[0]->postCommand(MsgTypes::MSG_SYS_DATEREV, mw);  
+}
+
+void DAQControl::join() 
+{
+    // Wait for all the threads to finish
+    thread_group_.join_all();
+
+    g_elastic.log(INFO, "DAQ Control finished.");
 }
