@@ -6,33 +6,15 @@
 
 DAQControl::DAQControl(std::string config_file)
     : config_(config_file.c_str())
-    , processors_{}
+    , controllers_{}
     , n_threads_{}
     , mode_(false)
     , io_service_{ new boost::asio::io_service }
     , run_work_{ new boost::asio::io_service::work(*io_service_) }
     , thread_group_{}
 {
-
-    // Print the configuration
-    config_.printShortConfig();
-
-    setupProcessors();
-}
-
-void DAQControl::setupProcessors()
-{
-    // TODO: Make this configurable
-    processors_.push_back(new MsgProcessor("192.168.11.11", io_service_));
-    processors_.push_back(new MsgProcessor("192.168.11.12", io_service_));
-    processors_.push_back(new MsgProcessor("192.168.11.14", io_service_));
-    processors_.push_back(new MsgProcessor("192.168.11.15", io_service_));
-    processors_.push_back(new MsgProcessor("192.168.11.16", io_service_));
-    processors_.push_back(new MsgProcessor("192.168.11.17", io_service_));
-    processors_.push_back(new MsgProcessor("192.168.11.18", io_service_));
-
-    // Calculate thread count
-    n_threads_ = processors_.size();
+    // Setup the DAQControl from the configuration
+    setupFromConfig();
 }
 
 void DAQControl::run()
@@ -83,9 +65,7 @@ void DAQControl::handleExitCommand()
 
 void DAQControl::testMessage()
 {
-    // Get the Date of the hardware and software revisions from the CLBs
-    MsgWriter mw;
-    processors_[0]->postCommand(MsgTypes::MSG_SYS_DATEREV, mw);  
+    controllers_[0]->postDaterev();  
 }
 
 void DAQControl::join() 
@@ -94,4 +74,18 @@ void DAQControl::join()
     thread_group_.join_all();
 
     g_elastic.log(INFO, "DAQ Control finished.");
+}
+
+void DAQControl::setupFromConfig()
+{
+    // Print the configuration
+    config_.printConfig();
+
+    for (int clb=0; clb<config_.fNum_clbs; clb++)
+    {
+        controllers_.push_back(new Controller(config_.fCLB_ips[clb]));
+    }
+
+    // Calculate thread count
+    n_threads_ = 1;
 }

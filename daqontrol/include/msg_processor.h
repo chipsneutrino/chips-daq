@@ -2,9 +2,6 @@
  * MsgProcessor - Processor for CLB messages
  * 
  * MsgProcessor is responsible for creating and decoding messages, and tracking response objects.
- *
- * Author: Josh Tingey
- * Contact: j.tingey.16@ucl.ac.uk
  */
 
 #pragma once
@@ -40,7 +37,7 @@ public:
 	 * 
 	 * @param ip_address      The ip address of the CLB to control
 	 */
-    MsgProcessor(std::string ip_address, std::shared_ptr<boost::asio::io_service> io_service);
+    MsgProcessor(unsigned long ip_address, std::shared_ptr<boost::asio::io_service> io_service);
 
     /// Destroy a MsgProcessor
     ~MsgProcessor() {};
@@ -51,30 +48,7 @@ public:
 		return cmd_id_;
 	}
 
-	/**
-	 * Posts an event to a node or a broadcast group.
-	 * Unlike commands, events do not require a response. The event may not be send immediately. 
-	 * Use {@link #flush()} to send the message, or disable batch mode using 
-	 * {@link #setBatchMode(boolean)}. Events may also be broadcasted, using a broadcast socket.
-	 *
-	 * @param type         The message type identifier.
-	 * @param mw           The content of the event.
-	 */
-    void postEvent(int type, MsgWriter mw);
-
-	/**
-	 * Posts a command to a node.
-	 * Commands are posted to a MessagePacket. If the processor is in batch mode, the command
-	 * may not be send immediately.
-	 * To force the sending of the command, invoke {@link #flush()}.
-	 * 
-	 * @param type         The type identifier of the command
-	 * @param mw           The MsgWriter containing the command to send
-	 * @param decoder      The Decoder to use for decoding, may be null for Void response.
-	 * @return             A future response. 
-	 */
-	//void postCommand(int type, MsgWriter mw, MessageDecoder<T> decoder)
-	void postCommand(int type, MsgWriter mw);
+	MsgReader processCommand(int type, MsgWriter mw);
 
 	/// Flushes the message processor, sending all queued messages.
 	void flush();
@@ -115,16 +89,9 @@ public:
 
 private:
 
-	void postMessage(MCFMessage message);
-
-	void getResponse();
-
-	//void receiveData(SocketAddress sender, byte[] data);
-
-    // BOOST
-    boost::asio::ip::udp::socket socket_;                 ///< Socket to send CLB monitoring data to
-    char buffer_[BUFFERSIZE] __attribute__((aligned(8))); ///< CLB monitoring socket buffer
-	boost::asio::ip::udp::endpoint endpoint_;	///< BOOST endpoint for the CLB
+    boost::asio::ip::udp::socket socket_;                 	///< Socket to send CLB monitoring data to
+    char buffer_[BUFFERSIZE] __attribute__((aligned(8))); 	///< CLB monitoring socket buffer
+	boost::asio::ip::udp::endpoint endpoint_;				///< BOOST endpoint for the CLB
 
 	MCFPacket tx_packet_;		///< MCF Packet used for stacking messages
 	bool batch_;				///< Are we in batch mode?

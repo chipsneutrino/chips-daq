@@ -1,23 +1,23 @@
 #####################################################################
 # Date: 20181017
 # Numer of POMs:   8
-# ->   0   BC(-1,4)  IP 192.168.11.3   MAC 080030B244A3   Channels 30
-# ->   1   BC(-1,3)  IP 192.168.11.4   MAC 080030B195B6   Channels 30
-# ->   2   BC(-1,2)  IP 192.168.11.5   MAC 080030B17779   Channels 30
-# ->   3   BC(-1,1)  IP 192.168.11.6   MAC 080030B19504   Channels 30
-# ->   4   TC(-1,4)  IP 192.168.11.7   MAC 080030B139B2   Channels 30
-# ->   5   TC(-1,3)  IP 192.168.11.8   MAC 080030B15C75   Channels 30
-# ->   6   TC(-1,2)  IP 192.168.11.9   MAC 080030B22539   Channels 30
-# ->   7   TC(-1,1)  IP 192.168.11.10   MAC 080030B244A2   Channels 30
+# ->   0   BC(-1,4)  IP 192.168.11.11    MAC 080030B244A3   Channels 30
+# ->   1   BC(-1,3)  IP 192.168.11.12    MAC 080030B195B6   Channels 30
+# ->   2   BC(-1,2)  IP 192.168.11.14    MAC 080030B17779   Channels 30
+# ->   3   BC(-1,1)  IP 192.168.11.15    MAC 080030B19504   Channels 30
+# ->   4   TC(-1,4)  IP 192.168.11.16    MAC 080030B139B2   Channels 30
+# ->   5   TC(-1,3)  IP 192.168.11.17    MAC 080030B15C75   Channels 30
+# ->   6   TC(-1,2)  IP 192.168.11.9     MAC 080030B22539   Channels 30
+# ->   7   TC(-1,1)  IP 192.168.11.18    MAC 080030B244A2   Channels 30
 #####################################################################
 clb_number=8
 clb0.enabled=1
 clb0.hid_type=3
 clb0.hid_x=-1
 clb0.hid_y=4
-clb0.eid=816989347
+clb0.eid=162677923
 clb0.mac=080030B244A3
-clb0.ip=3232238339
+clb0.ip=3232238347
 clb0.nch=30
 clb0.relay_ip=3232238338
 clb0.relay_chp=1
@@ -89,9 +89,9 @@ clb1.enabled=1
 clb1.hid_type=3
 clb1.hid_x=-1
 clb1.hid_y=3
-clb1.eid=816944566
+clb1.eid=162633142
 clb1.mac=080030B195B6
-clb1.ip=3232238340
+clb1.ip=3232238348
 clb1.nch=30
 clb1.relay_ip=3232238338
 clb1.relay_chp=2
@@ -163,9 +163,9 @@ clb2.enabled=1
 clb2.hid_type=3
 clb2.hid_x=-1
 clb2.hid_y=2
-clb2.eid=816936825
+clb2.eid=162625401
 clb2.mac=080030B17779
-clb2.ip=3232238341
+clb2.ip=3232238350
 clb2.nch=30
 clb2.relay_ip=3232238338
 clb2.relay_chp=3
@@ -237,9 +237,9 @@ clb3.enabled=1
 clb3.hid_type=3
 clb3.hid_x=-1
 clb3.hid_y=1
-clb3.eid=816944388
+clb3.eid=162632964
 clb3.mac=080030B19504
-clb3.ip=3232238342
+clb3.ip=3232238351
 clb3.nch=30
 clb3.relay_ip=3232238338
 clb3.relay_chp=4
@@ -311,9 +311,9 @@ clb4.enabled=1
 clb4.hid_type=1
 clb4.hid_x=-1
 clb4.hid_y=4
-clb4.eid=816921010
+clb4.eid=162609586
 clb4.mac=080030B139B2
-clb4.ip=3232238343
+clb4.ip=3232238352
 clb4.nch=30
 clb4.relay_ip=3232238338
 clb4.relay_chp=5
@@ -385,9 +385,9 @@ clb5.enabled=1
 clb5.hid_type=1
 clb5.hid_x=-1
 clb5.hid_y=3
-clb5.eid=816929909
+clb5.eid=162618485
 clb5.mac=080030B15C75
-clb5.ip=3232238344
+clb5.ip=3232238353
 clb5.nch=30
 clb5.relay_ip=3232238338
 clb5.relay_chp=6
@@ -533,9 +533,9 @@ clb7.enabled=1
 clb7.hid_type=1
 clb7.hid_x=-1
 clb7.hid_y=1
-clb7.eid=816989346
+clb7.eid=162677922
 clb7.mac=080030B244A2
-clb7.ip=3232238346
+clb7.ip=3232238354
 clb7.nch=30
 clb7.relay_ip=3232238338
 clb7.relay_chp=8

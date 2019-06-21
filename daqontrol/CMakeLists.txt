@@ -1,6 +1,7 @@
 add_executable(daqontrol
     src/daqontrol.cc
     include/daq_control.h              src/daq_control.cc
+    include/controller.h               src/controller.cc
     include/msg_processor.h            src/msg_processor.cc
     include/mcf_message.h              src/mcf_message.cc
     include/mcf_packet.h               src/mcf_packet.cc

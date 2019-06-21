@@ -4,8 +4,6 @@
  * This is the main class that deals with controlling the detector componenets.
  * It holds CLBController and BBBController components and dispatches commands
  *
- * Author: Josh Tingey
- * Contact: j.tingey.16@ucl.ac.uk
  */
 
 #pragma once
@@ -15,7 +13,7 @@
 #include "util/command_receiver.h"
 #include "util/daq_config.h"
 
-#include "msg_processor.h"
+#include "controller.h"
 #include "msg_types.h"
 #include "proc_var.h"
 
@@ -59,11 +57,11 @@ private:
     void ioServiceThread();
 
     /// Create CLB and BBB processors depending on configuration.
-    void setupProcessors();
+    void setupFromConfig();
 
     // Settings
     DAQConfig config_;                      ///< DAQConfig read from config file
-    std::vector<MsgProcessor*> processors_; ///< List of processorts
+    std::vector<Controller*> controllers_;  ///< List of controllers
     int n_threads_;                         ///< The number of threads to use
 
     // Running mode

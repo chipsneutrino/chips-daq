@@ -1,8 +1,6 @@
 /**
  * Program name: DAQontrol, by Josh Tingey MSci, JoshTingeyDAQDemon.Josh
  *
- * Author: Josh Tingey
- * E-mail: j.tingey.16@ucl.ac.uk
  */
 
 #include "util/command_receiver.h"

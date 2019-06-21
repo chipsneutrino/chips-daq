@@ -13,8 +13,10 @@ DAQConfig::DAQConfig(const char * config) : fConf_name(config) {
 
 	fCLB_enabled.clear();
 	fCLB_eids.clear();
+	fCLB_ips.clear();
 	fCLB_channels.clear();
 	fCLB_channel_eids.clear();
+	fCLB_channel_v.clear();
 	
 	loadConfig();
 }
@@ -32,7 +34,8 @@ void DAQConfig::printConfig() {
 	std::cout << "Number of Miners on Shift -> " << fEnabled_clbs << std::endl;
 	std::cout << "Number of Pickaxes being used -> " << fEnabled_channels << std::endl;
 	for (int i = 0; i<fNum_clbs; i++) {
-		std::cout << "Miner " << i << " -> ID Badge = " << fCLB_eids[i] <<
+		std::cout << "Miner " << i << " -> ID = " << fCLB_eids[i] <<
+					 ", Address = " << fCLB_ips[i] <<
 		 			  ", Pickaxes = " << fCLB_channels[i].count() << std::endl;
 	}
 	std::cout << "**********************************************\n" << std::endl;
@@ -123,6 +126,12 @@ void DAQConfig::parseLine(std::string &line) {
 				std::cerr << "Error: " << value << " should be int" << std::endl; 
 			}	
 		} 
+
+		if (config.compare("ip") == 0) {
+			if (!(ss >> fCLB_ips[clb_num])) { 
+				std::cerr << "Error: " << value << " should be int" << std::endl; 
+			}			
+		}
 		
 		// Add which channels are active
 		else if (config.compare("ch_enabled") == 0) {
@@ -143,6 +152,13 @@ void DAQConfig::parseLine(std::string &line) {
 		// Add the channel eID
 		if (config.compare("id") == 0) {
 			if (!(ss >> std::hex >> fCLB_channel_eids[clb_num][channel_num])) {
+				std::cerr << "Error: " << config << " = " << value << " should be hex" << std::endl;
+			}			
+		} 
+
+		// Add the channel volatages
+		if (config.compare("hv") == 0) {
+			if (!(ss >> fCLB_channel_v[clb_num][channel_num])) {
 				std::cerr << "Error: " << config << " = " << value << " should be hex" << std::endl;
 			}			
 		} 
@@ -239,13 +255,15 @@ void DAQConfig::setupVectors() {
 
 	// Just need placeholders to fill the vectors will set later
 	std::bitset<32> temp_bitset;
-	std::array<unsigned int, 31> temp_eids;
+	std::array<unsigned int, 31> temp_array;
 
 	// Add all CLBs
 	for (int i=0; i<fNum_clbs; i++) {
 		fCLB_enabled.push_back(false);
 		fCLB_eids.push_back(0);
+		fCLB_ips.push_back(0);
 		fCLB_channels.push_back(temp_bitset);
-		fCLB_channel_eids.push_back(temp_eids);
+		fCLB_channel_eids.push_back(temp_array);
+		fCLB_channel_v.push_back(temp_array);
 	}
 }
