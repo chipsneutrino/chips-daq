@@ -39,9 +39,15 @@ int main(int argc, char* argv[])
         cmd_receiver->runAsync();
 
         daq_control->run();
-        daq_control->testMessage();
+        //   daq_control->testMessage();
 
-        cmd_receiver->join();
+	//	daq_control->setInitValues();
+	//	daq_control->clbEvent(ClbEvents::INIT);
+	daq_control->init();     // it calls setInitValues and INIT
+	//	daq_control->setPMTs();
+	//	daq_control->disableHV();
+
+	cmd_receiver->join();     //// Why do this throw an error?
         signal_receiver->join();
     }
 
