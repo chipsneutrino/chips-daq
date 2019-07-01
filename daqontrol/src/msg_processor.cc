@@ -23,7 +23,7 @@ MsgProcessor::MsgProcessor(unsigned long ip_address, std::shared_ptr<boost::asio
 MsgReader MsgProcessor::processCommand(int type, MsgWriter mw)
 {
     // Create the message
-    MCFMessage msg(event, cmdId(), type, mw.toBytes());
+    MCFMessage msg(command, cmdId(), type, mw.toBytes());
 
     // Log message to elasticsearch (DEBUG)
     g_elastic.log(DEBUG, "Sending command of type {} with trxID {}", msg.type_, msg.id_);
@@ -55,7 +55,8 @@ void MsgProcessor::flush()
 
     // Send the contents of the packet to the CLB
     boost::system::error_code err;
-    socket_.send_to(boost::asio::buffer(tx_packet_.toBytes()), endpoint_, 0, err);   
+    auto sent = socket_.send_to(boost::asio::buffer(tx_packet_.toBytes()), endpoint_, 0, err);
+    std::cout << "Sent Payload --- " << sent << "\n";    
 
     tx_packet_.reset(); // Reset the packet (empty)
 } 
