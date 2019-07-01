@@ -48,7 +48,8 @@ public:
 
     void testMessage();
 
-    void init();;        
+    void init();        
+    void checkPMTs();        
     
     void join();
 

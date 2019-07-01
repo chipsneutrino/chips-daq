@@ -37,13 +37,14 @@ int main(int argc, char* argv[])
 
         daq_control->run();
 
-        daq_control->testMessage();
+	////        daq_control->testMessage();
 
-	    //daq_control->init();     // it calls setInitValues and INIT
-	    //daq_control->setPMTs();
-	    //daq_control->disableHV();
+	daq_control->init();     // it calls setInitValues and INIT then setPMTs
+	//daq_control->disableHV();
+	//sleep(5);
+	//daq_control->checkPMTs(); 
 
-	    cmd_receiver->join();     //// Why do this throw an error?
+	cmd_receiver->join();     //// Why do this throw an error?
         signal_receiver->join();
     }
 

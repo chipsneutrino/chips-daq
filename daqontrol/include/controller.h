@@ -26,6 +26,7 @@ public:
 
     void postDaterev();
     void postInit();
+    void postCheckPMTs();
 
     void setInitValues();    
     void addNanobeacon(std::vector<int> &vid, std::vector<long> &vv);

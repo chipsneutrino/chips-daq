@@ -95,8 +95,14 @@ void DAQControl::testMessage()
 
 void DAQControl::init()
 {
-    controllers_[0]->postInit();
+  controllers_[0]->postInit();
 }
+
+void DAQControl::checkPMTs()
+{  
+  controllers_[0]->postCheckPMTs();
+}
+
 
 void DAQControl::join() 
 {
