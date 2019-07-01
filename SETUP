@@ -108,15 +108,15 @@ setup.kibana:
   host: "192.168.1.130:5601"
 
 # Start Kibana/Metricbeat/Heartbeat
-$ sudo systemctl enable --now kibana
+$ sudo systemctl enable --now kibana.service
 $ sudo metricbeat modules enable system
 $ sudo metricbeat setup
-$ sudo systemctl enable --now metricbeat
+$ sudo systemctl enable --now metricbeat.service
 $ sudo heartbeat setup
-$ sudo systemctl enable --now heartbeat-elastic
+$ sudo systemctl enable --now heartbeat-elastic.service
 $ sudo filebeat modules enable system
 $ sudo filebeat setup
-$ sudo systemctl enable --now filebeat
+$ sudo systemctl enable --now filebeat.service
 
 # In Kibana "Dev Tools" put the indexes to the elasticsearch database
 # There are no longer different types of document per index from version 7

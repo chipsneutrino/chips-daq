@@ -16,6 +16,7 @@
 #include "controller.h"
 #include "msg_types.h"
 #include "proc_var.h"
+#include "clb_subsys.h"
 
 #include <util/elastic_interface.h>
 
@@ -47,6 +48,8 @@ public:
 
     void testMessage();
 
+    void init();;        
+    
     void join();
 
 private:

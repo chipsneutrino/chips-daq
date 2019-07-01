@@ -7,8 +7,11 @@ add_executable(daqontrol
     include/mcf_packet.h               src/mcf_packet.cc
     include/msg_writer.h               src/msg_writer.cc
     include/msg_reader.h               src/msg_reader.cc
+    include/var_info.h                 src/var_info.cc		       
+    include/clb_event.h                src/clb_event.cc
     include/msg_types.h
-    include/proc_var.h
+    include/proc_var.h    
+    include/clb_subsys.h
     )
 
 target_include_directories(daqontrol PUBLIC include)

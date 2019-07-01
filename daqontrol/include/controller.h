@@ -7,6 +7,8 @@
 #include "msg_processor.h"
 #include "msg_types.h"
 #include "proc_var.h"
+#include "clb_subsys.h"
+#include "clb_event.h"
 
 #include <util/elastic_interface.h>
 
@@ -24,6 +26,20 @@ public:
     void postDaterev();
     void postGetVars(std::vector<int> varIds);
     void postSetVars(std::map<int, int> toModify);
+
+    void setInitValues();    
+    void addNanobeacon(std::vector<int> &vid, std::vector<long> &vv);
+    void disableNanobeacon();
+
+    void disableHV();
+
+    void clbEvent(int event_id);
+    void setPMTs();
+    void checkPMTs();
+
+    void askPMTsInfo(int info_type);
+    void askVars(std::vector<int> var_ids);
+    void askState();
 
 private:
     /**
