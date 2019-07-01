@@ -26,11 +26,11 @@ PacketGenerator::PacketGenerator(std::string config_file, std::string dataFile,
     fCLB_mon_endpoint = *resolver_clb_mon.resolve(query_clb_mon);
 
     // Setup the generation vectors
-    fCLB_opt_headers.reserve(fConfig.fNum_clbs);
-    fCLB_mon_headers.reserve(fConfig.fNum_clbs);
-    fWindow_hits.reserve(fConfig.fNum_clbs);
+    fCLB_opt_headers.reserve(fConfig.num_controllers_);
+    fCLB_mon_headers.reserve(fConfig.num_controllers_);
+    fWindow_hits.reserve(fConfig.num_controllers_);
 
-    for (int i = 0; i < fConfig.fNum_clbs; i++)
+    for (int i = 0; i < fConfig.num_controllers_; i++)
     {
         // Optical packet headers
         CLBCommonHeader header_opt;
@@ -39,7 +39,7 @@ PacketGenerator::PacketGenerator(std::string config_file, std::string dataFile,
         header_opt.UDPSequenceNumber = htonl(0);
         header_opt.Timestamp.Sec = htonl(time(0));
         header_opt.Timestamp.Tics = htonl(0);
-        header_opt.POMIdentifier = htonl(fConfig.fCLB_eids[i]);
+        header_opt.POMIdentifier = htonl(fConfig.configs_[i].eid_);
         header_opt.POMStatus1 = htonl(0);
         header_opt.POMStatus2 = htonl(0);
         header_opt.POMStatus3 = htonl(0);
@@ -53,7 +53,7 @@ PacketGenerator::PacketGenerator(std::string config_file, std::string dataFile,
         header_mon.UDPSequenceNumber = htonl(0);
         header_mon.Timestamp.Sec = htonl(time(0));
         header_mon.Timestamp.Tics = htonl(0);
-        header_mon.POMIdentifier = htonl(fConfig.fCLB_eids[i]);
+        header_mon.POMIdentifier = htonl(fConfig.configs_[i].eid_);
         header_mon.POMStatus1 = htonl(0);
         header_mon.POMStatus2 = htonl(0);
         header_mon.POMStatus3 = htonl(0);
@@ -147,7 +147,7 @@ void PacketGenerator::generate()
     //std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
 
     // Generate the number of hits on each channel will have this window
-    for (int clb = 0; clb < fConfig.fNum_clbs; clb++)
+    for (int clb = 0; clb < fConfig.num_controllers_; clb++)
     {
         for (int channel = 0; channel < 30; channel++)
         {
@@ -159,7 +159,7 @@ void PacketGenerator::generate()
     int seqNum = 0;
     do
     {
-        for (int clb = 0; clb < fConfig.fNum_clbs; clb++)
+        for (int clb = 0; clb < fConfig.num_controllers_; clb++)
         {
             CLBCommonHeader &common_header = fCLB_opt_headers[clb];
 
@@ -203,7 +203,7 @@ void PacketGenerator::generate()
     } while (seqNum < (fMax_seqnumber + 1));
 
     // Send the monitoring packets
-    for (int clb = 0; clb < fConfig.fNum_clbs; clb++)
+    for (int clb = 0; clb < fConfig.num_controllers_; clb++)
     {
         fMon_data.Temp = htons((short)fTemperature_dist(fGenerator));
         fMon_data.Humidity = htons((short)fHumidity_dist(fGenerator));
