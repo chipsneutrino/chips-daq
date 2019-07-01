@@ -5,11 +5,12 @@
 
 #include "controller.h"
 
-Controller::Controller(unsigned long ip_address)
-    : io_service_{ new boost::asio::io_service }
+Controller::Controller(ControllerConfig config)
+    : config_(config)
+    , io_service_{ new boost::asio::io_service }
     , run_work_{ new boost::asio::io_service::work(*io_service_) }
-    , thread_([&]{(*io_service_).run();})
-    , processor_(ip_address, io_service_)
+    , thread_( [&]{(*io_service_).run();} )
+    , processor_(config.ip_, io_service_)
 {
     // Empty
 }
@@ -37,48 +38,16 @@ void Controller::daterev()
     printf("Software Version: %08x\n", swDateRev); 
 }
 
-void Controller::postGetVars(std::vector<int> varIds)
+void Controller::postInit()
 {
-    io_service_->post(boost::bind(&Controller::getVars, this, varIds)); 
+    io_service_->post(boost::bind(&Controller::init, this)); 
 }
 
-void Controller::getVars(std::vector<int> varIds)
+void Controller::init()
 {
-    MsgWriter mw;
-    mw.writeI32Arr(varIds);
-
-    MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw); 
-    
-    // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER
-}
-
-void Controller::postSetVars(std::map<int, int> toModify)
-{
-    io_service_->post(boost::bind(&Controller::setVars, this, toModify)); 
-}
-
-
-void Controller::setVars(std::map<int, int> toModify) {
-    
-    MsgWriter mw;
-    
-    mw.writeU16(toModify.size());
-
-    std::map<int, int>::iterator it;
-
-    for ( it = toModify.begin(); it != toModify.end(); it++ )
-    {
-        int varId = it->first;
-        mw.writeI32(varId);
-
-        // TODO: This is not really going to work consistently without the VarInfo and VarTypes setup
-        int value = it->second;
-        mw.writeI32(value);
-    }
-
-    MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw); 
-    
-    // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER
+    setInitValues(); // Set IP address Window Width etc ..
+    sleep(5); // Need to check if ready, sleep 5 sec for now   
+    clbEvent(ClbEvents::INIT); // INIT CLB
 }
 
 void Controller::setInitValues()
@@ -86,12 +55,12 @@ void Controller::setInitValues()
     std::vector<int>  var_ids;
     std::vector<long> var_values;
 
+    // TODO: Check this is the same as the "3232238337" default is ControllerConfig
     unsigned char  addr4[4] = {192, 168, 11, 1};  // Server IP Address
-    long ipi = ((0xFF & addr4[0]) << 24) |  ((0xFF & addr4[1]) << 16) |  ((0xFF & addr4[2]) <<  8) |  ((0xFF & addr4[3]) << 0);
-    //  printf(">>>>>>    IPv4 : %d   %d.%d.%d.%d\n", ipi, addr4[0],addr4[2],addr4[3],addr4[4] );
-    long tw = 1000; // Time Window ms 
+    unsigned long ipi = ((0xFF & addr4[0]) << 24) |  ((0xFF & addr4[1]) << 16) |  ((0xFF & addr4[2]) <<  8) |  ((0xFF & addr4[3]) << 0);
     var_ids.push_back(ProcVar::NET_IPMUX_SRV_IP);       var_values.push_back(ipi);
-    var_ids.push_back(ProcVar::SYS_TIME_SLICE_DUR);     var_values.push_back(tw);
+
+    var_ids.push_back(ProcVar::SYS_TIME_SLICE_DUR);     var_values.push_back(config_.window_dur_);
     var_ids.push_back(ProcVar::OPT_HR_VETO_ENA_CH);     var_values.push_back(0x00000000); // Disable all Channels HR Veto  
     var_ids.push_back(ProcVar::OPT_MULHIT_ENA_CH);      var_values.push_back(0x00000000); // Disable all Channels Multi Hits
     //var_ids.push_back(ProcVar::SYS_STMACH_PKTSIZE);
@@ -112,15 +81,16 @@ void Controller::setInitValues()
         mw.writeU32(var_values[ii]);
     }
 
-    g_elastic.log(DEBUG, "Setting Initial Values"); 
+    g_elastic.log(DEBUG, "Setting Initial Values..."); 
     MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw);   
+
+    // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER
 }
 
 void Controller::addNanobeacon(std::vector<int> &vid, std::vector<long> &vv)
-{
+{   // Should probably get the current status or have a value stored???
     vid.push_back(ProcVar::OPT_NANO_VOLT);      vv.push_back(60000);                       // TODO Nanobeacon Voltdage should be set somewhere 
     vid.push_back(ProcVar::SYS_SYS_RUN_ENA);    vv.push_back(( 0x70000a0 | 0x8000000 ));   // | 0x8000000 Add  the Nanobeancon enabling bit to SYS_SYS_RUN_ENA 
-    // Should probably get the current status or have a value stored???
 }
 
 void Controller::disableNanobeacon()
@@ -140,6 +110,8 @@ void Controller::disableNanobeacon()
     g_elastic.log(DEBUG, "Disabling Nanobeacon");  
 
     MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw);   
+
+    // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER
 }
 
 void Controller::disableHV()
@@ -150,7 +122,9 @@ void Controller::disableHV()
     mw.writeU32((0 | ProcVar::SYS_SYS_DISABLE_PWR_MEAS ));
     
     g_elastic.log(DEBUG, "Disabling HV");  
-    MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw);  
+    MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw); 
+
+    // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER 
 }
 
 void Controller::clbEvent(int event_id)
@@ -162,6 +136,8 @@ void Controller::clbEvent(int event_id)
     mw.writeI8(event_id);
 
     MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_EVENT, mw);  
+
+    // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER
 }
 
 void Controller::setPMTs()
@@ -173,23 +149,21 @@ void Controller::setPMTs()
     var_ids.push_back(ProcVar::OPT_CHAN_ENABLE);          
     var_ids.push_back(ProcVar::OPT_PMT_HIGHVOLT);
 
-    short int hv[31] = {0};
-
-    // WARNING: Even if we use only 30 PMTS the array should ALWAYS contain 31 elements as the CLB expects them
-    // TODO:    Load HV and Enable from Config File
-    //          Set Just one channel for now (channel 27)  
+    //short int hv[31] = {0};
+    //hv[27] = 120;
 
     long enable = 1 << 27;
-    hv[27] = 120;
 
     MsgWriter mw;
     mw.writeU16(var_ids.size());
     mw.writeI32(var_ids[0]);
     mw.writeU32(enable);
     mw.writeI32(var_ids[1]);
-    for(int ipmt=0; ipmt<31; ++ipmt)  mw.writeU8( hv[ipmt]);
+    for(int ipmt=0; ipmt<31; ++ipmt) mw.writeU8((short)config_.chan_hv_[ipmt]);
 
-    MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw);       
+    MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw);
+
+    // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER       
 }
 
 void Controller::checkPMTs()
@@ -215,7 +189,9 @@ void Controller::askPMTsInfo(int info_type)
         MsgWriter mw;
         mw.writeI32Arr(var_ids);
 
-        MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw);   
+        MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw);  
+
+        // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER 
     } else {
         g_elastic.log(ERROR, "askPMTInfo: Wrong Variable ID!");  
     }    
@@ -228,5 +204,7 @@ void Controller::askVars(std::vector<int> var_ids)
     mw.writeI32Arr(var_ids);
 
     MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw);    
+
+    // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER
 }
 

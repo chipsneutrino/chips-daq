@@ -16,6 +16,8 @@ MsgProcessor::MsgProcessor(unsigned long ip_address, std::shared_ptr<boost::asio
     batch_ = false;
     cmd_id_ = (int)(rand()*63);
     stop_ = false;
+
+    g_elastic.log(DEBUG, "Setup MsgProcessor for {}", address.to_string());
 }
 
 MsgReader MsgProcessor::processCommand(int type, MsgWriter mw)
@@ -37,7 +39,7 @@ MsgReader MsgProcessor::processCommand(int type, MsgWriter mw)
     // Receieve the response
     char recv_buf[100];
     int size = socket_.receive_from(boost::asio::buffer(recv_buf), endpoint_);
-    g_elastic.log(DEBUG, "Receieved response of size {} with trxID {}", size);  
+    g_elastic.log(DEBUG, "Receieved response of size {}", size);   
 
     std::vector<unsigned char> recv_vec(&recv_buf[0], &recv_buf[size]);
     MCFPacket packet(recv_vec);

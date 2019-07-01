@@ -13,8 +13,7 @@ static constexpr int success = 0;
 }
 
 namespace settings {
-// Default settings    
-static std::string config_name = "../data/config.opt";
+static std::string config_name = "../data/config.opt"; // Default settings    
 }
 
 int main(int argc, char* argv[])
@@ -38,9 +37,9 @@ int main(int argc, char* argv[])
 
         daq_control->run();
 
-	    //daq_control->setInitValues();
-	    //daq_control->clbEvent(ClbEvents::INIT);
-	    daq_control->init();     // it calls setInitValues and INIT
+        daq_control->testMessage();
+
+	    //daq_control->init();     // it calls setInitValues and INIT
 	    //daq_control->setPMTs();
 	    //daq_control->disableHV();
 

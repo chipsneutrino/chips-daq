@@ -19,6 +19,20 @@
 #include <fstream>
 #include <stdexcept>
 
+struct ControllerConfig {
+	// Controller wide variables
+	bool enabled_ 				= false;		///< Is the Controller enabled
+	unsigned int eid_ 			= 0;			///< Controller electronic ID
+	unsigned int ip_ 			= 0;			///< Controller IP address on the DAQ network			
+	unsigned int server_ip_ 	= 3232238337;	///< The DAQ server IP address (192.168.11.1)
+	unsigned int window_dur_ 	= 1000;			///< Duration of the controller reporting window (ms)
+
+	// Channel specific variables
+	std::bitset<32> chan_enabled_;				///< Is the channel enabled
+	unsigned int chan_eid_[31] 	= {};			///< The channel electronic ID
+	unsigned int chan_hv_[31] 	= {};			///< Channel high voltage setting
+};
+
 class DAQConfig {
 public:
 
@@ -34,21 +48,16 @@ public:
 	/// Print a short summary of the DAQConfig
 	void printShortConfig();
 
-	std::string fConf_name;                   						///< Path of a dat file containing all the configuration parameters
+	std::string conf_name_;                 ///< Path of a .dat file containing all the configuration parameters
 
-	int fNum_clbs;													///< Total number of CLBs from "clb_number"
-	int fEnabled_clbs;												///< Total number of "enabled" CLBs
-	int fEnabled_channels;											///< Total number of "enabled" channels
+	int num_controllers_;					///< Total number of controller from "clb_number"
+	int enabled_controllers_;				///< Total number of "enabled" controllers
+	int enabled_channels_;					///< Total number of "enabled" channels
 
-	std::vector<bool> fCLB_enabled;									///< Is the CLB enabled
-	std::vector<unsigned int> fCLB_eids; 							///< eIDs of the CLBs
-	std::vector<unsigned long> fCLB_ips;							///< CLB decimal IP adresses
-	std::vector< std::bitset<32> > fCLB_channels;					///< Which channels are active
-	std::vector< std::array<unsigned int, 31> > fCLB_channel_eids;	///< eIDs for all the CLB channels 
-	std::vector< std::array<unsigned int, 31> > fCLB_channel_v;		///< Voltages for all the CLB channels 
+	std::vector<ControllerConfig> configs_;	///< Vector of controller configs
 
 private:
-	/// Read the configuration text file specified by fConf_name
+	/// Read the configuration text file specified by conf_name_
 	void loadConfig();
 
 	/**
@@ -80,14 +89,14 @@ private:
 	 * Extract the details from the line
 	 * @param line String to extract info from
 	 * @param numDots Number of dots found in the string
-	 * @param clbNum CLB number found from string
+	 * @param controllerNum controller number found from string
 	 * @param channelNum Channel number found from string
 	 * @param config Config setting found from string
 	 * @param value Value of config setting found from string
 	 */		
-	void extractConfig(std::string line, int &numDots, int &clbNum, int &channelNum, 
+	void extractConfig(std::string line, int &numDots, int &controllerNum, int &channelNum, 
 						std::string &config, std::string &value);
 
-	/// Setup all the vectors given the number of CLBs in the config file
+	/// Setup all the vectors given the number of controllers in the config file
 	void setupVectors();
 };

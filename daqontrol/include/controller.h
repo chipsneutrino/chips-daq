@@ -10,6 +10,7 @@
 #include "clb_subsys.h"
 #include "clb_event.h"
 
+#include "util/daq_config.h"
 #include <util/elastic_interface.h>
 
 class Controller {
@@ -18,14 +19,13 @@ public:
      * Create a Controller
      * This creates a Controller, setting up the MsgProcessor etc...
      */
-    Controller(unsigned long ip_address);
+    Controller(ControllerConfig config);
 
     /// Destroy a Controller
     ~Controller();
 
     void postDaterev();
-    void postGetVars(std::vector<int> varIds);
-    void postSetVars(std::map<int, int> toModify);
+    void postInit();
 
     void setInitValues();    
     void addNanobeacon(std::vector<int> &vid, std::vector<long> &vv);
@@ -49,8 +49,9 @@ private:
     void ioServiceThread();
 
     void daterev();
-    void getVars(std::vector<int> varIds);
-    void setVars(std::map<int, int> toModify);
+    void init();
+
+    ControllerConfig config_;                                   ///< Controller specific configuration
 
     std::shared_ptr<boost::asio::io_service> io_service_;       ///< BOOST io_service. The heart of everything
     std::unique_ptr<boost::asio::io_service::work> run_work_;   ///< Work for the io_service

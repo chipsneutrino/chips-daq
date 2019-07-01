@@ -23,12 +23,15 @@ void DAQControl::setupFromConfig()
     config_.printConfig();
 
     // For now just add the single test CLB at 192.168.11.36
-    controllers_.push_back(new Controller(3232238372));
+    ControllerConfig config;
+    config.enabled_ = true;
+    config.ip_ = 3232238372;
+    controllers_.push_back(new Controller(config));
 
     /*
     for (int clb=0; clb<config_.fNum_clbs; clb++)
     {
-        controllers_.push_back(new Controller(config_.fCLB_ips[clb]));
+        controllers_.push_back(new Controller(config_.configs_[clb]));
     }
     */
 
@@ -87,15 +90,12 @@ void DAQControl::testMessage()
 {
     // Get the Date of the hardware and software revisions from the CLBs
     MsgWriter mw;
-
     controllers_[0]->postDaterev();  
 }
 
 void DAQControl::init()
 {
-    controllers_[0]->setInitValues(); // Set IP address Window Width etc ..
-    sleep(5); // Need to check if ready, sleep 5 sec for now   
-    controllers_[0]->clbEvent(ClbEvents::INIT); // INIT CLB
+    controllers_[0]->postInit();
 }
 
 void DAQControl::join() 
