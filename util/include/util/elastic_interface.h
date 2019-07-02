@@ -63,7 +63,7 @@ struct channel_data
     std::bitset<32> veto;
 };
 
-#define MAX_LOG_RATE 10
+#define MAX_LOG_RATE 20
 #define MAX_ATTEMPTS 3
 
 /// Callback for elasticlient logs

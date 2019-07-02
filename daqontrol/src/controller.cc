@@ -51,10 +51,12 @@ void Controller::postCheckPMTs()
 void Controller::init()
 {
     setInitValues(); // Set IP address Window Width etc ..
-    sleep(5); // Need to check if ready, sleep 5 sec for now   
+    sleep(2); // Need to check if ready, sleep 5 sec for now   
     clbEvent(ClbEvents::INIT); // INIT CLB
-    sleep(5); // Need to check if ready, sleep 5 sec for now   
+    sleep(2); // Need to check if ready, sleep 5 sec for now   
     setPMTs();
+    sleep(2); // Need to check if ready, sleep 5 sec for now
+    checkPMTs();
 }
 
 void Controller::setInitValues()
@@ -175,12 +177,12 @@ void Controller::setPMTs()
 
 void Controller::checkPMTs()
 {
-  // It should check PMT info  match config file or expectations. Just get the information for now 
-
-  askPMTsInfo(ProcVar::OPT_CHAN_ENABLE);
-  askPMTsInfo(ProcVar::OPT_PMT_ID);
-  askPMTsInfo(ProcVar::OPT_PMT_HIGHVOLT);
-
+    // It should check PMT info  match config file or expectations. Just get the information for now 
+    askPMTsInfo(ProcVar::OPT_CHAN_ENABLE);
+    sleep(2); // Need to check if ready, sleep 5 sec for now   
+    askPMTsInfo(ProcVar::OPT_PMT_ID);
+    sleep(2); // Need to check if ready, sleep 5 sec for now   
+    askPMTsInfo(ProcVar::OPT_PMT_HIGHVOLT);
 }  
 
 void Controller::askState()
@@ -199,31 +201,33 @@ void Controller::askPMTsInfo(int info_type)
         std::vector<int> var_ids;
         var_ids.push_back(info_type);
         MsgWriter mw;
-        mw.writeI32Arr(var_ids);
+        mw.writeU16(var_ids.size());
+        mw.writeI32(var_ids[0]);
+        //mw.writeI32Arr(var_ids);
 
         MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw);  
 
         // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER 
-	int count    = mr.readU16();               
-	std::cout << " var counts " << count << std::endl;                                                                                                     
-	int varId    = mr.readI32();   
-	
-	if(info_type == ProcVar::OPT_CHAN_ENABLE) {
-	  long enable =  mr.readU32();
-	  printf("Enabled channel %x\n", enable);
-	  //use it somehow
-	} else {
-		  
-	  std::vector<short int> varVal;
-	  for(int ipmt =0; ipmt<30; ++ipmt){
-	    varVal.push_back(mr.readU8());
-	    printf("=====>>>>>  %d %d    Var Id %x  -  Value  %d\n", count, ipmt,  varId, varVal[ipmt]);
+        int count    = mr.readU16();               
+        std::cout << " var counts " << count << std::endl;                                                                                                     
+        int varId    = mr.readI32();   
+        
+        if(info_type == ProcVar::OPT_CHAN_ENABLE) {
+        long enable =  mr.readU32();
+        printf("Enabled channel %x\n", enable);
+        //use it somehow
+        } else {
+            
+        std::vector<short int> varVal;
+        for(int ipmt =0; ipmt<30; ++ipmt){
+            varVal.push_back(mr.readU8());
+            printf("=====>>>>>  %d %d    Var Id %x  -  Value  %d\n", count, ipmt,  varId, varVal[ipmt]);
 
-	  }// for ipmt 
-	  
-	  /// use pmt var values somehow 
+        }// for ipmt 
+        
+        /// use pmt var values somehow 
 
-	}// else
+        }// else
 
     } else {
         g_elastic.log(ERROR, "askPMTInfo: Wrong Variable ID!");  

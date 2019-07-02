@@ -58,8 +58,11 @@ void MCFMessage::fromByteBuffer(std::vector<unsigned char> bb, long tOffset)
 	
 	int len = ( lengthAndId & MSG_CONTLEN_MASK ) >> MSG_CONTLEN_SHIFT;
 	id_ = ( lengthAndId & MSG_ID_MASK ) >> MSG_ID_SHIFT;
+
+	// TODO: FIX READING THE LENGTH
+	len = bb.size() - 6;
 	
-	if ( 6 + len > bb.capacity()) throw std::runtime_error("Invalid message length, bigger than packet");
+	if ( 6 + len > bb.size()) throw std::runtime_error("Invalid message length, bigger than packet");
 	  
 	content_.reserve(len);
 	content_ = std::vector<unsigned char>(&bb[6], &bb[6+len]);

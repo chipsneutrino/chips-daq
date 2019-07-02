@@ -22,7 +22,7 @@ std::vector<unsigned char> MCFPacket::toBytes()
 
 	// We insert the SRP protocol bytes here for now!!!
 	bb.push_back(SRP_FLAG_MSG);
-	bb.push_back(66);
+	bb.push_back(67);
 	bb.push_back(0);
 	bb.push_back(0);
 
@@ -61,8 +61,8 @@ void MCFPacket::fromBytes(std::vector<unsigned char> data)
 	toffset_ = ( (tp.tv_sec * 1000 + tp.tv_usec / 1000) / (long)TIME_MOD ) * (long)TIME_MOD +
 		(int)( (0xFFFFFFFF &  bb[0]) <<24 | (0xFFFFFFFF & bb[1]) <<16 | (0xFFFFFFFF & bb[2]) <<8 | (0xFFFFFFFF & bb[3]) );
 			
-	int count = (0xFF & bb[5]) + 1;  /// length from element 5 
-	std::cout << "MCFPacket::fromBytes count " << count << std::endl;
+	int count = (0xFF & bb[5]) + 1;  // length from element 5 
+	//std::cout << "MCFPacket::fromBytes count " << count << std::endl;
 
 	// remove the packet header
 	bb.erase(bb.begin(),bb.begin()+HDR_SIZE);
@@ -76,6 +76,7 @@ void MCFPacket::fromBytes(std::vector<unsigned char> data)
 			bb.erase(bb.begin(),bb.begin()+msg.getLength());   // Remove entries after getting the message
 		}
 	} catch (const std::runtime_error& e) {
+		std::cout << e.what() << std::endl;
 		throw std::runtime_error(" MCFPacket::fromBytes() Failed to parse Message");
 	}
 }

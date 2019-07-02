@@ -26,7 +26,7 @@ MsgReader MsgProcessor::processCommand(int type, MsgWriter mw)
     MCFMessage msg(command, cmdId(), type, mw.toBytes());
 
     // Log message to elasticsearch (DEBUG)
-    g_elastic.log(DEBUG, "Sending command of type {} with trxID {}", msg.type_, msg.id_);
+    g_elastic.log(DEBUG, "Sending command of class {}, type {}, trxID {}", msg.class_, msg.type_, msg.id_);
 
     // Add the message to the packet
     tx_packet_.addMessage(msg);
@@ -38,14 +38,26 @@ MsgReader MsgProcessor::processCommand(int type, MsgWriter mw)
 
     // Receieve the response
     char recv_buf[100];
-    int size = socket_.receive_from(boost::asio::buffer(recv_buf), endpoint_);
-    g_elastic.log(DEBUG, "Receieved response of size {}", size);   
+    int size;
+    int i=0;
+    MCFMessage response;
+    while(i<7) {
+
+        size = socket_.receive_from(boost::asio::buffer(recv_buf), endpoint_);
+        g_elastic.log(DEBUG, "Receieved response of size {}", size);
+
+        i++;        
+
+    }  
 
     std::vector<unsigned char> recv_vec(&recv_buf[0], &recv_buf[size]);
     MCFPacket packet(recv_vec);
 
+    response = packet.getMessage(0);
+    g_elastic.log(DEBUG, "Got response of class {}, type {}, trxID {}", response.class_, response.type_, response.id_);
+
     // Fill a message reader with the message content
-    MsgReader mr(packet.getMessage(0).content_);
+    MsgReader mr(response.content_);
     return mr;
 }
 
@@ -56,7 +68,7 @@ void MsgProcessor::flush()
     // Send the contents of the packet to the CLB
     boost::system::error_code err;
     auto sent = socket_.send_to(boost::asio::buffer(tx_packet_.toBytes()), endpoint_, 0, err);
-    std::cout << "Sent Payload --- " << sent << "\n";    
+    g_elastic.log(DEBUG, "Sent message of size {}", sent);  
 
     tx_packet_.reset(); // Reset the packet (empty)
 } 
