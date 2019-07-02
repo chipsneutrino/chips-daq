@@ -35,7 +35,9 @@ void Controller::daterev()
     long swDateRev = mr.readU32();
 
     printf("Hardware Version: %08x\n", hwDateRev);
-    printf("Software Version: %08x\n", swDateRev); 
+    printf("Software Version: %08x\n", swDateRev);
+
+    sleep(1); // Need to check if ready, sleep 5 sec for now  
 }
 
 void Controller::postInit()
@@ -51,11 +53,11 @@ void Controller::postCheckPMTs()
 void Controller::init()
 {
     setInitValues(); // Set IP address Window Width etc ..
-    sleep(2); // Need to check if ready, sleep 5 sec for now   
+    sleep(1); // Need to check if ready, sleep 5 sec for now   
     clbEvent(ClbEvents::INIT); // INIT CLB
-    sleep(2); // Need to check if ready, sleep 5 sec for now   
+    sleep(1); // Need to check if ready, sleep 5 sec for now   
     setPMTs();
-    sleep(2); // Need to check if ready, sleep 5 sec for now
+    sleep(1); // Need to check if ready, sleep 5 sec for now
     checkPMTs();
 }
 

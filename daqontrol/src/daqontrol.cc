@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
 
         daq_control->run();
 
-	    //daq_control->testMessage();
+	    daq_control->testMessage();
 	    daq_control->init();
 	    //daq_control->disableHV();
 

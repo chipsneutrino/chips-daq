@@ -13,9 +13,7 @@ MsgProcessor::MsgProcessor(unsigned long ip_address, std::shared_ptr<boost::asio
     boost::asio::ip::udp::resolver::iterator iter = resolver.resolve(query);
     endpoint_ = *iter;
 
-    batch_ = false;
     cmd_id_ = (int)(rand()*63);
-    stop_ = false;
 
     g_elastic.log(DEBUG, "Setup MsgProcessor for {}", address.to_string());
 }
@@ -23,65 +21,69 @@ MsgProcessor::MsgProcessor(unsigned long ip_address, std::shared_ptr<boost::asio
 MsgReader MsgProcessor::processCommand(int type, MsgWriter mw)
 {
     // Create the message
-    MCFMessage msg(command, cmdId(), type, mw.toBytes());
+    MsgBuilder msg(command, cmdId(), type, mw.toBytes());
 
     // Log message to elasticsearch (DEBUG)
-    g_elastic.log(DEBUG, "Sending command of class {}, type {}, trxID {}", msg.class_, msg.type_, msg.id_);
+    g_elastic.log(DEBUG, "Processing command of class {}, type {}, ID {}", msg.class_, msg.type_, msg.packet_id_);
 
-    // Add the message to the packet
-    tx_packet_.addMessage(msg);
-
-    // TODO: Implement the ability to add multiple messages to the same packet
-    // Will need to add asynchronous response mechanism
-    // For now we flush() the packet for every single message    
-    flush();
+    boost::system::error_code err;
+    auto sent = socket_.send_to(boost::asio::buffer(msg.toBytes()), endpoint_, 0, err);
+    //g_elastic.log(DEBUG, "Sent message of size {}", sent); 
 
     // Receieve the response
-    char recv_buf[100];
-    int size;
-    int i=0;
-    MCFMessage response;
-    while(i<7) {
-
-        size = socket_.receive_from(boost::asio::buffer(recv_buf), endpoint_);
-        g_elastic.log(DEBUG, "Receieved response of size {}", size);
-
-        i++;        
-
-    }  
+    char recv_buf[MCFPACKET_MAX_SIZE];
+    int size = socket_.receive_from(boost::asio::buffer(recv_buf), endpoint_);
+    //g_elastic.log(DEBUG, "Receieved response of size {}", size);
 
     std::vector<unsigned char> recv_vec(&recv_buf[0], &recv_buf[size]);
-    MCFPacket packet(recv_vec);
+    MsgBuilder response;
+    if (!response.fromBytes(recv_vec)) 
+    {
+        // We need to send again
+        g_elastic.log(WARNING, "Could not read response!");
+    }
 
-    response = packet.getMessage(0);
-    g_elastic.log(DEBUG, "Got response of class {}, type {}, trxID {}", response.class_, response.type_, response.id_);
+    if ((response.msg_id_ != msg.msg_id_)) // Check the response ID matches the sent message ID
+    {
+        // We need to send again
+        g_elastic.log(WARNING, "Response ID does not match {}!", response.msg_id_);        
+    }
+
+    if (response.class_ != reply) // Check the response is a "reply"
+    {
+        // We need to send again
+        g_elastic.log(WARNING, "Response is not a reply {}!", response.class_);        
+    }
+
+    if (response.type_ != msg.type_) // Check the response type matches the sent message type
+    {
+        // We need to send again
+        g_elastic.log(WARNING, "Response is not of the same type {}!", response.type_);        
+    }
+
+    // We have a vlid response we need to send the CLB an "ack" to stop it resending
+    sendAck(response.packet_id_);
 
     // Fill a message reader with the message content
     MsgReader mr(response.content_);
     return mr;
 }
 
-void MsgProcessor::flush() 
+void MsgProcessor::sendAck(int id) 
 {
-    if (tx_packet_.msgCount() == 0) return;
+    // Create an empty vector of chars (ByteBuffer)
+	std::vector<unsigned char> bb;
 
-    // Send the contents of the packet to the CLB
+    bb.push_back(0);
+    bb.push_back(0);
+    bb.push_back((char)id); // We just add this single ack
+    bb.push_back(0);
+
+    // Set the flags for this single ack
+    bb[0] |= ((SRP_FLAG_ACK_MASK & (1 << SRP_FLAG_ACK_SHIFT)));
+
+    // Send the ack
     boost::system::error_code err;
-    auto sent = socket_.send_to(boost::asio::buffer(tx_packet_.toBytes()), endpoint_, 0, err);
-    g_elastic.log(DEBUG, "Sent message of size {}", sent);  
-
-    tx_packet_.reset(); // Reset the packet (empty)
-} 
-
-void MsgProcessor::close()
-{
-    if (stop_) return;
-
-    stop_ = true;
-    if (tx_packet_.msgCount() > 0)
-    {
-        flush(); // flush() packet before closing socket
-    }
-
-    socket_.close();
+    auto sent = socket_.send_to(boost::asio::buffer(bb), endpoint_, 0, err);
+    //g_elastic.log(DEBUG, "Sent ack of size {}", sent); 
 }
