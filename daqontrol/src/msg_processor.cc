@@ -13,60 +13,116 @@ MsgProcessor::MsgProcessor(unsigned long ip_address, std::shared_ptr<boost::asio
     boost::asio::ip::udp::resolver::iterator iter = resolver.resolve(query);
     endpoint_ = *iter;
 
+    //socket_.non_blocking(true);
+
     cmd_id_ = (int)(rand()*63);
 
     g_elastic.log(DEBUG, "Setup MsgProcessor for {}", address.to_string());
 }
 
-MsgReader MsgProcessor::processCommand(int type, MsgWriter mw)
+bool MsgProcessor::processCommand(int type, MsgWriter &mw, MsgReader &mr)
 {
     // Create the message
     MsgBuilder msg(command, cmdId(), type, mw.toBytes());
 
-    // Log message to elasticsearch (DEBUG)
+    // Log processing of command to Elasticsearch
     g_elastic.log(DEBUG, "Processing command of class {}, type {}, ID {}", msg.class_, msg.type_, msg.packet_id_);
 
-    boost::system::error_code err;
-    auto sent = socket_.send_to(boost::asio::buffer(msg.toBytes()), endpoint_, 0, err);
-    //g_elastic.log(DEBUG, "Sent message of size {}", sent); 
-
-    // Receieve the response
-    char recv_buf[MCFPACKET_MAX_SIZE];
-    int size = socket_.receive_from(boost::asio::buffer(recv_buf), endpoint_);
-    //g_elastic.log(DEBUG, "Receieved response of size {}", size);
-
-    std::vector<unsigned char> recv_vec(&recv_buf[0], &recv_buf[size]);
+    // Try up to MAX_ATTEMPTS for successful processing of command
     MsgBuilder response;
-    if (!response.fromBytes(recv_vec)) 
+    for (int attempt=0; attempt<MAX_ATTEMPTS; attempt++) 
     {
-        // We need to send again
+        // Send the command
+        if(!sendCommand(msg.toBytes()))
+        {
+            continue;
+        }
+
+        // Receive the response, TODO: Make this non-blocking
+        std::vector<unsigned char> resp(MCFPACKET_MAX_SIZE);
+        if(!getResponse(resp))
+        {
+            continue;
+        }
+
+        // Check the response is valid
+        if(!checkResponse(response, resp, msg))
+        {
+            // Always want to send an ack
+            sendAck(response.packet_id_);
+            continue;
+        }    
+        
+        break;
+    }
+
+    // We have a valid response we need to send the CLB an "ack" to stop it resending
+    sendAck(response.packet_id_);
+
+    // Fill a message reader with the message content
+    mr.fromBuffer(response.content_);
+    
+    return true;
+}
+
+bool MsgProcessor::sendCommand(std::vector<unsigned char> msg)
+{
+    boost::system::error_code err;
+    int sent = socket_.send_to(boost::asio::buffer(msg), endpoint_, 0, err);
+
+    if (sent != msg.size())
+    {
+        g_elastic.log(WARNING, "Only sent {} of {} bytes", sent, msg.size());   
+        return false;
+    }
+    
+    return true;
+}
+
+bool MsgProcessor::getResponse(std::vector<unsigned char> &resp) 
+{
+    boost::system::error_code error;
+    int size = socket_.receive_from(boost::asio::buffer(resp), endpoint_, 0, error);
+
+    if (size == 0)
+    {
+        g_elastic.log(DEBUG, "Did not receive any bytes");
+        return false;
+    }
+
+    // Resize the vector to the received size
+    resp.resize(size);
+
+    return true;
+}
+
+bool MsgProcessor::checkResponse(MsgBuilder &response, std::vector<unsigned char> &resp, MsgBuilder &msg)
+{
+    if (!response.fromBytes(resp)) // Create the response message from the byte vector
+    {
         g_elastic.log(WARNING, "Could not read response!");
+        return false;
     }
 
     if ((response.msg_id_ != msg.msg_id_)) // Check the response ID matches the sent message ID
     {
-        // We need to send again
-        g_elastic.log(WARNING, "Response ID does not match {}!", response.msg_id_);        
+        g_elastic.log(WARNING, "Response ID does not match {}!", response.msg_id_);   
+        return false;     
     }
 
     if (response.class_ != reply) // Check the response is a "reply"
     {
-        // We need to send again
-        g_elastic.log(WARNING, "Response is not a reply {}!", response.class_);        
+        g_elastic.log(WARNING, "Response is not a reply {}!", response.class_);     
+        return false;   
     }
 
     if (response.type_ != msg.type_) // Check the response type matches the sent message type
     {
-        // We need to send again
-        g_elastic.log(WARNING, "Response is not of the same type {}!", response.type_);        
+        g_elastic.log(WARNING, "Response is not of the same type {}!", response.type_); 
+        return false;       
     }
 
-    // We have a vlid response we need to send the CLB an "ack" to stop it resending
-    sendAck(response.packet_id_);
-
-    // Fill a message reader with the message content
-    MsgReader mr(response.content_);
-    return mr;
+    return true;
 }
 
 void MsgProcessor::sendAck(int id) 

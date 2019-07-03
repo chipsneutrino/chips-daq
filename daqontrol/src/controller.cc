@@ -29,7 +29,8 @@ void Controller::postDaterev()
 void Controller::daterev()
 {
     MsgWriter mw;
-    MsgReader mr = processor_.processCommand(MsgTypes::MSG_SYS_DATEREV, mw); 
+    MsgReader mr;
+    processor_.processCommand(MsgTypes::MSG_SYS_DATEREV, mw, mr); 
 
     long hwDateRev = mr.readU32();
     long swDateRev = mr.readU32();
@@ -93,7 +94,8 @@ void Controller::setInitValues()
     }
 
     g_elastic.log(DEBUG, "Setting Initial Values..."); 
-    MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw);   
+    MsgReader mr;
+    processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);   
 
     // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER
 }
@@ -120,7 +122,8 @@ void Controller::disableNanobeacon()
 
     g_elastic.log(DEBUG, "Disabling Nanobeacon");  
 
-    MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw);   
+    MsgReader mr;
+    processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);   
 
     // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER
 }
@@ -133,7 +136,8 @@ void Controller::disableHV()
     mw.writeU32((0 | ProcVar::SYS_SYS_DISABLE_PWR_MEAS ));
     
     g_elastic.log(DEBUG, "Disabling HV");  
-    MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw); 
+    MsgReader mr;
+    processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr); 
 
     // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER 
 }
@@ -146,7 +150,8 @@ void Controller::clbEvent(int event_id)
     mw.writeI8(subsys);
     mw.writeI8(event_id);
 
-    MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_EVENT, mw);  
+    MsgReader mr;
+    processor_.processCommand(MsgTypes::MSG_CLB_EVENT, mw, mr);  
 
     // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER
 }
@@ -172,7 +177,8 @@ void Controller::setPMTs()
     mw.writeI32(var_ids[1]);
     for(int ipmt=0; ipmt<31; ++ipmt) mw.writeU8((short)config_.chan_hv_[ipmt]);
 
-    MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw);
+    MsgReader mr;
+    processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);
 
     // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER       
 }
@@ -207,7 +213,8 @@ void Controller::askPMTsInfo(int info_type)
         mw.writeI32(var_ids[0]);
         //mw.writeI32Arr(var_ids);
 
-        MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw);  
+        MsgReader mr;
+        processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr);  
 
         // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER 
         int count    = mr.readU16();               
@@ -242,7 +249,8 @@ void Controller::askVars(std::vector<int> var_ids)
     MsgWriter mw;
     mw.writeI32Arr(var_ids);
 
-    MsgReader mr = processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw);    
+    MsgReader mr;
+    processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr);    
 
     // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER
 }

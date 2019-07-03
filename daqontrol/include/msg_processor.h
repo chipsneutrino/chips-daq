@@ -29,6 +29,8 @@
 /// Buffer size for response message
 #define BUFFERSIZE 10000
 
+#define MAX_ATTEMPTS 3
+
 class MsgProcessor {
 public:
 	/**
@@ -46,7 +48,7 @@ public:
 		socket_.close();
 	};
 
-	MsgReader processCommand(int type, MsgWriter mw);
+	bool processCommand(int type, MsgWriter &mw, MsgReader &mr);
 
 private:
 
@@ -55,6 +57,12 @@ private:
 		cmd_id_ = ( cmd_id_ + 1 ) & 0x3F;
 		return cmd_id_;
 	}
+
+	bool sendCommand(std::vector<unsigned char> msg);
+
+	bool getResponse(std::vector<unsigned char> &resp);
+
+	bool checkResponse(MsgBuilder &response, std::vector<unsigned char> &resp, MsgBuilder &msg);
 
 	void sendAck(int id);
 

@@ -11,7 +11,11 @@
 
 class MsgReader {
 public:
+	MsgReader() {};
+
 	MsgReader(std::vector<unsigned char> data);
+
+	void fromBuffer(std::vector<unsigned char> data);
 
 	/// Number of bytes from current position to data end
 	int available();

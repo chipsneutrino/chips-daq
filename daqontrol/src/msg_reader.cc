@@ -9,6 +9,12 @@ MsgReader::MsgReader(std::vector<unsigned char> data)
 	data_ = data;
 	it_ = data_.begin();
 }
+
+void MsgReader::fromBuffer(std::vector<unsigned char> data)
+{
+	data_ = data;
+	it_ = data_.begin();
+}
   
 int MsgReader::available() 
 {
