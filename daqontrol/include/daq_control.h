@@ -46,10 +46,11 @@ public:
 
     void run();
 
-    void testMessage();
-
-    void init();        
-    void checkPMTs();        
+    void test();
+    void init();  
+    void configure(); 
+    void startRun(); 
+    void stopRun();            
     
     void join();
 

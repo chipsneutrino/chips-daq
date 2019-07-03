@@ -47,6 +47,8 @@ void DAQControl::run()
     for (int i = 0; i < n_threads_; ++i) {
         thread_group_.create_thread(boost::bind(&DAQControl::ioServiceThread, this));
     }
+
+    thread_group_.join_all();
 }
 
 void DAQControl::ioServiceThread()
@@ -56,6 +58,7 @@ void DAQControl::ioServiceThread()
 
 void DAQControl::handleStartCommand(RunType which)
 {
+    g_elastic.log(INFO, "DAQControl: Start");
     // If we are currently running first stop the current run
     if (mode_ == true) {
 
@@ -66,10 +69,14 @@ void DAQControl::handleStartCommand(RunType which)
     // Set the mode to data taking
     run_type_ = which;
     mode_ = true;
+
+    // Send start command to CLBs
+    startRun();
 }
 
 void DAQControl::handleStopCommand()
 {
+    g_elastic.log(INFO, "DAQControl: Stop");
     // Check we are actually running
     if (mode_ == true) {
         // Set the mode to monitoring
@@ -77,6 +84,9 @@ void DAQControl::handleStopCommand()
     } else {
         g_elastic.log(INFO, "DAQ Control already not running");
     }
+
+    // Send stop command to CLBs
+    stopRun();
 }
 
 void DAQControl::handleExitCommand()
@@ -86,23 +96,45 @@ void DAQControl::handleExitCommand()
     io_service_->stop();
 }
 
-void DAQControl::testMessage()
+void DAQControl::test()
 {
-    // Get the Date of the hardware and software revisions from the CLBs
-    MsgWriter mw;
-    controllers_[0]->postDaterev();  
+    for(int i=0; i<controllers_.size(); i++)
+    {
+        controllers_[i]->postTest();  
+    }
 }
 
 void DAQControl::init()
 {
-  controllers_[0]->postInit();
+    for(int i=0; i<controllers_.size(); i++)
+    {
+        controllers_[i]->postInit();  
+    }
 }
 
-void DAQControl::checkPMTs()
-{  
-  controllers_[0]->postCheckPMTs();
+void DAQControl::configure()
+{
+    for(int i=0; i<controllers_.size(); i++)
+    {
+        controllers_[i]->postConfigure();  
+    }
 }
 
+void DAQControl::startRun()
+{
+    for(int i=0; i<controllers_.size(); i++)
+    {
+        controllers_[i]->postStartRun();  
+    }
+}
+
+void DAQControl::stopRun()
+{
+    for(int i=0; i<controllers_.size(); i++)
+    {
+        controllers_[i]->postStopRun();  
+    }
+} 
 
 void DAQControl::join() 
 {

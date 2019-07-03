@@ -21,24 +21,9 @@ Controller::~Controller()
     io_service_->stop();
 }
 
-void Controller::postDaterev()
+void Controller::postTest()
 {
-    io_service_->post(boost::bind(&Controller::daterev, this)); 
-}
-
-void Controller::daterev()
-{
-    MsgWriter mw;
-    MsgReader mr;
-    processor_.processCommand(MsgTypes::MSG_SYS_DATEREV, mw, mr); 
-
-    long hwDateRev = mr.readU32();
-    long swDateRev = mr.readU32();
-
-    printf("Hardware Version: %08x\n", hwDateRev);
-    printf("Software Version: %08x\n", swDateRev);
-
-    sleep(1); // Need to check if ready, sleep 5 sec for now  
+    io_service_->post(boost::bind(&Controller::test, this)); 
 }
 
 void Controller::postInit()
@@ -46,20 +31,68 @@ void Controller::postInit()
     io_service_->post(boost::bind(&Controller::init, this)); 
 }
 
-void Controller::postCheckPMTs()
+void Controller::postConfigure()
 {
-    io_service_->post(boost::bind(&Controller::checkPMTs, this)); 
+    io_service_->post(boost::bind(&Controller::configure, this)); 
+}
+
+void Controller::postStartRun()
+{
+    io_service_->post(boost::bind(&Controller::startRun, this)); 
+}
+
+void Controller::postStopRun()
+{
+    io_service_->post(boost::bind(&Controller::stopRun, this)); 
+}
+
+void Controller::test()
+{
+    // To test the connection we ask for the date of the software revisions
+    MsgWriter mw;
+    MsgReader mr;
+    if(!processor_.processCommand(MsgTypes::MSG_SYS_DATEREV, mw, mr))
+    {
+        g_elastic.log(WARNING, "Could not get response from CLB in test!"); 
+        return;
+    }
+
+    long hwDateRev = mr.readU32();
+    long swDateRev = mr.readU32();
+
+    g_elastic.log(INFO, "Test successful, hardware({0:8x}), software({0:8x})", hwDateRev, swDateRev); 
+
+    sleep(1);
 }
 
 void Controller::init()
 {
-    setInitValues(); // Set IP address Window Width etc ..
-    sleep(1); // Need to check if ready, sleep 5 sec for now   
-    clbEvent(ClbEvents::INIT); // INIT CLB
-    sleep(1); // Need to check if ready, sleep 5 sec for now   
+    setInitValues();
+    sleep(1);
+    clbEvent(ClbEvents::INIT);
+    sleep(1);
+}
+
+void Controller::configure()
+{
     setPMTs();
-    sleep(1); // Need to check if ready, sleep 5 sec for now
-    checkPMTs();
+    sleep(1);
+    checkPMTs();   
+    sleep(1);
+    clbEvent(ClbEvents::CONFIGURE);
+    sleep(1);
+}
+
+void Controller::startRun() 
+{
+    clbEvent(ClbEvents::START);
+    sleep(1);
+}
+
+void Controller::stopRun()
+{
+    clbEvent(ClbEvents::STOP);
+    sleep(1);
 }
 
 void Controller::setInitValues()

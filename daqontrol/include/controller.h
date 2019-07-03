@@ -24,9 +24,11 @@ public:
     /// Destroy a Controller
     ~Controller();
 
-    void postDaterev();
+    void postTest();
     void postInit();
-    void postCheckPMTs();
+    void postConfigure();
+    void postStartRun();
+    void postStopRun();
 
     void setInitValues();    
     void addNanobeacon(std::vector<int> &vid, std::vector<long> &vv);
@@ -49,8 +51,11 @@ private:
      */
     void ioServiceThread();
 
-    void daterev();
+    void test();
     void init();
+    void configure();
+    void startRun();
+    void stopRun();
 
     ControllerConfig config_;                                   ///< Controller specific configuration
 
