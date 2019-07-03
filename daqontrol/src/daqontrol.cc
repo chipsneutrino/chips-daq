@@ -3,29 +3,56 @@
  *
  */
 
+#include <boost/program_options.hpp>
+
 #include "util/command_receiver.h"
-#include "daq_control.h"
 #include "util/signal_receiver.h"
 #include <util/elastic_interface.h>
+
+#include "daq_control.h"
 
 namespace exit_code {
 static constexpr int success = 0;
 }
 
-namespace settings {
-static std::string config_name = "../data/config.opt"; // Default settings    
-}
-
 int main(int argc, char* argv[])
 {
+    // Default settings
+    std::string config = "../data/config.opt";
+
+    boost::program_options::options_description desc("Options");
+    desc.add_options()("help,h", "DAQontrol...")
+        ("config,c", boost::program_options::value<std::string>(&config), 
+            "Configuration file (../data/config.opt)");
+
+    try
+    {
+        boost::program_options::variables_map vm;
+        boost::program_options::store(boost::program_options::command_line_parser(argc, argv).options(desc).run(), vm);
+
+        if (vm.count("help"))
+        {
+            std::cout << desc << std::endl;
+            return EXIT_SUCCESS;
+        }
+        boost::program_options::notify(vm);
+    }
+    catch (const boost::program_options::error &e)
+    {
+        throw std::runtime_error("DAQontrol - po Argument Error");
+    }
+    catch (const std::runtime_error &e)
+    {
+        throw std::runtime_error("DAQontrol - runtime Argument Error");
+    }
+
     // Initialise the elasticsearch interface.
     g_elastic.init(true, false, 10); // log to stdout and use 10 threads for indexing
-
     g_elastic.log(INFO, "Starting DAQontrol");
 
     {
         // Main entry point.
-        std::shared_ptr<DAQControl> daq_control{ new DAQControl(settings::config_name) };
+        std::shared_ptr<DAQControl> daq_control{ new DAQControl(config) };
 
         std::unique_ptr<SignalReceiver> signal_receiver{ new SignalReceiver };
         signal_receiver->setHandler(daq_control);
