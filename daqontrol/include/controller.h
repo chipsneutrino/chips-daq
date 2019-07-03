@@ -7,6 +7,7 @@
 #include "msg_processor.h"
 #include "msg_types.h"
 #include "proc_var.h"
+#include "var_info.h"
 #include "clb_subsys.h"
 #include "clb_event.h"
 
@@ -25,10 +26,14 @@ public:
     ~Controller();
 
     void postTest();
-    void postInit();
-    void postConfigure();
-    void postStartRun();
-    void postStopRun();
+    void postInitClb();
+    void postConfigureClb();
+    void postStartClb();
+    void postStopClb();
+    void postQuitClb();
+    void postResetClb();
+    void postPauseClb();
+    void postContinueClb();
 
     void setInitValues();    
     void addNanobeacon(std::vector<int> &vid, std::vector<long> &vv);
@@ -52,10 +57,15 @@ private:
     void ioServiceThread();
 
     void test();
-    void init();
-    void configure();
-    void startRun();
-    void stopRun();
+    void initClb();
+    void configureClb();
+    void startClb();
+    void stopClb();
+    void quitClb();
+    void resetClb();
+    void pauseClb();
+    void continueClb();
+
 
     ControllerConfig config_;                                   ///< Controller specific configuration
 

@@ -26,25 +26,47 @@ void Controller::postTest()
     io_service_->post(boost::bind(&Controller::test, this)); 
 }
 
-void Controller::postInit()
+void Controller::postInitClb()
 {
-    io_service_->post(boost::bind(&Controller::init, this)); 
+    io_service_->post(boost::bind(&Controller::initClb, this)); 
 }
 
-void Controller::postConfigure()
+void Controller::postConfigureClb()
 {
-    io_service_->post(boost::bind(&Controller::configure, this)); 
+    io_service_->post(boost::bind(&Controller::configureClb, this)); 
 }
 
-void Controller::postStartRun()
+void Controller::postStartClb()
 {
-    io_service_->post(boost::bind(&Controller::startRun, this)); 
+    io_service_->post(boost::bind(&Controller::startClb, this)); 
 }
 
-void Controller::postStopRun()
+void Controller::postStopClb()
 {
-    io_service_->post(boost::bind(&Controller::stopRun, this)); 
+    io_service_->post(boost::bind(&Controller::stopClb, this)); 
 }
+
+void Controller::postQuitClb()
+{
+    io_service_->post(boost::bind(&Controller::quitClb, this)); 
+}
+
+void Controller::postResetClb()
+{
+    io_service_->post(boost::bind(&Controller::resetClb, this)); 
+}
+
+void Controller::postPauseClb()
+{
+    io_service_->post(boost::bind(&Controller::pauseClb, this)); 
+}
+
+void Controller::postContinueClb()
+{
+    io_service_->post(boost::bind(&Controller::continueClb, this)); 
+}
+
+
 
 void Controller::test()
 {
@@ -65,7 +87,7 @@ void Controller::test()
     sleep(1);
 }
 
-void Controller::init()
+void Controller::initClb()
 {
     setInitValues();
     sleep(1);
@@ -73,7 +95,7 @@ void Controller::init()
     sleep(1);
 }
 
-void Controller::configure()
+void Controller::configureClb()
 {
     setPMTs();
     sleep(1);
@@ -83,17 +105,43 @@ void Controller::configure()
     sleep(1);
 }
 
-void Controller::startRun() 
+void Controller::startClb() 
 {
     clbEvent(ClbEvents::START);
     sleep(1);
 }
 
-void Controller::stopRun()
+void Controller::stopClb()
 {
     clbEvent(ClbEvents::STOP);
     sleep(1);
 }
+
+
+void Controller::quitClb()
+{
+    clbEvent(ClbEvents::QUIT);
+    sleep(1);
+}
+
+void Controller::resetClb()
+{
+    clbEvent(ClbEvents::RESET);
+    sleep(1);
+}
+
+void Controller::pauseClb()
+{
+    clbEvent(ClbEvents::PAUSE);
+    sleep(1);
+}
+
+void Controller::continueClb()
+{
+    clbEvent(ClbEvents::CONTINUE);
+    sleep(1);
+}
+
 
 void Controller::setInitValues()
 {
@@ -259,11 +307,13 @@ void Controller::askPMTsInfo(int info_type)
         printf("Enabled channel %x\n", enable);
         //use it somehow
         } else {
-            
-        std::vector<short int> varVal;
-        for(int ipmt =0; ipmt<30; ++ipmt){
-            varVal.push_back(mr.readU8());
-            printf("=====>>>>>  %d %d    Var Id %x  -  Value  %d\n", count, ipmt,  varId, varVal[ipmt]);
+
+	  VarInfo vt = VarInfo(varId);	  
+	  std::vector<long int> varVal;            
+	  for(int ipmt =0; ipmt<31; ++ipmt){            
+	    if(vt.type_  ==  VarType::U8  ) varVal.push_back((long)mr.readU8());
+            if(vt.type_  ==  VarType::U32 ) varVal.push_back(mr.readU32());
+            printf("=====>>>>>  %d    Var Id %x  -  Value  %d %x\n", ipmt,  varId, varVal[ipmt], varVal[ipmt]);
 
         }// for ipmt 
         

@@ -71,7 +71,7 @@ void DAQControl::handleStartCommand(RunType which)
     mode_ = true;
 
     // Send start command to CLBs
-    startRun();
+    ///    startRun();   ????
 }
 
 void DAQControl::handleStopCommand()
@@ -86,7 +86,7 @@ void DAQControl::handleStopCommand()
     }
 
     // Send stop command to CLBs
-    stopRun();
+    ////    stopRun();   ????
 }
 
 void DAQControl::handleExitCommand()
@@ -104,37 +104,71 @@ void DAQControl::test()
     }
 }
 
-void DAQControl::init()
+void DAQControl::initClb()
 {
     for(int i=0; i<controllers_.size(); i++)
     {
-        controllers_[i]->postInit();  
+        controllers_[i]->postInitClb();  
     }
 }
 
-void DAQControl::configure()
+void DAQControl::configureClb()
 {
     for(int i=0; i<controllers_.size(); i++)
     {
-        controllers_[i]->postConfigure();  
+        controllers_[i]->postConfigureClb();  
     }
 }
 
-void DAQControl::startRun()
+void DAQControl::startClb()
 {
     for(int i=0; i<controllers_.size(); i++)
     {
-        controllers_[i]->postStartRun();  
+        controllers_[i]->postStartClb();  
     }
 }
 
-void DAQControl::stopRun()
+void DAQControl::stopClb()
 {
     for(int i=0; i<controllers_.size(); i++)
     {
-        controllers_[i]->postStopRun();  
+        controllers_[i]->postStopClb();  
     }
 } 
+
+void DAQControl::quitClb()
+{
+    for(int i=0; i<controllers_.size(); i++)
+    {
+        controllers_[i]->postQuitClb();  
+    }
+}
+
+void DAQControl::resetClb()
+{
+    for(int i=0; i<controllers_.size(); i++)
+    {
+        controllers_[i]->postResetClb();  
+    }
+}
+
+void DAQControl::pauseClb()
+{
+    for(int i=0; i<controllers_.size(); i++)
+    {
+        controllers_[i]->postPauseClb();  
+    }
+}
+
+void DAQControl::continueClb()
+{
+    for(int i=0; i<controllers_.size(); i++)
+    {
+        controllers_[i]->postContinueClb();  
+    }
+}
+
+
 
 void DAQControl::join() 
 {

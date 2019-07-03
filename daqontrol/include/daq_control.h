@@ -47,10 +47,15 @@ public:
     void run();
 
     void test();
-    void init();  
-    void configure(); 
-    void startRun(); 
-    void stopRun();            
+    void initClb();  
+    void configureClb(); 
+    void startClb(); 
+    void stopClb();            
+    void quitClb();
+    void resetClb();
+    void pauseClb();
+    void continueClb();
+
     
     void join();
 
