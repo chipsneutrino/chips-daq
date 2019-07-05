@@ -62,11 +62,10 @@ int main(int argc, char* argv[])
         cmd_receiver->setHandler(daq_control);
         cmd_receiver->runAsync();
 
-	daq_control->test();
-	///	daq_control->initClb();
-        ///    daq_control->configureClb();
-	   //daq_control->disableHV();
-	///	daq_control->startClb();
+	    daq_control->init();
+        //daq_control->configure();
+        //daq_control->start();
+        //daq_control->stop();
 
         daq_control->run();
 

@@ -19,8 +19,12 @@
 #include <fstream>
 #include <stdexcept>
 
+// Enum for the different types of controller
+enum ControllerType {CLB, BBB};
+
 struct ControllerConfig {
 	// Controller wide variables
+	ControllerType type_		= CLB;			///< What type of controller is it?
 	bool enabled_ 				= false;		///< Is the Controller enabled
 	unsigned int eid_ 			= 0;			///< Controller electronic ID
 	unsigned int ip_ 			= 0;			///< Controller IP address on the DAQ network			

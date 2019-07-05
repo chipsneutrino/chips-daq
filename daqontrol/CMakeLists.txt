@@ -1,7 +1,9 @@
 add_executable(daqontrol
     src/daqontrol.cc
     include/daq_control.h              src/daq_control.cc
-    include/controller.h               src/controller.cc
+    include/controller.h
+    include/clb_controller.h           src/clb_controller.cc
+    include/bbb_controller.h           src/bbb_controller.cc
     )
 
 target_include_directories(daqontrol PUBLIC include)

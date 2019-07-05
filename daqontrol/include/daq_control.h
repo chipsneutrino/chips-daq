@@ -11,10 +11,12 @@
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 
-#include "controller.h"
+#include "clb_controller.h"
 #include <clb/msg_types.h>
 #include <clb/proc_var.h>
 #include <clb/clb_subsys.h>
+
+#include "bbb_controller.h"
 
 #include <util/command_receiver.h>
 #include <util/daq_config.h>
@@ -46,17 +48,11 @@ public:
 
     void run();
 
-    void test();
-    void initClb();  
-    void configureClb(); 
-    void startClb(); 
-    void stopClb();            
-    void quitClb();
-    void resetClb();
-    void pauseClb();
-    void continueClb();
+    void init();  
+    void configure(); 
+    void start(); 
+    void stop();            
 
-    
     void join();
 
 private:

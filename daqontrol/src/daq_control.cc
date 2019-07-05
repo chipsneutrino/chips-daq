@@ -23,10 +23,15 @@ void DAQControl::setupFromConfig()
     config_.printConfig();
 
     // For now just add the single test CLB at 192.168.11.36
-    ControllerConfig config;
-    config.enabled_ = true;
-    config.ip_ = 3232238372;
-    controllers_.push_back(new Controller(config));
+    ControllerConfig config_clb;
+    config_clb.enabled_ = true;
+    config_clb.ip_ = 3232238372;
+    controllers_.push_back(new CLBController(config_clb));
+
+    ControllerConfig config_bbb;
+    config_bbb.enabled_ = true;
+    config_bbb.type_ = BBB;
+    controllers_.push_back(new BBBController(config_bbb));
 
     /*
     for (int clb=0; clb<config_.fNum_clbs; clb++)
@@ -71,7 +76,7 @@ void DAQControl::handleStartCommand(RunType which)
     mode_ = true;
 
     // Send start command to CLBs
-    ///    startRun();   ????
+    //startRun();   ????
 }
 
 void DAQControl::handleStopCommand()
@@ -86,7 +91,7 @@ void DAQControl::handleStopCommand()
     }
 
     // Send stop command to CLBs
-    ////    stopRun();   ????
+    //stopRun();   ????
 }
 
 void DAQControl::handleExitCommand()
@@ -96,79 +101,37 @@ void DAQControl::handleExitCommand()
     io_service_->stop();
 }
 
-void DAQControl::test()
+void DAQControl::init()
 {
     for(int i=0; i<controllers_.size(); i++)
     {
-        controllers_[i]->postTest();  
+        controllers_[i]->postInit();  
     }
 }
 
-void DAQControl::initClb()
+void DAQControl::configure()
 {
     for(int i=0; i<controllers_.size(); i++)
     {
-        controllers_[i]->postInitClb();  
+        controllers_[i]->postConfigure();  
     }
 }
 
-void DAQControl::configureClb()
+void DAQControl::start()
 {
     for(int i=0; i<controllers_.size(); i++)
     {
-        controllers_[i]->postConfigureClb();  
+        controllers_[i]->postStart();  
     }
 }
 
-void DAQControl::startClb()
+void DAQControl::stop()
 {
     for(int i=0; i<controllers_.size(); i++)
     {
-        controllers_[i]->postStartClb();  
-    }
-}
-
-void DAQControl::stopClb()
-{
-    for(int i=0; i<controllers_.size(); i++)
-    {
-        controllers_[i]->postStopClb();  
+        controllers_[i]->postStop();  
     }
 } 
-
-void DAQControl::quitClb()
-{
-    for(int i=0; i<controllers_.size(); i++)
-    {
-        controllers_[i]->postQuitClb();  
-    }
-}
-
-void DAQControl::resetClb()
-{
-    for(int i=0; i<controllers_.size(); i++)
-    {
-        controllers_[i]->postResetClb();  
-    }
-}
-
-void DAQControl::pauseClb()
-{
-    for(int i=0; i<controllers_.size(); i++)
-    {
-        controllers_[i]->postPauseClb();  
-    }
-}
-
-void DAQControl::continueClb()
-{
-    for(int i=0; i<controllers_.size(); i++)
-    {
-        controllers_[i]->postContinueClb();  
-    }
-}
-
-
 
 void DAQControl::join() 
 {

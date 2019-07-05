@@ -1,74 +1,73 @@
 /**
- * Controller - Controller for an individual CLB
- *
+ * CLBController - CLBController for an individual CLB
  */
 
-#include "controller.h"
+#include "clb_controller.h"
 
-Controller::Controller(ControllerConfig config)
-    : config_(config)
-    , io_service_{ new boost::asio::io_service }
-    , run_work_{ new boost::asio::io_service::work(*io_service_) }
-    , thread_( [&]{(*io_service_).run();} )
+CLBController::CLBController(ControllerConfig config)
+    : Controller(config)
     , processor_(config.ip_, io_service_)
 {
-    // Empty
+    g_elastic.log(INFO, "Creating CLBController for CLB:{}", config.eid_); 
 }
 
-Controller::~Controller()
+void CLBController::postInit()
 {
-    run_work_.reset();
-    io_service_->stop();
+    io_service_->post(boost::bind(&CLBController::init, this)); 
 }
 
-void Controller::postTest()
+void CLBController::postConfigure()
 {
-    io_service_->post(boost::bind(&Controller::test, this)); 
+    io_service_->post(boost::bind(&CLBController::configure, this)); 
 }
 
-void Controller::postInitClb()
+void CLBController::postStart()
 {
-    io_service_->post(boost::bind(&Controller::initClb, this)); 
+    io_service_->post(boost::bind(&CLBController::start, this)); 
 }
 
-void Controller::postConfigureClb()
+void CLBController::postStop()
 {
-    io_service_->post(boost::bind(&Controller::configureClb, this)); 
+    io_service_->post(boost::bind(&CLBController::stop, this)); 
 }
 
-void Controller::postStartClb()
+void CLBController::init()
 {
-    io_service_->post(boost::bind(&Controller::startClb, this)); 
+    g_elastic.log(DEBUG, "CLBController::init"); 
+    test();
+    sleep(1);
+    setInitValues();
+    sleep(1);
+    clbEvent(ClbEvents::INIT);
+    sleep(1);
 }
 
-void Controller::postStopClb()
+void CLBController::configure()
 {
-    io_service_->post(boost::bind(&Controller::stopClb, this)); 
+    g_elastic.log(DEBUG, "CLBController::configure"); 
+    setPMTs();
+    sleep(1);
+    checkPMTs();   
+    sleep(1);
+    clbEvent(ClbEvents::CONFIGURE);
+    sleep(1);
 }
 
-void Controller::postQuitClb()
+void CLBController::start() 
 {
-    io_service_->post(boost::bind(&Controller::quitClb, this)); 
+    g_elastic.log(DEBUG, "CLBController::start"); 
+    clbEvent(ClbEvents::START);
+    sleep(1);
 }
 
-void Controller::postResetClb()
+void CLBController::stop()
 {
-    io_service_->post(boost::bind(&Controller::resetClb, this)); 
+    g_elastic.log(DEBUG, "CLBController::stop"); 
+    clbEvent(ClbEvents::STOP);
+    sleep(1);
 }
 
-void Controller::postPauseClb()
-{
-    io_service_->post(boost::bind(&Controller::pauseClb, this)); 
-}
-
-void Controller::postContinueClb()
-{
-    io_service_->post(boost::bind(&Controller::continueClb, this)); 
-}
-
-
-
-void Controller::test()
+void CLBController::test()
 {
     // To test the connection we ask for the date of the software revisions
     MsgWriter mw;
@@ -83,67 +82,33 @@ void Controller::test()
     long swDateRev = mr.readU32();
 
     g_elastic.log(INFO, "Test successful, hardware({0:8x}), software({0:8x})", hwDateRev, swDateRev); 
-
-    sleep(1);
 }
 
-void Controller::initClb()
-{
-    setInitValues();
-    sleep(1);
-    clbEvent(ClbEvents::INIT);
-    sleep(1);
-}
-
-void Controller::configureClb()
-{
-    setPMTs();
-    sleep(1);
-    checkPMTs();   
-    sleep(1);
-    clbEvent(ClbEvents::CONFIGURE);
-    sleep(1);
-}
-
-void Controller::startClb() 
-{
-    clbEvent(ClbEvents::START);
-    sleep(1);
-}
-
-void Controller::stopClb()
-{
-    clbEvent(ClbEvents::STOP);
-    sleep(1);
-}
-
-
-void Controller::quitClb()
+void CLBController::quit()
 {
     clbEvent(ClbEvents::QUIT);
     sleep(1);
 }
 
-void Controller::resetClb()
+void CLBController::reset()
 {
     clbEvent(ClbEvents::RESET);
     sleep(1);
 }
 
-void Controller::pauseClb()
+void CLBController::pause()
 {
     clbEvent(ClbEvents::PAUSE);
     sleep(1);
 }
 
-void Controller::continueClb()
+void CLBController::continueRun()
 {
     clbEvent(ClbEvents::CONTINUE);
     sleep(1);
 }
 
-
-void Controller::setInitValues()
+void CLBController::setInitValues()
 {
     std::vector<int>  var_ids;
     std::vector<long> var_values;
@@ -177,17 +142,15 @@ void Controller::setInitValues()
     g_elastic.log(DEBUG, "Setting Initial Values..."); 
     MsgReader mr;
     processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);   
-
-    // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER
 }
 
-void Controller::addNanobeacon(std::vector<int> &vid, std::vector<long> &vv)
+void CLBController::addNanobeacon(std::vector<int> &vid, std::vector<long> &vv)
 {   // Should probably get the current status or have a value stored???
     vid.push_back(ProcVar::OPT_NANO_VOLT);      vv.push_back(60000);                       // TODO Nanobeacon Voltdage should be set somewhere 
     vid.push_back(ProcVar::SYS_SYS_RUN_ENA);    vv.push_back(( 0x70000a0 | 0x8000000 ));   // | 0x8000000 Add  the Nanobeancon enabling bit to SYS_SYS_RUN_ENA 
 }
 
-void Controller::disableNanobeacon()
+void CLBController::disableNanobeacon()
 {
     std::vector<int>  var_ids;
     std::vector<long> var_values;
@@ -205,11 +168,9 @@ void Controller::disableNanobeacon()
 
     MsgReader mr;
     processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);   
-
-    // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER
 }
 
-void Controller::disableHV()
+void CLBController::disableHV()
 {
     MsgWriter mw;
     mw.writeU16(1);
@@ -219,11 +180,9 @@ void Controller::disableHV()
     g_elastic.log(DEBUG, "Disabling HV");  
     MsgReader mr;
     processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr); 
-
-    // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER 
 }
 
-void Controller::clbEvent(int event_id)
+void CLBController::clbEvent(int event_id)
 {
     // TODO check event id is correct. Event IDs defined in clb_events.h
     MsgWriter mw;
@@ -233,11 +192,9 @@ void Controller::clbEvent(int event_id)
 
     MsgReader mr;
     processor_.processCommand(MsgTypes::MSG_CLB_EVENT, mw, mr);  
-
-    // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER
 }
 
-void Controller::setPMTs()
+void CLBController::setPMTs()
 {
     // TODO: get the PMT e-IDs and check they match with confog file. 
     // Threshold Always the same. Just add Voltage and enabling code
@@ -259,12 +216,10 @@ void Controller::setPMTs()
     for(int ipmt=0; ipmt<31; ++ipmt) mw.writeU8((short)config_.chan_hv_[ipmt]);
 
     MsgReader mr;
-    processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);
-
-    // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER       
+    processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);     
 }
 
-void Controller::checkPMTs()
+void CLBController::checkPMTs()
 {
     // It should check PMT info  match config file or expectations. Just get the information for now 
     askPMTsInfo(ProcVar::OPT_CHAN_ENABLE);
@@ -274,12 +229,12 @@ void Controller::checkPMTs()
     askPMTsInfo(ProcVar::OPT_PMT_HIGHVOLT);
 }  
 
-void Controller::askState()
+void CLBController::askState()
 {
     // Should ask the CLB State (Running, Paused etc.) Not sure how to do that yet 
 }
 
-void Controller::askPMTsInfo(int info_type)
+void CLBController::askPMTsInfo(int info_type)
 {    // Ask for PMT Info. TODO  add method (in msg_processor ?) to actually get the Information 
 
     if(info_type == ProcVar::OPT_PMT_HIGHVOLT  ||
@@ -326,7 +281,7 @@ void Controller::askPMTsInfo(int info_type)
     }    
 }
 
-void Controller::askVars(std::vector<int> var_ids)
+void CLBController::askVars(std::vector<int> var_ids)
 {    // Ask Vars. TODO  add method (in msg_processor ?) to actually get the Information 
     // TODO:  check  var ids ar correct
     MsgWriter mw;
@@ -334,7 +289,5 @@ void Controller::askVars(std::vector<int> var_ids)
 
     MsgReader mr;
     processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr);    
-
-    // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER
 }
 

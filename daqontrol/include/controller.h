@@ -1,77 +1,43 @@
 /**
- * Controller - Controller for an individual CLB
+ * Controller - Base class for a controller, either a CLB or BBB
  */
 
 #pragma once
 
-#include <clb/msg_processor.h>
-#include <clb/msg_types.h>
-#include <clb/proc_var.h>
-#include <clb/var_info.h>
-#include <clb/clb_subsys.h>
-#include <clb/clb_event.h>
-
+#include <boost/asio.hpp>
+#include <boost/thread.hpp>
 #include <util/daq_config.h>
-#include <util/elastic_interface.h>
 
 class Controller {
 public:
-    /**
-     * Create a Controller
-     * This creates a Controller, setting up the MsgProcessor etc...
-     */
-    Controller(ControllerConfig config);
+    /// Create a Controller using a ControllerConfig
+    Controller(ControllerConfig config)
+        : config_(config)
+        , io_service_{ new boost::asio::io_service }
+        , run_work_{ new boost::asio::io_service::work(*io_service_) }
+        , thread_( [&]{(*io_service_).run();} ) {};
 
     /// Destroy a Controller
-    ~Controller();
+    virtual ~Controller()
+    {
+        run_work_.reset();
+        io_service_->stop();
+    }
 
-    void postTest();
-    void postInitClb();
-    void postConfigureClb();
-    void postStartClb();
-    void postStopClb();
-    void postQuitClb();
-    void postResetClb();
-    void postPauseClb();
-    void postContinueClb();
+    virtual void postInit() = 0;
+    virtual void postConfigure() = 0;
+    virtual void postStart() = 0;
+    virtual void postStop() = 0;
 
-    void setInitValues();    
-    void addNanobeacon(std::vector<int> &vid, std::vector<long> &vv);
-    void disableNanobeacon();
-
-    void disableHV();
-
-    void clbEvent(int event_id);
-    void setPMTs();
-    void checkPMTs();
-
-    void askPMTsInfo(int info_type);
-    void askVars(std::vector<int> var_ids);
-    void askState();
-
-private:
-    /**
-     * Bound to thread creation
-     * Allows us to modify how the thread operates and what it does
-     */
-    void ioServiceThread();
-
-    void test();
-    void initClb();
-    void configureClb();
-    void startClb();
-    void stopClb();
-    void quitClb();
-    void resetClb();
-    void pauseClb();
-    void continueClb();
-
+protected:
+    virtual void init() = 0;
+    virtual void configure() = 0;
+    virtual void start() = 0;
+    virtual void stop() = 0;
 
     ControllerConfig config_;                                   ///< Controller specific configuration
 
     std::shared_ptr<boost::asio::io_service> io_service_;       ///< BOOST io_service. The heart of everything
     std::unique_ptr<boost::asio::io_service::work> run_work_;   ///< Work for the io_service
     boost::thread thread_;                                      ///< Thread this controller uses
-
-    MsgProcessor processor_;                                    ///< Message processor used to communicate with CLB
 };
