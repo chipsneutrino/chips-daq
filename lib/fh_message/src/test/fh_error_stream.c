@@ -4,7 +4,6 @@
  * Implements a stream decorator that injects bit errors into the stream.
  * Used for testing protocol implementations.
  */
-#include <stdarg.h>
 #include "../fh_classes.h"
 
 typedef struct _fh_error_stream_t fh_error_stream_t;

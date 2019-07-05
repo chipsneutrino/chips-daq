@@ -8,9 +8,9 @@
 
 // todo make max size publicly configurable
 #define FH_MSG_HDR_LEN 6
-#define FH_MAX_TOTAL_MESSAGE 4096
+#define FH_MAX_TOTAL_MESSAGE 1024
 #define FH_MAXDATA_VALUE (FH_MAX_TOTAL_MESSAGE - FH_MSG_HDR_LEN)
-#define READ_TIMEOUT 50
+#define READ_TIMEOUT -1
 
 // Message structure. In-memory format is same as on-wire format.
 struct _fh_message_t {
@@ -69,7 +69,7 @@ fh_message_init(fh_message_t *self, uint8_t type, uint8_t subtype)
 
 // initialze a message with a type/subtype and payload data.
 void
-fh_message_init_full(fh_message_t *self, uint8_t type, uint8_t subtype, uint8_t *data, uint16_t length)
+fh_message_init_full(fh_message_t *self, uint8_t type, uint8_t subtype, const uint8_t *data, uint16_t length)
 {
     fh_message_init(self, type, subtype);
     fh_message_setData(self, data, length);
@@ -148,7 +148,7 @@ fh_message_serialize_to_buf(fh_message_t *self, uint8_t *buf, size_t length)
 
 // deserialize a message from a buffer
 int
-fh_message_deserialize_from_buf(fh_message_t *self, uint8_t *buf, size_t length)
+fh_message_deserialize_from_buf(fh_message_t *self, const uint8_t *buf, size_t length)
 {
     if(length < FH_MSG_HDR_LEN)
     {
@@ -229,7 +229,7 @@ fh_message_setSubtype(fh_message_t *self, uint8_t st)
 
 // set the message data payload (with copy)
 void
-fh_message_setData(fh_message_t *self, uint8_t *d, uint16_t l)
+fh_message_setData(fh_message_t *self, const uint8_t *d, uint16_t l)
 {
     uint16_t len = l > FH_MAXDATA_VALUE ? FH_MAXDATA_VALUE : l;
     memcpy(self->data, d, len);
@@ -250,7 +250,7 @@ fh_message_setDataLen(fh_message_t *self, uint16_t l)
 
 // generate a hex dump of the serialized message to a stream
 void
-fh_message_hexdump(fh_message_t *self, char *desc, FILE *fout)
+fh_message_hexdump(fh_message_t *self, const char *desc, FILE *fout)
 {
     fh_util_hexdump(fout, desc, self, (fh_message_dataLen(self) + FH_MSG_HDR_LEN));
 }

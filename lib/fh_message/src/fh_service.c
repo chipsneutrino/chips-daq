@@ -70,9 +70,5 @@ fh_service_handle(fh_service_t *self, fh_message_t *msgin, fh_transport_t *trans
 static int
 _fh_service_no_function_handler(void *ctx, fh_message_t *msgin, fh_transport_t *transport)
 {
-    uint8_t type = fh_message_getType(msgin);
-    uint8_t st = fh_message_getSubtype(msgin);
-    fh_message_init_ascii_msg(msgin, "No function for service type [%d, %d]", type,st);
-
-    return fh_transport_send(transport, msgin);
+    return err_invalid_cmd(msgin, transport);
 }

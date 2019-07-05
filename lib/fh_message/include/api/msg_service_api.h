@@ -16,6 +16,5 @@
 //
 #define MS_STATUS 1      // query status message
 #define MS_ECHO 2        // echo data
-#define MS_CLOSE 3       // close the message channel
 
 #endif

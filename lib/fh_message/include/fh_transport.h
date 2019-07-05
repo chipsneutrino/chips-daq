@@ -52,6 +52,16 @@
 extern "C" {
 #endif
 
+// Callback interface for receiving multiple messages
+// from a single request.
+// A return value of true indicates exchange is complete,
+// false indicates that more messages are expected.
+typedef bool (*fh_receive_msg_fn)(void *ctx, fh_message_t *msg);
+typedef struct {
+    void *ctx;
+    fh_receive_msg_fn receive;
+} fh_msg_sink;
+
 //  Create a new socket transport
 fh_transport_t *
 fh_transport_new_socket(int socket_fh);
@@ -59,10 +69,6 @@ fh_transport_new_socket(int socket_fh);
 //  Create a new file transport
 fh_transport_t *
 fh_transport_new_file(int fdin, int fdout);
-
-//  Create a new CLI transport
-fh_transport_t *
-fh_transport_new_cli(FILE *fin, FILE *fout);
 
 //  base constructor
 fh_transport_t *
@@ -88,6 +94,19 @@ fh_transport_send(fh_transport_t *self, fh_message_t *msg);
 int
 fh_transport_receive(fh_transport_t *self, fh_message_t *msg);
 
+// send a message and receive a response
+// returns false and populates err_code if error encountered
+bool
+fh_transport_exchange(fh_transport_t *self, fh_message_t *msg, uint8_t *err_code);
+
+// send a message and receive multiple response messages
+// returns false and populates err_code if error encountered
+//
+// note: caller is responsible for metering the number of expected messages
+//       via the return value of sink->receive.
+bool
+fh_transport_exchange_multi(fh_transport_t *self, fh_message_t *msg, uint8_t *err_code, fh_msg_sink *sink);
+
 // enable tracing message encoding/decoding
 void
 fh_transport_enable_protocol_trace(fh_transport_t *self, FILE *fout);
@@ -96,10 +115,10 @@ fh_transport_enable_protocol_trace(fh_transport_t *self, FILE *fout);
 void
 fh_transport_disable_protocol_trace(fh_transport_t *self);
 
-// enable tracing message reading/wirting
+// enable tracing message reading/writing
 void
 fh_transport_enable_stream_trace(fh_transport_t *self, FILE *fout);
-// disable tracing message reading/wirting
+// disable tracing message reading/writing
 void
 fh_transport_disable_stream_trace(fh_transport_t *self);
 

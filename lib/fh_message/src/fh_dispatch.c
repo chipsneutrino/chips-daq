@@ -67,9 +67,5 @@ fh_dispatch_handle(fh_dispatch_t *self, fh_message_t *msgin, fh_transport_t *tra
 static int
 _fh_dispatch_no_service_handler(fh_message_t *msgin, fh_transport_t *transport)
 {
-    uint8_t type = fh_message_getType(msgin);
-    uint8_t st = fh_message_getSubtype(msgin);
-    fh_message_init_ascii_msg(msgin, "No handler for service type [%d, %d]\n", type, st);
-
-    return fh_transport_send(transport, msgin);
+    return err_invalid_cmd(msgin, transport);
 }

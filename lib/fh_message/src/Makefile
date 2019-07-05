@@ -20,7 +20,7 @@ AR=$(CROSS_COMPILE)ar
 # build libfh_massage.a from sources in "src" and "src/test"
 # -----------------------------------------------------------------
 LIBOUT=libfh_message.a
-SRC = $(wildcard *.c ./test/*.c)
+SRC = $(wildcard *.c ./test/*.c ./ascii/*.c)
 OBJS = $(SRC:.c=.o)
 
 %.o : %.c %.h
@@ -53,5 +53,5 @@ self_test: ./test/bin/fh_selftest
 .PHONY: clean
 
 clean:
-	rm -f *.o ./test/*.o $(LIBOUT)
+	rm -f *.o ./test/*.o ./ascii/*.o $(LIBOUT)
 	rm -f $(TEST_BINS)

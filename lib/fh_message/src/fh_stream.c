@@ -60,9 +60,6 @@ int _fh_transport_write_socket(void *ctx, uint8_t *buf, size_t length);
 int _fh_transport_read_file_desc(void *ctx, uint8_t *buf, size_t length, int timeout);
 int _fh_transport_write_file_desc(void *ctx, uint8_t *buf, size_t length);
 
-int _fh_transport_read_cli(void *ctx, uint8_t *buf, size_t length, int timeout);
-int _fh_transport_write_cli(void *ctx, uint8_t *buf, size_t length);
-
 int _fh_transport_read_buffer(void *ctx, uint8_t *buf, size_t length, int timeout);
 int _fh_transport_write_buffer(void *ctx, uint8_t *buf, size_t length );
 
@@ -73,7 +70,6 @@ int _fh_transport_read_decorate(void *ctx, uint8_t *buf, size_t length, int time
 int _fh_transport_write_decorate(void *ctx, uint8_t *buf, size_t length);
 
 fh_stream_impl FILE_DESC_STREAM = {&_fh_transport_read_file_desc, &_fh_transport_write_file_desc, NULL};
-fh_stream_impl CLI_STREAM = {&_fh_transport_read_cli, &_fh_transport_write_cli, NULL};
 fh_stream_impl BUFFER_STREAM = {&_fh_transport_read_buffer, &_fh_transport_write_buffer, NULL};
 fh_stream_impl TRACE_STREAM = {&_fh_transport_read_trace, &_fh_transport_write_trace, NULL};
 fh_stream_impl DECORATED_STREAM = {&_fh_transport_read_decorate, &_fh_transport_write_decorate, NULL};
@@ -139,18 +135,6 @@ fh_stream_new_file_desc(int fdin, int fdout)
     // printf("set fd %d to nonblock. status: %d\n", fileno(fin), status);
 
     return fh_stream_new(stream_ctx, FILE_DESC_STREAM);
-}
-
-// Create a new CLI stream
-fh_stream_t *
-fh_stream_new_cli(FILE *fin, FILE *fout)
-{
-    _fh_file_ctx *stream_ctx = (_fh_file_ctx *)calloc(1,sizeof(_fh_file_ctx));
-    assert(stream_ctx);
-    stream_ctx->fin = fin;
-    stream_ctx->fout = fout;
-
-    return fh_stream_new(stream_ctx, CLI_STREAM);
 }
 
 //  Create a new buffer-backed stream
@@ -298,28 +282,6 @@ _fh_transport_fill_buffer(_fh_file_desc_ctx *self, int timeout)
 }
 
 // ###########################################################
-// cli stream impl
-// ###########################################################
-int
-_fh_transport_read_cli(void *ctx, uint8_t *buf, size_t length, int timeout)
-{
-    assert(ctx);
-    if (fgets((char *)buf, length, ((_fh_file_ctx *)ctx)->fin) != NULL) {
-        // Remove CRLF etc.
-        buf[strcspn((char *)buf, "\r\n")] = 0;
-        return strlen((char *)buf)+1;
-    }
-    else return -1;    
-}
-
-int
-_fh_transport_write_cli(void *ctx, uint8_t *buf, size_t length)
-{
-    assert(ctx);
-    return fputs((char *)buf, ((_fh_file_ctx *)ctx)->fout);
-}
-
-// ###########################################################
 // buffer stream impl
 // ###########################################################
 int
@@ -362,7 +324,7 @@ _fh_transport_read_trace(void *ctx, uint8_t *buf, size_t length, int timeout)
     if (read > 0) {
         narrow_ctx->bytes_in += read;
         char desc[256];
-        snprintf(desc, 256, "stream:read[%d] of [%"PRId64"]", read, (narrow_ctx->bytes_in) );
+        snprintf(desc, 256, "stream:read[%d] of [%llu]", read, (narrow_ctx->bytes_in) );
         fh_util_hexdump(narrow_ctx->fout, desc, buf, read);
     }
     else {
@@ -384,7 +346,7 @@ _fh_transport_write_trace(void *ctx, uint8_t *buf, size_t length)
     if (wrote > 0) {
         narrow_ctx->bytes_out += wrote;
         char desc[256];
-        snprintf(desc, 256, "stream:wrote[%d] of [%"PRId64"]", wrote, (narrow_ctx->bytes_out) );
+        snprintf(desc, 256, "stream:wrote[%d] of [%llu]", wrote, (narrow_ctx->bytes_out) );
         fh_util_hexdump(narrow_ctx->fout, desc, buf, wrote);
     }
     else {

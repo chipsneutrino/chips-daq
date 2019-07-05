@@ -12,11 +12,16 @@ extern "C" {
 
 //  Create a new msg_service
 fh_msg_service_t *
-fh_msg_service_new(void);
+fh_msg_service_new(uint8_t typecode);
 
 //  Destroy the msg_service
 void
 fh_msg_service_destroy(fh_msg_service_t **self_p);
+
+// Register the service with a distpatcher
+void
+fh_msg_service_register(fh_msg_service_t *self, fh_dispatch_t *dispatcher);
+
 
 #ifdef __cplusplus
 }

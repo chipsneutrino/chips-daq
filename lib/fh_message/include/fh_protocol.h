@@ -33,10 +33,6 @@ fh_protocol_destroy(fh_protocol_t **self_p);
 fh_protocol_t *
 fh_protocol_new_plain();
 
-// create a new CLI protocol
-fh_protocol_t *
-fh_protocol_new_cli();
-
 //  decorate a transport with a debugging trace
 //  Note: client owns delegate memory.
 fh_protocol_t *

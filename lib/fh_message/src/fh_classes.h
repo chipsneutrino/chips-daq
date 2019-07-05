@@ -18,7 +18,7 @@
 // #include <math.h>
 // #include <setjmp.h>
 // #include <signal.h>
-// #include <stdarg.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -36,12 +36,14 @@
 //  Internal private API
 #include "fh_socket_util.h"
 #include "cobs.h"
+#include "fh_frame_protocol_legacy.h"
 #include "fh_frame_protocol_v1.h"
 #include "fh_frame_protocol_v2.h"
 #include "test/fh_rand.h"
 #include "test/fh_error_stream.h"
 #include "test/fh_selftest.h"
 #include "test/fh_transport_test.h"
+#include "ascii/fh_ascii.h"
 
 
 #endif

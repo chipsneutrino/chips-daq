@@ -8,6 +8,11 @@
 #ifndef _ERROR_SERVICE_API_H_
 #define _ERROR_SERVICE_API_H_
 
+//####################################################################
+// ERROR_SERVICE
+//####################################################################
+// Error Service contains error code definitions
+//
 #define ERR_OK 0
 #define ERR_UNSPECIFIED 1
 #define ERR_SUBSYSTEM_SPECIFIC 2
@@ -17,5 +22,6 @@
 #define ERR_BAD_CMD 6
 #define ERR_CMD_FAILED 7
 #define ERR_BUSY 8
+#define ERR_COMMS 9
 
 #endif

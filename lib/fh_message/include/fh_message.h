@@ -35,7 +35,7 @@ fh_message_init(fh_message_t *self, uint8_t type, uint8_t subtype);
 
 // initialize a message with a type/subtype and payload data.
 void
-fh_message_init_full(fh_message_t *self, uint8_t type, uint8_t subtype, uint8_t *data, uint16_t length);
+fh_message_init_full(fh_message_t *self, uint8_t type, uint8_t subtype, const uint8_t *data, uint16_t length);
 
 // initialize a message with the contents of another message
 void
@@ -55,7 +55,7 @@ fh_message_serialize_to_buf(fh_message_t *self, uint8_t *buf, size_t length);
 
 // deserialize a message from a buffer
 int
-fh_message_deserialize_from_buf(fh_message_t *self, uint8_t *buf, size_t length);
+fh_message_deserialize_from_buf(fh_message_t *self, const uint8_t *buf, size_t length);
 
 // access the raw serialized message bytes
 void
@@ -91,7 +91,7 @@ fh_message_setSubtype(fh_message_t *self, uint8_t st);
 
 // set the message data payload (with copy)
 void
-fh_message_setData(fh_message_t *self, uint8_t *d, uint16_t size);
+fh_message_setData(fh_message_t *self, const uint8_t *d, uint16_t size);
 
 // set the message data payload length
 void
@@ -99,7 +99,7 @@ fh_message_setDataLen(fh_message_t *self, uint16_t l);
 
 // generate a hex dump of the serialized message to a stream
 void
-fh_message_hexdump(fh_message_t *self, char *desc, FILE *fout);
+fh_message_hexdump(fh_message_t *self, const char *desc, FILE *fout);
 
 // get the maximum possible data length (bytes)
 uint16_t

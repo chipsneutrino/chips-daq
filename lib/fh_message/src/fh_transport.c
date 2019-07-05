@@ -53,6 +53,7 @@
 typedef struct {
     bool enabled;
     void *original;
+    FILE *dst;
 } trace_t;
 
 // instance data
@@ -76,9 +77,10 @@ fh_transport_new(fh_protocol_t *protocol, fh_stream_t *stream)
 
     self->protocol_trace.enabled = false;
     self->protocol_trace.original = NULL;
+    self->stream_trace.dst = NULL;
 
     self->stream_trace.enabled = false;
-    self->stream_trace.original = NULL;
+    self->stream_trace.dst = NULL;
     
     return self;
 }
@@ -99,16 +101,6 @@ fh_transport_new_file(int fdin, int fdout)
 {
     fh_protocol_t *protocol = fh_protocol_new_plain();
     fh_stream_t *stream = fh_stream_new_file_desc(fdin, fdout);
-
-    return fh_transport_new(protocol, stream);
-}
-
-//  Create a new CLI transport
-fh_transport_t *
-fh_transport_new_cli(FILE *fin, FILE *fout)
-{
-    fh_protocol_t *protocol = fh_protocol_new_cli();
-    fh_stream_t *stream = fh_stream_new_cli(fin, fout);
 
     return fh_transport_new(protocol, stream);
 }
@@ -143,16 +135,45 @@ fh_transport_destroy(fh_transport_t **self_p)
 void
 fh_transport_set_protocol(fh_transport_t *self, fh_protocol_t *protocol)
 {
+    // maintain tracing if already enabled
+    bool was_tracing = self->protocol_trace.enabled;
+    FILE *dst = self->protocol_trace.dst;
+
+    // clean up the old tracing properly
+    if (self->protocol_trace.enabled) {
+        fh_transport_disable_protocol_trace(self);
+    }
+
     fh_protocol_destroy(&(self->protocol));
     self->protocol = protocol;
+
+    if (was_tracing) {
+        fh_transport_enable_protocol_trace(self, dst);
+    }
 }
 
 // Set the stream
 void
 fh_transport_set_stream(fh_transport_t *self, fh_stream_t *stream)
 {
+    // maintain tracing if already enabled
+    bool was_tracing = self->stream_trace.enabled;
+    FILE *dst = self->stream_trace.dst;
+
+    // clean up the old tracing properly
+    if(self->stream_trace.enabled)
+    {
+       fh_transport_disable_stream_trace(self);
+    }
+
     fh_stream_destroy(&(self->stream));
+
     self->stream = stream;
+
+    if(was_tracing)
+    {
+        fh_transport_enable_stream_trace(self, dst);
+    }
 }
 
 // send an serialized message over the transport
@@ -169,6 +190,98 @@ fh_transport_receive(fh_transport_t *self, fh_message_t *msg)
     return fh_protocol_decode(self->protocol, msg, self->stream);
 }
 
+// send a message and receive a response
+// returns false and populates err_code if error encountered
+bool
+fh_transport_exchange(fh_transport_t *self, fh_message_t *msg, uint8_t *err_code)
+{
+
+    uint8_t mt_sent = fh_message_getType(msg);
+    uint8_t mst_sent = fh_message_getSubtype(msg);
+
+    // Send the message
+    if(fh_transport_send(self, msg) !=0 ) {
+        *err_code = ERR_COMMS;
+        return false;
+    }
+
+    // Receieve reply message
+    if(fh_transport_receive(self, msg)!=0) {
+        *err_code = ERR_COMMS;
+        return false;
+    }
+
+    // Check for error message
+    uint8_t mt_rcv = fh_message_getType(msg);
+    uint8_t mst_rcv = fh_message_getSubtype(msg);
+    if (mt_rcv != mt_sent || mst_rcv != mst_sent) {
+
+        if (mt_rcv == ERR_SERVICE) {
+            // server responded with an error
+            *err_code = mst_rcv;
+        }
+        else {
+            // violation of API
+            *err_code = ERR_UNSPECIFIED;
+        }
+
+        return false;
+    }
+
+    return true;
+}
+
+// send a message and receive multiple response messages
+// returns false and populates err_code if error encountered
+//
+// note: caller is responsible for metering the number of expected messages
+//       via the return value of sink->recieve.
+bool
+fh_transport_exchange_multi(fh_transport_t *self, fh_message_t *msg, uint8_t *err_code, fh_msg_sink *sink)
+{
+
+    uint8_t mt_sent = fh_message_getType(msg);
+    uint8_t mst_sent = fh_message_getSubtype(msg);
+
+    // Send the message
+    if(fh_transport_send(self, msg) !=0 ) {
+        *err_code = ERR_COMMS;
+        return false;
+    }
+
+    // Receieve reply message(s) until client
+    // indicates exchange is complete (or error)
+    bool complete = false;
+    while (!complete) {
+        if (fh_transport_receive(self, msg) != 0) {
+            *err_code = ERR_COMMS;
+            return false;
+        }
+
+        // Check for error message
+        uint8_t mt_rcv = fh_message_getType(msg);
+        uint8_t mst_rcv = fh_message_getSubtype(msg);
+        if (mt_rcv != mt_sent || mst_rcv != mst_sent) {
+
+            if (mt_rcv == ERR_SERVICE) {
+                // server responded with an error
+                *err_code = mst_rcv;
+            }
+            else {
+                // violation of API
+                *err_code = ERR_UNSPECIFIED;
+            }
+
+            return false;
+        }
+
+        // pass message to callback
+        complete = (*(sink->receive))(sink->ctx, msg);
+
+    }
+    return true;
+}
+
 // enable tracing message encoding/decoding
 void
 fh_transport_enable_protocol_trace(fh_transport_t *self, FILE *fout)
@@ -180,6 +293,7 @@ fh_transport_enable_protocol_trace(fh_transport_t *self, FILE *fout)
     self->protocol_trace.original = self->protocol;
     self->protocol = trace;
     self->protocol_trace.enabled = true;
+    self->protocol_trace.dst = fout;
 }
 
 // disable tracing message encoding/decoding
@@ -194,6 +308,7 @@ fh_transport_disable_protocol_trace(fh_transport_t *self)
     self->protocol = self->protocol_trace.original;
     self->protocol_trace.enabled = false;
     self->protocol_trace.original = NULL;
+    self->protocol_trace.dst = NULL;
 
     fh_protocol_destroy((fh_protocol_t**)&trace);
 }
@@ -209,6 +324,7 @@ fh_transport_enable_stream_trace(fh_transport_t *self, FILE *fout)
     self->stream_trace.original = self->stream;
     self->stream = trace;
     self->stream_trace.enabled = true;
+    self->stream_trace.dst = fout;
 }
 
 // disable tracing message reading/wirting
@@ -223,6 +339,7 @@ fh_transport_disable_stream_trace(fh_transport_t *self)
     self->stream = self->stream_trace.original;
     self->stream_trace.enabled = false;
     self->stream_trace.original = NULL;
+    self->stream_trace.dst = NULL;
 
     fh_stream_destroy((fh_stream_t**)&trace);
 }

@@ -15,6 +15,7 @@ extern "C" {
 // support multiple implementations for
 // evaluation
 typedef enum {
+    FP_LEGACY,    // original frame protocol with bus id field
     FP_VERSION_1, // 1 message per frame, no resend, bit errors cause fault
     FP_VERSION_2, // N frames per message,  reliable transport implementing a 1-bit
                   // sliding window (stop and wait) ARQ protocol

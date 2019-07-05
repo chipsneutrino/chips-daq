@@ -3,7 +3,6 @@
  *
  */
 #include "fh_classes.h"
-#include <inttypes.h>
 
 // protocol determines how messages are encoded for transfer
 struct _fh_protocol_t {
@@ -32,11 +31,8 @@ int _fh_protocol_decode_plain(void *ctx, fh_message_t *msg, fh_stream_t *src);
 
 int _fh_protocol_encode_trace(void *ctx, fh_message_t *msg, fh_stream_t *dst);
 int _fh_protocol_decode_trace(void *ctx, fh_message_t *msg, fh_stream_t *src);
-
-int _fh_protocol_encode_cli(void *ctx, fh_message_t *msg, fh_stream_t *dst);
-int _fh_protocol_decode_cli(void *ctx, fh_message_t *msg, fh_stream_t *src);
-
 void _fh_protocol_destroy_ctx_trace(void **ctx_p);
+
 
 fh_protocol_impl PLAIN_PROTOCOL_IMPL = {.encode = &_fh_protocol_encode_plain, 
                                         .decode = &_fh_protocol_decode_plain, 
@@ -46,9 +42,6 @@ fh_protocol_impl TRACE_PROTOCOL_IMPL = {.encode = &_fh_protocol_encode_trace,
                                         .decode = &_fh_protocol_decode_trace, 
                                         .destroy_ctx = &_fh_protocol_destroy_ctx_trace};
 
-fh_protocol_impl CLI_PROTOCOL_IMPL = {.encode = &_fh_protocol_encode_cli,
-                                      .decode = &_fh_protocol_decode_cli,
-                                      .destroy_ctx = NULL};
 
 // construct a protocol
 fh_protocol_t *
@@ -105,13 +98,6 @@ fh_protocol_new_trace(FILE *fout, fh_protocol_t *delegate)
     return fh_protocol_new(protocol_ctx, TRACE_PROTOCOL_IMPL);
 }
 
-//  create a new CLI protocol
-fh_protocol_t *
-fh_protocol_new_cli()
-{
-    return fh_protocol_new(NULL, CLI_PROTOCOL_IMPL);
-}
-
 // send an encoded message to the destination stream
 int
 fh_protocol_encode(fh_protocol_t *self, fh_message_t *msg, fh_stream_t *dest)
@@ -124,33 +110,6 @@ int
 fh_protocol_decode(fh_protocol_t *self, fh_message_t *msg, fh_stream_t *src)
 {
     return (*(self->impl->decode))(self->context, msg, src);
-}
-
-// ###########################################################
-// CLI encoding
-// ###########################################################
-int
-_fh_protocol_encode_cli(void *ctx, fh_message_t *msg, fh_stream_t *dst)
-{
-    char *str = (char *)fh_message_getData(msg);
-    assert(str[fh_message_dataLen(msg)] == 0);
-    fh_stream_write(dst, (uint8_t *)str, strlen(str)+1);
-    return 0;
-}
-
-int
-_fh_protocol_decode_cli(void *ctx, fh_message_t *msg, fh_stream_t *src)
-{
-    char buf[1024];
-    int len = fh_stream_read(src, (uint8_t *)buf, 1024, 50);
-    assert(buf[len] == 0);
-    if(len > 0) {
-        fh_message_init_ascii_msg(msg, buf);
-        return 0;
-    } else {
-    	return -1;
-    }
-
 }
 
 // ###########################################################
@@ -184,9 +143,17 @@ _fh_protocol_encode_trace(void *ctx, fh_message_t *msg, fh_stream_t *dst)
         narrow_ctx->msg_encoded++;
         narrow_ctx->bytes_encoded += encoded_bytes;
         char desc[256];
-        snprintf(desc, 256, "sent msg[%d %d], size[%d], total_sent_msg[%"PRId64"], total_sent_bytes[%"PRId64"]",
-                 fh_message_getType(msg), fh_message_getSubtype(msg), encoded_bytes, (narrow_ctx->msg_encoded),
-                 (narrow_ctx->bytes_encoded));
+
+//NOTE: newlib nano does not support printf for 64-bit types (without special config)
+#if defined __NEWLIB__
+        snprintf(desc, 256, "sent msg[%d %d], size[%d], total_sent_msg[%"PRIu32"], total_sent_bytes[%"PRIu32"]",
+                 fh_message_getType(msg), fh_message_getSubtype(msg), encoded_bytes,
+                 (uint32_t)(narrow_ctx->msg_encoded), (uint32_t)(narrow_ctx->bytes_encoded));
+#else
+        snprintf(desc, 256, "sent msg[%d %d], size[%d], total_sent_msg[%"PRIu64"], total_sent_bytes[%"PRIu64"]",
+                 fh_message_getType(msg), fh_message_getSubtype(msg), encoded_bytes,
+                 (narrow_ctx->msg_encoded), (narrow_ctx->bytes_encoded));
+#endif
 
         fh_message_hexdump(msg, desc, narrow_ctx->fout);
     }
@@ -209,9 +176,19 @@ _fh_protocol_decode_trace(void *ctx, fh_message_t *msg, fh_stream_t *src)
         narrow_ctx->msg_decoded++;
         narrow_ctx->bytes_decoded += decoded_bytes;
         char desc[256];
-        snprintf(desc, 256, "recv msg[%d %d], size[%d], total_recv_msg[%"PRId64"], total_recv_bytes[%"PRId64"]",
+
+//NOTE: newlib nano does not support printf for 64-bit types (without special config)
+#if defined __NEWLIB__
+        snprintf(desc, 256, "recv msg[%d %d], size[%d], total_recv_msg[%"PRIu32"], total_recv_bytes[%"PRIu32"]",
+                 fh_message_getType(msg), fh_message_getSubtype(msg), decoded_bytes, (uint32_t)(narrow_ctx->msg_decoded),
+                 (uint32_t)(narrow_ctx->bytes_decoded));
+#else
+        snprintf(desc, 256, "recv msg[%d %d], size[%d], total_recv_msg[%"PRIu64"], total_recv_bytes[%"PRIu64"]",
                  fh_message_getType(msg), fh_message_getSubtype(msg), decoded_bytes, (narrow_ctx->msg_decoded),
                  (narrow_ctx->bytes_decoded));
+#endif
+
+
 
         fh_message_hexdump(msg, desc, narrow_ctx->fout);
     }

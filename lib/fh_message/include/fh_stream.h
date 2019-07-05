@@ -38,10 +38,6 @@ fh_stream_new_socket(int socket_fd);
 fh_stream_t *
 fh_stream_new_file_desc(int fdin, int fdout);
 
-//  Create a new CLI stream
-fh_stream_t *
-fh_stream_new_cli(FILE *fin, FILE *fout);
-
 //  Create a new buffer-backed stream
 fh_stream_t *
 fh_stream_new_buffer(uint8_t *buf, size_t length);

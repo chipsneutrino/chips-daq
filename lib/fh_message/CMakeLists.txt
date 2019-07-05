@@ -10,12 +10,9 @@ set(PUBLIC_HEADERS
     include/fh_stream.h
     include/fh_data_access_service.h
     include/fh_sorter.h
-    include/udaq_api/slow_ctrl_service_api.h
-    include/udaq_api/data_access_service_api.h
-    include/udaq_api/error_service_api.h
-    include/udaq_api/msg_service_api.h
-    include/udaq_api/udaq_comms_api.h
-    include/udaq_api/exp_ctrl_service_api.h
+    include/api/error_service_api.h
+    include/api/msg_api.h
+    include/api/msg_service_api.h
     include/fh_message_util.h
     include/fh_transport.h
     include/fh_protocol.h
@@ -23,11 +20,16 @@ set(PUBLIC_HEADERS
     include/fh_util.h
     include/fh_message.h
     include/fh_service.h
+    include/fh_ascii_service.h
+    include/fh_error.h
+    include/fh_multi.h
+    include/fh_pack.h
 )
 
 set(PRIVATE_HEADERS 
     src/cobs.h
     src/fh_socket_util.h
+    src/fh_frame_protocol_legacy.h
     src/fh_frame_protocol_v1.h
     src/fh_frame_protocol_v2.h
     src/test/fh_rand.h
@@ -38,6 +40,8 @@ set(PRIVATE_HEADERS
     src/uthash/utarray.h
     src/uthash/uthash.h
     src/uthash/utlist.h
+    src/ascii/fh_ascii.h
+    src/ascii/fh_ascii_api.h
 )
 
 set(SOURCES
@@ -65,6 +69,10 @@ set(SOURCES
     src/fh_sorter.c
     src/fh_socket_util.c
     src/fh_frame_protocol_v1.c
+    src/fh_error.c
+    src/fh_frame_protocol_legacy.c
+    src/fh_multi.c
+    src/fh_pack.c
 )
 
 add_library(fh_message SHARED ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})

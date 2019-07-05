@@ -73,7 +73,6 @@
 #include "fh_classes.h"
 #include "uthash/uthash.h"
 #include "uthash/utlist.h"
-#include <inttypes.h>
 
 typedef struct _fh_sort_record_t fh_sort_record_t;
 struct _fh_sort_record_t {
@@ -219,7 +218,7 @@ fh_sort_node_print_info(fh_sort_node_t *self, FILE *out)
     fh_sort_record_t *rec;
 fprintf(out, "Node {");
 DL_FOREACH(self->rec_list, rec) {
-        fprintf(out, "%"PRId64",", rec->val);
+        fprintf(out, "%llu,", rec->val);
     }
     fprintf(out, "}\n");
 }
@@ -544,7 +543,7 @@ typedef struct {
 test_source_t *
 test_source_new(uint64_t id)
 {
-    static int seed = 9999; // unique seed per instance
+    static int seed = 9999; // unique sed per instance
     seed += 27;
 
     test_source_t *self = (test_source_t*)calloc(1, sizeof(test_source_t));
@@ -723,8 +722,8 @@ fh_sorter_test(bool verbose)
     }
 
     if (verbose) {
-        printf("Pushed %" PRIu32 " records into sorter values [%"PRId64" - %"PRId64"]\n", num_sent, min_value, max_value);
-        printf("Sorter test sink received %"PRId64" records values [%"PRId64" - %"PRId64"]\n", sink->num_rcv, sink->first_val,
+        printf("Pushed %" PRIu32 " records into sorter values [%llu - %llu]\n", num_sent, min_value, max_value);
+        printf("Sorter test sink received %llu records values [%llu - %llu]\n", sink->num_rcv, sink->first_val,
                sink->last_val);
     }
     assert(sink->ordered);
