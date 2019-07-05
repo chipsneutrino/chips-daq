@@ -2,7 +2,7 @@
  *  ClbEvent - Class dealing with  CLB event and possible transitions  
  */
 
-#include "clb_event.h"
+#include <clb/clb_event.h>
 	
 ClbEvent::ClbEvent(int event)
 {

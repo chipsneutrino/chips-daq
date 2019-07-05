@@ -6,7 +6,6 @@
 
 #include <sys/time.h>
 #include <vector>
-
 #include <util/elastic_interface.h>
 
 // Packet and SRP defines

@@ -2,7 +2,7 @@
  * MsgProcessor - Processor for CLB messages
  */
 
-#include "msg_processor.h"
+#include <clb/msg_processor.h>
 
 MsgProcessor::MsgProcessor(unsigned long ip_address, std::shared_ptr<boost::asio::io_service> io_service) 
     : socket_(*io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0)) 

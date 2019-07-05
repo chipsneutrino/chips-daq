@@ -2,7 +2,7 @@
  * MsgBuilder - Builds km3net messages MCF + SRP protocols
  */
 
-#include "msg_builder.h"
+#include <msg_builder.h>
 
 MsgBuilder::MsgBuilder() 
 {

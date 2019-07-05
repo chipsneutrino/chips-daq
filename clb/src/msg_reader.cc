@@ -2,7 +2,7 @@
  * Special class for reading the content of a message.
  */
 
-#include "msg_reader.h"
+#include <clb/msg_reader.h>
   
 MsgReader::MsgReader(std::vector<unsigned char> data) 
 {

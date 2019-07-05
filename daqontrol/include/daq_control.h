@@ -10,14 +10,14 @@
 
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
-#include "util/command_receiver.h"
-#include "util/daq_config.h"
 
 #include "controller.h"
-#include "msg_types.h"
-#include "proc_var.h"
-#include "clb_subsys.h"
+#include <clb/msg_types.h>
+#include <clb/proc_var.h>
+#include <clb/clb_subsys.h>
 
+#include <util/command_receiver.h>
+#include <util/daq_config.h>
 #include <util/elastic_interface.h>
 
 class DAQControl : public CommandHandler {

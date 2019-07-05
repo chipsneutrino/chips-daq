@@ -7,7 +7,6 @@
 #include <sys/time.h>
 #include <util/elastic_interface.h>
 
-
 #define  SUBSYS_MASK   0x70000000
 #define  SUBSYS_SHIFT  28
 #define  VARIDX_MASK   0x0FF00000

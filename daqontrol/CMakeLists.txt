@@ -2,15 +2,6 @@ add_executable(daqontrol
     src/daqontrol.cc
     include/daq_control.h              src/daq_control.cc
     include/controller.h               src/controller.cc
-    include/msg_processor.h            src/msg_processor.cc
-    include/msg_builder.h              src/msg_builder.cc
-    include/msg_writer.h               src/msg_writer.cc
-    include/msg_reader.h               src/msg_reader.cc
-    include/var_info.h                 src/var_info.cc		       
-    include/clb_event.h                src/clb_event.cc
-    include/msg_types.h
-    include/proc_var.h    
-    include/clb_subsys.h
     )
 
 target_include_directories(daqontrol PUBLIC include)

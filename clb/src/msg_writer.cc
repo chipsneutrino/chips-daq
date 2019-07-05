@@ -2,7 +2,7 @@
  * Special class for constructing the content of a MCF message.
  */
 
-#include "msg_writer.h"
+#include <clb/msg_writer.h>
 
 MsgWriter::MsgWriter() 
 {

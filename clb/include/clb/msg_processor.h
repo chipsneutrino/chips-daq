@@ -8,15 +8,11 @@
 
 
 #include <cstdlib>
-
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
-
-#include "msg_builder.h"
-//#include "mcf_message.h"
-//#include "mcf_packet.h"
-#include "msg_writer.h"
-#include "msg_reader.h"
+#include <clb/msg_builder.h>
+#include <clb/msg_writer.h>
+#include <clb/msg_reader.h>
 #include <util/elastic_interface.h>
 
 /// Maximum time a command may take before its deemed 'lost'

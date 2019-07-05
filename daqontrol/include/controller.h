@@ -4,14 +4,14 @@
 
 #pragma once
 
-#include "msg_processor.h"
-#include "msg_types.h"
-#include "proc_var.h"
-#include "var_info.h"
-#include "clb_subsys.h"
-#include "clb_event.h"
+#include <clb/msg_processor.h>
+#include <clb/msg_types.h>
+#include <clb/proc_var.h>
+#include <clb/var_info.h>
+#include <clb/clb_subsys.h>
+#include <clb/clb_event.h>
 
-#include "util/daq_config.h"
+#include <util/daq_config.h>
 #include <util/elastic_interface.h>
 
 class Controller {
