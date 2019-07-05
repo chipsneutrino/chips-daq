@@ -73,6 +73,8 @@ set(SOURCES
     src/fh_frame_protocol_legacy.c
     src/fh_multi.c
     src/fh_pack.c
+    src/ascii/fh_ascii.c
+    src/ascii/fh_ascii_service.c
 )
 
 add_library(fh_message SHARED ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})
