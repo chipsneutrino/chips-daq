@@ -42,7 +42,16 @@ namespace states {
 
     void Ready::react(OpsCommands::StartRun const& e)
     {
-        transit<states::StartingRun>();
+        // We perform the ControlMessage "action" before calling entry
+        // We can then pass the RunType from here
+        auto action = [=] { 
+            ControlMessage msg{};
+            msg.Discriminator = ControlMessage::StartRun::Discriminator;
+            msg.Payload.pStartRun = ControlMessage::StartRun{};
+            msg.Payload.pStartRun.Which = e.type;
+            global.sendControlMessage(std::move(msg)); 
+        };
+        transit<states::StartingRun>(action);
     }
 
     void Ready::react(StateUpdate const&)
@@ -53,14 +62,6 @@ namespace states {
     {
         g_elastic.log(INFO, "Experiment : StartingRun");
         global.sendEvent(StateUpdate{});
-
-        {
-            ControlMessage msg{};
-            msg.Discriminator = ControlMessage::StartRun::Discriminator;
-            msg.Payload.pStartRun = ControlMessage::StartRun{};
-            msg.Payload.pStartRun.Which = RunType::TestDAQ; // FIXME: parametric
-            global.sendControlMessage(std::move(msg));
-        }
     }
 
     void StartingRun::react(StateUpdate const&)

@@ -15,10 +15,16 @@ struct OpsMessage {
     disc_t Discriminator;
     struct StartRun {
         static constexpr disc_t Discriminator = 0;
+        RunType Which;
     };
     struct StopRun {
         static constexpr disc_t Discriminator = 1;
     };
+
+    union {
+        StartRun pStartRun;
+        StopRun pStopRun;
+    } Payload;
 };
 
 struct ControlMessage {

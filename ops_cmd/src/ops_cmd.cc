@@ -51,8 +51,7 @@ int main(int argc, char *argv[])
         }
 
         msg.Discriminator = OpsMessage::StartRun::Discriminator;
-
-        // FIXME run type
+        msg.Payload.pStartRun.Which = (RunType)atoi(argv[2]);
     }
     else if (command == "stop")
     {

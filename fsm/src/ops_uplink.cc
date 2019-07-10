@@ -43,17 +43,20 @@ void OpsUplink::handleMessage(nng::socket& sock, const OpsMessage& message)
 {
     switch (message.Discriminator) {
     case OpsMessage::StartRun::Discriminator:
-        global.sendEvent(OpsCommands::StartRun{});
+        {
+            OpsCommands::StartRun command{};
+            command.type = message.Payload.pStartRun.Which;
+            global.sendEvent(command);
 
-        if (Experiment::FSM::is_in_state<Experiment::states::StartingRun>()
-            || Experiment::FSM::is_in_state<Experiment::states::Run>()) {
-            acknowledge(sock, true);
-        } else {
-            acknowledge(sock, false);
+            if (Experiment::FSM::is_in_state<Experiment::states::StartingRun>()
+                || Experiment::FSM::is_in_state<Experiment::states::Run>()) {
+                acknowledge(sock, true);
+            } else {
+                acknowledge(sock, false);
+            }
+
+            break;
         }
-
-        break;
-
     case OpsMessage::StopRun::Discriminator:
         global.sendEvent(OpsCommands::StopRun{});
 

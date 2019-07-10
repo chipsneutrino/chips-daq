@@ -2,6 +2,7 @@
 
 #include <tinyfsm.hpp>
 
+#include <util/control_msg.h>
 #include <util/async_component.h>
 
 namespace nng {
@@ -25,6 +26,7 @@ private:
 
 namespace OpsCommands {
 struct StartRun : tinyfsm::Event {
+    RunType type = RunType::TestNormal; ///< Default to a normal test run
 };
 struct StopRun : tinyfsm::Event {
 };
