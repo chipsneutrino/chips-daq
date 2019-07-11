@@ -10,6 +10,7 @@
 #include <util/elastic_interface.h>
 
 #include "daq_control.h"
+#include "daqontrol_publisher.h"
 
 namespace exit_code {
 static constexpr int success = 0;
@@ -53,6 +54,7 @@ int main(int argc, char* argv[])
     {
         // Main entry point.
         std::shared_ptr<DAQControl> daq_control{ new DAQControl(config) };
+        std::shared_ptr<DaqontrolPublisher> bus_publisher{ new DaqontrolPublisher(daq_control) };
 
         std::unique_ptr<SignalReceiver> signal_receiver{ new SignalReceiver };
         signal_receiver->setHandler(daq_control);
@@ -62,13 +64,13 @@ int main(int argc, char* argv[])
         cmd_receiver->setHandler(daq_control);
         cmd_receiver->runAsync();
 
+        // We always initialise everything to test connections etc...
 	    daq_control->init();
-        //daq_control->configure();
-        //daq_control->start();
-        //daq_control->stop();
 
+        bus_publisher->runAsync();
         daq_control->run();
 
+        bus_publisher->join();
 	    cmd_receiver->join();
         signal_receiver->join();
     }

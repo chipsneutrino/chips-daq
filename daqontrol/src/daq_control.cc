@@ -8,7 +8,7 @@ DAQControl::DAQControl(std::string config_file)
     : config_(config_file.c_str())
     , controllers_{}
     , n_threads_{}
-    , mode_(false)
+    , mode_(Idle)
     , io_service_{ new boost::asio::io_service }
     , run_work_{ new boost::asio::io_service::work(*io_service_) }
     , thread_group_{}
@@ -65,30 +65,31 @@ void DAQControl::handleConfigCommand()
 {
     g_elastic.log(INFO, "DAQControl: Config");
     configure();
+    mode_ = Configured;
 }
 
 void DAQControl::handleStartDataCommand()
 {
     g_elastic.log(INFO, "DAQControl: Starting Data");
     // If data is currently being produced log
-    if (mode_ == true) {
+    if (mode_ == Started) {
         g_elastic.log(INFO, "DAQControl is already started");
         return;
     }
     startData();
-    mode_ = true;
+    mode_ = Started;
 }
 
 void DAQControl::handleStopDataCommand()
 {
     g_elastic.log(INFO, "DAQControl: Stopping Data");
     // If data is not currently being produced log
-    if (mode_ == false) {
+    if (mode_ == Configured) {
         g_elastic.log(INFO, "DAQControl is already stopped");
         return;
     }
     stopData();
-    mode_ = false;
+    mode_ = Configured;
 }
 
 void DAQControl::handleStartRunCommand(RunType which)

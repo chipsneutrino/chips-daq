@@ -3,6 +3,7 @@
 
 #include "control_bus/states.h"
 #include "daqonite/states.h"
+#include "daqontrol/states.h"
 #include "experiment/states.h"
 #include "global.h"
 #include "global_events.h"
@@ -18,7 +19,10 @@ namespace states {
 
     void Init::react(StateUpdate const&)
     {
-        if (ControlBus::FSM::is_in_state<ControlBus::states::Online>() && Daqonite::FSM::is_in_state<Daqonite::states::Idle>()) {
+        if (ControlBus::FSM::is_in_state<ControlBus::states::Online>() 
+            && Daqonite::FSM::is_in_state<Daqonite::states::Idle>()
+            && Daqontrol::FSM::is_in_state<Daqontrol::states::Idle>()) 
+        {
             transit<states::Ready>();
         }
     }
@@ -72,17 +76,26 @@ namespace states {
             return;
         }
 
+        // Check DAQonite is in a valid state
         if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
             transit<states::Error>();
             return;
         }
 
-        if (Daqonite::FSM::is_in_state<Daqonite::states::Idle>()) {
-            transit<states::Configured>();
+        // Check DAQontrol is in a valid state
+        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Idle>() 
+            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
+            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) 
+        {
+            transit<states::Error>();
             return;
         }
 
-        // TODO: Add DAQontrol state checks
+        // Check applications are in the correct state to transmit state
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()) {
+            transit<states::Configured>();
+            return;
+        }
     }
 
     /// Configured State
@@ -94,12 +107,10 @@ namespace states {
 
     void Configured::react(StateUpdate const&)
     {
-        if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>()) {
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()) {
             transit<states::Error>();
             return;
         }
-
-        // TODO: Add DAQontrol state checks
     }
 
     void Configured::react(OpsCommands::StartData const& e)
@@ -127,17 +138,26 @@ namespace states {
             return;
         }
 
+        // Check DAQonite is in a valid state
         if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
             transit<states::Error>();
             return;
         }
 
-        if (Daqonite::FSM::is_in_state<Daqonite::states::Idle>()) {
-            transit<states::Started>();
+        // Check DAQontrol is in a valid state
+        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Idle>() 
+            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
+            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) 
+        {
+            transit<states::Error>();
             return;
         }
 
-        // TODO: Add DAQontrol state checks
+        // Check applications are in the correct state to transmit state
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) {
+            transit<states::Started>();
+            return;
+        }
     }
 
     /// Started State
@@ -149,12 +169,10 @@ namespace states {
 
     void Started::react(StateUpdate const&)
     {
-        if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>()) {
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) {
             transit<states::Error>();
             return;
         }
-
-        // TODO: Add DAQontrol state checks
     }
 
     void Started::react(OpsCommands::StopData const& e)
@@ -196,17 +214,26 @@ namespace states {
             return;
         }
 
+        // Check DAQonite is in a valid state
         if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
             transit<states::Error>();
             return;
         }
 
-        if (Daqonite::FSM::is_in_state<Daqonite::states::Idle>()) {
-            transit<states::Configured>();
+        // Check DAQontrol is in a valid state
+        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Idle>() 
+            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
+            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) 
+        {
+            transit<states::Error>();
             return;
         }
 
-        // TODO: Add DAQontrol state checks
+        // Check applications are in the correct state to transmit state
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()) {
+            transit<states::Configured>();
+            return;
+        }
     }
 
     /// StartingRun State
@@ -223,12 +250,23 @@ namespace states {
             return;
         }
 
+        // Check DAQonite is in a valid state
         if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
             transit<states::Error>();
             return;
         }
 
-        if (Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
+        // Check DAQontrol is in a valid state
+        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Idle>() 
+            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
+            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) 
+        {
+            transit<states::Error>();
+            return;
+        }
+
+        // Check applications are in the correct state to transmit state
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Mining>() && Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) {
             transit<states::Running>();
             return;
         }
@@ -242,7 +280,7 @@ namespace states {
 
     void Running::react(StateUpdate const&)
     {
-        if (!Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Mining>() && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) {
             transit<states::Error>();
             return;
         }
@@ -272,12 +310,23 @@ namespace states {
             return;
         }
 
+        // Check DAQonite is in a valid state
         if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
             transit<states::Error>();
             return;
         }
 
-        if (Daqonite::FSM::is_in_state<Daqonite::states::Idle>()) {
+        // Check DAQontrol is in a valid state
+        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Idle>() 
+            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
+            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) 
+        {
+            transit<states::Error>();
+            return;
+        }
+
+        // Check applications are in the correct state to transmit state
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) {
             transit<states::Started>();
             return;
         }

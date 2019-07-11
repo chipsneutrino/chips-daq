@@ -4,6 +4,7 @@ add_executable(daqontrol
     include/controller.h
     include/clb_controller.h           src/clb_controller.cc
     include/bbb_controller.h           src/bbb_controller.cc
+    include/daqontrol_publisher.h      src/daqontrol_publisher.cc
     )
 
 target_include_directories(daqontrol PUBLIC include)

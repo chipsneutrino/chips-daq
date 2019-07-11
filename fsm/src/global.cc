@@ -1,5 +1,6 @@
 #include "global.h"
 #include "daqonite/observer.h"
+#include "daqontrol/observer.h"
 #include "ops_uplink.h"
 
 Global global{};
@@ -21,6 +22,7 @@ void Global::setupComponents()
     control_bus_ = std::make_shared<ControlBus::BusMaster>();
     async_components_.add(control_bus_);
     async_components_.add(std::make_shared<Daqonite::Observer>());
+    async_components_.add(std::make_shared<Daqontrol::Observer>());
     async_components_.add(std::make_shared<OpsUplink>());
 }
 

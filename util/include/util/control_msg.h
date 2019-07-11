@@ -145,3 +145,25 @@ struct DaqontrolStateMessage {
         Started pStarted;
     } Payload;
 };
+
+struct DaqsitterStateMessage {
+    static const char* const URL;
+
+    const char Zero = '\0'; ///< The first bit must be '\0' otherwise NNG pub/sub discards the message.
+    disc_t Discriminator;
+
+    /// Daqsitter is just sitting there doing nothing
+    struct Idle {
+        static constexpr disc_t Discriminator = 0;
+    };
+
+    /// Daqsitter is monitoring packets
+    struct Monitoring {
+        static constexpr disc_t Discriminator = 1;
+    };
+
+    union {
+        Idle pIdle;
+        Monitoring pMonitoring;
+    } Payload;
+};

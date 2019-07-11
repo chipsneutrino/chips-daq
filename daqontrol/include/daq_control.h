@@ -22,6 +22,8 @@
 #include <util/daq_config.h>
 #include <util/elastic_interface.h>
 
+enum Status {Idle, Configured, Started};
+
 class DAQControl : public CommandHandler {
 public:
     /**
@@ -58,6 +60,11 @@ public:
 
     void join();
 
+    Status getMode()
+    {
+        return mode_;
+    }
+
 private:
     /**
      * Bound to thread creation
@@ -72,7 +79,7 @@ private:
     DAQConfig config_;                      ///< DAQConfig read from config file
     std::vector<Controller*> controllers_;  ///< List of controllers
     int n_threads_;                         ///< The number of threads to use
-    bool mode_;                             ///< false = Not started, True = Started
+    Status mode_;                           ///< Current state of operation
 
     // IO_service stuff
     std::shared_ptr<boost::asio::io_service> io_service_;       ///< BOOST io_service. The heart of everything

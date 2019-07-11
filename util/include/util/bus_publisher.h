@@ -8,25 +8,25 @@
 #include <mutex>
 #include <thread>
 
-#include "daq_handler.h"
 #include <util/control_msg.h>
 
+template <class T>
 class BusPublisher {
 public:
-    using message_type = DaqoniteStateMessage;
+    using message_type = T;
 
-    explicit BusPublisher(std::shared_ptr<DAQHandler> daq_handler);
+    explicit BusPublisher();
     virtual ~BusPublisher() = default;
 
     void runAsync();
     void join();
 
-private:
+protected:
     std::atomic_bool running_;
     std::unique_ptr<std::thread> comm_thread_;
     std::unique_ptr<std::thread> status_thread_;
 
-    std::list<message_type> publish_queue_;
+    std::list<T> publish_queue_;
     std::condition_variable cv_publish_queue_;
     std::mutex mtx_publish_queue_;
     std::chrono::milliseconds reconnect_interval_;
@@ -36,9 +36,8 @@ private:
     std::condition_variable cv_status_thread_;
     std::mutex mtx_status_thread_;
     std::chrono::milliseconds status_interval_;
-    std::shared_ptr<DAQHandler> daq_handler_;
 
     void statusThread();
 
-    void publishStatus();
+    virtual void publishStatus() = 0;
 };

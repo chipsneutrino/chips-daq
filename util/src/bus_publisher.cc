@@ -3,10 +3,11 @@
 #include <nngpp/nngpp.h>
 #include <nngpp/protocol/pub0.h>
 
-#include "bus_publisher.h"
+#include "util/bus_publisher.h"
 #include <util/elastic_interface.h>
 
-BusPublisher::BusPublisher(std::shared_ptr<DAQHandler> daq_handler)
+template <typename T>
+BusPublisher<T>::BusPublisher()
     : running_{ false }
     , comm_thread_{}
     , status_thread_{}
@@ -17,11 +18,11 @@ BusPublisher::BusPublisher(std::shared_ptr<DAQHandler> daq_handler)
     , cv_status_thread_{}
     , mtx_status_thread_{}
     , status_interval_{ 200 }
-    , daq_handler_{ std::move(daq_handler) }
 {
 }
 
-void BusPublisher::runAsync()
+template <typename T>
+void BusPublisher<T>::runAsync()
 {
     if (running_) {
         return;
@@ -32,7 +33,8 @@ void BusPublisher::runAsync()
     status_thread_ = std::unique_ptr<std::thread>{ new std::thread(std::bind(&BusPublisher::statusThread, this)) };
 }
 
-void BusPublisher::join()
+template <typename T>
+void BusPublisher<T>::join()
 {
     if (!running_) {
         return;
@@ -54,7 +56,8 @@ void BusPublisher::join()
     comm_thread_.reset();
 }
 
-void BusPublisher::statusThread()
+template <typename T>
+void BusPublisher<T>::statusThread()
 {
     g_elastic.log(INFO, "BusPublisher status thread started");
 
@@ -68,25 +71,8 @@ void BusPublisher::statusThread()
     g_elastic.log(INFO, "BusPublisher status thread finished");
 }
 
-void BusPublisher::publishStatus()
-{
-    // TODO: synchronize?
-    message_type message{};
-
-    if (daq_handler_->getMode()) {
-        message.Discriminator = DaqoniteStateMessage::Mining::Discriminator;
-        message.Payload.pMining = DaqoniteStateMessage::Mining{};
-        message.Payload.pMining.Which = daq_handler_->getRunType();
-    } else {
-        message.Discriminator = DaqoniteStateMessage::Idle::Discriminator;
-    }
-
-    std::lock_guard<std::mutex> lk{ mtx_publish_queue_ };
-    publish_queue_.emplace_back(std::move(message));
-    cv_publish_queue_.notify_one();
-}
-
-void BusPublisher::communicationThread()
+template <typename T>
+void BusPublisher<T>::communicationThread()
 {
     g_elastic.log(INFO, "BusPublisher communication thread started");
 
@@ -118,3 +104,7 @@ void BusPublisher::communicationThread()
 
     g_elastic.log(INFO, "BusPublisher communication thread finished");
 }
+
+template class BusPublisher<DaqoniteStateMessage>;
+template class BusPublisher<DaqontrolStateMessage>;
+template class BusPublisher<DaqsitterStateMessage>;

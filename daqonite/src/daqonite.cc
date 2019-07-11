@@ -11,7 +11,7 @@
 #include <boost/program_options.hpp>
 #include <memory>
 
-#include "bus_publisher.h"
+#include "daqonite_publisher.h"
 #include "util/command_receiver.h"
 #include "daq_handler.h"
 #include "util/signal_receiver.h"
@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
     {
         // Main entry point.
         std::shared_ptr<DAQHandler> daq_handler{ new DAQHandler(settings::collect_clb_data, settings::collect_bbb_data) };
-        std::shared_ptr<BusPublisher> bus_publisher{ new BusPublisher(daq_handler) };
+        std::shared_ptr<DaqonitePublisher> bus_publisher{ new DaqonitePublisher(daq_handler) };
 
         std::unique_ptr<SignalReceiver> signal_receiver{ new SignalReceiver };
         signal_receiver->setHandler(daq_handler);

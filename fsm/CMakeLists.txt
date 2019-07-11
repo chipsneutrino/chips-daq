@@ -13,6 +13,11 @@ add_executable(fsm
     include/daqonite/fsm.h                      src/daqonite/fsm.cc
     include/daqonite/states.h                   src/daqonite/states.cc
     include/daqonite/observer.h                 src/daqonite/observer.cc
+
+    include/daqontrol/events.h
+    include/daqontrol/fsm.h                     src/daqontrol/fsm.cc
+    include/daqontrol/states.h                  src/daqontrol/states.cc
+    include/daqontrol/observer.h                src/daqontrol/observer.cc
     
     include/experiment/fsm.h                    src/experiment/fsm.cc
     include/experiment/states.h                 src/experiment/states.cc
