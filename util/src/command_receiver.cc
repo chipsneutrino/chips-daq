@@ -66,7 +66,6 @@ void CommandReceiver::receiverThread()
             while (running_) {
                 try {
                     sock.recv(nng::view{ &message, sizeof(message) });
-                    g_elastic.log(INFO, "CommandReceiver has message");
                 } catch (const nng::exception& e) {
                     switch (e.get_error()) {
                     case nng::error::timedout:
@@ -93,11 +92,20 @@ void CommandReceiver::receiverThread()
 void CommandReceiver::processMessage(const ControlMessage& message)
 {
     switch (message.Discriminator) {
+    case ControlMessage::Config::Discriminator:
+        handler_->handleConfigCommand();
+        break;
+    case ControlMessage::StartData::Discriminator:
+        handler_->handleStartDataCommand();
+        break;
+    case ControlMessage::StopData::Discriminator:
+        handler_->handleStopDataCommand();
+        break;
     case ControlMessage::StartRun::Discriminator:
-        handler_->handleStartCommand(message.Payload.pStartRun.Which);
+        handler_->handleStartRunCommand(message.Payload.pStartRun.Which);
         break;
     case ControlMessage::StopRun::Discriminator:
-        handler_->handleStopCommand();
+        handler_->handleStopRunCommand();
         break;
     case ControlMessage::Exit::Discriminator:
         handler_->handleExitCommand();

@@ -9,6 +9,7 @@
 
 namespace Experiment {
 namespace states {
+    /// Init State
     void Init::entry()
     {
         g_elastic.log(INFO, "Experiment : Init");
@@ -22,6 +23,7 @@ namespace states {
         }
     }
 
+    /// Exit State
     void Exit::entry()
     {
         g_elastic.log(INFO, "Experiment : Exit");
@@ -34,13 +36,133 @@ namespace states {
     {
     }
 
+    /// Ready State
     void Ready::entry()
     {
         g_elastic.log(INFO, "Experiment : Ready");
         global.sendEvent(StateUpdate{});
     }
 
-    void Ready::react(OpsCommands::StartRun const& e)
+    void Ready::react(OpsCommands::Config const& e)
+    {
+        transit<states::Configuring>();
+    }
+
+    void Ready::react(StateUpdate const&)
+    {
+    }
+
+    /// Configuring State
+    void Configuring::entry()
+    {
+        g_elastic.log(INFO, "Experiment : Configuring");
+        global.sendEvent(StateUpdate{});
+
+        {
+            ControlMessage msg{};
+            msg.Discriminator = ControlMessage::Config::Discriminator;
+            global.sendControlMessage(std::move(msg));
+        }
+    }
+
+    void Configuring::react(StateUpdate const&)
+    {
+        if (!ControlBus::FSM::is_in_state<ControlBus::states::Online>()) {
+            transit<states::Error>();
+            return;
+        }
+
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
+            transit<states::Error>();
+            return;
+        }
+
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Idle>()) {
+            transit<states::Configured>();
+            return;
+        }
+
+        // TODO: Add DAQontrol state checks
+    }
+
+    /// Configured State
+    void Configured::entry()
+    {
+        g_elastic.log(INFO, "Experiment : Configured");
+        global.sendEvent(StateUpdate{});
+    }
+
+    void Configured::react(StateUpdate const&)
+    {
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>()) {
+            transit<states::Error>();
+            return;
+        }
+
+        // TODO: Add DAQontrol state checks
+    }
+
+    void Configured::react(OpsCommands::StartData const& e)
+    {
+        transit<states::StartingData>();
+    }
+
+    /// StartingData State
+    void StartingData::entry()
+    {
+        g_elastic.log(INFO, "Experiment : StartingData");
+        global.sendEvent(StateUpdate{});
+
+        {
+            ControlMessage msg{};
+            msg.Discriminator = ControlMessage::StartData::Discriminator;
+            global.sendControlMessage(std::move(msg));
+        }
+    }
+
+    void StartingData::react(StateUpdate const&)
+    {
+        if (!ControlBus::FSM::is_in_state<ControlBus::states::Online>()) {
+            transit<states::Error>();
+            return;
+        }
+
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
+            transit<states::Error>();
+            return;
+        }
+
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Idle>()) {
+            transit<states::Started>();
+            return;
+        }
+
+        // TODO: Add DAQontrol state checks
+    }
+
+    /// Started State
+    void Started::entry()
+    {
+        g_elastic.log(INFO, "Experiment : Started");
+        global.sendEvent(StateUpdate{});
+    }
+
+    void Started::react(StateUpdate const&)
+    {
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>()) {
+            transit<states::Error>();
+            return;
+        }
+
+        // TODO: Add DAQontrol state checks
+    }
+
+    void Started::react(OpsCommands::StopData const& e)
+    {
+        transit<states::StoppingData>();
+    }
+
+    void Started::react(OpsCommands::StartRun const& e)
     {
         // We perform the ControlMessage "action" before calling entry
         // We can then pass the RunType from here
@@ -54,10 +176,40 @@ namespace states {
         transit<states::StartingRun>(action);
     }
 
-    void Ready::react(StateUpdate const&)
+    /// StoppingData State
+    void StoppingData::entry()
     {
+        g_elastic.log(INFO, "Experiment : StoppingData");
+        global.sendEvent(StateUpdate{});
+
+        {
+            ControlMessage msg{};
+            msg.Discriminator = ControlMessage::StopData::Discriminator;
+            global.sendControlMessage(std::move(msg));
+        }
     }
 
+    void StoppingData::react(StateUpdate const&)
+    {
+        if (!ControlBus::FSM::is_in_state<ControlBus::states::Online>()) {
+            transit<states::Error>();
+            return;
+        }
+
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
+            transit<states::Error>();
+            return;
+        }
+
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Idle>()) {
+            transit<states::Configured>();
+            return;
+        }
+
+        // TODO: Add DAQontrol state checks
+    }
+
+    /// StartingRun State
     void StartingRun::entry()
     {
         g_elastic.log(INFO, "Experiment : StartingRun");
@@ -77,18 +229,18 @@ namespace states {
         }
 
         if (Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
-            transit<states::Run>();
+            transit<states::Running>();
             return;
         }
     }
 
-    void Run::entry()
+    void Running::entry()
     {
-        g_elastic.log(INFO, "Experiment : Run");
+        g_elastic.log(INFO, "Experiment : Running");
         global.sendEvent(StateUpdate{});
     }
 
-    void Run::react(StateUpdate const&)
+    void Running::react(StateUpdate const&)
     {
         if (!Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
             transit<states::Error>();
@@ -96,7 +248,7 @@ namespace states {
         }
     }
 
-    void Run::react(OpsCommands::StopRun const& e)
+    void Running::react(OpsCommands::StopRun const& e)
     {
         transit<states::StoppingRun>();
     }
@@ -126,7 +278,7 @@ namespace states {
         }
 
         if (Daqonite::FSM::is_in_state<Daqonite::states::Idle>()) {
-            transit<states::Ready>();
+            transit<states::Started>();
             return;
         }
     }

@@ -20,32 +20,32 @@ void BBBController::postConfigure()
     io_service_->post(boost::bind(&BBBController::configure, this)); 
 }
 
-void BBBController::postStart()
+void BBBController::postStartData()
 {
-    io_service_->post(boost::bind(&BBBController::start, this)); 
+    io_service_->post(boost::bind(&BBBController::startData, this)); 
 }
 
-void BBBController::postStop()
+void BBBController::postStopData()
 {
-    io_service_->post(boost::bind(&BBBController::stop, this)); 
+    io_service_->post(boost::bind(&BBBController::stopData, this)); 
 }
 
 void BBBController::init()
 {
-    g_elastic.log(DEBUG, "BBBController::init"); 
+    g_elastic.log(DEBUG, "BBBController Init"); 
 }
 
 void BBBController::configure()
 {
-    g_elastic.log(DEBUG, "BBBController::configure"); 
+    g_elastic.log(DEBUG, "BBBController Configure"); 
 }
 
-void BBBController::start() 
+void BBBController::startData() 
 {
-    g_elastic.log(DEBUG, "BBBController::start"); 
+    g_elastic.log(DEBUG, "BBBController Start Data"); 
 }
 
-void BBBController::stop()
+void BBBController::stopData()
 {
-    g_elastic.log(DEBUG, "BBBController::stop"); 
+    g_elastic.log(DEBUG, "BBBController Stop Data"); 
 }

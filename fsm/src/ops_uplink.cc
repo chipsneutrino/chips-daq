@@ -42,14 +42,12 @@ void OpsUplink::run()
 void OpsUplink::handleMessage(nng::socket& sock, const OpsMessage& message)
 {
     switch (message.Discriminator) {
-    case OpsMessage::StartRun::Discriminator:
+    case OpsMessage::Config::Discriminator:
         {
-            OpsCommands::StartRun command{};
-            command.type = message.Payload.pStartRun.Which;
-            global.sendEvent(command);
+            global.sendEvent(OpsCommands::Config{});
 
-            if (Experiment::FSM::is_in_state<Experiment::states::StartingRun>()
-                || Experiment::FSM::is_in_state<Experiment::states::Run>()) {
+            if (Experiment::FSM::is_in_state<Experiment::states::Configuring>()
+                || Experiment::FSM::is_in_state<Experiment::states::Configured>()) {
                 acknowledge(sock, true);
             } else {
                 acknowledge(sock, false);
@@ -57,21 +55,70 @@ void OpsUplink::handleMessage(nng::socket& sock, const OpsMessage& message)
 
             break;
         }
-    case OpsMessage::StopRun::Discriminator:
-        global.sendEvent(OpsCommands::StopRun{});
 
-        if (Experiment::FSM::is_in_state<Experiment::states::StoppingRun>()
-            || Experiment::FSM::is_in_state<Experiment::states::Ready>()) {
-            acknowledge(sock, true);
-        } else {
-            acknowledge(sock, false);
+    case OpsMessage::StartData::Discriminator:
+        {
+            global.sendEvent(OpsCommands::StartData{});
+
+            if (Experiment::FSM::is_in_state<Experiment::states::StartingData>()
+                || Experiment::FSM::is_in_state<Experiment::states::Started>()) {
+                acknowledge(sock, true);
+            } else {
+                acknowledge(sock, false);
+            }
+
+            break;
         }
 
-        break;
+    case OpsMessage::StopData::Discriminator:
+        {
+            global.sendEvent(OpsCommands::StopData{});
+
+            if (Experiment::FSM::is_in_state<Experiment::states::StoppingData>()
+                || Experiment::FSM::is_in_state<Experiment::states::Configured>()) {
+                acknowledge(sock, true);
+            } else {
+                acknowledge(sock, false);
+            }
+
+            break;
+        }
+
+    case OpsMessage::StartRun::Discriminator:
+        {
+            OpsCommands::StartRun command{};
+            command.type = message.Payload.pStartRun.Which;
+            global.sendEvent(command);
+
+            if (Experiment::FSM::is_in_state<Experiment::states::StartingRun>()
+                || Experiment::FSM::is_in_state<Experiment::states::Running>()) {
+                acknowledge(sock, true);
+            } else {
+                acknowledge(sock, false);
+            }
+
+            break;
+        }
+
+    case OpsMessage::StopRun::Discriminator:
+        {
+            global.sendEvent(OpsCommands::StopRun{});
+
+            if (Experiment::FSM::is_in_state<Experiment::states::StoppingRun>()
+                || Experiment::FSM::is_in_state<Experiment::states::Started>()) {
+                acknowledge(sock, true);
+            } else {
+                acknowledge(sock, false);
+            }
+
+            break;
+        }
 
     default:
-        acknowledge(sock, false);
-        break;
+        {
+            acknowledge(sock, false);
+            break;
+        }
     }
 }
 

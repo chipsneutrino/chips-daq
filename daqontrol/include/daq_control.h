@@ -42,16 +42,19 @@ public:
     DAQControl& operator=(const DAQControl& other) = delete;
     DAQControl& operator=(DAQControl&& other) = delete;
 
-    virtual void handleStartCommand(RunType which) override;
-    virtual void handleStopCommand() override;
+    virtual void handleConfigCommand() override;
+    virtual void handleStartDataCommand() override;
+    virtual void handleStopDataCommand() override;
+    virtual void handleStartRunCommand(RunType which) override;
+    virtual void handleStopRunCommand() override;
     virtual void handleExitCommand() override;
 
     void run();
 
     void init();  
     void configure(); 
-    void start(); 
-    void stop();            
+    void startData(); 
+    void stopData();            
 
     void join();
 
@@ -69,10 +72,7 @@ private:
     DAQConfig config_;                      ///< DAQConfig read from config file
     std::vector<Controller*> controllers_;  ///< List of controllers
     int n_threads_;                         ///< The number of threads to use
-
-    // Running mode
-    bool mode_;                             ///< false = Not Running, True = Running
-    RunType run_type_;                      ///< Current run type
+    bool mode_;                             ///< false = Not started, True = Started
 
     // IO_service stuff
     std::shared_ptr<boost::asio::io_service> io_service_;       ///< BOOST io_service. The heart of everything

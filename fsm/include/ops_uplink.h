@@ -25,6 +25,12 @@ private:
 };
 
 namespace OpsCommands {
+struct Config : tinyfsm::Event {
+};
+struct StartData : tinyfsm::Event {
+};
+struct StopData : tinyfsm::Event {
+};
 struct StartRun : tinyfsm::Event {
     RunType type = RunType::TestNormal; ///< Default to a normal test run
 };

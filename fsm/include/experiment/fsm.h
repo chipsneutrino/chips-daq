@@ -13,6 +13,9 @@ public:
 
     void react(KillSignal const&);
     virtual void react(StateUpdate const& update) = 0;
+    virtual void react(OpsCommands::Config const&) {}
+    virtual void react(OpsCommands::StartData const&) {}
+    virtual void react(OpsCommands::StopData const&) {}
     virtual void react(OpsCommands::StartRun const&) {}
     virtual void react(OpsCommands::StopRun const&) {}
 

@@ -61,42 +61,49 @@ void DAQControl::ioServiceThread()
     io_service_->run();
 }
 
-void DAQControl::handleStartCommand(RunType which)
+void DAQControl::handleConfigCommand()
 {
-    g_elastic.log(INFO, "DAQControl: Start");
-    // If we are currently running first stop the current run
-    if (mode_ == true) {
-
-        g_elastic.log(INFO, "DAQ Control stopping current run");
-
-        handleStopCommand();
-    }
-    // Set the mode to data taking
-    run_type_ = which;
-    mode_ = true;
-
-    // Send start command to CLBs
-    //startRun();   ????
+    g_elastic.log(INFO, "DAQControl: Config");
+    configure();
 }
 
-void DAQControl::handleStopCommand()
+void DAQControl::handleStartDataCommand()
 {
-    g_elastic.log(INFO, "DAQControl: Stop");
-    // Check we are actually running
+    g_elastic.log(INFO, "DAQControl: Starting Data");
+    // If data is currently being produced log
     if (mode_ == true) {
-        // Set the mode to monitoring
-        mode_ = false;
-    } else {
-        g_elastic.log(INFO, "DAQ Control already not running");
+        g_elastic.log(INFO, "DAQControl is already started");
+        return;
     }
+    startData();
+    mode_ = true;
+}
 
-    // Send stop command to CLBs
-    //stopRun();   ????
+void DAQControl::handleStopDataCommand()
+{
+    g_elastic.log(INFO, "DAQControl: Stopping Data");
+    // If data is not currently being produced log
+    if (mode_ == false) {
+        g_elastic.log(INFO, "DAQControl is already stopped");
+        return;
+    }
+    stopData();
+    mode_ = false;
+}
+
+void DAQControl::handleStartRunCommand(RunType which)
+{
+    g_elastic.log(INFO, "DAQControl: Starting Run");
+}
+
+void DAQControl::handleStopRunCommand()
+{
+    g_elastic.log(INFO, "DAQControl: Stopping Run");
 }
 
 void DAQControl::handleExitCommand()
 {
-    handleStopCommand();
+    handleStopRunCommand();
     run_work_.reset();
     io_service_->stop();
 }
@@ -117,19 +124,19 @@ void DAQControl::configure()
     }
 }
 
-void DAQControl::start()
+void DAQControl::startData()
 {
     for(int i=0; i<controllers_.size(); i++)
     {
-        controllers_[i]->postStart();  
+        controllers_[i]->postStartData();  
     }
 }
 
-void DAQControl::stop()
+void DAQControl::stopData()
 {
     for(int i=0; i<controllers_.size(); i++)
     {
-        controllers_[i]->postStop();  
+        controllers_[i]->postStopData();  
     }
 } 
 

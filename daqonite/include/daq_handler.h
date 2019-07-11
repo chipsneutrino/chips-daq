@@ -46,8 +46,11 @@ public:
     DAQHandler& operator=(const DAQHandler& other) = delete;
     DAQHandler& operator=(DAQHandler&& other) = delete;
 
-    virtual void handleStartCommand(RunType which) override;
-    virtual void handleStopCommand() override;
+    virtual void handleConfigCommand() override;
+    virtual void handleStartDataCommand() override;
+    virtual void handleStopDataCommand() override;
+    virtual void handleStartRunCommand(RunType which) override;
+    virtual void handleStopRunCommand() override;
     virtual void handleExitCommand() override;
 
     void run();

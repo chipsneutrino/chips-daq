@@ -228,12 +228,27 @@ void MonitoringHandler::runThread()
     io_service_->run();
 }
 
-void MonitoringHandler::handleStartCommand(RunType which)
+void MonitoringHandler::handleConfigCommand()
+{
+    // Empty
+}
+
+void MonitoringHandler::handleStartDataCommand()
+{
+    // Empty
+}
+
+void MonitoringHandler::handleStopDataCommand()
+{
+    // Empty
+}
+
+void MonitoringHandler::handleStartRunCommand(RunType which)
 {
     // If we are currently running first stop the current run
     if (mode_ == true) {
         g_elastic.log(INFO, "Monitoring Handler stopping current run");
-        handleStopCommand();
+        handleStopRunCommand();
     }
 
     // Set the mode to data taking
@@ -241,7 +256,7 @@ void MonitoringHandler::handleStartCommand(RunType which)
     mode_ = true;
 }
 
-void MonitoringHandler::handleStopCommand()
+void MonitoringHandler::handleStopRunCommand()
 {
     // Check we are actually running
     if (mode_ == true) {
@@ -255,7 +270,7 @@ void MonitoringHandler::handleStopCommand()
 
 void MonitoringHandler::handleExitCommand()
 {
-    handleStopCommand();
+    handleStopRunCommand();
     io_service_->stop();
 }
 

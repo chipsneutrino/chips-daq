@@ -42,7 +42,19 @@ int main(int argc, char *argv[])
     OpsMessage msg{};
     const std::string command{argv[1]};
 
-    if (command == "start")
+    if (command == "config")
+    {
+        msg.Discriminator = OpsMessage::Config::Discriminator;
+    }   
+    else if (command == "startData")
+    {
+        msg.Discriminator = OpsMessage::StartData::Discriminator;
+    }   
+    else if (command == "stopData")
+    {
+        msg.Discriminator = OpsMessage::StopData::Discriminator;
+    }    
+    else if (command == "startRun")
     {
         if (argc != 3)
         {
@@ -53,7 +65,7 @@ int main(int argc, char *argv[])
         msg.Discriminator = OpsMessage::StartRun::Discriminator;
         msg.Payload.pStartRun.Which = (RunType)atoi(argv[2]);
     }
-    else if (command == "stop")
+    else if (command == "stopRun")
     {
         msg.Discriminator = OpsMessage::StopRun::Discriminator;
     }

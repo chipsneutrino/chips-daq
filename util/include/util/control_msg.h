@@ -13,15 +13,37 @@ struct OpsMessage {
     static const char* const URL;
 
     disc_t Discriminator;
-    struct StartRun {
+
+    /// Configure from config files
+    struct Config {
         static constexpr disc_t Discriminator = 0;
-        RunType Which;
     };
-    struct StopRun {
+
+    /// Start data flow
+    struct StartData {
         static constexpr disc_t Discriminator = 1;
     };
 
+    /// Stop data flow
+    struct StopData {
+        static constexpr disc_t Discriminator = 2;
+    };
+
+    /// Start a new data taking run
+    struct StartRun {
+        static constexpr disc_t Discriminator = 3;
+        RunType Which;
+    };
+
+    /// Stop current data taking run
+    struct StopRun {
+        static constexpr disc_t Discriminator = 4;
+    };
+
     union {
+        Config pConfig;
+        StartData pStart;
+        StopData pStop;
         StartRun pStartRun;
         StopRun pStopRun;
     } Payload;
@@ -33,26 +55,43 @@ struct ControlMessage {
     const char Zero = '\0'; ///< The first bit must be '\0' otherwise NNG pub/sub discards the message.
     disc_t Discriminator;
 
-    /// Start a new data run
-    struct StartRun {
+    /// Configure from config files
+    struct Config {
         static constexpr disc_t Discriminator = 0;
+    };
+
+    /// Start data flow
+    struct StartData {
+        static constexpr disc_t Discriminator = 1;
+    };
+
+    /// Stop data flow
+    struct StopData {
+        static constexpr disc_t Discriminator = 2;
+    };
+
+    /// Start a new data taking run
+    struct StartRun {
+        static constexpr disc_t Discriminator = 3;
         RunType Which;
     };
 
-    /// Stop current run
+    /// Stop current data taking run
     struct StopRun {
-        static constexpr disc_t Discriminator = 1;
+        static constexpr disc_t Discriminator = 4;
     };
 
     /// Exit, possibly stopping current run
     struct Exit {
-        static constexpr disc_t Discriminator = 2;
+        static constexpr disc_t Discriminator = 5;
     };
 
     union {
+        Config pConfig;
+        StartData pStart;
+        StopData pStop;
         StartRun pStartRun;
         StopRun pStopRun;
-        Exit pExit;
     } Payload;
 };
 
@@ -76,5 +115,33 @@ struct DaqoniteStateMessage {
     union {
         Idle pIdle;
         Mining pMining;
+    } Payload;
+};
+
+struct DaqontrolStateMessage {
+    static const char* const URL;
+
+    const char Zero = '\0'; ///< The first bit must be '\0' otherwise NNG pub/sub discards the message.
+    disc_t Discriminator;
+
+    /// Daqontrol is just sitting there doing nothing
+    struct Idle {
+        static constexpr disc_t Discriminator = 0;
+    };
+
+    /// Daqontrol is configured
+    struct Configured {
+        static constexpr disc_t Discriminator = 1;
+    };
+
+    /// Daqontrol is started
+    struct Started {
+        static constexpr disc_t Discriminator = 2;
+    };
+
+    union {
+        Idle pIdle;
+        Configured pConfigured;
+        Started pStarted;
     } Payload;
 };

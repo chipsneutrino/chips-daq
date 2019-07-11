@@ -12,14 +12,37 @@ namespace states {
     };
     class Ready : public FSM {
         void entry() override;
+        void react(OpsCommands::Config const&) override;
+        void react(StateUpdate const&) override;
+    };
+    class Configuring : public FSM {
+        void entry() override;
+        void react(StateUpdate const&) override;
+    };
+    class Configured : public FSM {
+        void entry() override;
+        void react(OpsCommands::StartData const&) override;
+        void react(StateUpdate const&) override;
+    };
+    class StartingData : public FSM {
+        void entry() override;
+        void react(StateUpdate const&) override;
+    };
+    class Started : public FSM {
+        void entry() override;
+        void react(OpsCommands::StopData const&) override;
         void react(OpsCommands::StartRun const&) override;
+        void react(StateUpdate const&) override;
+    };
+    class StoppingData : public FSM {
+        void entry() override;
         void react(StateUpdate const&) override;
     };
     class StartingRun : public FSM {
         void entry() override;
         void react(StateUpdate const&) override;
     };
-    class Run : public FSM {
+    class Running : public FSM {
         void entry() override;
         void react(OpsCommands::StopRun const&) override;
         void react(StateUpdate const&) override;

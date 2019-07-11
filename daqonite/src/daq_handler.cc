@@ -74,12 +74,28 @@ void DAQHandler::ioServiceThread()
     io_service_->run();
 }
 
-void DAQHandler::handleStartCommand(RunType which)
+void DAQHandler::handleConfigCommand()
 {
+    g_elastic.log(INFO, "DAQonite: Config");
+}
+
+void DAQHandler::handleStartDataCommand()
+{
+    g_elastic.log(INFO, "DAQonite: Starting Data");
+}
+
+void DAQHandler::handleStopDataCommand()
+{
+    g_elastic.log(INFO, "DAQonite: Stopping Data");
+}
+
+void DAQHandler::handleStartRunCommand(RunType which)
+{
+    g_elastic.log(INFO, "DAQonite: Starting Run");
     // If we are currently running first stop the current run
     if (mode_ == true) {
         g_elastic.log(INFO, "DAQ Handler stopping current mine");
-        handleStopCommand();
+        handleStopRunCommand();
     }
 
     // Start a data_handler run
@@ -95,8 +111,9 @@ void DAQHandler::handleStartCommand(RunType which)
     }
 }
 
-void DAQHandler::handleStopCommand()
+void DAQHandler::handleStopRunCommand()
 {
+    g_elastic.log(INFO, "DAQonite: Stopping Run");
     // Check we are actually running
     if (mode_ == true) {
         // Set the mode to monitoring
@@ -111,7 +128,7 @@ void DAQHandler::handleStopCommand()
 
 void DAQHandler::handleExitCommand()
 {
-    handleStopCommand();
+    handleStopRunCommand();
     run_work_.reset();
     io_service_->stop();
 }

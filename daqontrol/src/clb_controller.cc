@@ -21,19 +21,19 @@ void CLBController::postConfigure()
     io_service_->post(boost::bind(&CLBController::configure, this)); 
 }
 
-void CLBController::postStart()
+void CLBController::postStartData()
 {
-    io_service_->post(boost::bind(&CLBController::start, this)); 
+    io_service_->post(boost::bind(&CLBController::startData, this)); 
 }
 
-void CLBController::postStop()
+void CLBController::postStopData()
 {
-    io_service_->post(boost::bind(&CLBController::stop, this)); 
+    io_service_->post(boost::bind(&CLBController::stopData, this)); 
 }
 
 void CLBController::init()
 {
-    g_elastic.log(DEBUG, "CLBController::init"); 
+    g_elastic.log(DEBUG, "CLBController Init"); 
     test();
     sleep(1);
     setInitValues();
@@ -44,7 +44,7 @@ void CLBController::init()
 
 void CLBController::configure()
 {
-    g_elastic.log(DEBUG, "CLBController::configure"); 
+    g_elastic.log(DEBUG, "CLBController Configure"); 
     setPMTs();
     sleep(1);
     checkPMTs();   
@@ -53,18 +53,18 @@ void CLBController::configure()
     sleep(1);
 }
 
-void CLBController::start() 
+void CLBController::startData() 
 {
-    g_elastic.log(DEBUG, "CLBController::start"); 
-    clbEvent(ClbEvents::START);
-    sleep(1);
+    g_elastic.log(DEBUG, "CLBController Start Data"); 
+    //clbEvent(ClbEvents::START);
+    //sleep(1);
 }
 
-void CLBController::stop()
+void CLBController::stopData()
 {
-    g_elastic.log(DEBUG, "CLBController::stop"); 
-    clbEvent(ClbEvents::STOP);
-    sleep(1);
+    g_elastic.log(DEBUG, "CLBController Stop Data"); 
+    //clbEvent(ClbEvents::STOP);
+    //sleep(1);
 }
 
 void CLBController::test()

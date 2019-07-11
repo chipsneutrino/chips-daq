@@ -26,14 +26,14 @@ public:
 
     virtual void postInit() = 0;
     virtual void postConfigure() = 0;
-    virtual void postStart() = 0;
-    virtual void postStop() = 0;
+    virtual void postStartData() = 0;
+    virtual void postStopData() = 0;
 
 protected:
     virtual void init() = 0;
     virtual void configure() = 0;
-    virtual void start() = 0;
-    virtual void stop() = 0;
+    virtual void startData() = 0;
+    virtual void stopData() = 0;
 
     ControllerConfig config_;                                   ///< Controller specific configuration
 

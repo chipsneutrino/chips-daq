@@ -17,12 +17,12 @@ public:
 
     void postInit();
     void postConfigure();
-    void postStart();
-    void postStop();
+    void postStartData();
+    void postStopData();
 
 private:
     void init();
     void configure();
-    void start();
-    void stop();
+    void startData();
+    void stopData();
 };
