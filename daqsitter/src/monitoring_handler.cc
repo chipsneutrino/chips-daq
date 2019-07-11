@@ -243,7 +243,7 @@ void MonitoringHandler::handleStopDataCommand()
     // Empty
 }
 
-void MonitoringHandler::handleStartRunCommand(RunType which)
+void MonitoringHandler::handleStartRunCommand(RunType which, float flasher_v)
 {
     // If we are currently running first stop the current run
     if (mode_ == true) {

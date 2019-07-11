@@ -47,7 +47,7 @@ public:
     virtual void handleConfigCommand() override;
     virtual void handleStartDataCommand() override;
     virtual void handleStopDataCommand() override;
-    virtual void handleStartRunCommand(RunType which) override;
+    virtual void handleStartRunCommand(RunType which, float flasher_v) override;
     virtual void handleStopRunCommand() override;
     virtual void handleExitCommand() override;
 

@@ -6,7 +6,7 @@ enum class RunType {
     DataNormal = 1,
     Calibration,
     TestNormal,
-    TestDAQ
+    TestFlasher
 };
 
 struct OpsMessage {
@@ -32,7 +32,8 @@ struct OpsMessage {
     /// Start a new data taking run
     struct StartRun {
         static constexpr disc_t Discriminator = 3;
-        RunType Which;
+        RunType Which;      ///< Type of run
+        float flasher_v;    ///< Flasher voltage
     };
 
     /// Stop current data taking run
@@ -73,7 +74,8 @@ struct ControlMessage {
     /// Start a new data taking run
     struct StartRun {
         static constexpr disc_t Discriminator = 3;
-        RunType Which;
+        RunType Which;      ///< Type of run
+        float flasher_v;    ///< Flasher voltage
     };
 
     /// Stop current data taking run

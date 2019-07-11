@@ -32,7 +32,8 @@ struct StartData : tinyfsm::Event {
 struct StopData : tinyfsm::Event {
 };
 struct StartRun : tinyfsm::Event {
-    RunType type = RunType::TestNormal; ///< Default to a normal test run
+    RunType type;       ///< Default to a normal test run
+    float flasher_v;    ///< Default to 6.0 volts
 };
 struct StopRun : tinyfsm::Event {
 };

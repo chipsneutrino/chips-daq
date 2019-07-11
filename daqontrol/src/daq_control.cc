@@ -92,9 +92,9 @@ void DAQControl::handleStopDataCommand()
     mode_ = Configured;
 }
 
-void DAQControl::handleStartRunCommand(RunType which)
+void DAQControl::handleStartRunCommand(RunType which, float flasher_v)
 {
-    g_elastic.log(INFO, "DAQControl: Starting Run");
+    g_elastic.log(INFO, "DAQControl: Starting Run {}", flasher_v);
 }
 
 void DAQControl::handleStopRunCommand()

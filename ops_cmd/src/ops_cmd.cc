@@ -32,9 +32,9 @@ static constexpr int CommError = 4;
 int main(int argc, char *argv[])
 {
     // Check the command and additional arguments are valid
-    if (argc < 2 || argc > 3)
+    if (argc < 2 || argc > 4)
     {
-        std::cerr << argv[0] << ": expected a command [ start N | stop ]" << std::endl;
+        std::cerr << argv[0] << ": expected a command [ start N V | stop ]" << std::endl;
         return ExitCode::BadArgs;
     }
 
@@ -56,14 +56,32 @@ int main(int argc, char *argv[])
     }    
     else if (command == "startRun")
     {
-        if (argc != 3)
+        if (argc<3 || argc>4)
         {
             std::cerr << argv[0] << ": expected a run type [1-4]" << std::endl;
-            return ExitCode::BadArgs;
+            return ExitCode::BadArgs;            
+        }
+        if (atoi(argv[2])<1 || atoi(argv[2])>4)
+        {
+            std::cerr << argv[0] << ": expected a run type between [1-4]" << std::endl;
+            return ExitCode::BadArgs;                
+        }
+        if (atoi(argv[2])==4 && argc==3)
+        {
+            std::cerr << argv[0] << ": need to supply a voltage" << std::endl;
+            return ExitCode::BadArgs;                 
         }
 
         msg.Discriminator = OpsMessage::StartRun::Discriminator;
         msg.Payload.pStartRun.Which = (RunType)atoi(argv[2]);
+
+        if (argc == 4) {
+            if (atof(argv[3])<2 || atof(argv[3])>10) {
+                std::cerr << argv[0] << ": expected a voltage between [2-10]" << std::endl;
+                return ExitCode::BadArgs;                  
+            }
+            msg.Payload.pStartRun.flasher_v = atof(argv[3]);
+        }
     }
     else if (command == "stopRun")
     {

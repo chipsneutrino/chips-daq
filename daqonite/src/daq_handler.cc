@@ -89,7 +89,7 @@ void DAQHandler::handleStopDataCommand()
     g_elastic.log(INFO, "DAQonite: Stopping Data");
 }
 
-void DAQHandler::handleStartRunCommand(RunType which)
+void DAQHandler::handleStartRunCommand(RunType which, float flasher_v)
 {
     g_elastic.log(INFO, "DAQonite: Starting Run");
     // If we are currently running first stop the current run
