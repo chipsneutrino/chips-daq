@@ -11,50 +11,63 @@ CLBController::CLBController(ControllerConfig config)
     g_elastic.log(INFO, "Creating CLBController for CLB:{}", config.eid_); 
 }
 
+CLBController::~CLBController()
+{
+    //clbEvent(ClbEvents::RESET);
+    //sleep(1);
+}
+
 void CLBController::init()
 {
     // In initialisation we test the CLB connection, set basic values
     // and set the CLB state to INIT
-    g_elastic.log(DEBUG, "CLBController Init"); 
-    test();
+    g_elastic.log(DEBUG, "CLBController Init..."); 
+    testConnection();
     sleep(1);
     setInitValues();
     sleep(1);
+    clbEvent(ClbEvents::RESET);
+    sleep(1);
     clbEvent(ClbEvents::INIT);
     sleep(1);
+    g_elastic.log(DEBUG, "CLBController Init DONE"); 
 }
 
 void CLBController::configure()
 {
     // In configuration we set and check the PMT voltages and set the 
     // CLB state to CONFIGURE
-    g_elastic.log(DEBUG, "CLBController Configure"); 
+    g_elastic.log(DEBUG, "CLBController Configure..."); 
     setPMTs();
     sleep(1);
     checkPMTs();   
     sleep(1);
     clbEvent(ClbEvents::CONFIGURE);
     sleep(1);
+    g_elastic.log(DEBUG, "CLBController Configure DONE"); 
 }
 
 void CLBController::startData() 
 {
     // When we start the data flow we set the CLB state to START
-    g_elastic.log(DEBUG, "CLBController Start Data"); 
+    g_elastic.log(DEBUG, "CLBController Start Data...");
     clbEvent(ClbEvents::START);
     sleep(1);
+    g_elastic.log(DEBUG, "CLBController Start Data DONE");
 }
 
 void CLBController::stopData()
 {
     // When we start the data flow we set the CLB state to STOP
-    g_elastic.log(DEBUG, "CLBController Stop Data"); 
+    g_elastic.log(DEBUG, "CLBController Stop Data..."); 
     clbEvent(ClbEvents::STOP);
     sleep(1);
+    g_elastic.log(DEBUG, "CLBController Stop Data DONE");
 }
 
 void CLBController::flasherOn(float flasher_v)
 {
+    g_elastic.log(DEBUG, "CLBController Enabling Nanobeacon...");
     std::vector<int>  var_ids;
     std::vector<long> var_values;
     var_ids.push_back(ProcVar::OPT_NANO_VOLT);      var_values.push_back(60000);                       // TODO Nanobeacon Voltdage should be set somewhere 
@@ -67,14 +80,16 @@ void CLBController::flasherOn(float flasher_v)
         mw.writeI32(var_ids[ii]);
         mw.writeU32(var_values[ii]);
     }
-
-    g_elastic.log(DEBUG, "CLBController Enabling Nanobeacon");  
+ 
     MsgReader mr;
-    processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);  
+    processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr); 
+    sleep(1);
+    g_elastic.log(DEBUG, "CLBController Enabling Nanobeacon DONE");  
 }
 
 void CLBController::flasherOff()
 {
+    g_elastic.log(DEBUG, "CLBController Disabling Nanobeacon..."); 
     std::vector<int>  var_ids;
     std::vector<long> var_values;
     var_ids.push_back(ProcVar::SYS_SYS_RUN_ENA);    var_values.push_back(( 0x70000a0 )); // Should probably get the current status or have a value stored???
@@ -87,24 +102,26 @@ void CLBController::flasherOff()
         mw.writeU32(var_values[ii]);
     }
 
-    g_elastic.log(DEBUG, "CLBController Disabling Nanobeacon");  
+     
     MsgReader mr;
     processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);  
+    sleep(1);
+    g_elastic.log(DEBUG, "CLBController Disabling Nanobeacon DONE"); 
 }
 
-void CLBController::test()
+void CLBController::testConnection()
 {
     // To test the connection we ask for the date of the software revisions
     MsgWriter mw;
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_SYS_DATEREV, mw, mr))
     {
-        g_elastic.log(WARNING, "Could not get response from CLB in test!"); 
+        g_elastic.log(ERROR, "Could not get response from CLB in test!"); 
         return;
     }
-    long hwDateRev = mr.readU32();
-    long swDateRev = mr.readU32();
-    g_elastic.log(INFO, "Test successful, hardware({0:8x}), software({0:8x})", hwDateRev, swDateRev); 
+    //long hwDateRev = mr.readU32();
+    //long swDateRev = mr.readU32();
+    //g_elastic.log(INFO, "Test successful, hardware({0:8x}), software({0:8x})", hwDateRev, swDateRev); 
 }
 
 void CLBController::setInitValues()
@@ -127,7 +144,6 @@ void CLBController::setInitValues()
         mw.writeU32(var_values[ii]);
     }
 
-    g_elastic.log(DEBUG, "Setting Initial Values..."); 
     MsgReader mr;
     processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);   
 }
@@ -137,16 +153,16 @@ void CLBController::disableHV()
     MsgWriter mw;
     mw.writeU16(1);
     mw.writeI32(ProcVar::SYS_SYS_DISABLE);
-    mw.writeU32((0 | ProcVar::SYS_SYS_DISABLE_PWR_MEAS ));
+    unsigned long disable = (0 | ProcVar::SYS_SYS_DISABLE_HV);
+    mw.writeU32(disable);
     
-    g_elastic.log(DEBUG, "Disabling HV");  
     MsgReader mr;
     processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr); 
 }
 
 void CLBController::clbEvent(int event_id)
 {
-    // TODO check event id is correct. Event IDs defined in clb_events.h
+    // First lets set the CLB state
     MsgWriter mw;
     int subsys = ClbSys::CLB_SUB_ALL;
     mw.writeI8(subsys);
@@ -154,23 +170,41 @@ void CLBController::clbEvent(int event_id)
 
     MsgReader mr;
     processor_.processCommand(MsgTypes::MSG_CLB_EVENT, mw, mr);  
+
+    // Now we check the CLB state
+    /*
+    MsgWriter mw2;
+    MsgReader mr2;
+    processor_.processCommand(MsgTypes::MSG_CLB_EXT_UPDATE, mw2, mr2);  
+    int size = mr2.readU8();
+    int subsys_ret  = mr2.readU8();
+    int state   = mr2.readU8();
+    int status  = mr2.readU8();
+    int errCode = mr.readI32();
+    std::string errMsg;
+    if (errCode > 0) {
+        errMsg = mr.readString();
+    } else {
+        errMsg = "";
+    }
+
+    std::cout << size << "-" << subsys_ret << "-" << state << "-" << status << std::endl;
+    */
 }
 
 void CLBController::setPMTs()
 {
-    // TODO: get the PMT e-IDs and check they match with confog file. 
-    // Threshold Always the same. Just add Voltage and enabling code
     std::vector<int>  var_ids;
     std::vector<long> var_values;
     var_ids.push_back(ProcVar::OPT_CHAN_ENABLE);          
     var_ids.push_back(ProcVar::OPT_PMT_HIGHVOLT);
 
-    long enable = 1 << 27;
+    unsigned long enabled = config_.chan_enabled_.to_ulong();
 
     MsgWriter mw;
     mw.writeU16(var_ids.size());
     mw.writeI32(var_ids[0]);
-    mw.writeU32(enable);
+    mw.writeU32(enabled);
     mw.writeI32(var_ids[1]);
     for(int ipmt=0; ipmt<31; ++ipmt) mw.writeU8((short)config_.chan_hv_[ipmt]);
 
@@ -180,69 +214,58 @@ void CLBController::setPMTs()
 
 void CLBController::checkPMTs()
 {
-    // It should check PMT info  match config file or expectations. Just get the information for now 
-    askPMTsInfo(ProcVar::OPT_CHAN_ENABLE);
-    sleep(2); // Need to check if ready, sleep 5 sec for now   
-    askPMTsInfo(ProcVar::OPT_PMT_ID);
-    sleep(2); // Need to check if ready, sleep 5 sec for now   
-    askPMTsInfo(ProcVar::OPT_PMT_HIGHVOLT);
-}  
+    // First lets get all the info we want back from the CLB
+    std::vector<int> var_ids;
+    var_ids.push_back(ProcVar::OPT_CHAN_ENABLE);
+    var_ids.push_back(ProcVar::OPT_PMT_ID);
+    var_ids.push_back(ProcVar::OPT_PMT_HIGHVOLT);
+    MsgWriter mw;
+    mw.writeU16(var_ids.size());
+    mw.writeI32(var_ids[0]);
+    mw.writeI32(var_ids[1]);
+    mw.writeI32(var_ids[2]);
 
-void CLBController::askState()
-{
-    // Should ask the CLB State (Running, Paused etc.) Not sure how to do that yet 
-}
+    MsgReader mr;
+    processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr);  
 
-void CLBController::askPMTsInfo(int info_type)
-{    // Ask for PMT Info. TODO  add method (in msg_processor ?) to actually get the Information 
-
-    if(info_type == ProcVar::OPT_PMT_HIGHVOLT  ||
-       info_type == ProcVar::OPT_PMT_THRESHOLD ||
-       info_type == ProcVar::OPT_PMT_ID        ||
-       info_type == ProcVar::OPT_CHAN_ENABLE   )
+    int count = mr.readU16();               
+    if (count != var_ids.size())
     {
-        std::vector<int> var_ids;
-        var_ids.push_back(info_type);
-        MsgWriter mw;
-        mw.writeU16(var_ids.size());
-        mw.writeI32(var_ids[0]);
-        //mw.writeI32Arr(var_ids);
+        g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
+        return;           
+    }
 
-        MsgReader mr;
-        processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr);  
+    // Check the enabled channels
+    int varId    = mr.readI32();   
+    std::bitset<32> enabled(mr.readU32());
+    if (enabled != config_.chan_enabled_)
+    {
+        g_elastic.log(ERROR, "Enabled channels do not match!");       
+    }
 
-        // YOU CAN THEN DECODE THE VARIABLES FROM MSGREADER 
-        int count    = mr.readU16();               
-        std::cout << " var counts " << count << std::endl;                                                                                                     
-        int varId    = mr.readI32();   
-        
-        if(info_type == ProcVar::OPT_CHAN_ENABLE) {
-        long enable =  mr.readU32();
-        printf("Enabled channel %x\n", enable);
-        //use it somehow
-        } else {
+    // Check the channel eids
+    varId = mr.readI32();            
+	for(int ipmt =0; ipmt<31; ++ipmt){  
+        long eid = mr.readU32();
+        if (eid != config_.chan_eid_[ipmt] && enabled[ipmt])
+        {
+            g_elastic.log(ERROR, "Non matching eid for PMT {}, {} vs {}!", ipmt, eid, config_.chan_eid_[ipmt]);            
+        }
+    }
 
-	  VarInfo vt = VarInfo(varId);	  
-	  std::vector<long int> varVal;            
-	  for(int ipmt =0; ipmt<31; ++ipmt){            
-	    if(vt.type_  ==  VarType::U8  ) varVal.push_back((long)mr.readU8());
-            if(vt.type_  ==  VarType::U32 ) varVal.push_back(mr.readU32());
-            printf("=====>>>>>  %d    Var Id %x  -  Value  %d %x\n", ipmt,  varId, varVal[ipmt], varVal[ipmt]);
-
-        }// for ipmt 
-        
-        /// use pmt var values somehow 
-
-        }// else
-
-    } else {
-        g_elastic.log(ERROR, "askPMTInfo: Wrong Variable ID!");  
-    }    
+    // Check the channel high voltage
+    varId = mr.readI32();         
+	for(int ipmt =0; ipmt<31; ++ipmt){
+        long voltage = (long)mr.readU8();
+        if (voltage != config_.chan_hv_[ipmt] && enabled[ipmt])
+        {
+            g_elastic.log(ERROR, "Non matching voltage for PMT {}, {} vs {}!", ipmt, voltage, config_.chan_hv_[ipmt]);           
+        }
+    }
 }
 
 void CLBController::askVars(std::vector<int> var_ids)
-{    // Ask Vars. TODO  add method (in msg_processor ?) to actually get the Information 
-    // TODO:  check  var ids ar correct
+{
     MsgWriter mw;
     mw.writeI32Arr(var_ids);
 

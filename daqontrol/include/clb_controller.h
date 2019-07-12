@@ -20,7 +20,7 @@ public:
     CLBController(ControllerConfig config);
 
     /// Destroy a CLBController
-    ~CLBController() {};
+    ~CLBController();
 
     void postInit() { io_service_->post(boost::bind(&CLBController::init, this)); };
     void postConfigure() { io_service_->post(boost::bind(&CLBController::configure, this)); };
@@ -37,19 +37,17 @@ private:
     void flasherOn(float flasher_v);
     void flasherOff();
 
+    void testConnection();
     void setInitValues();    
     void disableHV();
 
     void clbEvent(int event_id);
-    
+
     void setPMTs();
     void checkPMTs();
 
-    void askPMTsInfo(int info_type);
     void askVars(std::vector<int> var_ids);
-    void askState();
 
-    void test();
     void quit();
     void reset();
     void pause();

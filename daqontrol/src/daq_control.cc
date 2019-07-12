@@ -20,7 +20,7 @@ DAQControl::DAQControl(std::string config_file)
 
 void DAQControl::handleConfigCommand()
 {
-    g_elastic.log(INFO, "DAQControl: Config");
+    g_elastic.log(INFO, "DAQControl: Configure");
 
     for(int i=0; i<controllers_.size(); i++) controllers_[i]->postConfigure(); 
 
@@ -113,24 +113,11 @@ void DAQControl::setupFromConfig()
     // Print the configuration
     config_.printConfig();
 
-    // For now just add the single test CLB at 192.168.11.36
-    ControllerConfig config_clb;
-    config_clb.enabled_ = true;
-    config_clb.ip_ = 3232238372;
-    controllers_.push_back(new CLBController(config_clb));
-
-    ControllerConfig config_bbb;
-    config_bbb.enabled_ = true;
-    config_bbb.type_ = BBB;
-    controllers_.push_back(new BBBController(config_bbb));
-
-    /*
-    for (int clb=0; clb<config_.fNum_clbs; clb++)
+    for (int controller=0; controller<config_.num_controllers_; controller++)
     {
-        controllers_.push_back(new Controller(config_.configs_[clb]));
+        controllers_.push_back(new CLBController(config_.configs_[controller]));
     }
-    */
-
+    
     // Calculate thread count
     n_threads_ = 1;
 }

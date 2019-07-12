@@ -19,7 +19,7 @@ static constexpr int success = 0;
 int main(int argc, char* argv[])
 {
     // Default settings
-    std::string config = "../data/config.opt";
+    std::string config = "../data/testConfig.opt";
 
     boost::program_options::options_description desc("Options");
     desc.add_options()("help,h", "DAQontrol...")
@@ -66,6 +66,12 @@ int main(int argc, char* argv[])
 
         // We always initialise everything to test connections etc...
 	    daq_control->init();
+
+        ////////////////////////////////////////////
+        daq_control->handleConfigCommand();  // JUST FOR TESTING
+        //daq_control->handleStartDataCommand();  // JUST FOR TESTING
+        //daq_control->handleStopDataCommand();  // JUST FOR TESTING
+        //////////////////////////////////////////////
 
         bus_publisher->runAsync();
         daq_control->run();

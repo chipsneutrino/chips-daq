@@ -26,7 +26,7 @@ bool MsgProcessor::processCommand(int type, MsgWriter &mw, MsgReader &mr)
     MsgBuilder msg(command, cmdId(), type, mw.toBytes());
 
     // Log processing of command to Elasticsearch
-    g_elastic.log(DEBUG, "Processing command of class {}, type {}, ID {}", msg.class_, msg.type_, msg.packet_id_);
+    // g_elastic.log(DEBUG, "Processing command of class {}, type {}, ID {}", msg.class_, msg.type_, msg.packet_id_);
 
     // Try up to MAX_ATTEMPTS for successful processing of command
     MsgBuilder response;
