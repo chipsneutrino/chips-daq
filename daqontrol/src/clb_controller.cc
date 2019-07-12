@@ -11,28 +11,10 @@ CLBController::CLBController(ControllerConfig config)
     g_elastic.log(INFO, "Creating CLBController for CLB:{}", config.eid_); 
 }
 
-void CLBController::postInit()
-{
-    io_service_->post(boost::bind(&CLBController::init, this)); 
-}
-
-void CLBController::postConfigure()
-{
-    io_service_->post(boost::bind(&CLBController::configure, this)); 
-}
-
-void CLBController::postStartData()
-{
-    io_service_->post(boost::bind(&CLBController::startData, this)); 
-}
-
-void CLBController::postStopData()
-{
-    io_service_->post(boost::bind(&CLBController::stopData, this)); 
-}
-
 void CLBController::init()
 {
+    // In initialisation we test the CLB connection, set basic values
+    // and set the CLB state to INIT
     g_elastic.log(DEBUG, "CLBController Init"); 
     test();
     sleep(1);
@@ -44,6 +26,8 @@ void CLBController::init()
 
 void CLBController::configure()
 {
+    // In configuration we set and check the PMT voltages and set the 
+    // CLB state to CONFIGURE
     g_elastic.log(DEBUG, "CLBController Configure"); 
     setPMTs();
     sleep(1);
@@ -55,102 +39,41 @@ void CLBController::configure()
 
 void CLBController::startData() 
 {
+    // When we start the data flow we set the CLB state to START
     g_elastic.log(DEBUG, "CLBController Start Data"); 
-    //clbEvent(ClbEvents::START);
-    //sleep(1);
+    clbEvent(ClbEvents::START);
+    sleep(1);
 }
 
 void CLBController::stopData()
 {
+    // When we start the data flow we set the CLB state to STOP
     g_elastic.log(DEBUG, "CLBController Stop Data"); 
-    //clbEvent(ClbEvents::STOP);
-    //sleep(1);
-}
-
-void CLBController::test()
-{
-    // To test the connection we ask for the date of the software revisions
-    MsgWriter mw;
-    MsgReader mr;
-    if(!processor_.processCommand(MsgTypes::MSG_SYS_DATEREV, mw, mr))
-    {
-        g_elastic.log(WARNING, "Could not get response from CLB in test!"); 
-        return;
-    }
-
-    long hwDateRev = mr.readU32();
-    long swDateRev = mr.readU32();
-
-    g_elastic.log(INFO, "Test successful, hardware({0:8x}), software({0:8x})", hwDateRev, swDateRev); 
-}
-
-void CLBController::quit()
-{
-    clbEvent(ClbEvents::QUIT);
+    clbEvent(ClbEvents::STOP);
     sleep(1);
 }
 
-void CLBController::reset()
-{
-    clbEvent(ClbEvents::RESET);
-    sleep(1);
-}
-
-void CLBController::pause()
-{
-    clbEvent(ClbEvents::PAUSE);
-    sleep(1);
-}
-
-void CLBController::continueRun()
-{
-    clbEvent(ClbEvents::CONTINUE);
-    sleep(1);
-}
-
-void CLBController::setInitValues()
+void CLBController::flasherOn(float flasher_v)
 {
     std::vector<int>  var_ids;
     std::vector<long> var_values;
-
-    // TODO: Check this is the same as the "3232238337" default is ControllerConfig
-    unsigned char  addr4[4] = {192, 168, 11, 1};  // Server IP Address
-    unsigned long ipi = ((0xFF & addr4[0]) << 24) |  ((0xFF & addr4[1]) << 16) |  ((0xFF & addr4[2]) <<  8) |  ((0xFF & addr4[3]) << 0);
-    var_ids.push_back(ProcVar::NET_IPMUX_SRV_IP);       var_values.push_back(ipi);
-
-    var_ids.push_back(ProcVar::SYS_TIME_SLICE_DUR);     var_values.push_back(config_.window_dur_);
-    var_ids.push_back(ProcVar::OPT_HR_VETO_ENA_CH);     var_values.push_back(0x00000000); // Disable all Channels HR Veto  
-    var_ids.push_back(ProcVar::OPT_MULHIT_ENA_CH);      var_values.push_back(0x00000000); // Disable all Channels Multi Hits
-    //var_ids.push_back(ProcVar::SYS_STMACH_PKTSIZE);
-
-    /*  
-    if(isLED)
-    {   // TODO Set a Flag  for LED Runs 
-        g_elastic.log(INFO, "Enabling Nanobeacon");
-        addNanobeacon( var_ids, var_values);  // To be completed  
-    }
-    */        
+    var_ids.push_back(ProcVar::OPT_NANO_VOLT);      var_values.push_back(60000);                       // TODO Nanobeacon Voltdage should be set somewhere 
+    var_ids.push_back(ProcVar::SYS_SYS_RUN_ENA);    var_values.push_back(( 0x70000a0 | 0x8000000 ));   // | 0x8000000 Add  the Nanobeancon enabling bit to SYS_SYS_RUN_ENA 
 
     MsgWriter mw;
     mw.writeU16(var_ids.size());
-
-    for(int ii=0; ii<var_ids.size(); ++ii){
+    for(int ii=0; ii<var_ids.size(); ++ii)
+    {
         mw.writeI32(var_ids[ii]);
         mw.writeU32(var_values[ii]);
     }
 
-    g_elastic.log(DEBUG, "Setting Initial Values..."); 
+    g_elastic.log(DEBUG, "CLBController Enabling Nanobeacon");  
     MsgReader mr;
-    processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);   
+    processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);  
 }
 
-void CLBController::addNanobeacon(std::vector<int> &vid, std::vector<long> &vv)
-{   // Should probably get the current status or have a value stored???
-    vid.push_back(ProcVar::OPT_NANO_VOLT);      vv.push_back(60000);                       // TODO Nanobeacon Voltdage should be set somewhere 
-    vid.push_back(ProcVar::SYS_SYS_RUN_ENA);    vv.push_back(( 0x70000a0 | 0x8000000 ));   // | 0x8000000 Add  the Nanobeancon enabling bit to SYS_SYS_RUN_ENA 
-}
-
-void CLBController::disableNanobeacon()
+void CLBController::flasherOff()
 {
     std::vector<int>  var_ids;
     std::vector<long> var_values;
@@ -164,8 +87,47 @@ void CLBController::disableNanobeacon()
         mw.writeU32(var_values[ii]);
     }
 
-    g_elastic.log(DEBUG, "Disabling Nanobeacon");  
+    g_elastic.log(DEBUG, "CLBController Disabling Nanobeacon");  
+    MsgReader mr;
+    processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);  
+}
 
+void CLBController::test()
+{
+    // To test the connection we ask for the date of the software revisions
+    MsgWriter mw;
+    MsgReader mr;
+    if(!processor_.processCommand(MsgTypes::MSG_SYS_DATEREV, mw, mr))
+    {
+        g_elastic.log(WARNING, "Could not get response from CLB in test!"); 
+        return;
+    }
+    long hwDateRev = mr.readU32();
+    long swDateRev = mr.readU32();
+    g_elastic.log(INFO, "Test successful, hardware({0:8x}), software({0:8x})", hwDateRev, swDateRev); 
+}
+
+void CLBController::setInitValues()
+{
+    std::vector<int>  var_ids;
+    std::vector<long> var_values;
+
+    unsigned char  addr4[4] = {192, 168, 11, 1};  // Server IP Address
+    unsigned long ipi = ((0xFF & addr4[0]) << 24) |  ((0xFF & addr4[1]) << 16) |  ((0xFF & addr4[2]) <<  8) |  ((0xFF & addr4[3]) << 0);
+    var_ids.push_back(ProcVar::NET_IPMUX_SRV_IP);       var_values.push_back(ipi);
+
+    var_ids.push_back(ProcVar::SYS_TIME_SLICE_DUR);     var_values.push_back(config_.window_dur_);
+    var_ids.push_back(ProcVar::OPT_HR_VETO_ENA_CH);     var_values.push_back(0x00000000); // Disable all Channels HR Veto  
+    var_ids.push_back(ProcVar::OPT_MULHIT_ENA_CH);      var_values.push_back(0x00000000); // Disable all Channels Multi Hits
+
+    MsgWriter mw;
+    mw.writeU16(var_ids.size());
+    for(int ii=0; ii<var_ids.size(); ++ii){
+        mw.writeI32(var_ids[ii]);
+        mw.writeU32(var_values[ii]);
+    }
+
+    g_elastic.log(DEBUG, "Setting Initial Values..."); 
     MsgReader mr;
     processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);   
 }
@@ -202,9 +164,6 @@ void CLBController::setPMTs()
     std::vector<long> var_values;
     var_ids.push_back(ProcVar::OPT_CHAN_ENABLE);          
     var_ids.push_back(ProcVar::OPT_PMT_HIGHVOLT);
-
-    //short int hv[31] = {0};
-    //hv[27] = 120;
 
     long enable = 1 << 27;
 
@@ -289,5 +248,29 @@ void CLBController::askVars(std::vector<int> var_ids)
 
     MsgReader mr;
     processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr);    
+}
+
+void CLBController::quit()
+{
+    clbEvent(ClbEvents::QUIT);
+    sleep(1);
+}
+
+void CLBController::reset()
+{
+    clbEvent(ClbEvents::RESET);
+    sleep(1);
+}
+
+void CLBController::pause()
+{
+    clbEvent(ClbEvents::PAUSE);
+    sleep(1);
+}
+
+void CLBController::continueRun()
+{
+    clbEvent(ClbEvents::CONTINUE);
+    sleep(1);
 }
 

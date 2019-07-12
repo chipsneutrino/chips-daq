@@ -22,24 +22,26 @@ public:
     /// Destroy a CLBController
     ~CLBController() {};
 
-    void postInit();
-    void postConfigure();
-    void postStartData();
-    void postStopData();
+    void postInit() { io_service_->post(boost::bind(&CLBController::init, this)); };
+    void postConfigure() { io_service_->post(boost::bind(&CLBController::configure, this)); };
+    void postStartData() { io_service_->post(boost::bind(&CLBController::startData, this)); };
+    void postStopData() { io_service_->post(boost::bind(&CLBController::stopData, this)); };
+    void postFlasherOn(float flasher_v) { io_service_->post(boost::bind(&CLBController::flasherOn, this, flasher_v)); };
+    void postFlasherOff() { io_service_->post(boost::bind(&CLBController::flasherOff, this)); }; 
 
 private:
     void init();
     void configure();
     void startData();
     void stopData();
+    void flasherOn(float flasher_v);
+    void flasherOff();
 
     void setInitValues();    
-    void addNanobeacon(std::vector<int> &vid, std::vector<long> &vv);
-    void disableNanobeacon();
-
     void disableHV();
 
     void clbEvent(int event_id);
+    
     void setPMTs();
     void checkPMTs();
 

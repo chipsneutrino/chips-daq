@@ -52,12 +52,7 @@ public:
     virtual void handleExitCommand() override;
 
     void run();
-
     void init();  
-    void configure(); 
-    void startData(); 
-    void stopData();            
-
     void join();
 
     Status getMode()
@@ -80,6 +75,7 @@ private:
     std::vector<Controller*> controllers_;  ///< List of controllers
     int n_threads_;                         ///< The number of threads to use
     Status mode_;                           ///< Current state of operation
+    RunType run_type_;                      ///< Current run type
 
     // IO_service stuff
     std::shared_ptr<boost::asio::io_service> io_service_;       ///< BOOST io_service. The heart of everything
