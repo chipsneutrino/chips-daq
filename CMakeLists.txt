@@ -9,7 +9,8 @@ set(BUILD_STATIC_LIBS NO CACHE BOOL "")
 
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
-link_directories(${LIBRARY_OUTPUT_PATH})
+link_directories(${LIBRARY_OUTPUT_PATH} $ENV{FH_PATH}/src)
+include_directories($ENV{FH_PATH}/include)
 
 # This is just to have neat colors in Ninja
 option(FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." OFF)
@@ -32,6 +33,8 @@ find_package(ROOT
     REQUIRED
 )
 include(${ROOT_USE_FILE})
+
+find_library(LIB_MESSAGE fh_message)
 
 # Subprojects
 add_subdirectory(lib)

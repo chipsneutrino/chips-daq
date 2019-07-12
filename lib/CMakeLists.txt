@@ -17,5 +17,3 @@ add_library(tinyfsm INTERFACE)
 target_include_directories(tinyfsm INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/tinyfsm/include")
 
 add_subdirectory(XmlRpc)
-
-add_subdirectory(fh_message)

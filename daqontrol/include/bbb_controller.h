@@ -5,6 +5,7 @@
 #pragma once
 
 #include "controller.h"
+#include "fh_library.h"
 #include <util/elastic_interface.h>
 
 class BBBController: public Controller {
