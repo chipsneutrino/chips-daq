@@ -8,7 +8,7 @@ CLBController::CLBController(ControllerConfig config)
     : Controller(config)
     , processor_(config.ip_, io_service_)
 {
-    g_elastic.log(INFO, "Creating CLBController for CLB:{}", config.eid_); 
+    g_elastic.log(INFO, "Creating CLBController({})", config.eid_); 
 }
 
 CLBController::~CLBController()
@@ -20,46 +20,46 @@ void CLBController::init()
 {
     // In initialisation we test the CLB connection, set basic values
     // and set the CLB state to INIT
-    g_elastic.log(DEBUG, "CLBController Init..."); 
+    g_elastic.log(DEBUG, "CLBController({}) Init...", config_.eid_); 
     testConnection();
     resetState();
     setInitValues();
     setState(CLBEvent(CLBEvents::INIT));
-    g_elastic.log(DEBUG, "CLBController Init DONE"); 
+    g_elastic.log(DEBUG, "CLBController({}) Init DONE", config_.eid_); 
 }
 
 void CLBController::configure()
 {
     // In configuration we set and check the PMT voltages and set the 
     // CLB state to CONFIGURE
-    g_elastic.log(DEBUG, "CLBController Configure..."); 
+    g_elastic.log(DEBUG, "CLBController({}) Configure...", config_.eid_); 
     setPMTs();
     checkPMTs();   
     setState(CLBEvent(CLBEvents::CONFIGURE));
-    g_elastic.log(DEBUG, "CLBController Configure DONE"); 
+    g_elastic.log(DEBUG, "CLBController({}) Configure DONE", config_.eid_); 
 }
 
 void CLBController::startData() 
 {
     // When we start the data flow we set the CLB state to START
-    g_elastic.log(DEBUG, "CLBController Start Data...");
+    g_elastic.log(DEBUG, "CLBController({}) Start Data...", config_.eid_);
     setState(CLBEvent(CLBEvents::START));
-    g_elastic.log(DEBUG, "CLBController Start Data DONE");
+    g_elastic.log(DEBUG, "CLBController({}) Start Data DONE", config_.eid_);
 }
 
 void CLBController::stopData()
 {
     // When we start the data flow we set the CLB state to STOP
-    g_elastic.log(DEBUG, "CLBController Stop Data..."); 
+    g_elastic.log(DEBUG, "CLBController({}) Stop Data...", config_.eid_); 
     setState(CLBEvent(CLBEvents::PAUSE));
     setState(CLBEvent(CLBEvents::STOP));
     setState(CLBEvent(CLBEvents::CONFIGURE));
-    g_elastic.log(DEBUG, "CLBController Stop Data DONE");
+    g_elastic.log(DEBUG, "CLBController({}) Stop Data DONE", config_.eid_);
 }
 
 void CLBController::flasherOn(float flasher_v)
 {
-    g_elastic.log(DEBUG, "CLBController Enabling Nanobeacon...");
+    g_elastic.log(DEBUG, "CLBController({}) Enabling Nanobeacon...", config_.eid_);
     std::vector<int>  var_ids;
     std::vector<long> var_values;
     var_ids.push_back(ProcVar::OPT_NANO_VOLT);      var_values.push_back(60000);                       // TODO Nanobeacon Voltdage should be set somewhere 
@@ -76,12 +76,12 @@ void CLBController::flasherOn(float flasher_v)
     MsgReader mr;
     processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr); 
     sleep(1);
-    g_elastic.log(DEBUG, "CLBController Enabling Nanobeacon DONE");  
+    g_elastic.log(DEBUG, "CLBController({}) Enabling Nanobeacon DONE", config_.eid_);  
 }
 
 void CLBController::flasherOff()
 {
-    g_elastic.log(DEBUG, "CLBController Disabling Nanobeacon..."); 
+    g_elastic.log(DEBUG, "CLBController({}) Disabling Nanobeacon...", config_.eid_); 
     std::vector<int>  var_ids;
     std::vector<long> var_values;
     var_ids.push_back(ProcVar::SYS_SYS_RUN_ENA);    var_values.push_back(( 0x70000a0 )); // Should probably get the current status or have a value stored???
@@ -98,7 +98,7 @@ void CLBController::flasherOff()
     MsgReader mr;
     processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);  
     sleep(1);
-    g_elastic.log(DEBUG, "CLBController Disabling Nanobeacon DONE"); 
+    g_elastic.log(DEBUG, "CLBController({}) Disabling Nanobeacon DONE", config_.eid_); 
 }
 
 void CLBController::testConnection()
@@ -108,10 +108,10 @@ void CLBController::testConnection()
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_SYS_DATEREV, mw, mr))
     {
-        g_elastic.log(ERROR, "Could not get response from CLB in test!"); 
+        g_elastic.log(ERROR, "Could not reach CLB({})", config_.eid_); 
         return;
     }
-    g_elastic.log(DEBUG, "Test successful, hardware({0:8x}), software({0:8x})", mr.readU32(), mr.readU32()); 
+    //g_elastic.log(DEBUG, "Test successful, hardware({0:8x}), software({0:8x})", mr.readU32(), mr.readU32()); 
     sleep(1);
 }
 
@@ -140,6 +140,25 @@ void CLBController::setInitValues()
     sleep(1); 
 }
 
+void CLBController::getIPMuxPorts()
+{
+    // First lets get all the info we want back from the CLB
+    MsgWriter mw;
+    mw.writeU16(1);
+    mw.writeI32(ProcVar::NET_IPMUX_PORTS);
+
+    MsgReader mr;
+    processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr);   
+    if (int count = mr.readU16() != 1)
+    {
+        g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
+        return;           
+    }
+
+    int varId = mr.readU32(); 
+    g_elastic.log(DEBUG, "Ports: {}, {}, {}, {}", mr.readU16(), mr.readU16(), mr.readU16(), mr.readU16()); 
+}
+
 void CLBController::disableHV()
 {
     MsgWriter mw;
@@ -155,9 +174,6 @@ void CLBController::disableHV()
 
 void CLBController::resetState()
 {
-
-    g_elastic.log(DEBUG, "Resetting the CLB state");
-
     // First we get the state so we know how to reset it
     getState();
 
@@ -173,16 +189,17 @@ void CLBController::resetState()
         setState(CLBEvent(CLBEvents::RESET));
     } else if (state_ == RUNNING) {
         setState(CLBEvent(CLBEvents::PAUSE));
+        setState(CLBEvent(CLBEvents::STOP));
         setState(CLBEvent(CLBEvents::RESET));
     } else {
-        g_elastic.log(WARNING, "Do not know how to reset from this state");
+        g_elastic.log(WARNING, "CLB({}), do not know how to reset from this state", config_.eid_);
     }
 }
 
 void CLBController::setState(CLBEvent event)
 {
     if (state_ != event.source_) {
-        g_elastic.log(WARNING, "CLB is not in the correct source state!");
+        g_elastic.log(WARNING, "CLB({}) is not in the correct source state! {} {}", config_.eid_, state_, event.source_);
         return;
     }
 
@@ -216,7 +233,7 @@ void CLBController::getState()
         std::string errMsg;
         if (errCode > 0) {
             errMsg = mr.readString();
-            g_elastic.log(ERROR, "Subsys {} in state {} has err code {}!", subsys, state, errCode); 
+            g_elastic.log(ERROR, "CLB({}), Subsys {} in state {} has err code {}!", config_.eid_, subsys, state, errCode); 
             std::cout << errMsg << std::endl;
         } else {
             errMsg = "";
@@ -225,12 +242,11 @@ void CLBController::getState()
         else { 
             if (currentState != state) 
             {
-                g_elastic.log(ERROR, "Not all subsystems in the current state!"); 
+                g_elastic.log(ERROR, "CLB({}), Not all subsystems in the current state!", config_.eid_); 
             }
         }
     }
     state_ = (CLBState)currentState;
-    g_elastic.log(DEBUG, "State: {}", state_);
 }
 
 void CLBController::setPMTs()
@@ -282,7 +298,7 @@ void CLBController::checkPMTs()
     std::bitset<32> enabled(mr.readU32());
     if (enabled != config_.chan_enabled_)
     {
-        g_elastic.log(ERROR, "Enabled channels do not match!");       
+        g_elastic.log(ERROR, "CLB({}), Enabled channels do not match!", config_.eid_);       
     }
 
     // Check the channel eids
@@ -291,7 +307,7 @@ void CLBController::checkPMTs()
         long eid = mr.readU32();
         if (eid != config_.chan_eid_[ipmt] && enabled[ipmt])
         {
-            g_elastic.log(ERROR, "Non matching eid for PMT {}, {} vs {}!", ipmt, eid, config_.chan_eid_[ipmt]);            
+            g_elastic.log(ERROR, "Non matching eid on CLB({}) for PMT {}, {} vs {}!", config_.eid_, ipmt, eid, config_.chan_eid_[ipmt]);            
         }
     }
 
@@ -301,7 +317,7 @@ void CLBController::checkPMTs()
         long voltage = (long)mr.readU8();
         if (voltage != config_.chan_hv_[ipmt] && enabled[ipmt])
         {
-            g_elastic.log(ERROR, "Non matching voltage for PMT {}, {} vs {}!", ipmt, voltage, config_.chan_hv_[ipmt]);           
+            g_elastic.log(ERROR, "Non matching voltage on CLB({}) for PMT {}, {} vs {}!", config_.eid_, ipmt, voltage, config_.chan_hv_[ipmt]);           
         }
     }
 }

@@ -45,6 +45,8 @@ private:
     void setState(CLBEvent event);
     void getState();
 
+    void getIPMuxPorts();
+
     void setPMTs();
     void checkPMTs();
 
