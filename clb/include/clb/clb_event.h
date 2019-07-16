@@ -1,5 +1,5 @@
 /**
- * ClbEvent - Class dealing with  CLB event and possible transitions
+ * CLBEvent - Class dealing with  CLB event and possible transitions
  */
 
 #pragma once
@@ -7,7 +7,7 @@
 #include <util/elastic_interface.h>
 
 /// Specifies the different CLB 
-namespace ClbEvents 
+namespace CLBEvents 
 {
 	static const int INIT        = 1;  
 	static const int CONFIGURE   = 2;  
@@ -20,7 +20,7 @@ namespace ClbEvents
 };
 
 /// Enumeration for the different CLB States
-enum ClbState
+enum CLBState
 {
 	UNDEFINED,
 	IDLE,
@@ -30,40 +30,31 @@ enum ClbState
 	RUNNING
 };
 
-class ClbEvent {
+class CLBEvent {
 public:
-	/// ClbEvent Constructor
-	ClbEvent() {};
+	/// CLBEvent Constructor
+	CLBEvent() {};
 
-	/// ClbEvent Constructor with initialisation
-	ClbEvent(int event); 
+	/// CLBEvent Constructor with initialisation
+	CLBEvent(int event); 
 
-	~ClbEvent() {};
-
-	/// Set Id
-	void SetId(int event);
+	~CLBEvent() {};
 	
-	/// Get Id
-	int GetEvent() 
-	{ 
-		return event_;
-	};
-
-	/// Get the Source State for this event
-	ClbState GetSourceState() 
+	/// Get the source state for this event
+	CLBState GetSourceState() 
 	{ 
 		return source_; 
 	};
 
-	/// Get the Target  State for this event
-	ClbState GetTargetState()
+	/// Get the target state for this event
+	CLBState GetTargetState()
 	{ 
 		return target_; 
 	};
 
 	int       	event_;			///< Event Type
-	ClbState    source_;    	///< Source State
-	ClbState    target_;    	///< Target State
+	CLBState    source_;    	///< Source State
+	CLBState    target_;    	///< Target State
 
 private: 
 	/// Set the states

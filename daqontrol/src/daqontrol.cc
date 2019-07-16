@@ -68,9 +68,9 @@ int main(int argc, char* argv[])
 	    daq_control->init();
 
         ////////////////////////////////////////////
-        daq_control->handleConfigCommand();  // JUST FOR TESTING
-        //daq_control->handleStartDataCommand();  // JUST FOR TESTING
-        //daq_control->handleStopDataCommand();  // JUST FOR TESTING
+        daq_control->handleConfigCommand();         // JUST FOR TESTING
+        daq_control->handleStartDataCommand();      // JUST FOR TESTING
+        daq_control->handleStopDataCommand();       // JUST FOR TESTING
         //////////////////////////////////////////////
 
         bus_publisher->runAsync();

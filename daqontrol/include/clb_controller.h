@@ -41,17 +41,13 @@ private:
     void setInitValues();    
     void disableHV();
 
-    void clbEvent(int event_id);
+    void resetState();
+    void setState(CLBEvent event);
+    void getState();
 
     void setPMTs();
     void checkPMTs();
 
-    void askVars(std::vector<int> var_ids);
-
-    void quit();
-    void reset();
-    void pause();
-    void continueRun();
-
-    MsgProcessor processor_; ///< Message processor used to communicate with CLB
+    MsgProcessor processor_;    ///< Message processor used to communicate with CLB
+    CLBState state_;            ///< Current CLB state
 };

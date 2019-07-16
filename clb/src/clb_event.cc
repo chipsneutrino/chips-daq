@@ -1,69 +1,63 @@
 /**
- *  ClbEvent - Class dealing with  CLB event and possible transitions  
+ *  CLBEvent - Class dealing with CLB event and possible transitions  
  */
 
 #include <clb/clb_event.h>
 	
-ClbEvent::ClbEvent(int event)
+CLBEvent::CLBEvent(int event)
 {
 	event_ = event;
 	SetStates();
 }
 
-void ClbEvent::SetId(int event) 
-{
-	event_ = event;
-	SetStates();
-}
-
-void ClbEvent::SetStates()
+void CLBEvent::SetStates()
 {  
 	switch(event_) {
-		case ClbEvents::INIT:    
-			source_ = ClbState::IDLE;   
-			target_ = ClbState::STAND_BY;    
+		case CLBEvents::INIT:    
+			source_ = CLBState::IDLE;   
+			target_ = CLBState::STAND_BY;    
 			break;
 	
 
-		case ClbEvents::CONFIGURE:
-			source_ = ClbState::STAND_BY;
-			target_ = ClbState::READY;
+		case CLBEvents::CONFIGURE:
+			source_ = CLBState::STAND_BY;
+			target_ = CLBState::READY;
 			break;
 
 
-		case ClbEvents::START:    
-			source_ =  ClbState::READY;   
-			target_ =  ClbState::RUNNING;
+		case CLBEvents::START:    
+			source_ =  CLBState::READY;   
+			target_ =  CLBState::RUNNING;
 			break;
 
 
-		case ClbEvents::PAUSE:
-			source_ = ClbState::RUNNING;
-			target_ = ClbState::PAUSED;
+		case CLBEvents::PAUSE:
+			source_ = CLBState::RUNNING;
+			target_ = CLBState::PAUSED;
 			break;
 
 
-		case ClbEvents::CONTINUE:
-			source_ = ClbState::PAUSED;
-			target_ = ClbState::RUNNING;
+		case CLBEvents::CONTINUE:
+			source_ = CLBState::PAUSED;
+			target_ = CLBState::RUNNING;
 			break;
 
 
-		case ClbEvents::STOP:
-			source_ = ClbState::PAUSED;
-			target_ = ClbState::STAND_BY;
+		case CLBEvents::STOP:
+			source_ = CLBState::PAUSED;
+			target_ = CLBState::STAND_BY;
 			break;
 
 
-		case ClbEvents::QUIT:
-			source_ = ClbState::READY;
-			target_ = ClbState::STAND_BY;
+		case CLBEvents::QUIT:
+			source_ = CLBState::READY;
+			target_ = CLBState::STAND_BY;
 			break;
 
 
-		case ClbEvents::RESET:
-			source_ = ClbState::STAND_BY;
-			target_ = ClbState::IDLE;
+		case CLBEvents::RESET:
+			source_ = CLBState::STAND_BY;
+			target_ = CLBState::IDLE;
 			break;
 	}
 }

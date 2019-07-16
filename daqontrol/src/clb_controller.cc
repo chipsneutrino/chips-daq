@@ -13,8 +13,7 @@ CLBController::CLBController(ControllerConfig config)
 
 CLBController::~CLBController()
 {
-    //clbEvent(ClbEvents::RESET);
-    //sleep(1);
+    // Empty
 }
 
 void CLBController::init()
@@ -23,13 +22,9 @@ void CLBController::init()
     // and set the CLB state to INIT
     g_elastic.log(DEBUG, "CLBController Init..."); 
     testConnection();
-    sleep(1);
+    resetState();
     setInitValues();
-    sleep(1);
-    clbEvent(ClbEvents::RESET);
-    sleep(1);
-    clbEvent(ClbEvents::INIT);
-    sleep(1);
+    setState(CLBEvent(CLBEvents::INIT));
     g_elastic.log(DEBUG, "CLBController Init DONE"); 
 }
 
@@ -39,11 +34,8 @@ void CLBController::configure()
     // CLB state to CONFIGURE
     g_elastic.log(DEBUG, "CLBController Configure..."); 
     setPMTs();
-    sleep(1);
     checkPMTs();   
-    sleep(1);
-    clbEvent(ClbEvents::CONFIGURE);
-    sleep(1);
+    setState(CLBEvent(CLBEvents::CONFIGURE));
     g_elastic.log(DEBUG, "CLBController Configure DONE"); 
 }
 
@@ -51,8 +43,7 @@ void CLBController::startData()
 {
     // When we start the data flow we set the CLB state to START
     g_elastic.log(DEBUG, "CLBController Start Data...");
-    clbEvent(ClbEvents::START);
-    sleep(1);
+    setState(CLBEvent(CLBEvents::START));
     g_elastic.log(DEBUG, "CLBController Start Data DONE");
 }
 
@@ -60,8 +51,9 @@ void CLBController::stopData()
 {
     // When we start the data flow we set the CLB state to STOP
     g_elastic.log(DEBUG, "CLBController Stop Data..."); 
-    clbEvent(ClbEvents::STOP);
-    sleep(1);
+    setState(CLBEvent(CLBEvents::PAUSE));
+    setState(CLBEvent(CLBEvents::STOP));
+    setState(CLBEvent(CLBEvents::CONFIGURE));
     g_elastic.log(DEBUG, "CLBController Stop Data DONE");
 }
 
@@ -119,9 +111,8 @@ void CLBController::testConnection()
         g_elastic.log(ERROR, "Could not get response from CLB in test!"); 
         return;
     }
-    //long hwDateRev = mr.readU32();
-    //long swDateRev = mr.readU32();
-    //g_elastic.log(INFO, "Test successful, hardware({0:8x}), software({0:8x})", hwDateRev, swDateRev); 
+    g_elastic.log(DEBUG, "Test successful, hardware({0:8x}), software({0:8x})", mr.readU32(), mr.readU32()); 
+    sleep(1);
 }
 
 void CLBController::setInitValues()
@@ -145,7 +136,8 @@ void CLBController::setInitValues()
     }
 
     MsgReader mr;
-    processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);   
+    processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);  
+    sleep(1); 
 }
 
 void CLBController::disableHV()
@@ -157,39 +149,88 @@ void CLBController::disableHV()
     mw.writeU32(disable);
     
     MsgReader mr;
-    processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr); 
+    processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);
+    sleep(1);  
 }
 
-void CLBController::clbEvent(int event_id)
+void CLBController::resetState()
 {
+
+    g_elastic.log(DEBUG, "Resetting the CLB state");
+
+    // First we get the state so we know how to reset it
+    getState();
+
+    if (state_ == IDLE) {
+        // Don't do anything
+    } else if (state_ == STAND_BY) {
+        setState(CLBEvent(CLBEvents::RESET));
+    } else if (state_ == READY) {
+        setState(CLBEvent(CLBEvents::QUIT));
+        setState(CLBEvent(CLBEvents::RESET));
+    } else if (state_ == PAUSED) {
+        setState(CLBEvent(CLBEvents::STOP));
+        setState(CLBEvent(CLBEvents::RESET));
+    } else if (state_ == RUNNING) {
+        setState(CLBEvent(CLBEvents::PAUSE));
+        setState(CLBEvent(CLBEvents::RESET));
+    } else {
+        g_elastic.log(WARNING, "Do not know how to reset from this state");
+    }
+}
+
+void CLBController::setState(CLBEvent event)
+{
+    if (state_ != event.source_) {
+        g_elastic.log(WARNING, "CLB is not in the correct source state!");
+        return;
+    }
+
     // First lets set the CLB state
     MsgWriter mw;
     int subsys = ClbSys::CLB_SUB_ALL;
     mw.writeI8(subsys);
-    mw.writeI8(event_id);
+    mw.writeI8(event.event_);
 
     MsgReader mr;
     processor_.processCommand(MsgTypes::MSG_CLB_EVENT, mw, mr);  
 
-    // Now we check the CLB state
-    /*
-    MsgWriter mw2;
-    MsgReader mr2;
-    processor_.processCommand(MsgTypes::MSG_CLB_EXT_UPDATE, mw2, mr2);  
-    int size = mr2.readU8();
-    int subsys_ret  = mr2.readU8();
-    int state   = mr2.readU8();
-    int status  = mr2.readU8();
-    int errCode = mr.readI32();
-    std::string errMsg;
-    if (errCode > 0) {
-        errMsg = mr.readString();
-    } else {
-        errMsg = "";
-    }
+    sleep(1);
+    getState();   
+}
 
-    std::cout << size << "-" << subsys_ret << "-" << state << "-" << status << std::endl;
-    */
+void CLBController::getState()
+{
+    MsgWriter mw;
+    MsgReader mr;
+    processor_.processCommand(MsgTypes::MSG_CLB_EXT_UPDATE, mw, mr); 
+
+    int size = mr.readU8(); 
+    int currentState;
+    for (int sys=0; sys<size; sys++)
+    {
+        int subsys  = mr.readU8();
+        int state   = mr.readU8();
+        int status  = mr.readU8();
+        int errCode = mr.readI32();
+        std::string errMsg;
+        if (errCode > 0) {
+            errMsg = mr.readString();
+            g_elastic.log(ERROR, "Subsys {} in state {} has err code {}!", subsys, state, errCode); 
+            std::cout << errMsg << std::endl;
+        } else {
+            errMsg = "";
+        }
+        if (sys == 0) currentState = state;
+        else { 
+            if (currentState != state) 
+            {
+                g_elastic.log(ERROR, "Not all subsystems in the current state!"); 
+            }
+        }
+    }
+    state_ = (CLBState)currentState;
+    g_elastic.log(DEBUG, "State: {}", state_);
 }
 
 void CLBController::setPMTs()
@@ -209,7 +250,8 @@ void CLBController::setPMTs()
     for(int ipmt=0; ipmt<31; ++ipmt) mw.writeU8((short)config_.chan_hv_[ipmt]);
 
     MsgReader mr;
-    processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);     
+    processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr);  
+    sleep(1);    
 }
 
 void CLBController::checkPMTs()
@@ -263,37 +305,3 @@ void CLBController::checkPMTs()
         }
     }
 }
-
-void CLBController::askVars(std::vector<int> var_ids)
-{
-    MsgWriter mw;
-    mw.writeI32Arr(var_ids);
-
-    MsgReader mr;
-    processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr);    
-}
-
-void CLBController::quit()
-{
-    clbEvent(ClbEvents::QUIT);
-    sleep(1);
-}
-
-void CLBController::reset()
-{
-    clbEvent(ClbEvents::RESET);
-    sleep(1);
-}
-
-void CLBController::pause()
-{
-    clbEvent(ClbEvents::PAUSE);
-    sleep(1);
-}
-
-void CLBController::continueRun()
-{
-    clbEvent(ClbEvents::CONTINUE);
-    sleep(1);
-}
-
