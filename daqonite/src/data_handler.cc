@@ -109,7 +109,7 @@ void DataHandler::getRunNumAndName()
                 if (run_type_no == i) {
                     updateFile << runNums[i] + 1 << "\n";
                 } else {
-                    updateFile << 1 << "\n";
+                    updateFile << runNums[i] << "\n";
                 }
             }
             updateFile.close();
