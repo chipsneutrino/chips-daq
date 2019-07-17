@@ -30,12 +30,12 @@ void BBBController::stopData()
     g_elastic.log(DEBUG, "BBBController Stop Data"); 
 }
 
-void BBBController::flasherOn(float flasher_v)
+void BBBController::enableFlasher(float flasher_v)
 {
     g_elastic.log(DEBUG, "BBBController Enabling Nanobeacon");  
 }
 
-void BBBController::flasherOff()
+void BBBController::disableFlasher()
 {
     g_elastic.log(DEBUG, "BBBController Disabling Nanobeacon");  
 }

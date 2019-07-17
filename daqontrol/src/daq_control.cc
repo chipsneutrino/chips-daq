@@ -60,7 +60,7 @@ void DAQControl::handleStartRunCommand(RunType which, float flasher_v)
     g_elastic.log(INFO, "DAQControl: Starting Run, V={}", flasher_v);
     run_type_ = which;
     if (run_type_ == RunType::TestFlasher) {
-        for(int i=0; i<controllers_.size(); i++) controllers_[i]->postFlasherOn(flasher_v);
+        for(int i=0; i<controllers_.size(); i++) controllers_[i]->postEnableFlasher(flasher_v);
     }
 }
 
@@ -68,7 +68,7 @@ void DAQControl::handleStopRunCommand()
 {
     g_elastic.log(INFO, "DAQControl: Stopping Run");
     if (run_type_ == RunType::TestFlasher) {
-        for(int i=0; i<controllers_.size(); i++) controllers_[i]->postFlasherOff();
+        for(int i=0; i<controllers_.size(); i++) controllers_[i]->postDisableFlasher();
     }
 }
 

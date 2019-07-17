@@ -19,7 +19,7 @@ static constexpr int success = 0;
 int main(int argc, char* argv[])
 {
     // Default settings
-    std::string config = "../data/config.opt";
+    std::string config = "../data/testConfig.opt";
 
     boost::program_options::options_description desc("Options");
     desc.add_options()("help,h", "DAQontrol...")

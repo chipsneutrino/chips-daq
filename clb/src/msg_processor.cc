@@ -25,16 +25,13 @@ bool MsgProcessor::processCommand(int type, MsgWriter &mw, MsgReader &mr)
     // Create the message
     MsgBuilder msg(command, cmdId(), type, mw.toBytes());
 
-    // Log processing of command to Elasticsearch
-    // g_elastic.log(DEBUG, "Processing command of class {}, type {}, ID {}", msg.class_, msg.type_, msg.packet_id_);
-
-    // Try up to MAX_ATTEMPTS for successful processing of command
     MsgBuilder response;
-    for (int attempt=0; attempt<MAX_ATTEMPTS; attempt++) 
+    for (int attempt=0; attempt<MAX_ATTEMPTS; attempt++) // Try up to MAX_ATTEMPTS for successful processing of command
     {
         // Send the command
         if(!sendCommand(msg.toBytes()))
         {
+            if (attempt == (MAX_ATTEMPTS-1)) return false;
             continue;
         }
 
@@ -42,14 +39,15 @@ bool MsgProcessor::processCommand(int type, MsgWriter &mw, MsgReader &mr)
         std::vector<unsigned char> resp(MCFPACKET_MAX_SIZE);
         if(!getResponse(resp))
         {
+            if (attempt == (MAX_ATTEMPTS-1)) return false;
             continue;
         }
 
         // Check the response is valid
         if(!checkResponse(response, resp, msg))
         {
-            // Always want to send an ack
-            sendAck(response.packet_id_);
+            sendAck(response.packet_id_); // Always want to send an ack
+            if (attempt == (MAX_ATTEMPTS-1)) return false;
             continue;
         }    
         
@@ -61,6 +59,9 @@ bool MsgProcessor::processCommand(int type, MsgWriter &mw, MsgReader &mr)
 
     // Fill a message reader with the message content
     mr.fromBuffer(response.content_);
+
+    // For now put a sleep in...
+    sleep(1);
     
     return true;
 }

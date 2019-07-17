@@ -26,29 +26,37 @@ public:
     void postConfigure() { io_service_->post(boost::bind(&CLBController::configure, this)); };
     void postStartData() { io_service_->post(boost::bind(&CLBController::startData, this)); };
     void postStopData() { io_service_->post(boost::bind(&CLBController::stopData, this)); };
-    void postFlasherOn(float flasher_v) { io_service_->post(boost::bind(&CLBController::flasherOn, this, flasher_v)); };
-    void postFlasherOff() { io_service_->post(boost::bind(&CLBController::flasherOff, this)); }; 
+    void postEnableFlasher(float flasher_v) { io_service_->post(boost::bind(&CLBController::enableFlasher, this, flasher_v)); };
+    void postDisableFlasher() { io_service_->post(boost::bind(&CLBController::disableFlasher, this)); }; 
 
 private:
     void init();
     void configure();
     void startData();
     void stopData();
-    void flasherOn(float flasher_v);
-    void flasherOff();
 
     void testConnection();
     void setInitValues();    
-    void disableHV();
 
     void resetState();
     void setState(CLBEvent event);
     void getState();
 
-    void getIPMuxPorts();
-
     void setPMTs();
     void checkPMTs();
+
+    char getSysEnabledMask();
+    char getSysDisabledMask();
+    void getMasks();
+
+    void enableFlasher(float flasher_v);
+    void checkFlasherVoltage(float flasher_v);
+    void disableFlasher();
+    void enableHV();
+
+    void disableHV();
+
+    void getIPMuxPorts();
 
     MsgProcessor processor_;    ///< Message processor used to communicate with CLB
     CLBState state_;            ///< Current CLB state

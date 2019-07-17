@@ -28,16 +28,16 @@ public:
     virtual void postConfigure() = 0;
     virtual void postStartData() = 0;
     virtual void postStopData() = 0;
-    virtual void postFlasherOn(float flasher_v) = 0;
-    virtual void postFlasherOff() = 0;
+    virtual void postEnableFlasher(float flasher_v) = 0;
+    virtual void postDisableFlasher() = 0;
 
 protected:
     virtual void init() = 0;
     virtual void configure() = 0;
     virtual void startData() = 0;
     virtual void stopData() = 0;
-    virtual void flasherOn(float flasher_v) = 0;
-    virtual void flasherOff() = 0;
+    virtual void enableFlasher(float flasher_v) = 0;
+    virtual void disableFlasher() = 0;
 
     ControllerConfig config_;                                   ///< Controller specific configuration
 
