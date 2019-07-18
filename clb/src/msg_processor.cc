@@ -13,11 +13,13 @@ MsgProcessor::MsgProcessor(unsigned long ip_address, std::shared_ptr<boost::asio
     boost::asio::ip::udp::resolver::iterator iter = resolver.resolve(query);
     endpoint_ = *iter;
 
-    //socket_.non_blocking(true);
-
+    // Set the timeout for the socket read
+    struct timeval tv = {READ_TIMEOUT, 0};
+    setsockopt(socket_.native_handle(), SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    
     cmd_id_ = (int)(rand()*63);
 
-    g_elastic.log(DEBUG, "Setup MsgProcessor for {}", address.to_string());
+    g_elastic.log(INFO, "Setup MsgProcessor for {}", address.to_string());
 }
 
 bool MsgProcessor::processCommand(int type, MsgWriter &mw, MsgReader &mr)
@@ -35,8 +37,7 @@ bool MsgProcessor::processCommand(int type, MsgWriter &mw, MsgReader &mr)
             continue;
         }
 
-        // Receive the response, TODO: Make this non-blocking
-        std::vector<unsigned char> resp(MCFPACKET_MAX_SIZE);
+        std::vector<unsigned char> resp;
         if(!getResponse(resp))
         {
             if (attempt == (MAX_ATTEMPTS-1)) return false;
@@ -82,18 +83,20 @@ bool MsgProcessor::sendCommand(std::vector<unsigned char> msg)
 
 bool MsgProcessor::getResponse(std::vector<unsigned char> &resp) 
 {
-    boost::system::error_code error;
-    int size = socket_.receive_from(boost::asio::buffer(resp), endpoint_, 0, error);
+    // To make using a timeout easier we read from the underlying native socket
+    unsigned char buff[MCFPACKET_MAX_SIZE];
+    ssize_t size = read(socket_.native_handle(), buff, MCFPACKET_MAX_SIZE);
 
     if (size == 0)
     {
         g_elastic.log(DEBUG, "Did not receive any bytes");
         return false;
+    } else if (size == -1) {
+        g_elastic.log(DEBUG, "Got timeout");
+        return false;        
     }
 
-    // Resize the vector to the received size
-    resp.resize(size);
-
+    resp.insert(resp.begin(), &buff[0], &buff[size]);
     return true;
 }
 

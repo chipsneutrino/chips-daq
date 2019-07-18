@@ -6,26 +6,20 @@
 
 #pragma once
 
-
+#include <iostream>
+#include <vector>
 #include <cstdlib>
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
+
 #include <clb/msg_builder.h>
 #include <clb/msg_writer.h>
 #include <clb/msg_reader.h>
 #include <util/elastic_interface.h>
 
-/// Maximum time a command may take before its deemed 'lost'
-#define MAX_COMMAND_TIME 10000
-#define MAX_KEEP_ALIVE_SEC 10
-
-/// Default CLBv2 slow-control port (56014)
-#define DEFAULT_PORT 0xDACE
-
-/// Buffer size for response message
-#define BUFFERSIZE 10000
-
+#define DEFAULT_PORT 0xDACE /// Default CLBv2 slow-control port (56014)
 #define MAX_ATTEMPTS 3
+#define READ_TIMEOUT 1
 
 class MsgProcessor {
 public:
@@ -63,7 +57,6 @@ private:
 	void sendAck(int id);
 
     boost::asio::ip::udp::socket socket_;                 	///< Socket to send CLB monitoring data to
-    char buffer_[BUFFERSIZE] __attribute__((aligned(8))); 	///< CLB monitoring socket buffer
 	boost::asio::ip::udp::endpoint endpoint_;				///< BOOST endpoint for the CLB
 
 	int cmd_id_;				///< Random command ID
