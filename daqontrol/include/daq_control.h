@@ -58,7 +58,7 @@ public:
     /// Get the current mode of the overall DAQontrol application
     Control::Status getMode()
     {
-        return state_;
+        return current_state_;
     }
 
 private:
@@ -68,13 +68,14 @@ private:
     /// Create CLB and BBB controllers depending on configuration.
     void setupFromConfig();
 
-    /// Post work to the io_service to check for the current state
-    void postUpdateState();
+    /// Post work to the io_service to check states and attempt retries
+    void stateUpdate();
 
     DAQConfig config_;                                          ///< DAQConfig read from config file
     std::vector<Controller*> controllers_;                      ///< List of controllers
     int n_threads_;                                             ///< The number of threads to use
-    Control::Status state_;                                     ///< Current state of control operation
+    Control::Status current_state_;                             ///< Current state of control operation
+    Control::Status target_state_;                              ///< Target state of operation
 
     std::shared_ptr<boost::asio::io_service> io_service_;       ///< BOOST io_service. The heart of everything
     std::unique_ptr<boost::asio::io_service::work> run_work_;   ///< Work for the io_service

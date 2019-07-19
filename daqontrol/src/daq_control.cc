@@ -8,7 +8,8 @@ DAQControl::DAQControl(std::string config_file)
     : config_(config_file.c_str())
     , controllers_{}
     , n_threads_(1)
-    , state_(Control::Initialising)
+    , current_state_(Control::Initialising)
+    , target_state_(Control::Idle)
     , io_service_{ new boost::asio::io_service }
     , run_work_{ new boost::asio::io_service::work(*io_service_) }
     , thread_group_{}
@@ -19,29 +20,44 @@ DAQControl::DAQControl(std::string config_file)
 void DAQControl::handleConfigCommand()
 {
     g_elastic.log(INFO, "DAQControl: Configure");
-    for(int i=0; i<controllers_.size(); i++) controllers_[i]->postConfigure(); 
+    for(int i=0; i<controllers_.size(); i++) 
+    {
+        if (controllers_[i]->dropped()) continue;
+        controllers_[i]->postConfigure();
+    }
+    target_state_ = Control::Configured;
 }
 
 void DAQControl::handleStartDataCommand()
 {
     g_elastic.log(INFO, "DAQControl: Starting Data");
-    if (state_ == Control::Started) // If data is currently being produced log
+    if (current_state_ == Control::Started) // If data is currently being produced log
     {
         g_elastic.log(INFO, "DAQControl is already started");
         return;
     }
-    for(int i=0; i<controllers_.size(); i++) controllers_[i]->postStartData();  
+    for(int i=0; i<controllers_.size(); i++) 
+    {
+        if (controllers_[i]->dropped()) continue;
+        controllers_[i]->postStartData();  
+    }
+    target_state_ = Control::Started;
 }
 
 void DAQControl::handleStopDataCommand()
 {
     g_elastic.log(INFO, "DAQControl: Stopping Data");
-    if (state_ == Control::Configured) // If data is not currently being produced log 
+    if (current_state_ == Control::Configured) // If data is not currently being produced log 
     {
         g_elastic.log(INFO, "DAQControl is already stopped");
         return;
     }
-    for(int i=0; i<controllers_.size(); i++) controllers_[i]->postStopData();  
+    for(int i=0; i<controllers_.size(); i++) 
+    {
+        if (controllers_[i]->dropped()) continue;
+        controllers_[i]->postStopData();  
+    }
+    target_state_ = Control::Configured;
 }
 
 void DAQControl::handleStartRunCommand(RunType which)
@@ -78,7 +94,7 @@ void DAQControl::run()
     }
 
     // Start the global state updating
-    io_service_->post(boost::bind(&DAQControl::postUpdateState, this));
+    io_service_->post(boost::bind(&DAQControl::stateUpdate, this));
 
     thread_group_.join_all(); // Wait until all threads finish (BLOCKING)
 }
@@ -102,24 +118,37 @@ void DAQControl::setupFromConfig()
     }
 }
 
-void DAQControl::postUpdateState()
+void DAQControl::stateUpdate()
 {
     std::vector<Control::Status> states;
     for(int i=0; i<controllers_.size(); i++) 
     {
+        if (controllers_[i]->dropped()) continue;
+
+        Control::Status state = controllers_[i]->getState(); // Get the current controller state
+
+        if (state != target_state_ && !controllers_[i]->isWorking()) 
+        {
+            // TODO: Implement a retry mechanism trying to reach target state
+            g_elastic.log(WARNING, "Dropping controller ({})", controllers_[i]->getID());
+            controllers_[i]->drop(); // For now we just drop the controller
+            continue;
+        }
+
         states.push_back(controllers_[i]->getState());
     }
 
-    if (std::equal(states.begin() + 1, states.end(), states.begin()) && states[0]!=state_)
+    // If all controllers have moved to the next state update the current_state_
+    if (std::equal(states.begin() + 1, states.end(), states.begin()) && states[0]!=current_state_)
     {
-        state_ = states[0];
-        g_elastic.log(INFO, "DAQControl State Change to: {}", (int)state_);
+        current_state_ = states[0];
+        g_elastic.log(INFO, "DAQControl State Change to: {}", (int)current_state_);
     }
 
-    sleep(1); // Sleep for a second before checking again
+    sleep(2); // Sleep for 2 seconds before updating again
 
     // Post this method to the io_service again
-    io_service_->post(boost::bind(&DAQControl::postUpdateState, this));
+    io_service_->post(boost::bind(&DAQControl::stateUpdate, this));
 }
 
 

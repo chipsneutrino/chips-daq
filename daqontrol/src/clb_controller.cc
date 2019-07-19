@@ -14,40 +14,86 @@ CLBController::CLBController(ControllerConfig config)
 void CLBController::init()
 {
     g_elastic.log(DEBUG, "CLBController({}) Init...", config_.eid_); 
-    if(!testConnection()) return;                           // Test the connection to the CLB
-    if(!resetState()) return;                               // Reset the state of the CLB to IDLE
-    if(!setInitValues()) return;                            // Set the initialisation variables
-    if(!setState(CLBEvent(CLBEvents::INIT))) return;        // Set the CLB state to STAND_BY
-    state_ = Control::Idle;                                 // Set the controller state to Idle
+    working_ = true; // Set this controller to be working
+    
+    if(!testConnection()) { // Test the connection to the CLB
+        working_ = false;
+        return;
+    } else if(!resetState()) { // Reset the state of the CLB to IDLE
+        working_ = false;
+        return;        
+    } else if(!setInitValues()) { // Set the initialisation variables
+        working_ = false;
+        return; 
+    } else if(!setState(CLBEvent(CLBEvents::INIT))) { // Set the CLB state to STAND_BY
+        working_ = false;
+        return; 
+    }
+
+    state_ = Control::Idle; // Set the controller state to Idle
     g_elastic.log(DEBUG, "CLBController({}) Init DONE", config_.eid_); 
+    working_ = false; 
 }
 
 void CLBController::configure()
 {
     g_elastic.log(DEBUG, "CLBController({}) Configure...", config_.eid_); 
-    if(!setPMTs()) return;                                  // Set and check the PMT voltages
-    if(!setFlasher()) return;                               // Set the flasher if required
-    if(!setState(CLBEvent(CLBEvents::CONFIGURE))) return;   // Set the CLB state to READY
-    state_ = Control::Configured;                           // Set the controller state to Configured
+    working_ = true; // Set this controller to be working
+
+    if(!setPMTs()) { // Set and check the PMT voltages
+        working_ = false;
+        return;    
+    }                                  
+    else if(!setFlasher()) { // Set the flasher if required
+        working_ = false;
+        return;    
+    }                               
+    else if(!setState(CLBEvent(CLBEvents::CONFIGURE))) { // Set the CLB state to READY
+        working_ = false;
+        return;    
+    }   
+
+    state_ = Control::Configured; // Set the controller state to Configured
     g_elastic.log(DEBUG, "CLBController({}) Configure DONE", config_.eid_); 
+    working_ = false;
 }
 
 void CLBController::startData() 
 {
     g_elastic.log(DEBUG, "CLBController({}) Start Data...", config_.eid_);
-    if(!setState(CLBEvent(CLBEvents::START))) return;       // Set the CLB state to RUNNING
-    state_ = Control::Started;                              // Set the controller state to Started
+    working_ = true; // Set this controller to be working
+
+    if(!setState(CLBEvent(CLBEvents::START))) { // Set the CLB state to RUNNING
+        working_ = false;
+        return;          
+    }       
+
+    state_ = Control::Started; // Set the controller state to Started
     g_elastic.log(DEBUG, "CLBController({}) Start Data DONE", config_.eid_);
+    working_ = false;
 }
 
 void CLBController::stopData()
 {
     g_elastic.log(DEBUG, "CLBController({}) Stop Data...", config_.eid_); 
-    if(!setState(CLBEvent(CLBEvents::PAUSE))) return;       // Set the CLB state to PAUSED
-    if(!setState(CLBEvent(CLBEvents::STOP))) return;        // Set the CLB state to STAND_BY
-    if(!setState(CLBEvent(CLBEvents::CONFIGURE))) return;   // Set the CLB state to READY
-    state_ = Control::Configured;                           // Set the controller state to Configured
+    working_ = true; // Set this controller to be working
+
+    if(!setState(CLBEvent(CLBEvents::PAUSE))) { // Set the CLB state to PAUSED
+        working_ = false;
+        return;   
+    }       
+    else if(!setState(CLBEvent(CLBEvents::STOP))) { // Set the CLB state to STAND_BY
+        working_ = false;
+        return;   
+    }        
+    else if(!setState(CLBEvent(CLBEvents::CONFIGURE))) { // Set the CLB state to READY
+        working_ = false;
+        return;   
+    }   
+
+    state_ = Control::Configured; // Set the controller state to Configured
     g_elastic.log(DEBUG, "CLBController({}) Stop Data DONE", config_.eid_);
+    working_ = false;
 }
 
 bool CLBController::testConnection()
@@ -347,6 +393,8 @@ bool CLBController::setFlasher()
         }    
 
         if(!checkFlasherVoltage()) return false;
+
+        g_elastic.log(ERROR, "CLB({}), Flasher on at ({})", config_.eid_, config_.nano_voltage_);
     } 
     else 
     {

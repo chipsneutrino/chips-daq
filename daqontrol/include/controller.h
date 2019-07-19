@@ -20,6 +20,8 @@ public:
         , io_service_{ new boost::asio::io_service }
         , run_work_{ new boost::asio::io_service::work(*io_service_) }
         , thread_( [&]{(*io_service_).run();} )
+        , dropped_(false)
+        , working_(false)
         , state_(Control::Initialising) {};
 
     /// Destroy a Controller
@@ -33,6 +35,26 @@ public:
     Control::Status getState()
     {
         return state_;
+    }
+
+    bool isWorking()
+    {
+        return working_;
+    }
+
+    int getID()
+    {
+        return config_.eid_;
+    }
+
+    void drop()
+    {
+        dropped_ = true;
+    }
+
+    bool dropped()
+    {
+        return dropped_;
     }
 
     virtual void postInit()                         = 0;
@@ -52,5 +74,7 @@ protected:
     std::unique_ptr<boost::asio::io_service::work> run_work_;   ///< Work for the io_service
     boost::thread thread_;                                      ///< Thread this controller uses
 
+    bool dropped_;                                              ///< Has this controller been dropped?
+    bool working_;                                              ///< Is this controller currently doing work?
     Control::Status state_;                                     ///< Control state of this controller
 };

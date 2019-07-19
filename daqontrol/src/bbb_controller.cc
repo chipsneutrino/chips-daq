@@ -12,24 +12,32 @@ BBBController::BBBController(ControllerConfig config)
 
 void BBBController::init()
 {
-    state_ = Control::Idle; // Set the controller state to Configured
+    working_ = true;
+    state_ = Control::Idle; // Set the controller state to Idle
     g_elastic.log(DEBUG, "BBBController Init"); 
+    working_ = false;
 }
 
 void BBBController::configure()
 {
+    working_ = true;
     state_ = Control::Configured; // Set the controller state to Configured
     g_elastic.log(DEBUG, "BBBController Configure"); 
+    working_ = false;
 }
 
 void BBBController::startData() 
 {
+    working_ = true;
     state_ = Control::Started; // Set the controller state to Started
     g_elastic.log(DEBUG, "BBBController Start Data"); 
+    working_ = false;
 }
 
 void BBBController::stopData()
 {
+    working_ = true;
     state_ = Control::Configured; // Set the controller state to Configured
     g_elastic.log(DEBUG, "BBBController Stop Data"); 
+    working_ = false;
 }
