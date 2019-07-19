@@ -102,7 +102,7 @@ void CommandReceiver::processMessage(const ControlMessage& message)
         handler_->handleStopDataCommand();
         break;
     case ControlMessage::StartRun::Discriminator:
-        handler_->handleStartRunCommand(message.Payload.pStartRun.Which, message.Payload.pStartRun.flasher_v);
+        handler_->handleStartRunCommand(message.Payload.pStartRun.Which);
         break;
     case ControlMessage::StopRun::Discriminator:
         handler_->handleStopRunCommand();

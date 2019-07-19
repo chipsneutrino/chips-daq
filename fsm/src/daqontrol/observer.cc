@@ -24,6 +24,10 @@ void Observer::run()
                 sock.recv(nng::view{ &message, sizeof(message) });
 
                 switch (message.Discriminator) {
+                case DaqontrolStateMessage::Initialising::Discriminator:
+                    global.sendEvent(events::Initialising{});
+                    break;
+            
                 case DaqontrolStateMessage::Idle::Discriminator:
                     global.sendEvent(events::Idle{});
                     break;

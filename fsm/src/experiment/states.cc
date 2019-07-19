@@ -189,7 +189,6 @@ namespace states {
             msg.Discriminator = ControlMessage::StartRun::Discriminator;
             msg.Payload.pStartRun = ControlMessage::StartRun{};
             msg.Payload.pStartRun.Which = e.type;
-            msg.Payload.pStartRun.flasher_v = e.flasher_v;
             global.sendControlMessage(std::move(msg)); 
         };
         transit<states::StartingRun>(action);

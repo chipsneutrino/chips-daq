@@ -22,8 +22,6 @@
 #include <util/daq_config.h>
 #include <util/elastic_interface.h>
 
-enum Status {Idle, Configured, Started};
-
 class DAQControl : public CommandHandler {
 public:
     /**
@@ -47,37 +45,37 @@ public:
     virtual void handleConfigCommand() override;
     virtual void handleStartDataCommand() override;
     virtual void handleStopDataCommand() override;
-    virtual void handleStartRunCommand(RunType which, float flasher_v) override;
+    virtual void handleStartRunCommand(RunType which) override;
     virtual void handleStopRunCommand() override;
     virtual void handleExitCommand() override;
 
+    /// Starts the io_service on a thread group and then blocks at join_all()
     void run();
-    void init();  
-    void join();
 
-    Status getMode()
+    /// Posts Initialisation work to all controller io_services
+    void init();  
+
+    /// Get the current mode of the overall DAQontrol application
+    Control::Status getMode()
     {
-        return mode_;
+        return state_;
     }
 
 private:
-    /**
-     * Bound to thread creation
-     * Allows us to modify how the thread operates and what it does
-     */
-    void ioServiceThread();
+    /// Calls run() on the io_service in a seperate threas
+    void ioServiceThread() { io_service_->run(); }
 
-    /// Create CLB and BBB processors depending on configuration.
+    /// Create CLB and BBB controllers depending on configuration.
     void setupFromConfig();
 
-    // Settings
-    DAQConfig config_;                      ///< DAQConfig read from config file
-    std::vector<Controller*> controllers_;  ///< List of controllers
-    int n_threads_;                         ///< The number of threads to use
-    Status mode_;                           ///< Current state of operation
-    RunType run_type_;                      ///< Current run type
+    /// Post work to the io_service to check for the current state
+    void postUpdateState();
 
-    // IO_service stuff
+    DAQConfig config_;                                          ///< DAQConfig read from config file
+    std::vector<Controller*> controllers_;                      ///< List of controllers
+    int n_threads_;                                             ///< The number of threads to use
+    Control::Status state_;                                     ///< Current state of control operation
+
     std::shared_ptr<boost::asio::io_service> io_service_;       ///< BOOST io_service. The heart of everything
     std::unique_ptr<boost::asio::io_service::work> run_work_;   ///< Work for the io_service
     boost::thread_group thread_group_;                          ///< Group of threads to do the work

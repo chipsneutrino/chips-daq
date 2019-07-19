@@ -12,10 +12,16 @@ namespace states {
 
     class Unknown : public FSM {
         void entry() override;
+        void react(events::Initialising const&) override;
         void react(events::Idle const&) override;
         void react(events::Configured const&) override;
         void react(events::Started const&) override;
         void react(events::Connected const&) override {}
+    };
+
+    class Initialising : public FSM {
+        void entry() override;
+        void react(events::Idle const&) override;
     };
 
     class Idle : public FSM {

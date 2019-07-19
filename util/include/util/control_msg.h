@@ -33,7 +33,6 @@ struct OpsMessage {
     struct StartRun {
         static constexpr disc_t Discriminator = 3;
         RunType Which;      ///< Type of run
-        float flasher_v;    ///< Flasher voltage
     };
 
     /// Stop current data taking run
@@ -75,7 +74,6 @@ struct ControlMessage {
     struct StartRun {
         static constexpr disc_t Discriminator = 3;
         RunType Which;      ///< Type of run
-        float flasher_v;    ///< Flasher voltage
     };
 
     /// Stop current data taking run
@@ -126,22 +124,28 @@ struct DaqontrolStateMessage {
     const char Zero = '\0'; ///< The first bit must be '\0' otherwise NNG pub/sub discards the message.
     disc_t Discriminator;
 
+    /// Daqontrol is initialising
+    struct Initialising {
+        static constexpr disc_t Discriminator = 0;
+    };
+
     /// Daqontrol is just sitting there doing nothing
     struct Idle {
-        static constexpr disc_t Discriminator = 0;
+        static constexpr disc_t Discriminator = 1;
     };
 
     /// Daqontrol is configured
     struct Configured {
-        static constexpr disc_t Discriminator = 1;
+        static constexpr disc_t Discriminator = 2;
     };
 
     /// Daqontrol is started
     struct Started {
-        static constexpr disc_t Discriminator = 2;
+        static constexpr disc_t Discriminator = 3;
     };
 
     union {
+        Initialising pInitialising;
         Idle pIdle;
         Configured pConfigured;
         Started pStarted;

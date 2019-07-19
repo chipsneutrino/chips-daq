@@ -14,18 +14,21 @@ DaqontrolPublisher::DaqontrolPublisher(std::shared_ptr<DAQControl> daq_control)
 
 void DaqontrolPublisher::publishStatus()
 {
-    // TODO: synchronize?
     message_type message{};
 
-    if (daq_control_->getMode() == Idle) 
+    if (daq_control_->getMode() == Control::Initialising)
+    {
+        message.Discriminator = DaqontrolStateMessage::Initialising::Discriminator;
+    }
+    else if (daq_control_->getMode() == Control::Idle) 
     {
         message.Discriminator = DaqontrolStateMessage::Idle::Discriminator;
     } 
-    else if (daq_control_->getMode() == Configured)
+    else if (daq_control_->getMode() == Control::Configured)
     {
         message.Discriminator = DaqontrolStateMessage::Configured::Discriminator;
     }
-    else if (daq_control_->getMode() == Started)
+    else if (daq_control_->getMode() == Control::Started)
     {
         message.Discriminator = DaqontrolStateMessage::Started::Discriminator;
     }

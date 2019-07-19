@@ -13,6 +13,7 @@ public:
     void react(tinyfsm::Event const&) {}
     virtual void react(events::Disconnected const&);
     virtual void react(events::Connected const&);
+    virtual void react(events::Initialising const&) {}
     virtual void react(events::Idle const&) {}
     virtual void react(events::Configured const&) {}
     virtual void react(events::Started const&) {}

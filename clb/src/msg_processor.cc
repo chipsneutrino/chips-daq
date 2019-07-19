@@ -10,8 +10,7 @@ MsgProcessor::MsgProcessor(unsigned long ip_address, std::shared_ptr<boost::asio
     boost::asio::ip::udp::resolver resolver(*io_service);
     boost::asio::ip::address_v4 address(ip_address);
     boost::asio::ip::udp::resolver::query query(boost::asio::ip::udp::v4(), address.to_string(), std::to_string(DEFAULT_PORT));
-    boost::asio::ip::udp::resolver::iterator iter = resolver.resolve(query);
-    endpoint_ = *iter;
+    endpoint_ = *resolver.resolve(query);
 
     // Set the timeout for the socket read
     struct timeval tv = {READ_TIMEOUT, 0};
@@ -19,7 +18,7 @@ MsgProcessor::MsgProcessor(unsigned long ip_address, std::shared_ptr<boost::asio
     
     cmd_id_ = (int)(rand()*63);
 
-    g_elastic.log(INFO, "Setup MsgProcessor for {}", address.to_string());
+    //g_elastic.log(INFO, "Setup MsgProcessor for {}", address.to_string());
 }
 
 bool MsgProcessor::processCommand(int type, MsgWriter &mw, MsgReader &mr)
@@ -61,9 +60,7 @@ bool MsgProcessor::processCommand(int type, MsgWriter &mw, MsgReader &mr)
     // Fill a message reader with the message content
     mr.fromBuffer(response.content_);
 
-    // For now put a sleep in...
-    sleep(1);
-    
+    usleep(PROCESS_WAIT); // For now put a sleep in...
     return true;
 }
 
@@ -145,5 +142,4 @@ void MsgProcessor::sendAck(int id)
     // Send the ack
     boost::system::error_code err;
     auto sent = socket_.send_to(boost::asio::buffer(bb), endpoint_, 0, err);
-    //g_elastic.log(DEBUG, "Sent ack of size {}", sent); 
 }

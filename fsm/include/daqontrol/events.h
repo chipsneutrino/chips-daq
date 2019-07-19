@@ -8,6 +8,8 @@ namespace events {
     };
     struct Connected : tinyfsm::Event {
     };
+    struct Initialising : tinyfsm::Event {
+    };
     struct Idle : tinyfsm::Event {
     };
     struct Configured : tinyfsm::Event {

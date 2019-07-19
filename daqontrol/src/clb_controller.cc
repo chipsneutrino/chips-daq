@@ -11,56 +11,77 @@ CLBController::CLBController(ControllerConfig config)
     g_elastic.log(INFO, "Creating CLBController({})", config.eid_); 
 }
 
-CLBController::~CLBController()
-{
-    // Empty
-}
-
 void CLBController::init()
 {
     g_elastic.log(DEBUG, "CLBController({}) Init...", config_.eid_); 
-    testConnection();                           // Test the connection to the CLB
-    resetState();                               // Reset the state of the CLB to IDLE
-    setInitValues();                            // Set the initialisation variables
-    setState(CLBEvent(CLBEvents::INIT));        // Set the CLB state to STAND_BY
+    if(!testConnection()) return;                           // Test the connection to the CLB
+    if(!resetState()) return;                               // Reset the state of the CLB to IDLE
+    if(!setInitValues()) return;                            // Set the initialisation variables
+    if(!setState(CLBEvent(CLBEvents::INIT))) return;        // Set the CLB state to STAND_BY
+    state_ = Control::Idle;                                 // Set the controller state to Idle
     g_elastic.log(DEBUG, "CLBController({}) Init DONE", config_.eid_); 
 }
 
 void CLBController::configure()
 {
     g_elastic.log(DEBUG, "CLBController({}) Configure...", config_.eid_); 
-    setPMTs();                                  // Set and check the PMT voltages
-    setState(CLBEvent(CLBEvents::CONFIGURE));   // Set the CLB state to READY
+    if(!setPMTs()) return;                                  // Set and check the PMT voltages
+    if(!setFlasher()) return;                               // Set the flasher if required
+    if(!setState(CLBEvent(CLBEvents::CONFIGURE))) return;   // Set the CLB state to READY
+    state_ = Control::Configured;                           // Set the controller state to Configured
     g_elastic.log(DEBUG, "CLBController({}) Configure DONE", config_.eid_); 
 }
 
 void CLBController::startData() 
 {
     g_elastic.log(DEBUG, "CLBController({}) Start Data...", config_.eid_);
-    setState(CLBEvent(CLBEvents::START));       // Set the CLB state to RUNNING
+    if(!setState(CLBEvent(CLBEvents::START))) return;       // Set the CLB state to RUNNING
+    state_ = Control::Started;                              // Set the controller state to Started
     g_elastic.log(DEBUG, "CLBController({}) Start Data DONE", config_.eid_);
 }
 
 void CLBController::stopData()
 {
     g_elastic.log(DEBUG, "CLBController({}) Stop Data...", config_.eid_); 
-    setState(CLBEvent(CLBEvents::PAUSE));       // Set the CLB state to PAUSED
-    setState(CLBEvent(CLBEvents::STOP));        // Set the CLB state to STAND_BY
-    setState(CLBEvent(CLBEvents::CONFIGURE));   // Set the CLB state to READY
+    if(!setState(CLBEvent(CLBEvents::PAUSE))) return;       // Set the CLB state to PAUSED
+    if(!setState(CLBEvent(CLBEvents::STOP))) return;        // Set the CLB state to STAND_BY
+    if(!setState(CLBEvent(CLBEvents::CONFIGURE))) return;   // Set the CLB state to READY
+    state_ = Control::Configured;                           // Set the controller state to Configured
     g_elastic.log(DEBUG, "CLBController({}) Stop Data DONE", config_.eid_);
 }
 
-void CLBController::testConnection()
+bool CLBController::testConnection()
 {
-    MsgWriter mw; MsgReader mr;
-    if(!processor_.processCommand(MsgTypes::MSG_SYS_DATEREV, mw, mr))
+    MsgWriter mw;
+    mw.writeU16(1);
+    mw.writeI32(ProcVar::SYS_DOM_ID);
+
+    MsgReader mr;
+    if(!processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr))
     {
         g_elastic.log(ERROR, "CLB({}), Could not process 'testConnection'", config_.eid_); 
-        return;
+        return false;
+    }  
+         
+    if (int count = mr.readU16() != 1)
+    {
+        g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
+        return false;           
     }
+
+    int varId = mr.readI32();   
+    long eid = mr.readU32();
+
+    if (eid != config_.eid_)
+    {
+        g_elastic.log(ERROR, "CLB({}), Does not match eid {}", config_.eid_, eid); 
+        return false;        
+    }
+
+    return true;
 }
 
-void CLBController::setInitValues()
+bool CLBController::setInitValues()
 {
     std::vector<int>  var_ids;
     std::vector<long> var_values;
@@ -86,38 +107,43 @@ void CLBController::setInitValues()
     if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
     {
         g_elastic.log(ERROR, "CLB({}), Could not process 'setInitValues'", config_.eid_); 
-        return;
+        return false;
     }
+
+    return true;
 }
 
-void CLBController::resetState()
+bool CLBController::resetState()
 {
-    getState(); // Get the current CLB state
+    if(!getState()) return false; // Update the locally stored CLB state
 
-    if (state_ == IDLE) {
-        return;
-    } else if (state_ == STAND_BY) {
-        setState(CLBEvent(CLBEvents::RESET));
-    } else if (state_ == READY) {
-        setState(CLBEvent(CLBEvents::QUIT));
-        setState(CLBEvent(CLBEvents::RESET));
-    } else if (state_ == PAUSED) {
-        setState(CLBEvent(CLBEvents::STOP));
-        setState(CLBEvent(CLBEvents::RESET));
-    } else if (state_ == RUNNING) {
-        setState(CLBEvent(CLBEvents::PAUSE));
-        setState(CLBEvent(CLBEvents::STOP));
-        setState(CLBEvent(CLBEvents::RESET));
+    if (clb_state_ == IDLE) {
+        return true;
+    } else if (clb_state_ == STAND_BY) {
+        if (!setState(CLBEvent(CLBEvents::RESET)))  return false;
+    } else if (clb_state_ == READY) {
+        if (!setState(CLBEvent(CLBEvents::QUIT)))   return false;
+        if (!setState(CLBEvent(CLBEvents::RESET)))  return false;
+    } else if (clb_state_ == PAUSED) {
+        if (!setState(CLBEvent(CLBEvents::STOP)))   return false;
+        if (!setState(CLBEvent(CLBEvents::RESET)))  return false;
+    } else if (clb_state_ == RUNNING) {
+        if (!setState(CLBEvent(CLBEvents::PAUSE)))  return false;
+        if (!setState(CLBEvent(CLBEvents::STOP)))   return false;
+        if (!setState(CLBEvent(CLBEvents::RESET)))  return false;
     } else {
         g_elastic.log(WARNING, "CLB({}), do not know how to reset from this state", config_.eid_);
+        return false;
     }
+
+    return true;
 }
 
-void CLBController::setState(CLBEvent event)
+bool CLBController::setState(CLBEvent event)
 {
-    if (state_ != event.source_) {
-        g_elastic.log(WARNING, "CLB({}) is not in the correct source state! {} {}", config_.eid_, state_, event.source_);
-        return;
+    if (clb_state_ != event.source_) {
+        g_elastic.log(WARNING, "CLB({}) is not in the correct source state! {} {}", config_.eid_, clb_state_, event.source_);
+        return false;
     }
 
     MsgWriter mw;
@@ -127,19 +153,21 @@ void CLBController::setState(CLBEvent event)
     if(!processor_.processCommand(MsgTypes::MSG_CLB_EVENT, mw, mr))
     {
         g_elastic.log(ERROR, "CLB({}), Could not process 'setState'", config_.eid_); 
-        return;
+        return false;
     }
 
-    getState(); // Update the locally stored state of the CLB
+    if(!getState()) return false; // Update the locally stored CLB state
+
+    return true;
 }
 
-void CLBController::getState()
+bool CLBController::getState()
 {
     MsgWriter mw; MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_EXT_UPDATE, mw, mr))
     {
         g_elastic.log(ERROR, "CLB({}), Could not process 'getState'", config_.eid_); 
-        return;
+        return false;
     }
 
     int size = mr.readU8(); 
@@ -154,6 +182,7 @@ void CLBController::getState()
         if (errCode > 0) {
             errMsg = mr.readString();
             g_elastic.log(ERROR, "CLB({}), Subsys {} in state {} has err code {} with message {}!", config_.eid_, subsys, state, errCode, errMsg); 
+            return false;
         } else {
             errMsg = "";
         }
@@ -162,13 +191,15 @@ void CLBController::getState()
             if (currentState != state) 
             {
                 g_elastic.log(ERROR, "CLB({}), Not all subsystems in the current state!", config_.eid_); 
+                return false;
             }
         }
     }
-    state_ = (CLBState)currentState;
+    clb_state_ = (CLBState)currentState;
+    return true;
 }
 
-void CLBController::setPMTs()
+bool CLBController::setPMTs()
 {
     unsigned long enabled = config_.chan_enabled_.to_ulong();
 
@@ -182,13 +213,15 @@ void CLBController::setPMTs()
     if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
     {
         g_elastic.log(ERROR, "CLB({}), Could not process 'setPMTs'", config_.eid_); 
-        return;
+        return false;
     }
 
-    checkPMTs(); // Check the PMTs have been set correctly    
+    if(!checkPMTs()) return false; // Check the PMTs have been set correctly  
+
+    return true;  
 }
 
-void CLBController::checkPMTs()
+bool CLBController::checkPMTs()
 {
     // First lets get all the info we want back from the CLB
     MsgWriter mw;
@@ -201,13 +234,13 @@ void CLBController::checkPMTs()
     if(!processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr))
     {
         g_elastic.log(ERROR, "CLB({}), Could not process 'checkPMTs'", config_.eid_); 
-        return;
+        return false;
     } 
              
     if (int count = mr.readU16() != 3)
     {
         g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
-        return;           
+        return false;           
     }
 
     // Check the enabled channels
@@ -215,7 +248,8 @@ void CLBController::checkPMTs()
     std::bitset<32> enabled(mr.readU32());
     if (enabled != config_.chan_enabled_)
     {
-        g_elastic.log(ERROR, "CLB({}), Enabled channels do not match!", config_.eid_);       
+        g_elastic.log(ERROR, "CLB({}), Enabled channels do not match!", config_.eid_);  
+        return false;     
     }
 
     // Check the channel eids
@@ -224,7 +258,8 @@ void CLBController::checkPMTs()
         long eid = mr.readU32();
         if (eid != config_.chan_eid_[ipmt] && enabled[ipmt])
         {
-            g_elastic.log(ERROR, "Non matching eid on CLB({}) for PMT {}, {} vs {}!", config_.eid_, ipmt, eid, config_.chan_eid_[ipmt]);            
+            g_elastic.log(ERROR, "Non matching eid on CLB({}) for PMT {}, {} vs {}!", config_.eid_, ipmt, eid, config_.chan_eid_[ipmt]);  
+            return false;          
         }
     }
 
@@ -234,9 +269,12 @@ void CLBController::checkPMTs()
         long voltage = (long)mr.readU8();
         if (voltage != config_.chan_hv_[ipmt] && enabled[ipmt])
         {
-            g_elastic.log(ERROR, "Non matching voltage on CLB({}) for PMT {}, {} vs {}!", config_.eid_, ipmt, voltage, config_.chan_hv_[ipmt]);           
+            g_elastic.log(ERROR, "Non matching voltage on CLB({}) for PMT {}, {} vs {}!", config_.eid_, ipmt, voltage, config_.chan_hv_[ipmt]); 
+            return false;          
         }
     }
+
+    return true;
 }
 
 char CLBController::getSysEnabledMask()
@@ -249,13 +287,13 @@ char CLBController::getSysEnabledMask()
     if(!processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr))
     {
         g_elastic.log(ERROR, "CLB({}), Could not process 'getSysEnabledMask'", config_.eid_); 
-        return 0;
+        return -1;
     } 
          
     if (int count = mr.readU16() != 1)
     {
         g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
-        return 0;           
+        return -1;           
     }
 
     int varId = mr.readI32();   
@@ -275,13 +313,13 @@ char CLBController::getSysDisabledMask()
     if(!processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr))
     {
         g_elastic.log(ERROR, "CLB({}), Could not process 'getSysDisabledMask'", config_.eid_); 
-        return 0;
+        return -1;
     }  
          
     if (int count = mr.readU16() != 1)
     {
         g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
-        return 0;           
+        return -1;           
     }
 
     int varId = mr.readI32();   
@@ -291,38 +329,43 @@ char CLBController::getSysDisabledMask()
     return disabled;
 }
 
-void CLBController::enableFlasher(float flasher_v)
+bool CLBController::setFlasher()
 {
-    g_elastic.log(DEBUG, "CLBController({}) Enabling Nanobeacon...", config_.eid_);
-
-    // We can only control the nanobeacon outside of the data taking so we stop then start
-    setState(CLBEvent(CLBEvents::PAUSE));       // Set the CLB state to PAUSED
-    setState(CLBEvent(CLBEvents::STOP));        // Set the CLB state to STAND_BY
-
-    char enabled = getSysEnabledMask(); // get the current SYS_SYS_RUN_ENA mask
-    enabled |= ProcVar::SYS_SYS_RUN_ENA_NANO; // Set the nanobeacon bit
-  
-    MsgWriter mw;
-    mw.writeU16(2);  
-    mw.writeI32(ProcVar::OPT_NANO_VOLT);    mw.writeU16(flasher_v*1000);
-    mw.writeI32(ProcVar::SYS_SYS_RUN_ENA);  mw.writeU8(enabled);
- 
-    MsgReader mr;
-    if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
+    if (config_.nano_enabled_)
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'enableFlasher'", config_.eid_); 
-        return;
-    }   
+        MsgWriter mw;
+        mw.writeU16(2);  
+        mw.writeI32(ProcVar::OPT_NANO_VOLT);    mw.writeU16(config_.nano_voltage_);
+        mw.writeI32(ProcVar::SYS_SYS_RUN_ENA);  
+        mw.writeU8(0 | ProcVar::SYS_SYS_RUN_ENA_TDC | ProcVar::SYS_SYS_RUN_ENA_MON | ProcVar::SYS_SYS_RUN_ENA_NANO);    
 
-    checkFlasherVoltage(flasher_v);
+        MsgReader mr;
+        if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
+        {
+            g_elastic.log(ERROR, "CLB({}), Could not process 'setFlasher'", config_.eid_); 
+            return false;
+        }    
 
-    setState(CLBEvent(CLBEvents::CONFIGURE));   // Set the CLB state to READY
-    setState(CLBEvent(CLBEvents::START));       // Set the CLB state to RUNNING
+        if(!checkFlasherVoltage()) return false;
+    } 
+    else 
+    {
+        MsgWriter mw;
+        mw.writeU16(1);
+        mw.writeI32(ProcVar::SYS_SYS_RUN_ENA);  mw.writeU8(0 | ProcVar::SYS_SYS_RUN_ENA_TDC | ProcVar::SYS_SYS_RUN_ENA_MON);
+        
+        MsgReader mr;
+        if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
+        {
+            g_elastic.log(ERROR, "CLB({}), Could not process 'disableFlasher'", config_.eid_); 
+            return false;
+        }           
+    }
 
-    g_elastic.log(DEBUG, "CLBController({}) Enabling Nanobeacon DONE", config_.eid_); 
+    return true;
 }
 
-void CLBController::checkFlasherVoltage(float flasher_v)
+bool CLBController::checkFlasherVoltage()
 {
     MsgWriter mw;
     mw.writeU16(1);
@@ -332,57 +375,32 @@ void CLBController::checkFlasherVoltage(float flasher_v)
     if(!processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr))
     {
         g_elastic.log(ERROR, "CLB({}), Could not process 'checkFlasherVoltage'", config_.eid_); 
-        return;
+        return false;
     } 
          
     if (int count = mr.readU16() != 1)
     {
         g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
-        return;           
+        return false;           
     }
 
     int varId = mr.readI32();   
     float voltage = (float)mr.readU16();
-    if ((flasher_v*1000) != voltage) 
+    if ((config_.nano_voltage_) != voltage) 
     {
-        g_elastic.log(ERROR, "The nanobeacon voltage has not been set to {} correctly it is {}", flasher_v, (voltage/1000)); 
-        return;             
+        g_elastic.log(ERROR, "The nanobeacon voltage has not been set to {} correctly it is {}", config_.nano_voltage_, voltage); 
+        return false;             
     }
+
+    return true;
 }
 
-void CLBController::disableFlasher()
-{
-    g_elastic.log(DEBUG, "CLBController({}) Disabling Nanobeacon...", config_.eid_);
-
-    // We can only control the nanobeacon outside of the data taking so we stop then start
-    setState(CLBEvent(CLBEvents::PAUSE));       // Set the CLB state to PAUSED
-    setState(CLBEvent(CLBEvents::STOP));        // Set the CLB state to STAND_BY
-
-    char enabled = getSysEnabledMask(); // get the current SYS_SYS_RUN_ENA mask
-    enabled &= ~(ProcVar::SYS_SYS_RUN_ENA_NANO);
-
-    MsgWriter mw;
-    mw.writeU16(1);
-    mw.writeI32(ProcVar::SYS_SYS_RUN_ENA);  mw.writeU8(enabled);
-     
-    MsgReader mr;
-    if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
-    {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'disableFlasher'", config_.eid_); 
-        return;
-    }   
-
-    setState(CLBEvent(CLBEvents::CONFIGURE));   // Set the CLB state to READY
-    setState(CLBEvent(CLBEvents::START));       // Set the CLB state to RUNNING
-
-    g_elastic.log(DEBUG, "CLBController({}) Disabling Nanobeacon DONE", config_.eid_); 
-}
-
-void CLBController::enableHV()
+bool CLBController::enableHV()
 {
     g_elastic.log(DEBUG, "CLBController({}) Enabling High Voltage..", config_.eid_);
 
-    char disabled = getSysDisabledMask(); // get the current SYS_SYS_DISABLE mask
+    char disabled;
+    if(disabled = getSysDisabledMask() == -1) return false; // get the current SYS_SYS_DISABLE mask
     disabled &= ~(ProcVar::SYS_SYS_DISABLE_HV);
 
     MsgWriter mw;
@@ -393,17 +411,19 @@ void CLBController::enableHV()
     if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
     {
         g_elastic.log(ERROR, "CLB({}), Could not process 'enableHV'", config_.eid_); 
-        return;
+        return false;
     }   
 
     g_elastic.log(DEBUG, "CLBController({}) Enabling High Voltage DONE", config_.eid_);
+    return true;
 }
 
-void CLBController::disableHV()
+bool CLBController::disableHV()
 {
     g_elastic.log(DEBUG, "CLBController({}) Disabling High Voltage..", config_.eid_);
 
-    char disabled = getSysDisabledMask(); // get the current SYS_SYS_DISABLE mask
+    char disabled;
+    if(disabled = getSysDisabledMask() == -1) return false; // get the current SYS_SYS_DISABLE mask
     disabled |= ProcVar::SYS_SYS_DISABLE_HV;
 
     MsgWriter mw;
@@ -414,13 +434,15 @@ void CLBController::disableHV()
     if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
     {
         g_elastic.log(ERROR, "CLB({}), Could not process 'disableHV'", config_.eid_); 
-        return;
+        return false;
     }   
 
     g_elastic.log(DEBUG, "CLBController({}) Disabling High Voltage DONE", config_.eid_);
+
+    return true;
 }
 
-void CLBController::getIPMuxPorts()
+bool CLBController::getIPMuxPorts()
 {
     // First lets get all the info we want back from the CLB
     MsgWriter mw;
@@ -431,15 +453,17 @@ void CLBController::getIPMuxPorts()
     if(!processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr))
     {
         g_elastic.log(ERROR, "CLB({}), Could not process 'getIPMuxPorts'", config_.eid_); 
-        return;
+        return false;
     }       
 
     if (int count = mr.readU16() != 1)
     {
         g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
-        return;           
+        return false;           
     }
 
     int varId = mr.readU32(); 
     g_elastic.log(DEBUG, "Ports: {}, {}, {}, {}", mr.readU16(), mr.readU16(), mr.readU16(), mr.readU16()); 
+
+    return true;
 }

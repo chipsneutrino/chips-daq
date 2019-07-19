@@ -88,7 +88,6 @@ void OpsUplink::handleMessage(nng::socket& sock, const OpsMessage& message)
         {
             OpsCommands::StartRun command{};
             command.type = message.Payload.pStartRun.Which;
-            command.flasher_v = message.Payload.pStartRun.flasher_v;
             global.sendEvent(command);
 
             if (Experiment::FSM::is_in_state<Experiment::states::StartingRun>()

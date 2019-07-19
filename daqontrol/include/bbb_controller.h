@@ -20,14 +20,10 @@ public:
     void postConfigure() { io_service_->post(boost::bind(&BBBController::configure, this)); };
     void postStartData() { io_service_->post(boost::bind(&BBBController::startData, this)); };
     void postStopData() { io_service_->post(boost::bind(&BBBController::stopData, this)); };
-    void postEnableFlasher(float flasher_v) { io_service_->post(boost::bind(&BBBController::enableFlasher, this, flasher_v)); };
-    void postDisableFlasher() { io_service_->post(boost::bind(&BBBController::disableFlasher, this)); };
 
 private:
     void init();
     void configure();
     void startData();
     void stopData();
-    void enableFlasher(float flasher_v);
-    void disableFlasher();
 };

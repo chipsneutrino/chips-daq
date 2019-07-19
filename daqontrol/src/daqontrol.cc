@@ -18,13 +18,12 @@ static constexpr int success = 0;
 
 int main(int argc, char* argv[])
 {
-    // Default settings
-    std::string config = "../data/testConfig.opt";
+    std::string config = "../data/singleConfig.opt";  // Default config file
 
     boost::program_options::options_description desc("Options");
     desc.add_options()("help,h", "DAQontrol...")
         ("config,c", boost::program_options::value<std::string>(&config), 
-            "Configuration file (../data/config.opt)");
+            "Configuration file (../data/singleConfig.opt)");
 
     try
     {
@@ -64,8 +63,7 @@ int main(int argc, char* argv[])
         cmd_receiver->setHandler(daq_control);
         cmd_receiver->runAsync();
 
-        // We always initialise everything to test connections etc...
-	    daq_control->init();
+	    daq_control->init(); // Init to test CLB connections etc...
 
         bus_publisher->runAsync();
         daq_control->run();

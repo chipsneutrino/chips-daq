@@ -18,6 +18,11 @@ namespace states {
         global.sendEvent(StateUpdate{});
     }
 
+    void Unknown::react(events::Initialising const& e)
+    {
+        transit<states::Initialising>();
+    }
+
     void Unknown::react(events::Idle const& e)
     {
         transit<states::Idle>();
@@ -31,6 +36,17 @@ namespace states {
     void Unknown::react(events::Started const& e)
     {
         transit<states::Started>();
+    }
+
+    void Initialising::entry()
+    {
+        g_elastic.log(INFO, "Daqontrol : Initialising");
+        global.sendEvent(StateUpdate{});
+    }
+
+    void Initialising::react(events::Idle const& e)
+    {
+        transit<states::Idle>();
     }
 
     void Idle::entry()

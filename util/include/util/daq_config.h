@@ -30,6 +30,8 @@ struct ControllerConfig {
 	unsigned int ip_ 			= 0;			///< Controller IP address on the DAQ network			
 	unsigned int server_ip_ 	= 3232238337;	///< The DAQ server IP address (192.168.11.1)
 	unsigned int window_dur_ 	= 1000;			///< Duration of the controller reporting window (ms)
+	bool nano_enabled_			= false;		///< Should the nanobeacon be enabled?
+	int nano_voltage_			= 0.0;			///< The nanobeacon voltage in mv
 
 	// Channel specific variables
 	std::bitset<32> chan_enabled_;				///< Is the channel enabled
@@ -57,6 +59,7 @@ public:
 	int num_controllers_;					///< Total number of controller from "clb_number"
 	int enabled_controllers_;				///< Total number of "enabled" controllers
 	int enabled_channels_;					///< Total number of "enabled" channels
+	bool is_nano_enabled_;					///< Do any of the controllers have an enabled nanobeacon?
 
 	std::vector<ControllerConfig> configs_;	///< Vector of controller configs
 

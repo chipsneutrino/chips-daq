@@ -15,7 +15,7 @@ public:
     virtual void handleConfigCommand() = 0;
     virtual void handleStartDataCommand() = 0;
     virtual void handleStopDataCommand() = 0;
-    virtual void handleStartRunCommand(RunType which, float flasher_v) = 0;
+    virtual void handleStartRunCommand(RunType which) = 0;
     virtual void handleStopRunCommand() = 0;
     virtual void handleExitCommand() = 0;
 };

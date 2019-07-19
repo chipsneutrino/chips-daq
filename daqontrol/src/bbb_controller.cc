@@ -12,30 +12,24 @@ BBBController::BBBController(ControllerConfig config)
 
 void BBBController::init()
 {
+    state_ = Control::Idle; // Set the controller state to Configured
     g_elastic.log(DEBUG, "BBBController Init"); 
 }
 
 void BBBController::configure()
 {
+    state_ = Control::Configured; // Set the controller state to Configured
     g_elastic.log(DEBUG, "BBBController Configure"); 
 }
 
 void BBBController::startData() 
 {
+    state_ = Control::Started; // Set the controller state to Started
     g_elastic.log(DEBUG, "BBBController Start Data"); 
 }
 
 void BBBController::stopData()
 {
+    state_ = Control::Configured; // Set the controller state to Configured
     g_elastic.log(DEBUG, "BBBController Stop Data"); 
-}
-
-void BBBController::enableFlasher(float flasher_v)
-{
-    g_elastic.log(DEBUG, "BBBController Enabling Nanobeacon");  
-}
-
-void BBBController::disableFlasher()
-{
-    g_elastic.log(DEBUG, "BBBController Disabling Nanobeacon");  
 }

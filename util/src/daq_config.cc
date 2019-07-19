@@ -10,6 +10,7 @@ DAQConfig::DAQConfig(const char * config) : conf_name_(config)
 	num_controllers_ = 0;
 	enabled_controllers_ = 0;
 	enabled_channels_ = 0;
+	is_nano_enabled_ = false;
 
 	configs_.clear();
 	
@@ -31,9 +32,11 @@ void DAQConfig::printConfig()
 	std::cout << "Number of Miners on Shift -> " << enabled_controllers_ << std::endl;
 	std::cout << "Number of Pickaxes being used -> " << enabled_channels_ << std::endl;
 	for (int i = 0; i<num_controllers_; i++) {
-		std::cout << "Miner " << i << " -> ID = " << configs_[i].eid_ <<
+		std::cout << "Miner " << i << "(" << configs_[i].enabled_ << ")" << 
+					" -> ID = " << configs_[i].eid_ <<
 					", Address = " << configs_[i].ip_ <<
-		 			", Pickaxes = " << configs_[i].chan_enabled_.count() << std::endl;
+		 			", Pickaxes = " << configs_[i].chan_enabled_.count() <<
+					", Nanobeacon = " << configs_[i].nano_enabled_ << std::endl;
 	}
 	std::cout << "**********************************************\n" << std::endl;
 }
@@ -119,13 +122,13 @@ void DAQConfig::parseLine(std::string &line)
 		}			
 
 		// Add the controllers eID
-		if (config.compare("eid") == 0) {
+		else if (config.compare("eid") == 0) {
 			if (!(ss >> configs_[controller_num].eid_)) { 
 				std::cerr << "Error: " << value << " should be int" << std::endl; 
 			}	
 		} 
 
-		if (config.compare("ip") == 0) {
+		else if (config.compare("ip") == 0) {
 			if (!(ss >> configs_[controller_num].ip_)) { 
 				std::cerr << "Error: " << value << " should be int" << std::endl; 
 			}			
@@ -144,6 +147,26 @@ void DAQConfig::parseLine(std::string &line)
 				if ((int)b[channel] == 1) { enabled_channels_ += 1; }
 			}
 		}
+
+		// Check if the nanobeacon should be anabled
+		else if (config.compare("nano_enabled") == 0) {
+			bool enabled = false;
+			if (!(ss >> enabled)) { 
+				std::cerr << "Error: " << value << " should be int (0 or 1)" << std::endl;
+			}
+
+			if (enabled) {
+				is_nano_enabled_ = true;
+				configs_[controller_num].nano_enabled_ = true;
+			}
+		}
+
+		// Add the nanobeacon voltage
+		else if (config.compare("nano_voltage") == 0) {
+			if (!(ss >> configs_[controller_num].nano_voltage_)) { 
+				std::cerr << "Error: " << value << " should be int" << std::endl; 
+			}	
+		} 	
 		
 	} else if (num_dots == 2) {
 
@@ -155,7 +178,7 @@ void DAQConfig::parseLine(std::string &line)
 		} 
 
 		// Add the channel volatages
-		if (config.compare("hv") == 0) {
+		else if (config.compare("hv") == 0) {
 			if (!(ss >> configs_[controller_num].chan_hv_[channel_num])) {
 				std::cerr << "Error: " << config << " = " << value << " should be hex" << std::endl;
 			}			
