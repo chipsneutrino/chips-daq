@@ -102,19 +102,19 @@ struct DaqoniteStateMessage {
     disc_t Discriminator;
 
     /// Daqonite is just sitting there doing nothing
-    struct Idle {
+    struct Ready {
         static constexpr disc_t Discriminator = 0;
     };
 
     /// Daqonite is actively processing and saving data
-    struct Mining {
+    struct Running {
         static constexpr disc_t Discriminator = 1;
         RunType Which;
     };
 
     union {
-        Idle pIdle;
-        Mining pMining;
+        Ready pReady;
+        Running pRunning;
     } Payload;
 };
 
@@ -130,7 +130,7 @@ struct DaqontrolStateMessage {
     };
 
     /// Daqontrol is just sitting there doing nothing
-    struct Idle {
+    struct Ready {
         static constexpr disc_t Discriminator = 1;
     };
 
@@ -146,7 +146,7 @@ struct DaqontrolStateMessage {
 
     union {
         Initialising pInitialising;
-        Idle pIdle;
+        Ready pReady;
         Configured pConfigured;
         Started pStarted;
     } Payload;
@@ -159,17 +159,17 @@ struct DaqsitterStateMessage {
     disc_t Discriminator;
 
     /// Daqsitter is just sitting there doing nothing
-    struct Idle {
+    struct Ready {
         static constexpr disc_t Discriminator = 0;
     };
 
     /// Daqsitter is monitoring packets
-    struct Monitoring {
+    struct Started {
         static constexpr disc_t Discriminator = 1;
     };
 
     union {
-        Idle pIdle;
-        Monitoring pMonitoring;
+        Ready pReady;
+        Started pStarted;
     } Payload;
 };

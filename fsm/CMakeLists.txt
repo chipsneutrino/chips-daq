@@ -18,6 +18,11 @@ add_executable(fsm
     include/daqontrol/fsm.h                     src/daqontrol/fsm.cc
     include/daqontrol/states.h                  src/daqontrol/states.cc
     include/daqontrol/observer.h                src/daqontrol/observer.cc
+
+    include/daqsitter/events.h
+    include/daqsitter/fsm.h                     src/daqsitter/fsm.cc
+    include/daqsitter/states.h                  src/daqsitter/states.cc
+    include/daqsitter/observer.h                src/daqsitter/observer.cc
     
     include/experiment/fsm.h                    src/experiment/fsm.cc
     include/experiment/states.h                 src/experiment/states.cc

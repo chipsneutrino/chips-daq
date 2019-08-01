@@ -9,7 +9,7 @@
 #include <util/daq_config.h>
 
 namespace Control {
-enum Status {Initialising, Idle, Configured, Started};
+enum Status {Initialising, Ready, Configured, Started};
 }
 
 class Controller {

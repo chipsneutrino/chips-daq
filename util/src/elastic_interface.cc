@@ -55,9 +55,9 @@ void ElasticInterface::log(severity level, std::string message)
     fIndex_service.post(boost::bind(&ElasticInterface::logWork, this, level, message, timestamp()));
 }
 
-void ElasticInterface::state(std::string process, int pid, std::string state)
+void ElasticInterface::state(std::string process, std::string state)
 {
-    fIndex_service.post(boost::bind(&ElasticInterface::stateWork, this, process, pid, state, timestamp()));
+    fIndex_service.post(boost::bind(&ElasticInterface::stateWork, this, process, state, timestamp()));
 }
 
 void ElasticInterface::document(std::string index, Json::Value document)
@@ -107,12 +107,11 @@ void ElasticInterface::logWork(severity level, std::string message, long timesta
     }
 }
 
-void ElasticInterface::stateWork(std::string process, int pid, std::string state, long timestamp) 
+void ElasticInterface::stateWork(std::string process, std::string state, long timestamp) 
 {
     Json::Value document;               // Populate daqstate JSON document
     document["timestamp"] = timestamp;  // Milliseconds since epoch timestamp
     document["process"] = process;      // Process name
-    document["pid"] = pid;              // Process ID
     document["state"] = state;          // Process state keyword
 
     if (mode() == ELASTIC) // only ELASTIC mode

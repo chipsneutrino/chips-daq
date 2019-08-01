@@ -1,6 +1,7 @@
 add_executable(daqsitter
     src/daqsitter.cc
     include/monitoring_handler.h        src/monitoring_handler.cc
+    include/daqsitter_publisher.h       src/daqsitter_publisher.cc
     )
 
 target_include_directories(daqsitter PUBLIC include)

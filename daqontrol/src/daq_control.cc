@@ -9,7 +9,7 @@ DAQControl::DAQControl(std::string config_file)
     , controllers_{}
     , n_threads_(1)
     , current_state_(Control::Initialising)
-    , target_state_(Control::Idle)
+    , target_state_(Control::Ready)
     , io_service_{ new boost::asio::io_service }
     , run_work_{ new boost::asio::io_service::work(*io_service_) }
     , thread_group_{}

@@ -2,7 +2,7 @@
 
 #include <tinyfsm.hpp>
 
-namespace Daqonite {
+namespace Daqsitter {
 namespace events {
     struct Disconnected : tinyfsm::Event {
     };
@@ -10,7 +10,7 @@ namespace events {
     };
     struct Ready : tinyfsm::Event {
     };
-    struct Running : tinyfsm::Event {
+    struct Started : tinyfsm::Event {
     };
 }
 }

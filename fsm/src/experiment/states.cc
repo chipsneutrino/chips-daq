@@ -4,6 +4,7 @@
 #include "control_bus/states.h"
 #include "daqonite/states.h"
 #include "daqontrol/states.h"
+#include "daqsitter/states.h"
 #include "experiment/states.h"
 #include "global.h"
 #include "global_events.h"
@@ -14,14 +15,16 @@ namespace states {
     void Init::entry()
     {
         g_elastic.log(INFO, "Experiment : Init");
+        g_elastic.state("fsm", "Init");
         global.sendEvent(StateUpdate{});
     }
 
     void Init::react(StateUpdate const&)
     {
         if (ControlBus::FSM::is_in_state<ControlBus::states::Online>() 
-            && Daqonite::FSM::is_in_state<Daqonite::states::Idle>()
-            && Daqontrol::FSM::is_in_state<Daqontrol::states::Idle>()) 
+            && Daqonite::FSM::is_in_state<Daqonite::states::Ready>()
+            && Daqontrol::FSM::is_in_state<Daqontrol::states::Ready>()
+            && Daqsitter::FSM::is_in_state<Daqsitter::states::Ready>()) 
         {
             transit<states::Ready>();
         }
@@ -31,6 +34,7 @@ namespace states {
     void Exit::entry()
     {
         g_elastic.log(INFO, "Experiment : Exit");
+        g_elastic.state("fsm", "Exit");
         global.sendEvent(StateUpdate{});
 
         global.terminate();
@@ -44,6 +48,7 @@ namespace states {
     void Ready::entry()
     {
         g_elastic.log(INFO, "Experiment : Ready");
+        g_elastic.state("fsm", "Ready");
         global.sendEvent(StateUpdate{});
     }
 
@@ -60,6 +65,7 @@ namespace states {
     void Configuring::entry()
     {
         g_elastic.log(INFO, "Experiment : Configuring");
+        g_elastic.state("fsm", "Configuring");
         global.sendEvent(StateUpdate{});
 
         {
@@ -77,13 +83,13 @@ namespace states {
         }
 
         // Check DAQonite is in a valid state
-        if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Ready>() && !Daqonite::FSM::is_in_state<Daqonite::states::Running>()) {
             transit<states::Error>();
             return;
         }
 
         // Check DAQontrol is in a valid state
-        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Idle>() 
+        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Ready>() 
             && !Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
             && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) 
         {
@@ -91,8 +97,16 @@ namespace states {
             return;
         }
 
+        // Check DAQsitter is in a valid state
+        if (!Daqsitter::FSM::is_in_state<Daqsitter::states::Ready>() && !Daqsitter::FSM::is_in_state<Daqsitter::states::Started>()) {
+            transit<states::Error>();
+            return;
+        }
+
         // Check applications are in the correct state to transmit state
-        if (Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()) {
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Ready>() 
+            && Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
+            && Daqsitter::FSM::is_in_state<Daqsitter::states::Ready>()) {
             transit<states::Configured>();
             return;
         }
@@ -102,12 +116,15 @@ namespace states {
     void Configured::entry()
     {
         g_elastic.log(INFO, "Experiment : Configured");
+        g_elastic.state("fsm", "Configured");
         global.sendEvent(StateUpdate{});
     }
 
     void Configured::react(StateUpdate const&)
     {
-        if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()) {
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Ready>() 
+            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
+            && !Daqsitter::FSM::is_in_state<Daqsitter::states::Ready>()) {
             transit<states::Error>();
             return;
         }
@@ -122,6 +139,7 @@ namespace states {
     void StartingData::entry()
     {
         g_elastic.log(INFO, "Experiment : StartingData");
+        g_elastic.state("fsm", "StartingData");
         global.sendEvent(StateUpdate{});
 
         {
@@ -139,13 +157,13 @@ namespace states {
         }
 
         // Check DAQonite is in a valid state
-        if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Ready>() && !Daqonite::FSM::is_in_state<Daqonite::states::Running>()) {
             transit<states::Error>();
             return;
         }
 
         // Check DAQontrol is in a valid state
-        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Idle>() 
+        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Ready>() 
             && !Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
             && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) 
         {
@@ -153,8 +171,16 @@ namespace states {
             return;
         }
 
+        // Check DAQsitter is in a valid state
+        if (!Daqsitter::FSM::is_in_state<Daqsitter::states::Ready>() && !Daqsitter::FSM::is_in_state<Daqsitter::states::Started>()) {
+            transit<states::Error>();
+            return;
+        }
+
         // Check applications are in the correct state to transmit state
-        if (Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) {
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Ready>() 
+            && Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()
+            && Daqsitter::FSM::is_in_state<Daqsitter::states::Started>()) {
             transit<states::Started>();
             return;
         }
@@ -164,12 +190,15 @@ namespace states {
     void Started::entry()
     {
         g_elastic.log(INFO, "Experiment : Started");
+        g_elastic.state("fsm", "Started");
         global.sendEvent(StateUpdate{});
     }
 
     void Started::react(StateUpdate const&)
     {
-        if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) {
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Ready>() 
+            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()
+            && !Daqsitter::FSM::is_in_state<Daqsitter::states::Started>()) {
             transit<states::Error>();
             return;
         }
@@ -198,6 +227,7 @@ namespace states {
     void StoppingData::entry()
     {
         g_elastic.log(INFO, "Experiment : StoppingData");
+        g_elastic.state("fsm", "StoppingData");
         global.sendEvent(StateUpdate{});
 
         {
@@ -215,13 +245,13 @@ namespace states {
         }
 
         // Check DAQonite is in a valid state
-        if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Ready>() && !Daqonite::FSM::is_in_state<Daqonite::states::Running>()) {
             transit<states::Error>();
             return;
         }
 
         // Check DAQontrol is in a valid state
-        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Idle>() 
+        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Ready>() 
             && !Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
             && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) 
         {
@@ -229,8 +259,16 @@ namespace states {
             return;
         }
 
+        // Check DAQsitter is in a valid state
+        if (!Daqsitter::FSM::is_in_state<Daqsitter::states::Ready>() && !Daqsitter::FSM::is_in_state<Daqsitter::states::Started>()) {
+            transit<states::Error>();
+            return;
+        }
+
         // Check applications are in the correct state to transmit state
-        if (Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()) {
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Ready>() 
+            && Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
+            && Daqsitter::FSM::is_in_state<Daqsitter::states::Ready>()) {
             transit<states::Configured>();
             return;
         }
@@ -240,6 +278,7 @@ namespace states {
     void StartingRun::entry()
     {
         g_elastic.log(INFO, "Experiment : StartingRun");
+        g_elastic.state("fsm", "StartingRun");
         global.sendEvent(StateUpdate{});
     }
 
@@ -251,13 +290,13 @@ namespace states {
         }
 
         // Check DAQonite is in a valid state
-        if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Ready>() && !Daqonite::FSM::is_in_state<Daqonite::states::Running>()) {
             transit<states::Error>();
             return;
         }
 
         // Check DAQontrol is in a valid state
-        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Idle>() 
+        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Ready>() 
             && !Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
             && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) 
         {
@@ -265,8 +304,16 @@ namespace states {
             return;
         }
 
+        // Check DAQsitter is in a valid state
+        if (!Daqsitter::FSM::is_in_state<Daqsitter::states::Ready>() && !Daqsitter::FSM::is_in_state<Daqsitter::states::Started>()) {
+            transit<states::Error>();
+            return;
+        }
+
         // Check applications are in the correct state to transmit state
-        if (Daqonite::FSM::is_in_state<Daqonite::states::Mining>() && Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) {
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Running>() 
+            && Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()
+            && Daqsitter::FSM::is_in_state<Daqsitter::states::Started>()) {
             transit<states::Running>();
             return;
         }
@@ -275,12 +322,15 @@ namespace states {
     void Running::entry()
     {
         g_elastic.log(INFO, "Experiment : Running");
+        g_elastic.state("fsm", "Running");
         global.sendEvent(StateUpdate{});
     }
 
     void Running::react(StateUpdate const&)
     {
-        if (!Daqonite::FSM::is_in_state<Daqonite::states::Mining>() && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) {
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Running>() 
+            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()
+            && !Daqsitter::FSM::is_in_state<Daqsitter::states::Started>()) {
             transit<states::Error>();
             return;
         }
@@ -294,6 +344,7 @@ namespace states {
     void StoppingRun::entry()
     {
         g_elastic.log(INFO, "Experiment : StoppingRun");
+        g_elastic.state("fsm", "StoppingRun");
         global.sendEvent(StateUpdate{});
 
         {
@@ -311,13 +362,13 @@ namespace states {
         }
 
         // Check DAQonite is in a valid state
-        if (!Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && !Daqonite::FSM::is_in_state<Daqonite::states::Mining>()) {
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Ready>() && !Daqonite::FSM::is_in_state<Daqonite::states::Running>()) {
             transit<states::Error>();
             return;
         }
 
         // Check DAQontrol is in a valid state
-        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Idle>() 
+        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Ready>() 
             && !Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
             && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) 
         {
@@ -325,8 +376,16 @@ namespace states {
             return;
         }
 
+        // Check DAQsitter is in a valid state
+        if (!Daqsitter::FSM::is_in_state<Daqsitter::states::Ready>() && !Daqsitter::FSM::is_in_state<Daqsitter::states::Started>()) {
+            transit<states::Error>();
+            return;
+        }
+
         // Check applications are in the correct state to transmit state
-        if (Daqonite::FSM::is_in_state<Daqonite::states::Idle>() && Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) {
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Ready>() 
+            && Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()
+            && Daqsitter::FSM::is_in_state<Daqsitter::states::Started>()) {
             transit<states::Started>();
             return;
         }
@@ -335,6 +394,7 @@ namespace states {
     void Error::entry()
     {
         g_elastic.log(INFO, "Experiment : Error");
+        g_elastic.state("fsm", "Error");
         global.sendEvent(StateUpdate{});
     }
 

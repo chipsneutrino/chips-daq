@@ -230,42 +230,43 @@ void MonitoringHandler::runThread()
 
 void MonitoringHandler::handleConfigCommand()
 {
-    // Empty
+    g_elastic.log(INFO, "DAQsitter: Config");
 }
 
 void MonitoringHandler::handleStartDataCommand()
 {
-    // Empty
+    g_elastic.log(INFO, "DAQsitter: Starting Data");
+    // Check we are not running
+    if (mode_ != true) {
+        // Set the mode to monitoring
+        mode_ = true;
+
+    } else {
+        g_elastic.log(INFO, "Monitoring Handler already running");
+    }
 }
 
 void MonitoringHandler::handleStopDataCommand()
 {
-    // Empty
-}
-
-void MonitoringHandler::handleStartRunCommand(RunType which)
-{
-    // If we are currently running first stop the current run
-    if (mode_ == true) {
-        g_elastic.log(INFO, "Monitoring Handler stopping current run");
-        handleStopRunCommand();
-    }
-
-    // Set the mode to data taking
-    run_type_ = which;
-    mode_ = true;
-}
-
-void MonitoringHandler::handleStopRunCommand()
-{
+    g_elastic.log(INFO, "DAQsitter: Stopping Data");
     // Check we are actually running
     if (mode_ == true) {
-        // Set the mode to monitoring
+        // Set the mode to not monitoring
         mode_ = false;
 
     } else {
         g_elastic.log(INFO, "Monitoring Handler already not running");
     }
+}
+
+void MonitoringHandler::handleStartRunCommand(RunType which)
+{
+    g_elastic.log(INFO, "DAQsitter: Starting Run");
+}
+
+void MonitoringHandler::handleStopRunCommand()
+{
+    g_elastic.log(INFO, "DAQsitter: Stopping Run");
 }
 
 void MonitoringHandler::handleExitCommand()

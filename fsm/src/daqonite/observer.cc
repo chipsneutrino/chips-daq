@@ -24,12 +24,12 @@ void Observer::run()
                 sock.recv(nng::view{ &message, sizeof(message) });
 
                 switch (message.Discriminator) {
-                case DaqoniteStateMessage::Idle::Discriminator:
-                    global.sendEvent(events::Idle{});
+                case DaqoniteStateMessage::Ready::Discriminator:
+                    global.sendEvent(events::Ready{});
                     break;
 
-                case DaqoniteStateMessage::Mining::Discriminator:
-                    global.sendEvent(events::Mining{});
+                case DaqoniteStateMessage::Running::Discriminator:
+                    global.sendEvent(events::Running{});
                     break;
 
                 default:

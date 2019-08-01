@@ -20,9 +20,9 @@ void DaqontrolPublisher::publishStatus()
     {
         message.Discriminator = DaqontrolStateMessage::Initialising::Discriminator;
     }
-    else if (daq_control_->getMode() == Control::Idle) 
+    else if (daq_control_->getMode() == Control::Ready) 
     {
-        message.Discriminator = DaqontrolStateMessage::Idle::Discriminator;
+        message.Discriminator = DaqontrolStateMessage::Ready::Discriminator;
     } 
     else if (daq_control_->getMode() == Control::Configured)
     {

@@ -13,7 +13,7 @@ public:
     void react(tinyfsm::Event const&) {}
     virtual void react(events::Disconnected const&);
     virtual void react(events::Connected const&);
-    virtual void react(events::Idle const&) {}
-    virtual void react(events::Mining const&) {}
+    virtual void react(events::Ready const&) {}
+    virtual void react(events::Running const&) {}
 };
 }

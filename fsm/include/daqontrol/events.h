@@ -10,7 +10,7 @@ namespace events {
     };
     struct Initialising : tinyfsm::Event {
     };
-    struct Idle : tinyfsm::Event {
+    struct Ready : tinyfsm::Event {
     };
     struct Configured : tinyfsm::Event {
     };

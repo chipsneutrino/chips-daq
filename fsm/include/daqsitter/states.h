@@ -1,9 +1,9 @@
 #pragma once
 
-#include "daqonite/events.h"
-#include "daqonite/fsm.h"
+#include "daqsitter/events.h"
+#include "daqsitter/fsm.h"
 
-namespace Daqonite {
+namespace Daqsitter {
 namespace states {
     class Offline : public FSM {
         void entry() override;
@@ -13,16 +13,16 @@ namespace states {
     class Unknown : public FSM {
         void entry() override;
         void react(events::Ready const&) override;
-        void react(events::Running const&) override;
+        void react(events::Started const&) override;
         void react(events::Connected const&) override {}
     };
 
     class Ready : public FSM {
         void entry() override;
-        void react(events::Running const&) override;
+        void react(events::Started const&) override;
     };
 
-    class Running : public FSM {
+    class Started : public FSM {
         void entry() override;
         void react(events::Ready const&) override;
     };

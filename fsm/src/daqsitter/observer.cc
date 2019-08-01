@@ -2,12 +2,12 @@
 
 #include <nngpp/protocol/sub0.h>
 
-#include "daqontrol/observer.h"
+#include "daqsitter/observer.h"
 #include "global.h"
 #include <util/control_msg.h>
 #include <util/elastic_interface.h>
 
-namespace Daqontrol {
+namespace Daqsitter {
 void Observer::run()
 {
     while (running_) {
@@ -15,38 +15,30 @@ void Observer::run()
             auto sock = nng::sub::open();
             nng::sub::set_opt_subscribe(sock, "");
             nng::set_opt_recv_timeout(sock, 1000);
-            sock.dial(DaqontrolStateMessage::URL);
+            sock.dial(DaqsitterStateMessage::URL);
 
             global.sendEvent(events::Connected{});
 
-            DaqontrolStateMessage message{};
+            DaqsitterStateMessage message{};
             while (running_) {
                 sock.recv(nng::view{ &message, sizeof(message) });
 
                 switch (message.Discriminator) {
-                case DaqontrolStateMessage::Initialising::Discriminator:
-                    global.sendEvent(events::Initialising{});
-                    break;
-            
-                case DaqontrolStateMessage::Ready::Discriminator:
+                case DaqsitterStateMessage::Ready::Discriminator:
                     global.sendEvent(events::Ready{});
                     break;
 
-                case DaqontrolStateMessage::Configured::Discriminator:
-                    global.sendEvent(events::Configured{});
-                    break;
-
-                case DaqontrolStateMessage::Started::Discriminator:
+                case DaqsitterStateMessage::Started::Discriminator:
                     global.sendEvent(events::Started{});
                     break;
 
                 default:
-                    g_elastic.log(WARNING, "Daqontrol received unknown discriminator: {}", message.Discriminator);
+                    g_elastic.log(WARNING, "Daqsitter received unknown discriminator: {}", message.Discriminator);
                     break;
                 }
             }
         } catch (const nng::exception& e) {
-            g_elastic.log(DEBUG, "Daqontrol error: {}: {}", e.who(), e.what());
+            g_elastic.log(DEBUG, "Daqsitter error: {}: {}", e.who(), e.what());
             global.sendEvent(events::Disconnected{});
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }

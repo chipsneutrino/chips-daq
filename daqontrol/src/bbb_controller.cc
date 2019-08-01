@@ -13,7 +13,7 @@ BBBController::BBBController(ControllerConfig config)
 void BBBController::init()
 {
     working_ = true;
-    state_ = Control::Idle; // Set the controller state to Idle
+    state_ = Control::Ready; // Set the controller state to Ready
     g_elastic.log(DEBUG, "BBBController Init"); 
     working_ = false;
 }

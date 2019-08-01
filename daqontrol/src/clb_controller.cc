@@ -30,7 +30,7 @@ void CLBController::init()
         return; 
     }
 
-    state_ = Control::Idle; // Set the controller state to Idle
+    state_ = Control::Ready; // Set the controller state to Ready
     g_elastic.log(DEBUG, "CLBController({}) Init DONE", config_.eid_); 
     working_ = false; 
 }

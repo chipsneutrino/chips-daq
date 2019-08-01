@@ -111,10 +111,9 @@ public:
          * Timestamp is added when called to maintain ordering
          * Takes ~20 microseconds
 		 * @param process       process name
-		 * @param pid           process pid
          * @param state         process state
 		 */
-    void state(std::string process, int pid, std::string state);
+    void state(std::string process, std::string state);
 
     /**
 		 * Adds documentWork() work to indexing io_service
@@ -160,11 +159,10 @@ private:
     /**
 		 * Indexes "daqstate" document to elasticsearch database
 		 * @param process       process name
-		 * @param pid           process pid
          * @param state         process state
          * @param timestamp     timestamp when work was posted
 		 */
-    void stateWork(std::string process, int pid, std::string state, long timestamp);
+    void stateWork(std::string process, std::string state, long timestamp);
 
     /**
 		 * Indexes JSON document to elasticsearch database

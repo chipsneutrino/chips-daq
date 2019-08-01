@@ -55,6 +55,11 @@ public:
 
     void run();
 
+    bool getMode()
+    {
+        return mode_;
+    }
+
 private:
 
     /**

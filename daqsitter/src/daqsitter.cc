@@ -9,6 +9,7 @@
 
 #include "util/command_receiver.h"
 #include "monitoring_handler.h"
+#include "daqsitter_publisher.h"
 #include "util/signal_receiver.h"
 #include <util/elastic_interface.h>
 
@@ -75,6 +76,7 @@ int main(int argc, char *argv[])
     {
         // Main entry point.
         std::shared_ptr<MonitoringHandler> mon_handler{ new MonitoringHandler(config, elastic, file, sample_frac) };
+        std::shared_ptr<DaqsitterPublisher> bus_publisher{ new DaqsitterPublisher(mon_handler) };
 
         std::unique_ptr<SignalReceiver> signal_receiver{ new SignalReceiver };
         signal_receiver->setHandler(mon_handler);
@@ -84,8 +86,10 @@ int main(int argc, char *argv[])
         cmd_receiver->setHandler(mon_handler);
         cmd_receiver->runAsync();
 
+        bus_publisher->runAsync();
         mon_handler->run();
 
+        bus_publisher->join();
         cmd_receiver->join();
         signal_receiver->join();
     }

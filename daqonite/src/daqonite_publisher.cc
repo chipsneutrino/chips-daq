@@ -18,11 +18,11 @@ void DaqonitePublisher::publishStatus()
     message_type message{};
 
     if (daq_handler_->getMode()) {
-        message.Discriminator = DaqoniteStateMessage::Mining::Discriminator;
-        message.Payload.pMining = DaqoniteStateMessage::Mining{};
-        message.Payload.pMining.Which = daq_handler_->getRunType();
+        message.Discriminator = DaqoniteStateMessage::Running::Discriminator;
+        message.Payload.pRunning = DaqoniteStateMessage::Running{};
+        message.Payload.pRunning.Which = daq_handler_->getRunType();
     } else {
-        message.Discriminator = DaqoniteStateMessage::Idle::Discriminator;
+        message.Discriminator = DaqoniteStateMessage::Ready::Discriminator;
     }
 
     std::lock_guard<std::mutex> lk{ mtx_publish_queue_ };

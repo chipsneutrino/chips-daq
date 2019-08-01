@@ -2,9 +2,9 @@
 
 #include <tinyfsm.hpp>
 
-#include "daqontrol/events.h"
+#include "daqsitter/events.h"
 
-namespace Daqontrol {
+namespace Daqsitter {
 class FSM : public tinyfsm::Fsm<FSM> {
 public:
     virtual void entry(void) = 0;
@@ -13,9 +13,7 @@ public:
     void react(tinyfsm::Event const&) {}
     virtual void react(events::Disconnected const&);
     virtual void react(events::Connected const&);
-    virtual void react(events::Initialising const&) {}
     virtual void react(events::Ready const&) {}
-    virtual void react(events::Configured const&) {}
     virtual void react(events::Started const&) {}
 };
 }
