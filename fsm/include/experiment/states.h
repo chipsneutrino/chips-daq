@@ -13,6 +13,7 @@ namespace states {
     class Ready : public FSM {
         void entry() override;
         void react(OpsCommands::Config const&) override;
+        void react(OpsCommands::Exit const&) override;
         void react(StateUpdate const&) override;
     };
     class Configuring : public FSM {
@@ -22,6 +23,7 @@ namespace states {
     class Configured : public FSM {
         void entry() override;
         void react(OpsCommands::StartData const&) override;
+        void react(OpsCommands::Exit const&) override;
         void react(StateUpdate const&) override;
     };
     class StartingData : public FSM {
@@ -53,6 +55,7 @@ namespace states {
     };
     class Error : public FSM {
         void entry() override;
+        void react(OpsCommands::Exit const&) override;
         void react(StateUpdate const&) override;
     };
 }

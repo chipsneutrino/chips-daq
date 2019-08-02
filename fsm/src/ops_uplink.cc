@@ -114,6 +114,21 @@ void OpsUplink::handleMessage(nng::socket& sock, const OpsMessage& message)
             break;
         }
 
+    case OpsMessage::Exit::Discriminator:
+        {
+            if (Experiment::FSM::is_in_state<Experiment::states::Ready>()
+                || Experiment::FSM::is_in_state<Experiment::states::Configured>()
+                || Experiment::FSM::is_in_state<Experiment::states::Error>()) {
+                acknowledge(sock, true);
+            } else {
+                acknowledge(sock, false);
+            }
+
+            global.sendEvent(OpsCommands::Exit{});
+
+            break;
+        }
+
     default:
         {
             acknowledge(sock, false);

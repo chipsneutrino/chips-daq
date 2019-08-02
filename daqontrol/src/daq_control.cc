@@ -80,6 +80,7 @@ void DAQControl::handleStopRunCommand()
 
 void DAQControl::handleExitCommand()
 {
+    g_elastic.log(INFO, "DAQControl: Exit");
     run_work_.reset();
     io_service_->stop();
 }

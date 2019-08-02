@@ -271,7 +271,7 @@ void MonitoringHandler::handleStopRunCommand()
 
 void MonitoringHandler::handleExitCommand()
 {
-    handleStopRunCommand();
+    g_elastic.log(INFO, "DAQsitter: Exit");
     io_service_->stop();
 }
 

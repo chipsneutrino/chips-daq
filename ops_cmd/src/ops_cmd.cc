@@ -74,6 +74,10 @@ int main(int argc, char *argv[])
     {
         msg.Discriminator = OpsMessage::StopRun::Discriminator;
     }
+    else if (command == "exit")
+    {
+        msg.Discriminator = OpsMessage::Exit::Discriminator;
+    }
     else
     {
         std::cerr << argv[0] << ": expected a valid command" << std::endl;

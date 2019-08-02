@@ -40,12 +40,18 @@ struct OpsMessage {
         static constexpr disc_t Discriminator = 4;
     };
 
+    /// Exit, possibly stopping current run
+    struct Exit {
+        static constexpr disc_t Discriminator = 5;
+    };
+
     union {
         Config pConfig;
         StartData pStart;
         StopData pStop;
         StartRun pStartRun;
         StopRun pStopRun;
+        Exit pExit;
     } Payload;
 };
 
@@ -92,6 +98,7 @@ struct ControlMessage {
         StopData pStop;
         StartRun pStartRun;
         StopRun pStopRun;
+        Exit pExit;
     } Payload;
 };
 

@@ -37,6 +37,12 @@ namespace states {
         g_elastic.state("fsm", "Exit");
         global.sendEvent(StateUpdate{});
 
+        {
+            ControlMessage msg{};
+            msg.Discriminator = ControlMessage::Exit::Discriminator;
+            global.sendControlMessage(std::move(msg));
+        }
+
         global.terminate();
     }
 
@@ -55,6 +61,11 @@ namespace states {
     void Ready::react(OpsCommands::Config const& e)
     {
         transit<states::Configuring>();
+    }
+
+    void Ready::react(OpsCommands::Exit const& e)
+    {
+        transit<states::Exit>();
     }
 
     void Ready::react(StateUpdate const&)
@@ -133,6 +144,11 @@ namespace states {
     void Configured::react(OpsCommands::StartData const& e)
     {
         transit<states::StartingData>();
+    }
+
+    void Configured::react(OpsCommands::Exit const& e)
+    {
+        transit<states::Exit>();
     }
 
     /// StartingData State
@@ -396,6 +412,11 @@ namespace states {
         g_elastic.log(INFO, "Experiment : Error");
         g_elastic.state("fsm", "Error");
         global.sendEvent(StateUpdate{});
+    }
+
+    void Error::react(OpsCommands::Exit const& e)
+    {
+        transit<states::Exit>();
     }
 
     void Error::react(StateUpdate const&)

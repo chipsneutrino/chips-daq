@@ -18,6 +18,7 @@ public:
     virtual void react(OpsCommands::StopData const&) {}
     virtual void react(OpsCommands::StartRun const&) {}
     virtual void react(OpsCommands::StopRun const&) {}
+    virtual void react(OpsCommands::Exit const&) {}
 
     void react(tinyfsm::Event const&) {}
 };

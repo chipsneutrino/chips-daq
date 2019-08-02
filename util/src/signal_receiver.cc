@@ -36,6 +36,7 @@ void SignalReceiver::join()
     }
 
     running_ = false;
+    io_service_.stop();
 
     if (receiver_thread_ && receiver_thread_->joinable()) {
         receiver_thread_->join();

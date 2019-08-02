@@ -36,4 +36,6 @@ struct StartRun : tinyfsm::Event {
 };
 struct StopRun : tinyfsm::Event {
 };
+struct Exit : tinyfsm::Event {
+};
 }
