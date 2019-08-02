@@ -17,6 +17,7 @@
 #include <unistd.h>
 
 #include <cpr/response.h>
+#include <cpr/cpr.h>
 #include <elasticlient/bulk.h>
 #include <elasticlient/client.h>
 #include <elasticlient/logging.h>
@@ -147,6 +148,15 @@ public:
 		 */
     void channel(channel_data data);
 
+
+    /**
+		 * Adds runWork() work to indexing io_service
+         * Takes ~20 microseconds
+         * @param run_num       run number
+         * @param run_type      run type
+		 */
+    void run(int run_num, int run_type);
+
 private:
     /**
 		 * Indexes "daqlog" document to elasticsearch database
@@ -192,6 +202,14 @@ private:
          * @param rates         channel monitoring data
 		 */
     void channelWork(channel_data data);
+
+    /**
+		 * PUTS the _ingest/pipeline/info, to set the run number/type
+         * Takes ~100000 microseconds
+         * @param run_num       run number
+         * @param run_type      run type
+		 */
+    void runWork(int run_num, int run_type);   
 
     /// Calls run() in an indexing thread
     void runThread();

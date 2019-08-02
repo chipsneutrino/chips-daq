@@ -52,6 +52,9 @@ void DataHandler::startRun(RunType which)
     output_running_ = scheduling_running_ = true;
     output_thread_ = std::unique_ptr<std::thread>{ new std::thread(std::bind(&DataHandler::outputThread, this)) };
     scheduling_thread_ = std::unique_ptr<std::thread>{ new std::thread(std::bind(&DataHandler::schedulingThread, this)) };
+
+    // Set the Elasticsearch ingest pipeline run.num and run.type
+    g_elastic.run(run_num_, (int)run_type_);
 }
 
 void DataHandler::stopRun()
@@ -61,6 +64,10 @@ void DataHandler::stopRun()
     // Wait for the output thread to end
     joinThreads();
     g_elastic.log(WARNING, "Stop mining into container {}", file_name_);
+
+    // Set the Elasticsearch ingest pipeline run.num and run.type
+    // Put as -1 for both when outside a run
+    g_elastic.run(-1, -1);
 
     // Reset the run variables
     run_type_ = {};

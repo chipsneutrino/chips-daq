@@ -80,6 +80,11 @@ void ElasticInterface::channel(channel_data data)
     fIndex_service.post(boost::bind(&ElasticInterface::channelWork, this, data));
 }
 
+void ElasticInterface::run(int run_num, int run_type)
+{
+    fIndex_service.post(boost::bind(&ElasticInterface::runWork, this, run_num, run_type));
+}
+
 void ElasticInterface::logWork(severity level, std::string message, long timestamp)
 {
     if (suppress()) // Should we suppress this log?
@@ -195,6 +200,33 @@ void ElasticInterface::channelWork(channel_data data)
         }
 
         initFile("Exceeded MAX_ATTEMPTS in bulkIndex()"); // Init file logging as elasticsearch unreachable
+    }
+}
+
+void ElasticInterface::runWork(int run_num, int run_type)
+{
+    Json::Value body;
+    body["description"] = "Adds additional info to the documents";
+    body["processors"][0]["set"]["field"] = "run.num";
+    body["processors"][0]["set"]["value"] = run_num;
+    body["processors"][1]["set"]["field"] = "run.type";
+    body["processors"][1]["set"]["value"] = run_type;
+    body["processors"][2]["set"]["field"] = "_source.indextime";
+    body["processors"][2]["set"]["value"] = "{{_ingest.timestamp}}";
+
+    cpr::Response res = cpr::Put(cpr::Url{fClient_list[0] + "_ingest/pipeline/info"},
+                                 cpr::Header{{"Content-Type", "application/json"}},
+                                 cpr::Body{Json::writeString(fBuilder, body)});
+
+    if (res.status_code == 200)
+    {
+        return;
+    }
+    else
+    {
+        fPrint_mutex.lock();
+        fmt::print("{}\n", res.text);
+        fPrint_mutex.unlock();
     }
 }
 
