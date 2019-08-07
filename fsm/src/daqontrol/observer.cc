@@ -14,7 +14,7 @@ void Observer::run()
         try {
             auto sock = nng::sub::open();
             nng::sub::set_opt_subscribe(sock, "");
-            nng::set_opt_recv_timeout(sock, 1000);
+            nng::set_opt_recv_timeout(sock, 2000);
             sock.dial(DaqontrolStateMessage::URL);
 
             global.sendEvent(events::Connected{});
