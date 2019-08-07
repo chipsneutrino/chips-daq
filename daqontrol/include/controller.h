@@ -57,6 +57,11 @@ public:
         return dropped_;
     }
 
+    void setConfig(ControllerConfig config)
+    {
+        config_ = config;
+    }
+
     virtual void postInit()                         = 0;
     virtual void postConfigure()                    = 0;
     virtual void postStartData()                    = 0;

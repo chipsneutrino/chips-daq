@@ -17,6 +17,7 @@ struct OpsMessage {
     /// Configure from config files
     struct Config {
         static constexpr disc_t Discriminator = 0;
+        char config_file[100];  ///< Config file location
     };
 
     /// Start data flow
@@ -32,7 +33,7 @@ struct OpsMessage {
     /// Start a new data taking run
     struct StartRun {
         static constexpr disc_t Discriminator = 3;
-        RunType Which;      ///< Type of run
+        RunType run_type;       ///< Type of run
     };
 
     /// Stop current data taking run
@@ -64,6 +65,7 @@ struct ControlMessage {
     /// Configure from config files
     struct Config {
         static constexpr disc_t Discriminator = 0;
+        char config_file[100];  ///< Config file location
     };
 
     /// Start data flow
@@ -79,7 +81,7 @@ struct ControlMessage {
     /// Start a new data taking run
     struct StartRun {
         static constexpr disc_t Discriminator = 3;
-        RunType Which;      ///< Type of run
+        RunType run_type;       ///< Type of run
     };
 
     /// Stop current data taking run

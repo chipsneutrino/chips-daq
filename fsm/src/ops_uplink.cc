@@ -44,7 +44,9 @@ void OpsUplink::handleMessage(nng::socket& sock, const OpsMessage& message)
     switch (message.Discriminator) {
     case OpsMessage::Config::Discriminator:
         {
-            global.sendEvent(OpsCommands::Config{});
+            OpsCommands::Config command{};
+            command.config_file = message.Payload.pConfig.config_file;
+            global.sendEvent(command);
 
             if (Experiment::FSM::is_in_state<Experiment::states::Configuring>()
                 || Experiment::FSM::is_in_state<Experiment::states::Configured>()) {
@@ -87,7 +89,7 @@ void OpsUplink::handleMessage(nng::socket& sock, const OpsMessage& message)
     case OpsMessage::StartRun::Discriminator:
         {
             OpsCommands::StartRun command{};
-            command.type = message.Payload.pStartRun.Which;
+            command.run_type = message.Payload.pStartRun.run_type;
             global.sendEvent(command);
 
             if (Experiment::FSM::is_in_state<Experiment::states::StartingRun>()

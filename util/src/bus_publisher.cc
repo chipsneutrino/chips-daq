@@ -79,6 +79,7 @@ void BusPublisher<T>::communicationThread()
     while (running_) {
         try {
             auto sock = nng::pub::open();
+            unlink(message_type::URL);
             sock.listen(message_type::URL);
             g_elastic.log(INFO, "BusPublisher publishing to '{}'", message_type::URL);
 

@@ -60,7 +60,17 @@ namespace states {
 
     void Ready::react(OpsCommands::Config const& e)
     {
-        transit<states::Configuring>();
+        // We perform the ControlMessage "action" before calling entry
+        // We can then pass the config_file from here
+        auto action = [=] { 
+            ControlMessage msg{};
+            msg.Discriminator = ControlMessage::Config::Discriminator;
+            msg.Payload.pConfig = ControlMessage::Config{};
+            strcpy(msg.Payload.pConfig.config_file, e.config_file.c_str());
+            global.sendControlMessage(std::move(msg)); 
+        };
+
+        transit<states::Configuring>(action);
     }
 
     void Ready::react(OpsCommands::Exit const& e)
@@ -78,12 +88,6 @@ namespace states {
         g_elastic.log(INFO, "Experiment : Configuring");
         g_elastic.state("fsm", "Configuring");
         global.sendEvent(StateUpdate{});
-
-        {
-            ControlMessage msg{};
-            msg.Discriminator = ControlMessage::Config::Discriminator;
-            global.sendControlMessage(std::move(msg));
-        }
     }
 
     void Configuring::react(StateUpdate const&)
@@ -139,6 +143,21 @@ namespace states {
             transit<states::Error>();
             return;
         }
+    }
+    
+    void Configured::react(OpsCommands::Config const& e)
+    {
+        // We perform the ControlMessage "action" before calling entry
+        // We can then pass the config_file from here
+        auto action = [=] { 
+            ControlMessage msg{};
+            msg.Discriminator = ControlMessage::Config::Discriminator;
+            msg.Payload.pConfig = ControlMessage::Config{};
+            strcpy(msg.Payload.pConfig.config_file, e.config_file.c_str());
+            global.sendControlMessage(std::move(msg)); 
+        };
+
+        transit<states::Configuring>(action);
     }
 
     void Configured::react(OpsCommands::StartData const& e)
@@ -233,7 +252,7 @@ namespace states {
             ControlMessage msg{};
             msg.Discriminator = ControlMessage::StartRun::Discriminator;
             msg.Payload.pStartRun = ControlMessage::StartRun{};
-            msg.Payload.pStartRun.Which = e.type;
+            msg.Payload.pStartRun.run_type = e.run_type;
             global.sendControlMessage(std::move(msg)); 
         };
         transit<states::StartingRun>(action);

@@ -42,7 +42,7 @@ public:
     DAQControl& operator=(const DAQControl& other) = delete;
     DAQControl& operator=(DAQControl&& other) = delete;
 
-    virtual void handleConfigCommand() override;
+    virtual void handleConfigCommand(std::string config_file) override;
     virtual void handleStartDataCommand() override;
     virtual void handleStopDataCommand() override;
     virtual void handleStartRunCommand(RunType which) override;

@@ -54,6 +54,9 @@ public:
 	/// Print a short summary of the DAQConfig
 	void printShortConfig();
 
+	/// Load a new configuration from file
+	void loadConfig(const char * config);
+
 	std::string conf_name_;                 ///< Path of a .dat file containing all the configuration parameters
 
 	int num_controllers_;					///< Total number of controller from "clb_number"
@@ -106,4 +109,6 @@ private:
 
 	/// Setup all the vectors given the number of controllers in the config file
 	void setupVectors();
+
+	bool configured_; ///< Has the DAQConfig already been configured from a config file?
 };

@@ -40,6 +40,14 @@ void CLBController::configure()
     g_elastic.log(DEBUG, "CLBController({}) Configure...", config_.eid_); 
     working_ = true; // Set this controller to be working
 
+    if (clb_state_ == READY) { // We have already configured this controller
+        state_ = Control::Ready; // Set the controller state to Ready
+        if(!setState(CLBEvent(CLBEvents::QUIT))) { // Set the CLB state to STAND_BY
+            working_ = false;
+            return;    
+        } 
+    }
+
     if(!setPMTs()) { // Set and check the PMT voltages
         working_ = false;
         return;    
@@ -405,7 +413,7 @@ bool CLBController::setFlasher()
         MsgReader mr;
         if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
         {
-            g_elastic.log(ERROR, "CLB({}), Could not process 'disableFlasher'", config_.eid_); 
+            g_elastic.log(ERROR, "CLB({}), Could not process 'setFlasher'", config_.eid_); 
             return false;
         }           
     }

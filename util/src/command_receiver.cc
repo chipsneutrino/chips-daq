@@ -93,7 +93,7 @@ void CommandReceiver::processMessage(const ControlMessage& message)
 {
     switch (message.Discriminator) {
     case ControlMessage::Config::Discriminator:
-        handler_->handleConfigCommand();
+        handler_->handleConfigCommand(message.Payload.pConfig.config_file);
         break;
     case ControlMessage::StartData::Discriminator:
         handler_->handleStartDataCommand();
@@ -102,7 +102,7 @@ void CommandReceiver::processMessage(const ControlMessage& message)
         handler_->handleStopDataCommand();
         break;
     case ControlMessage::StartRun::Discriminator:
-        handler_->handleStartRunCommand(message.Payload.pStartRun.Which);
+        handler_->handleStartRunCommand(message.Payload.pStartRun.run_type);
         break;
     case ControlMessage::StopRun::Discriminator:
         handler_->handleStopRunCommand();

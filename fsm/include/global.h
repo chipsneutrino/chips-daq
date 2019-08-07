@@ -4,6 +4,9 @@
 #include <condition_variable>
 #include <memory>
 #include <mutex>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include <util/async_component_group.h>
 

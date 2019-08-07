@@ -17,12 +17,15 @@ DAQControl::DAQControl(std::string config_file)
     setupFromConfig(); // Setup the topology from the configuration
 }
 
-void DAQControl::handleConfigCommand()
+void DAQControl::handleConfigCommand(std::string config_file)
 {
     g_elastic.log(INFO, "DAQControl: Configure");
+    config_.loadConfig(config_file.c_str()); // Load the new configuration
     for(int i=0; i<controllers_.size(); i++) 
     {
         if (controllers_[i]->dropped()) continue;
+        if (!config_.configs_[i].enabled_) continue;
+        controllers_[i]->setConfig(config_.configs_[i]);
         controllers_[i]->postConfigure();
     }
     target_state_ = Control::Configured;
@@ -39,6 +42,7 @@ void DAQControl::handleStartDataCommand()
     for(int i=0; i<controllers_.size(); i++) 
     {
         if (controllers_[i]->dropped()) continue;
+        if (!config_.configs_[i].enabled_) continue;
         controllers_[i]->postStartData();  
     }
     target_state_ = Control::Started;
@@ -55,6 +59,7 @@ void DAQControl::handleStopDataCommand()
     for(int i=0; i<controllers_.size(); i++) 
     {
         if (controllers_[i]->dropped()) continue;
+        if (!config_.configs_[i].enabled_) continue;
         controllers_[i]->postStopData();  
     }
     target_state_ = Control::Configured;
@@ -107,8 +112,6 @@ void DAQControl::init()
 
 void DAQControl::setupFromConfig()
 {
-    config_.printConfig(); // Print the full configuration
-
     // Build the app topology of controllers from the configuration
     for (int controller=0; controller<config_.num_controllers_; controller++)
     {
@@ -125,6 +128,7 @@ void DAQControl::stateUpdate()
     for(int i=0; i<controllers_.size(); i++) 
     {
         if (controllers_[i]->dropped()) continue;
+        if (!config_.configs_[i].enabled_) continue;
 
         Control::Status state = controllers_[i]->getState(); // Get the current controller state
 
@@ -146,7 +150,7 @@ void DAQControl::stateUpdate()
         g_elastic.log(INFO, "DAQControl State Change to: {}", (int)current_state_);
     }
 
-    sleep(2); // Sleep for 2 seconds before updating again
+    usleep(200); // Sleep for 200 microseconds
 
     // Post this method to the io_service again
     io_service_->post(boost::bind(&DAQControl::stateUpdate, this));

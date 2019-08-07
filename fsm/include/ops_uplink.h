@@ -26,13 +26,14 @@ private:
 
 namespace OpsCommands {
 struct Config : tinyfsm::Event {
+    std::string config_file;
 };
 struct StartData : tinyfsm::Event {
 };
 struct StopData : tinyfsm::Event {
 };
 struct StartRun : tinyfsm::Event {
-    RunType type;       ///< Default to a normal test run
+    RunType run_type;
 };
 struct StopRun : tinyfsm::Event {
 };

@@ -44,7 +44,14 @@ int main(int argc, char *argv[])
 
     if (command == "config")
     {
+        if (argc!=3)
+        {
+            std::cerr << argv[0] << ": expected a config file" << std::endl;
+            return ExitCode::BadArgs;            
+        }
+
         msg.Discriminator = OpsMessage::Config::Discriminator;
+        strcpy(msg.Payload.pConfig.config_file, argv[2]);
     }   
     else if (command == "startData")
     {
@@ -68,7 +75,7 @@ int main(int argc, char *argv[])
         }
 
         msg.Discriminator = OpsMessage::StartRun::Discriminator;
-        msg.Payload.pStartRun.Which = (RunType)atoi(argv[2]);
+        msg.Payload.pStartRun.run_type = (RunType)atoi(argv[2]);
     }
     else if (command == "stopRun")
     {

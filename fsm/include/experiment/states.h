@@ -22,6 +22,7 @@ namespace states {
     };
     class Configured : public FSM {
         void entry() override;
+        void react(OpsCommands::Config const&) override;
         void react(OpsCommands::StartData const&) override;
         void react(OpsCommands::Exit const&) override;
         void react(StateUpdate const&) override;

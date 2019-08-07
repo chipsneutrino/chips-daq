@@ -228,7 +228,7 @@ void MonitoringHandler::runThread()
     io_service_->run();
 }
 
-void MonitoringHandler::handleConfigCommand()
+void MonitoringHandler::handleConfigCommand(std::string config_file)
 {
     g_elastic.log(INFO, "DAQsitter: Config");
 }

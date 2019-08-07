@@ -46,7 +46,7 @@ public:
     MonitoringHandler& operator=(const MonitoringHandler& other) = delete;
     MonitoringHandler& operator=(MonitoringHandler&& other) = delete;
 
-    virtual void handleConfigCommand() override;
+    virtual void handleConfigCommand(std::string config_file) override;
     virtual void handleStartDataCommand() override;
     virtual void handleStopDataCommand() override;
     virtual void handleStartRunCommand(RunType which) override;

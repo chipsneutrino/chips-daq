@@ -5,7 +5,9 @@
 #include "daq_config.h"
 
 /// Create a DAQConfig
-DAQConfig::DAQConfig(const char * config) : conf_name_(config)
+DAQConfig::DAQConfig(const char * config) 
+	: conf_name_(config)
+	, configured_(false)
 {
 	num_controllers_ = 0;
 	enabled_controllers_ = 0;
@@ -52,6 +54,19 @@ void DAQConfig::printShortConfig()
 	std::cout << "**********************************************\n" << std::endl;
 }
 
+/// Load a new configuration from file
+void DAQConfig::loadConfig(const char * config)
+{
+	// Reset some of the variables that we allow to change
+	enabled_controllers_ = 0;
+	enabled_channels_ = 0;
+	is_nano_enabled_ = false;
+
+	conf_name_ = config; // Set the new configuration file name
+
+	loadConfig(); // Load the new configuration
+}
+
 /// Read the configuration text file specified by conf_name_
 void DAQConfig::loadConfig() 
 {
@@ -68,6 +83,10 @@ void DAQConfig::loadConfig()
 	while (getline(input_file, line)) {
 		parseLine(line);
 	}
+
+	configured_ = true; // Set that this DAQConfig has been configured
+
+	printConfig();	// Print the configuration
 
 	return;
 }
@@ -90,8 +109,6 @@ void DAQConfig::parseLine(std::string &line)
 	std::string config_line = line;
 	extractConfig(config_line, num_dots, controller_num, channel_num, config, value);
 
-	//std::cout << num_dots << "," << controller_num << "," << channel_num << "," << config << "," << value << std::endl; 
-
 	// We need to stream the value to different types depending on the config
 	std::istringstream ss(value);
 	
@@ -100,10 +117,23 @@ void DAQConfig::parseLine(std::string &line)
 
 		// Get how many controllers there are in this config file
 		if (config.compare("clb_number") == 0) {
-			if (!(ss >> num_controllers_)) { 
+			int temp_num_controllers;
+			if (!(ss >> temp_num_controllers)) { 
 				std::cerr << "Error: " << value << " should be a int" << std::endl; 
 			}
-			setupVectors();
+
+			if (!configured_)
+			{
+				num_controllers_ = temp_num_controllers;
+				setupVectors();
+			}
+			else 
+			{
+				if (temp_num_controllers != num_controllers_)
+				{
+					throw std::runtime_error("DAQConfig Error: Reconfig file needs to be of same structure as initial config file!");
+				}
+			}
 		}
 
 	} else if (num_dots == 1) {
@@ -115,17 +145,34 @@ void DAQConfig::parseLine(std::string &line)
 				std::cerr << "Error: " << value << " should be int (0 or 1)" << std::endl;
 			}
 
-			if (enabled) {
+			if (enabled)
+			{
 				enabled_controllers_++;
 				configs_[controller_num].enabled_ = true;
+			}
+			else {
+				configs_[controller_num].enabled_ = false;
 			}
 		}			
 
 		// Add the controllers eID
 		else if (config.compare("eid") == 0) {
-			if (!(ss >> configs_[controller_num].eid_)) { 
+			int temp_eid;
+			if (!(ss >> temp_eid)) { 
 				std::cerr << "Error: " << value << " should be int" << std::endl; 
 			}	
+
+			if (!configured_)
+			{
+				configs_[controller_num].eid_ = temp_eid;
+			}
+			else
+			{
+				if (temp_eid != configs_[controller_num].eid_)
+				{
+					throw std::runtime_error("DAQConfig Error: Reconfig file needs to have same controllers as initial config file!");
+				}
+			}
 		} 
 
 		else if (config.compare("ip") == 0) {
@@ -155,9 +202,14 @@ void DAQConfig::parseLine(std::string &line)
 				std::cerr << "Error: " << value << " should be int (0 or 1)" << std::endl;
 			}
 
-			if (enabled) {
+			if (enabled) 
+			{
 				is_nano_enabled_ = true;
 				configs_[controller_num].nano_enabled_ = true;
+			}
+			else 
+			{
+				configs_[controller_num].nano_enabled_ = false;
 			}
 		}
 

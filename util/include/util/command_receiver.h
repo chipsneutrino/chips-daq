@@ -12,7 +12,7 @@ class CommandHandler {
 public:
     virtual ~CommandHandler() = default;
 
-    virtual void handleConfigCommand() = 0;
+    virtual void handleConfigCommand(std::string config_file) = 0;
     virtual void handleStartDataCommand() = 0;
     virtual void handleStopDataCommand() = 0;
     virtual void handleStartRunCommand(RunType which) = 0;

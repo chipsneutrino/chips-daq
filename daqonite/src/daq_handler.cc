@@ -74,7 +74,7 @@ void DAQHandler::ioServiceThread()
     io_service_->run();
 }
 
-void DAQHandler::handleConfigCommand()
+void DAQHandler::handleConfigCommand(std::string config_file)
 {
     g_elastic.log(INFO, "DAQonite: Config");
 }
