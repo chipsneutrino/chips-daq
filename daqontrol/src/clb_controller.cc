@@ -6,7 +6,7 @@
 
 CLBController::CLBController(ControllerConfig config)
     : Controller(config)
-    , processor_(config.ip_, io_service_)
+    , processor_(config, io_service_)
 {
     g_elastic.log(INFO, "Creating CLBController({})", config.eid_); 
 }
@@ -143,7 +143,7 @@ bool CLBController::setInitValues()
     unsigned char  addr4[4] = {192, 168, 11, 1};  // Server IP Address
     unsigned long ipi = ((0xFF & addr4[0]) << 24) |  ((0xFF & addr4[1]) << 16) |  ((0xFF & addr4[2]) <<  8) |  ((0xFF & addr4[3]) << 0);
     var_ids.push_back(ProcVar::NET_IPMUX_SRV_IP);       var_values.push_back(ipi);
-    var_ids.push_back(ProcVar::SYS_TIME_SLICE_DUR);     var_values.push_back(config_.window_dur_);
+    var_ids.push_back(ProcVar::SYS_TIME_SLICE_DUR);     var_values.push_back(config_.data_window_);
     var_ids.push_back(ProcVar::OPT_HR_VETO_ENA_CH);     var_values.push_back(0x00000000); // Disable all Channels HR Veto  
     var_ids.push_back(ProcVar::OPT_MULHIT_ENA_CH);      var_values.push_back(0x00000000); // Disable all Channels Multi Hits
 
@@ -255,13 +255,13 @@ bool CLBController::getState()
 
 bool CLBController::setPMTs()
 {
-    unsigned long enabled = config_.chan_enabled_.to_ulong();
+    unsigned long enabled = config_.ch_enabled_.to_ulong();
 
     MsgWriter mw;
     mw.writeU16(2);
     mw.writeI32(ProcVar::OPT_CHAN_ENABLE);  mw.writeU32(enabled);
     mw.writeI32(ProcVar::OPT_PMT_HIGHVOLT);
-    for(int ipmt=0; ipmt<31; ++ipmt) mw.writeU8((short)config_.chan_hv_[ipmt]);
+    for(int ipmt=0; ipmt<31; ++ipmt) mw.writeU8((short)config_.ch_hv_[ipmt]);
 
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
@@ -300,7 +300,7 @@ bool CLBController::checkPMTs()
     // Check the enabled channels
     int varId = mr.readI32();   
     std::bitset<32> enabled(mr.readU32());
-    if (enabled != config_.chan_enabled_)
+    if (enabled != config_.ch_enabled_)
     {
         g_elastic.log(ERROR, "CLB({}), Enabled channels do not match!", config_.eid_);  
         return false;     
@@ -310,9 +310,9 @@ bool CLBController::checkPMTs()
     varId = mr.readI32();            
 	for(int ipmt =0; ipmt<31; ++ipmt){  
         long eid = mr.readU32();
-        if (eid != config_.chan_eid_[ipmt] && enabled[ipmt])
+        if (eid != config_.ch_id_[ipmt] && enabled[ipmt])
         {
-            g_elastic.log(ERROR, "Non matching eid on CLB({}) for PMT {}, {} vs {}!", config_.eid_, ipmt, eid, config_.chan_eid_[ipmt]);  
+            g_elastic.log(ERROR, "Non matching eid on CLB({}) for PMT {}, {} vs {}!", config_.eid_, ipmt, eid, config_.ch_id_[ipmt]);  
             return false;          
         }
     }
@@ -321,9 +321,9 @@ bool CLBController::checkPMTs()
     varId = mr.readI32();         
 	for(int ipmt =0; ipmt<31; ++ipmt){
         long voltage = (long)mr.readU8();
-        if (voltage != config_.chan_hv_[ipmt] && enabled[ipmt])
+        if (voltage != config_.ch_hv_[ipmt] && enabled[ipmt])
         {
-            g_elastic.log(ERROR, "Non matching voltage on CLB({}) for PMT {}, {} vs {}!", config_.eid_, ipmt, voltage, config_.chan_hv_[ipmt]); 
+            g_elastic.log(ERROR, "Non matching voltage on CLB({}) for PMT {}, {} vs {}!", config_.eid_, ipmt, voltage, config_.ch_hv_[ipmt]); 
             return false;          
         }
     }

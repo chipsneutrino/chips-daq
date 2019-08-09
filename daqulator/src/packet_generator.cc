@@ -11,7 +11,7 @@ PacketGenerator::PacketGenerator(std::string config_file, std::string dataFile,
 {
 
     // Print the configuration
-    fConfig.printShortConfig();
+    fConfig.printConfig();
 
     // Set up the CLB optical output
     boost::asio::ip::udp::udp::resolver resolver_clb_opt(fIO_service);

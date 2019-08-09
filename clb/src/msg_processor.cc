@@ -4,21 +4,17 @@
 
 #include <clb/msg_processor.h>
 
-MsgProcessor::MsgProcessor(unsigned long ip_address, std::shared_ptr<boost::asio::io_service> io_service) 
+MsgProcessor::MsgProcessor(ControllerConfig config, std::shared_ptr<boost::asio::io_service> io_service) 
     : socket_(*io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0)) 
 {
     boost::asio::ip::udp::resolver resolver(*io_service);
-    boost::asio::ip::address_v4 address(ip_address);
-    boost::asio::ip::udp::resolver::query query(boost::asio::ip::udp::v4(), address.to_string(), std::to_string(DEFAULT_PORT));
+    boost::asio::ip::udp::resolver::query query(boost::asio::ip::udp::v4(), config.ipAsString(), std::to_string(config.port_));
     endpoint_ = *resolver.resolve(query);
 
-    // Set the timeout for the socket read
-    struct timeval tv = {READ_TIMEOUT, 0};
+    struct timeval tv = {READ_TIMEOUT, 0}; // Set the timeout for the socket read
     setsockopt(socket_.native_handle(), SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
     
     cmd_id_ = (int)(rand()*63);
-
-    //g_elastic.log(INFO, "Setup MsgProcessor for {}", address.to_string());
 }
 
 bool MsgProcessor::processCommand(int type, MsgWriter &mw, MsgReader &mr)

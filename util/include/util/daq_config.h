@@ -18,46 +18,57 @@
 #include <bitset>
 #include <fstream>
 #include <stdexcept>
+#include <boost/asio.hpp>
+
+#include <util/elastic_interface.h>
 
 // Enum for the different types of controller
 enum ControllerType {CLB, BBB};
 
 struct ControllerConfig {
 	// Controller wide variables
-	ControllerType type_		= CLB;			///< What type of controller is it?
-	bool enabled_ 				= false;		///< Is the Controller enabled
-	unsigned int eid_ 			= 0;			///< Controller electronic ID
-	unsigned int ip_ 			= 0;			///< Controller IP address on the DAQ network			
-	unsigned int server_ip_ 	= 3232238337;	///< The DAQ server IP address (192.168.11.1)
-	unsigned int window_dur_ 	= 1000;			///< Duration of the controller reporting window (ms)
-	bool nano_enabled_			= false;		///< Should the nanobeacon be enabled?
-	int nano_voltage_			= 0.0;			///< The nanobeacon voltage in mv
+	bool enabled_				= false;	///< Is it enabled?
+	ControllerType type_		= CLB;		///< Electronic type
+	int eid_					= 0;		///< Electronic ID
+	long mac_					= 0;		///< MAC address
+	long ip_					= 0;		///< IP address
+	int port_					= 0;		///< Slow-control port
+	long relay_ip_				= 0;		///< Relay IP address
+	int relay_port_				= 0;		///< Relay port
+	int relay_chp_				= 0;		///<
+	int relay_chn_				= 0;		///< Relay channel number
+	long data_ip_				= 0;		///< Data server IP address
+	int data_port_				= 0;		///< Data server port
+	int data_window_			= 0;   		///< Data window duration (ms)
+	bool nano_enabled_			= false;	///< Is nanobeacon enabled?
+	int nano_voltage_			= 0;		///< Nano voltage (mv)
+	std::bitset<32> ch_enabled_;			///< Enabled channels
 
 	// Channel specific variables
-	std::bitset<32> chan_enabled_;				///< Is the channel enabled
-	unsigned int chan_eid_[31] 	= {};			///< The channel electronic ID
-	unsigned int chan_hv_[31] 	= {};			///< Channel high voltage setting
+	unsigned ch_id_[31]			= {};		///< Channel electronic ID
+	int ch_hv_[31] 				= {};		///< Channel high voltage
+
+	std::string ipAsString() { return boost::asio::ip::address_v4(ip_).to_string(); }
+	std::string relayIpAsString() { return boost::asio::ip::address_v4(relay_ip_).to_string(); }
+	std::string dataIpAsString() { return boost::asio::ip::address_v4(data_ip_).to_string(); }
+	int numEnabledChannels() { return ch_enabled_.count(); }
 };
 
 class DAQConfig {
 public:
-
 	/// Create a DAQConfig
 	DAQConfig(const char * config);
 
 	/// Destroy a DAQConfig
-	~DAQConfig();
+	~DAQConfig() {};
 
-	/// Print the summary of the DAQConfig
+	/// Print a summary of the DAQConfig
 	void printConfig();
-
-	/// Print a short summary of the DAQConfig
-	void printShortConfig();
 
 	/// Load a new configuration from file
 	void loadConfig(const char * config);
 
-	std::string conf_name_;                 ///< Path of a .dat file containing all the configuration parameters
+	std::string file_name_;                 ///< Configuration file path
 
 	int num_controllers_;					///< Total number of controller from "clb_number"
 	int enabled_controllers_;				///< Total number of "enabled" controllers
@@ -67,7 +78,7 @@ public:
 	std::vector<ControllerConfig> configs_;	///< Vector of controller configs
 
 private:
-	/// Read the configuration text file specified by conf_name_
+	/// Read the configuration text file specified by file_name_
 	void loadConfig();
 
 	/**

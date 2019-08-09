@@ -16,6 +16,7 @@
 #include <clb/msg_writer.h>
 #include <clb/msg_reader.h>
 #include <util/elastic_interface.h>
+#include <util/daq_config.h>
 
 #define DEFAULT_PORT 0xDACE /// Default CLBv2 slow-control port (56014)
 #define MAX_ATTEMPTS 3
@@ -31,7 +32,7 @@ public:
 	 * 
 	 * @param ip_address      The ip address of the CLB to control
 	 */
-    MsgProcessor(unsigned long ip_address, std::shared_ptr<boost::asio::io_service> io_service);
+    MsgProcessor(ControllerConfig config, std::shared_ptr<boost::asio::io_service> io_service);
 
     /// Destroy a MsgProcessor
     ~MsgProcessor() 
