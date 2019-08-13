@@ -103,7 +103,7 @@ void DataHandler::getRunNumAndName()
             if (runNums[i] < 1) {
                 runNums[i] = 1;
             }
-            if (run_type_no == i) {
+            if (run_type_no == i+1) {
                 run_num_ = runNums[i];
             }
         }
@@ -113,7 +113,7 @@ void DataHandler::getRunNumAndName()
         std::ofstream updateFile("../data/runNumbers.dat");
         if (updateFile.is_open()) {
             for (int i = 0; i < NUMRUNTYPES; i++) {
-                if (run_type_no == i) {
+                if (run_type_no == i+1) {
                     updateFile << runNums[i] + 1 << "\n";
                 } else {
                     updateFile << runNums[i] << "\n";
@@ -125,7 +125,7 @@ void DataHandler::getRunNumAndName()
         }
     }
 
-    file_name_ = fmt::format("../data/type{}_run{}.root", run_type_no, run_num_);
+    file_name_ = fmt::format("../data/type{}_run{:05d}.root", run_type_no, run_num_);
 }
 
 std::size_t DataHandler::insertSort(CLBEventQueue& queue) noexcept
