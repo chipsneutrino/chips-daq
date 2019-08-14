@@ -139,6 +139,18 @@ void DAQControl::stateUpdate()
 
         Control::Status state = controllers_[i]->getState(); // Get the current controller state
 
+	int max_sleep_time   = 10000000;  // 10e6 us 
+	int total_sleep_time = 0;
+	int sleep_time       = 500; // us
+
+        while( state != target_state_ && total_sleep_time < max_sleep_time ){
+          usleep(sleep_time);
+          total_sleep_time += sleep_time;
+          state = controllers_[i]->getState(); // Get the current controller state                                                                   
+        }
+
+
+
         if (state != target_state_ && !controllers_[i]->isWorking()) 
         {
             g_elastic.log(WARNING, "Dropping controller ({})", controllers_[i]->getID());
