@@ -141,7 +141,6 @@ void DAQControl::stateUpdate()
 
         if (state != target_state_ && !controllers_[i]->isWorking()) 
         {
-            // TODO: Implement a retry mechanism trying to reach target state
             g_elastic.log(WARNING, "Dropping controller ({})", controllers_[i]->getID());
             controllers_[i]->drop(); // For now we just drop the controller
             continue;

@@ -23,7 +23,15 @@ void BBBController::init()
 
     // Connect to the bbb
     fh_connector_t *conn = fh_connector_new_tcp_client(&config_.ipAsString()[0], config_.port_);
-    transport_ = fh_transport_new(fh_protocol_new_plain(), fh_connector_connect(conn));
+    fh_stream_t *stream = fh_connector_connect(conn);
+
+    if (stream == NULL) // Check we have managed to connect
+    {
+        working_ = false;
+        return;
+    }
+    
+    transport_ = fh_transport_new(fh_protocol_new_plain(), stream);
     assert(transport_);
 
     msg_ = fh_message_new(); // Initialise messaging stack

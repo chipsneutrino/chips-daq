@@ -19,6 +19,11 @@ namespace states {
         global.sendEvent(StateUpdate{});
     }
 
+    void Init::react(OpsCommands::Exit const& e)
+    {
+        transit<states::Exit>();
+    }
+
     void Init::react(StateUpdate const&)
     {
         if (ControlBus::FSM::is_in_state<ControlBus::states::Online>() 
