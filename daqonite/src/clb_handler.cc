@@ -28,10 +28,8 @@ CLBHandler::CLBHandler(std::shared_ptr<boost::asio::io_service> io_service,
 void CLBHandler::workOpticalData()
 {
     using namespace boost::asio::placeholders;
-    if (*mode_ == true) {
-        socket_optical_.async_receive(boost::asio::buffer(&buffer_optical_[0], buffer_size_),
-            boost::bind(&CLBHandler::handleOpticalData, this, error, bytes_transferred));
-    }
+    socket_optical_.async_receive(boost::asio::buffer(&buffer_optical_[0], buffer_size_),
+        boost::bind(&CLBHandler::handleOpticalData, this, error, bytes_transferred));
 }
 
 void CLBHandler::handleOpticalData(const boost::system::error_code& error, std::size_t size)
@@ -40,6 +38,12 @@ void CLBHandler::handleOpticalData(const boost::system::error_code& error, std::
         g_elastic.log(ERROR, "CLB Handler {} caught error {}: {}", handler_id_, error.value(), error.category().name());
         g_elastic.log(WARNING, "CLB Handler {} stopping work on optical socket due to error.", handler_id_);
         return;
+    }
+
+    if (*mode_ != true) {
+        // We are not in a run so just call the work method again
+        workOpticalData();
+        return;      
     }
 
     // Check the packet has at least a CLB header in it
