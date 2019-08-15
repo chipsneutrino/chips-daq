@@ -82,11 +82,18 @@ void DAQHandler::handleConfigCommand(std::string config_file)
 void DAQHandler::handleStartDataCommand()
 {
     g_elastic.log(INFO, "DAQonite: Starting Data");
+
+    // Call the first work method to the optical data
+    for (const auto& clb_handler : clb_handlers_) {
+        clb_handler->workOpticalData();
+    }
 }
 
 void DAQHandler::handleStopDataCommand()
 {
     g_elastic.log(INFO, "DAQonite: Stopping Data");
+
+    //TODO: Stop the work method for the optical data
 }
 
 void DAQHandler::handleStartRunCommand(RunType which)
@@ -104,11 +111,6 @@ void DAQHandler::handleStartRunCommand(RunType which)
     // Set the mode to data taking
     run_type_ = which;
     mode_ = true;
-
-    // Call the first work method to the optical data
-    for (const auto& clb_handler : clb_handlers_) {
-        clb_handler->workOpticalData();
-    }
 }
 
 void DAQHandler::handleStopRunCommand()
