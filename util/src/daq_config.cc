@@ -134,6 +134,9 @@ void DAQConfig::parseLine(std::string &line)
 					throw std::runtime_error("DAQConfig Error: Reconfig file needs to be of same structure as initial config file!");
 				}
 			}
+
+			// Set the config file name in each of the configurations
+			for (int i=0; i<num_controllers_; i++) configs_[i].config_name_ = conf_name_;
 		}
 
 	} else if (num_dots == 1) {
@@ -232,6 +235,13 @@ void DAQConfig::parseLine(std::string &line)
 		// Add the channel volatages
 		else if (config.compare("hv") == 0) {
 			if (!(ss >> configs_[controller_num].chan_hv_[channel_num])) {
+				std::cerr << "Error: " << config << " = " << value << " should be hex" << std::endl;
+			}			
+		} 
+
+		// Add the channel thresholds
+		else if (config.compare("th") == 0) {
+			if (!(ss >> configs_[controller_num].chan_th_[channel_num])) {
 				std::cerr << "Error: " << config << " = " << value << " should be hex" << std::endl;
 			}			
 		} 

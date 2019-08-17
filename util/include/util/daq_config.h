@@ -23,6 +23,8 @@
 enum ControllerType {CLB, BBB};
 
 struct ControllerConfig {
+	std::string config_name_	= "";			///< Name of config file
+
 	// Controller wide variables
 	ControllerType type_		= CLB;			///< What type of controller is it?
 	bool enabled_ 				= false;		///< Is the Controller enabled
@@ -36,7 +38,8 @@ struct ControllerConfig {
 	// Channel specific variables
 	std::bitset<32> chan_enabled_;				///< Is the channel enabled
 	unsigned int chan_eid_[31] 	= {};			///< The channel electronic ID
-	unsigned int chan_hv_[31] 	= {};			///< Channel high voltage setting
+	unsigned int chan_hv_[31] 	= {96};			///< Channel high voltage settings
+	unsigned int chan_th_[31] 	= {43};			///< Channel threshold settings
 };
 
 class DAQConfig {
