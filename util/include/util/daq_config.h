@@ -26,6 +26,8 @@
 enum ControllerType {CLB, BBB};
 
 struct ControllerConfig {
+	std::string config_name_	= "";		///< Name of config file
+
 	// Controller wide variables
 	bool enabled_				= false;	///< Is it enabled?
 	ControllerType type_		= CLB;		///< Electronic type
@@ -47,6 +49,7 @@ struct ControllerConfig {
 	// Channel specific variables
 	unsigned ch_id_[31]			= {};		///< Channel electronic ID
 	int ch_hv_[31] 				= {};		///< Channel high voltage
+	int ch_th_[31] 				= {};		///< Channel threshold 
 
 	std::string ipAsString() { return boost::asio::ip::address_v4(ip_).to_string(); }
 	std::string relayIpAsString() { return boost::asio::ip::address_v4(relay_ip_).to_string(); }

@@ -109,6 +109,9 @@ void DAQConfig::parseLine(std::string &line)
 					g_elastic.log(ERROR, "DAQConfig reconfig file needs to be of same structure as initial config file!");
 				}
 			}
+
+			// Set the config file name in each of the configurations
+			for (int i=0; i<num_controllers_; i++) configs_[i].config_name_ = file_name_;
 		}
 
 	} else if (num_dots == 1) {
@@ -293,6 +296,13 @@ void DAQConfig::parseLine(std::string &line)
 		else if (config.compare("hv") == 0) {
 			if (!(ss >> configs_[controller_num].ch_hv_[channel_num])) {
 				g_elastic.log(WARNING, "DAQControl error: ({}) should be hex", value);
+			}			
+		} 
+
+		// Add the channel thresholds
+		else if (config.compare("th") == 0) {
+			if (!(ss >> configs_[controller_num].ch_th_[channel_num])) {
+				std::cerr << "Error: " << config << " = " << value << " should be hex" << std::endl;
 			}			
 		} 
 
