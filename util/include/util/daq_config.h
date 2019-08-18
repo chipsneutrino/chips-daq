@@ -26,6 +26,7 @@
 enum ControllerType {CLB, BBB};
 
 struct ControllerConfig {
+	// General variables
 	std::string config_name_	= "";		///< Name of config file
 
 	// Controller wide variables
@@ -51,10 +52,25 @@ struct ControllerConfig {
 	int ch_hv_[31] 				= {};		///< Channel high voltage
 	int ch_th_[31] 				= {};		///< Channel threshold 
 
-	std::string ipAsString() { return boost::asio::ip::address_v4(ip_).to_string(); }
-	std::string relayIpAsString() { return boost::asio::ip::address_v4(relay_ip_).to_string(); }
-	std::string dataIpAsString() { return boost::asio::ip::address_v4(data_ip_).to_string(); }
-	int numEnabledChannels() { return ch_enabled_.count(); }
+	std::string ipAsString() 
+	{ 
+		return boost::asio::ip::address_v4(ip_).to_string(); 
+	}
+
+	std::string relayIpAsString() 
+	{ 
+		return boost::asio::ip::address_v4(relay_ip_).to_string(); 
+	}
+
+	std::string dataIpAsString() 
+	{ 
+		return boost::asio::ip::address_v4(data_ip_).to_string(); 
+	}
+
+	int numEnabledChannels() 
+	{ 
+		return ch_enabled_.count(); 
+	}
 };
 
 class DAQConfig {

@@ -59,7 +59,11 @@ void CLBController::configure()
     if(!setHV()) { // Set and check the PMT voltages
         working_ = false;
         return;    
-    }                                  
+    }   
+    if(!setThresholds()) { // Set and check the PMT thresholds
+        working_ = false;
+        return;    
+    }                                   
     else if(!setFlasher()) { // Set the flasher if required
         working_ = false;
         return;    
@@ -263,11 +267,10 @@ bool CLBController::getState()
 
 bool CLBController::setEnabledPMTs()
 {
-    unsigned long enabled = config_.ch_enabled_.to_ulong();
-
     MsgWriter mw;
     mw.writeU16(1);
-    mw.writeI32(ProcVar::OPT_CHAN_ENABLE);  mw.writeU32(enabled);
+    mw.writeI32(ProcVar::OPT_CHAN_ENABLE);  
+    mw.writeU32(config_.ch_enabled_.to_ulong());
 
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
@@ -277,7 +280,6 @@ bool CLBController::setEnabledPMTs()
     }
 
     if(!checkEnabledPMTs()) return false; // Check the PMTs have been enabled correctly 
-
     return true;     
 }
 
@@ -296,7 +298,6 @@ bool CLBController::setHV()
     }
 
     if(!checkHV()) return false; // Check the PMT HVs have been set correctly
-
     return true; 
 }
 
@@ -314,8 +315,7 @@ bool CLBController::setThresholds()
         return false;
     }
 
-    if(!checkHV()) return false; // Check the PMT HVs have been set correctly
-
+    if(!checkThresholds()) return false; // Check the PMT HVs have been set correctly
     return true; 
 }
 
@@ -344,21 +344,20 @@ bool CLBController::checkIDs()
         long eid = mr.readU32();
         if (eid != config_.ch_id_[ipmt] && config_.ch_enabled_[ipmt])
         {
-            g_elastic.log(ERROR, "Non matching eid on CLB({}) for PMT {}, config:{} vs actual:{}!", config_.eid_, ipmt, eid, config_.ch_id_[ipmt]);  
+            g_elastic.log(ERROR, "Non matching eid on CLB({}) for PMT {}, actual:{} vs config:{}!", config_.eid_, ipmt, eid, config_.ch_id_[ipmt]);  
             errors.push_back(std::make_tuple(ipmt, config_.ch_id_[ipmt], eid));         
         }
     }
 
     if (errors.size() != 0) // Check if we need to save mismatches to file
     {
-        // Disable the mismatching channels
+        // Disable the mismatching channels and write to file
         for (int e=0; e<errors.size(); e++) 
         {
             g_elastic.log(ERROR, "Will not enabled channel ({}) on CLB({})!", std::get<0>(errors[e]), config_.eid_);
             config_.ch_enabled_[std::get<0>(errors[e])] = 0;
+            // TODO: Write errors to file
         }
-
-        // Write mistmatched channel to file, with name of config file + _clbx_errors.dat
     }
 
     return true;
@@ -418,7 +417,7 @@ bool CLBController::checkHV()
         long voltage = (long)mr.readU8();
         if (voltage != config_.ch_hv_[ipmt] && config_.ch_enabled_[ipmt])
         {
-            g_elastic.log(ERROR, "Non matching voltage on CLB({}) for PMT {}, {} vs {}!", config_.eid_, ipmt, voltage, config_.ch_hv_[ipmt]); 
+            g_elastic.log(ERROR, "Non matching voltage on CLB({}) for PMT {}, actual:{} vs config:!", config_.eid_, ipmt, voltage, config_.ch_hv_[ipmt]); 
             return false;          
         }
     }
@@ -450,7 +449,7 @@ bool CLBController::checkThresholds()
         long threshold = (long)mr.readU8();
         if (threshold != config_.ch_th_[ipmt] && config_.ch_enabled_[ipmt])
         {
-            g_elastic.log(ERROR, "Non matching threshold on CLB({}) for PMT {}, {} vs {}!", config_.eid_, ipmt, threshold, config_.ch_th_[ipmt]); 
+            g_elastic.log(ERROR, "Non matching threshold on CLB({}) for PMT {}, actual:{} vs config:!", config_.eid_, ipmt, threshold, config_.ch_th_[ipmt]); 
             return false;          
         }
     }
