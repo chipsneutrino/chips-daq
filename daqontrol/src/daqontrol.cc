@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
     SingletonProcess singleton(11111);
     if (!singleton()) throw std::runtime_error("DAQontrol already running!");
 
-    std::string config = "../data/singleConfig.opt";  // Default config file
+    std::string config = "../data/testConfig.opt";  // Default config file
 
     boost::program_options::options_description desc("Options");
     desc.add_options()("help,h", "DAQontrol...")

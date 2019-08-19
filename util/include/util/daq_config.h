@@ -52,6 +52,12 @@ struct ControllerConfig {
 	int ch_hv_[31] 				= {};		///< Channel high voltage
 	int ch_th_[31] 				= {};		///< Channel threshold 
 
+	ControllerConfig()
+	{
+		std::fill_n(ch_hv_, 31, 0);		// Set HV values to zero unless specified
+		std::fill_n(ch_th_, 31, 43);	// Set all threshold values to the default
+	}
+
 	std::string ipAsString() 
 	{ 
 		return boost::asio::ip::address_v4(ip_).to_string(); 
