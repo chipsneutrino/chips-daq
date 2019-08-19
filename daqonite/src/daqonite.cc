@@ -16,6 +16,7 @@
 #include "daq_handler.h"
 #include "util/signal_receiver.h"
 #include <util/elastic_interface.h>
+#include <util/singleton_process.h>
 
 namespace exit_code {
 static constexpr int success = 0;
@@ -48,6 +49,10 @@ void readSettings(int argc, char* argv[])
 
 int main(int argc, char* argv[])
 {
+    // Check that no other DAQonite instances are running
+    SingletonProcess singleton(11112);
+    if (!singleton()) throw std::runtime_error("DAQonite already running!");
+
     // Read configuration.
     readSettings(argc, argv);
 

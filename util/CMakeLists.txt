@@ -9,6 +9,7 @@ add_library(util
     include/util/signal_receiver.h              src/signal_receiver.cc
     include/util/daq_config.h                   src/daq_config.cc
     include/util/bus_publisher.h                src/bus_publisher.cc
+    include/util/singleton_process.h
     )
     
 target_include_directories(util PUBLIC include)

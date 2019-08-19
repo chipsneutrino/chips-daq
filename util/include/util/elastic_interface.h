@@ -68,7 +68,7 @@ struct channel_data
 #define MAX_ATTEMPTS 3
 
 /// Callback for elasticlient logs
-inline void elasticlient_callback(elasticlient::LogLevel logLevel, const std::string &msg)
+inline void elasticlientCallback(elasticlient::LogLevel logLevel, const std::string &msg)
 {
     std::cout << "LOG (" << (unsigned)logLevel << "): " << msg << std::endl;
 }
@@ -90,6 +90,9 @@ public:
          * @param index_threads number of threads to use for indexing
 		 */
     void init(bool print_logs, bool print_debug, int index_threads);
+
+    /// Unlinks the lock file at exit
+    static void close(std::string path);
 
     /// Nice pretty-print formatting using fmt for logging
     template <typename S, typename... Args>
@@ -241,41 +244,41 @@ private:
     /// Gets the current ElasticInterface mode
     inline log_mode mode()
     {
-        fWork_mutex.lock();
-        log_mode mode = fMode;
-        fWork_mutex.unlock();
+        work_mutex_.lock();
+        log_mode mode = mode_;
+        work_mutex_.unlock();
         return mode;
     }
 
     /// Sets the ElasticInterface mode
     inline void set_mode(log_mode mode)
     {
-        fWork_mutex.lock();
-        fMode = mode;
-        fWork_mutex.unlock();
+        work_mutex_.lock();
+        mode_ = mode;
+        work_mutex_.unlock();
     }
 
     // General
-    log_mode fMode;                        ///< Logging mode {ELASTIC, FILE_LOG}
-    std::vector<std::string> fClient_list; ///< List of elasticsearch clients
-    Json::StreamWriterBuilder fBuilder;    ///< Json writer to stream json value to string
+    log_mode mode_;                             ///< Logging mode {ELASTIC, FILE_LOG}
+    std::vector<std::string> client_list_;      ///< List of elasticsearch clients
+    Json::StreamWriterBuilder builder_;         ///< Json writer to stream json value to string
 
     // Indexing
-    boost::asio::io_service fIndex_service;    ///< Indexing io_service
-    boost::asio::io_service::work fIndex_work; ///< Work for the indexing io_service
-    boost::thread_group fIndex_threads;        ///< Group of indexing threads to do the work
-    boost::mutex fPrint_mutex;                 ///< Mutex for stdout printing
-    boost::mutex fWork_mutex;                  ///< Mutex for work inside indexing io_service
+    boost::asio::io_service index_service_;     ///< Indexing io_service
+    boost::asio::io_service::work index_work_;  ///< Work for the indexing io_service
+    boost::thread_group index_threads_;         ///< Group of indexing threads to do the work
+    boost::mutex print_mutex_;                  ///< Mutex for stdout printing
+    boost::mutex work_mutex_;                   ///< Mutex for work inside indexing io_service
 
     // Settings
-    std::string fProcess_name; ///< Process name for using in log messages
-    int fPid;                  ///< Process pid for using in log messages
-    std::string fFile_name;    ///< file name used when in FILE_LOG mode
-    bool fPrint_logs;          ///< Should we print logs to stdout?
+    std::string process_name_;                  ///< Process name for using in log messages
+    int pid_;                                   ///< Process pid for using in log messages
+    std::string file_name_;                     ///< file name used when in FILE_LOG mode
+    bool print_logs_;                           ///< Should we print logs to stdout?
 
     // Log suppression
-    int fLog_counter;                                                ///< Log counter
-    std::chrono::time_point<std::chrono::system_clock> fTimer_start; ///< Suppression window start time
+    int log_counter_;                           ///< Log counter
+    std::chrono::time_point<std::chrono::system_clock> timer_start_; ///< Suppression window start time
 };
 
-extern ElasticInterface g_elastic; ///< Global instance of this class
+extern ElasticInterface g_elastic;      ///< Global instance of this class
