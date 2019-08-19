@@ -151,11 +151,8 @@ bool CLBController::setInitValues()
 {
     std::vector<int>  var_ids;
     std::vector<long> var_values;
-
-    unsigned char  addr4[4] = {192, 168, 11, 1};  // Server IP Address
-    unsigned long ipi = ((0xFF & addr4[0]) << 24) |  ((0xFF & addr4[1]) << 16) |  ((0xFF & addr4[2]) <<  8) |  ((0xFF & addr4[3]) << 0);
-    var_ids.push_back(ProcVar::NET_IPMUX_SRV_IP);       var_values.push_back(ipi);
-    var_ids.push_back(ProcVar::SYS_TIME_SLICE_DUR);     var_values.push_back(config_.data_window_);
+    var_ids.push_back(ProcVar::NET_IPMUX_SRV_IP);       var_values.push_back(config_.data_ip_); // Data server IP address
+    var_ids.push_back(ProcVar::SYS_TIME_SLICE_DUR);     var_values.push_back(config_.data_window_); // Data server port
     var_ids.push_back(ProcVar::OPT_HR_VETO_ENA_CH);     var_values.push_back(0x00000000); // Disable all Channels HR Veto  
     var_ids.push_back(ProcVar::OPT_MULHIT_ENA_CH);      var_values.push_back(0x00000000); // Disable all Channels Multi Hits
 

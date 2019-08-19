@@ -30,30 +30,31 @@ struct ControllerConfig {
 	std::string config_name_	= "";		///< Name of config file
 
 	// Controller wide variables
-	bool enabled_				= false;	///< Is it enabled?
-	ControllerType type_		= CLB;		///< Electronic type
-	int eid_					= 0;		///< Electronic ID
-	long mac_					= 0;		///< MAC address
-	long ip_					= 0;		///< IP address
-	int port_					= 0;		///< Slow-control port
-	long relay_ip_				= 0;		///< Relay IP address
-	int relay_port_				= 0;		///< Relay port
-	int relay_chp_				= 0;		///<
-	int relay_chn_				= 0;		///< Relay channel number
-	long data_ip_				= 0;		///< Data server IP address
-	int data_port_				= 0;		///< Data server port
-	int data_window_			= 0;   		///< Data window duration (ms)
-	bool nano_enabled_			= false;	///< Is nanobeacon enabled?
-	int nano_voltage_			= 0;		///< Nano voltage (mv)
-	std::bitset<32> ch_enabled_;			///< Enabled channels
+	bool enabled_				= false;		///< Is it enabled?
+	ControllerType type_		= CLB;			///< Electronic type
+	int eid_					= 0;			///< Electronic ID
+	long mac_					= 0;			///< MAC address
+	long ip_					= 0;			///< IP address
+	int port_					= 56014;		///< Slow-control port (default CLB port)
+	long relay_ip_				= 0;			///< Relay IP address
+	int relay_port_				= 0;			///< Relay port
+	int relay_chp_				= 0;			///< Relay channel positive
+	int relay_chn_				= 0;			///< Relay channel neutral
+	unsigned long data_ip_		= 3232241153;	///< Data server IP address (192.168.22.1)
+	int data_port_				= 56015;		///< Data server port (CLB optical port)
+	int data_window_			= 100;   		///< Data window duration (ms)
+	bool nano_enabled_			= false;		///< Is nanobeacon enabled?
+	int nano_voltage_			= 0;			///< Nano voltage (mv)
+	std::bitset<32> ch_enabled_;				///< Enabled channels (default is all disabled)
 
 	// Channel specific variables
-	unsigned ch_id_[31]			= {};		///< Channel electronic ID
-	int ch_hv_[31] 				= {};		///< Channel high voltage
-	int ch_th_[31] 				= {};		///< Channel threshold 
+	unsigned ch_id_[31]			= {};			///< Channel electronic ID
+	int ch_hv_[31] 				= {};			///< Channel high voltage
+	int ch_th_[31] 				= {};			///< Channel threshold 
 
 	ControllerConfig()
 	{
+		std::fill_n(ch_id_, 31, 0);		// Set all eid's to zero unless specified
 		std::fill_n(ch_hv_, 31, 0);		// Set HV values to zero unless specified
 		std::fill_n(ch_th_, 31, 43);	// Set all threshold values to the default
 	}
