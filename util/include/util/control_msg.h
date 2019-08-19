@@ -17,7 +17,7 @@ struct OpsMessage {
     /// Configure from config files
     struct Config {
         static constexpr disc_t Discriminator = 0;
-        char config_file[100];  ///< Config file location
+        char config_file[200];  ///< Config file location
     };
 
     /// Start data flow
@@ -65,7 +65,7 @@ struct ControlMessage {
     /// Configure from config files
     struct Config {
         static constexpr disc_t Discriminator = 0;
-        char config_file[100];  ///< Config file location
+        char config_file[200];  ///< Config file location
     };
 
     /// Start data flow
