@@ -6,11 +6,16 @@
  */
 
 #include "packet_generator.h"
+#include "util/singleton_process.h"
 
 namespace po = boost::program_options;
 
 int main(int argc, char* argv[])
 {
+    // Check that no other DAQulator instances are running
+    SingletonProcess singleton(11114);
+    if (!singleton()) throw std::runtime_error("DAQulator already running!");
+
     // Default settings
     std::string address = "localhost";
     std::string config_file("../data/config.opt");

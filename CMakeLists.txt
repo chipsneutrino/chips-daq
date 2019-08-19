@@ -9,8 +9,9 @@ set(BUILD_STATIC_LIBS NO CACHE BOOL "")
 
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
-link_directories(${LIBRARY_OUTPUT_PATH} $ENV{FH_PATH}/src)
-include_directories($ENV{FH_PATH}/include)
+link_directories(${LIBRARY_OUTPUT_PATH} $ENV{MICRODAQ_PATH}/common/fh_message/src)
+include_directories($ENV{MICRODAQ_PATH}/common/fh_message/include)
+include_directories($ENV{MICRODAQ_PATH}/bbb/app/include)
 
 # This is just to have neat colors in Ninja
 option(FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." OFF)

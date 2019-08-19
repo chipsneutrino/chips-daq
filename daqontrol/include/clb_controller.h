@@ -14,6 +14,8 @@
 #include "controller.h"
 #include <util/elastic_interface.h>
 
+#include <tuple>
+
 class CLBController: public Controller {
 public:
     /// Create a CLBController, calling Controller constructor and created MsgProcessor
@@ -56,11 +58,26 @@ private:
     /// Updates the locally stored state from the CLB
     bool getState();
 
-    /// Sets which PMTs are enabled and at what voltage from the configuration
-    bool setPMTs();
+    /// Set the enabled channels on the CLB
+    bool setEnabledPMTs();
 
-    /// Checks the PMTs have been set correctly according to the configuration
-    bool checkPMTs();
+    // Set the HV on the PMTs
+    bool setHV();
+
+    // Set the threshold on the PMTs
+    bool setThresholds();
+
+    /// Checks the PMT eid values against the configuration
+    bool checkIDs();
+
+    /// Checks the enabled channels on the CLB
+    bool checkEnabledPMTs();
+
+    // Checks the HVs have been set correctly
+    bool checkHV();
+
+    // Checks the threshold on the PMts
+    bool checkThresholds();
 
     /// Gets the mask SYS_SYS_RUN_ENA (used in nanobeacon toggling)
     char getSysEnabledMask();

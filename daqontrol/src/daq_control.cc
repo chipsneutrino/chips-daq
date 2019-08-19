@@ -117,7 +117,14 @@ void DAQControl::setupFromConfig()
     {
         if (config_.configs_[controller].enabled_)
         {
-            controllers_.push_back(new CLBController(config_.configs_[controller]));
+            if (config_.configs_[controller].type_ == CLB)
+            {
+                controllers_.push_back(new CLBController(config_.configs_[controller]));
+            }
+            else if (config_.configs_[controller].type_ == BBB)
+            {
+                controllers_.push_back(new BBBController(config_.configs_[controller]));
+            }
         }
     }
 }
@@ -146,13 +153,18 @@ void DAQControl::stateUpdate()
 
         if (state != target_state_ && !controllers_[i]->isWorking()) 
         {
-            // TODO: Implement a retry mechanism trying to reach target state
             g_elastic.log(WARNING, "Dropping controller ({})", controllers_[i]->getID());
             controllers_[i]->drop(); // For now we just drop the controller
             continue;
         }
 
         states.push_back(controllers_[i]->getState());
+    }
+
+    if (states.size() == 0)
+    {
+        g_elastic.log(ERROR, "All controllers have been dropped!");
+        return;
     }
 
     // If all controllers have moved to the next state update the current_state_

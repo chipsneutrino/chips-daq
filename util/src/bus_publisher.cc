@@ -54,6 +54,8 @@ void BusPublisher<T>::join()
 
     status_thread_.reset();
     comm_thread_.reset();
+
+    unlink(message_type::URL); // Unlink the nng publisher file
 }
 
 template <typename T>

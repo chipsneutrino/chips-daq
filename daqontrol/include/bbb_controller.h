@@ -7,6 +7,7 @@
 #include "controller.h"
 #include "fh_library.h"
 #include <util/elastic_interface.h>
+#include <bbb_comms_api.h>
 
 class BBBController: public Controller {
 public:
@@ -14,7 +15,7 @@ public:
     BBBController(ControllerConfig config);
 
     /// Destroy a BBBController
-    ~BBBController() {};
+    ~BBBController();
 
     void postInit() { io_service_->post(boost::bind(&BBBController::init, this)); };
     void postConfigure() { io_service_->post(boost::bind(&BBBController::configure, this)); };
@@ -26,4 +27,7 @@ private:
     void configure();
     void startData();
     void stopData();
+
+    fh_transport_t *transport_;
+    fh_message_t *msg_;
 };

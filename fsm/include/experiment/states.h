@@ -4,6 +4,7 @@ namespace Experiment {
 namespace states {
     class Init : public FSM {
         void entry() override;
+        void react(OpsCommands::Exit const&) override;
         void react(StateUpdate const&) override;
     };
     class Exit : public FSM {

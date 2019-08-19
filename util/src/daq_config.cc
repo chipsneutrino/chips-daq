@@ -6,52 +6,34 @@
 
 /// Create a DAQConfig
 DAQConfig::DAQConfig(const char * config) 
-	: conf_name_(config)
+	: file_name_(config)
 	, configured_(false)
 {
 	num_controllers_ = 0;
 	enabled_controllers_ = 0;
 	enabled_channels_ = 0;
 	is_nano_enabled_ = false;
-
 	configs_.clear();
 	
-	loadConfig();
-}
-
-/// Destroy a DAQConfig
-DAQConfig::~DAQConfig() 
-{
-    // Empty
+	loadConfig(); // Load the configuration from file
 }
  
 /// Print the summary of the DAQConfig
 void DAQConfig::printConfig() 
 {
-	std::cout << "\n***************** DAQ Config *****************" << std::endl;
-	std::cout << "Mining Plan -> " << conf_name_ << std::endl;
-	std::cout << "Number of Miners -> " << num_controllers_ << std::endl;
-	std::cout << "Number of Miners on Shift -> " << enabled_controllers_ << std::endl;
-	std::cout << "Number of Pickaxes being used -> " << enabled_channels_ << std::endl;
+	std::cout << "\n**** DAQ Config ****" << std::endl;
+	std::cout << "Plan: " 			<< file_name_ 			<<
+				 ", Miners:" 		<< enabled_controllers_ <<
+				 ", Pickaxes:"		<< enabled_channels_ 	<< std::endl;
 	for (int i = 0; i<num_controllers_; i++) {
-		std::cout << "Miner " << i << "(" << configs_[i].enabled_ << ")" << 
-					" -> ID = " << configs_[i].eid_ <<
-					", Address = " << configs_[i].ip_ <<
-		 			", Pickaxes = " << configs_[i].chan_enabled_.count() <<
-					", Nanobeacon = " << configs_[i].nano_enabled_ << std::endl;
+		std::cout << "Miner" 		<< i << "(" << configs_[i].enabled_ << ")" << 
+					": ID(" 		<< configs_[i].eid_ <<
+					"), Type(" 		<< configs_[i].type_ <<
+					"), Shaft(" 	<< configs_[i].ipAsString() <<
+		 			"), Pickaxes(" 	<< configs_[i].ch_enabled_.count() <<
+					"), Headlamp(" 	<< configs_[i].nano_enabled_ << ")" << std::endl;
 	}
-	std::cout << "**********************************************\n" << std::endl;
-}
-
-/// Print a short summary of the DAQConfig
-void DAQConfig::printShortConfig() 
-{
-	std::cout << "\n***************** DAQ Config *****************" << std::endl;
-	std::cout << "Mining Plan -> " << conf_name_ << std::endl;
-	std::cout << "Number of Miners -> " << num_controllers_ << std::endl;
-	std::cout << "Number of Miners on Shift -> " << enabled_controllers_ << std::endl;
-	std::cout << "Number of Pickaxes being used -> " << enabled_channels_ << std::endl;
-	std::cout << "**********************************************\n" << std::endl;
+	std::cout << std::endl;
 }
 
 /// Load a new configuration from file
@@ -62,46 +44,41 @@ void DAQConfig::loadConfig(const char * config)
 	enabled_channels_ = 0;
 	is_nano_enabled_ = false;
 
-	conf_name_ = config; // Set the new configuration file name
+	file_name_ = config; // Set the new configuration file name
 
-	loadConfig(); // Load the new configuration
+	loadConfig(); // Load the new configuration from file
 }
 
-/// Read the configuration text file specified by conf_name_
+/// Read the configuration text file specified by file_name_
 void DAQConfig::loadConfig() 
 {
-	// Open the file and test opening:
 	std::ifstream input_file;
-	input_file.open(conf_name_.c_str());
+	input_file.open(file_name_.c_str()); // Open the file
 
-	if (!input_file.is_open()) {
-		throw std::runtime_error("DAQConfig Error: Could not open config file!");
+	if (!input_file.is_open()) { // Check it is open
+		g_elastic.log(ERROR, "DAQConfig could not open config file!");
+		return;
 	}
 
-	// Read the file
 	std::string line;
-	while (getline(input_file, line)) {
+	while (getline(input_file, line)) { // Read the file line-by-line
 		parseLine(line);
 	}
 
 	configured_ = true; // Set that this DAQConfig has been configured
-
 	printConfig();	// Print the configuration
 
 	return;
 }
 
-/// Parse the line from the file, filling the vectors with found info
+/// Parse the line from the file, filling the ControllerConfig's with info
 void DAQConfig::parseLine(std::string &line) 
 {
-	// Remove comments from the line 
-	ignoreComments(line);
+	ignoreComments(line); // Remove comments from the line 
 
-	// Remove whitespace from the line
-	removeWhitespace(line);
+	removeWhitespace(line); // Remove whitespace from the line
 
-	// Check if we can use this line
-	if (!(isGoodLine(line))) { return; }
+	if (!(isGoodLine(line))) { return; } // Check if we can use this line
 
 	int num_dots, controller_num, channel_num;
 	std::string config, value;
@@ -109,17 +86,15 @@ void DAQConfig::parseLine(std::string &line)
 	std::string config_line = line;
 	extractConfig(config_line, num_dots, controller_num, channel_num, config, value);
 
-	// We need to stream the value to different types depending on the config
-	std::istringstream ss(value);
+	std::istringstream ss(value); // Stream to convert types
 	
-	// Assign value
 	if (num_dots == 0) {
 
 		// Get how many controllers there are in this config file
-		if (config.compare("clb_number") == 0) {
+		if (config.compare("pom_number") == 0) {
 			int temp_num_controllers;
 			if (!(ss >> temp_num_controllers)) { 
-				std::cerr << "Error: " << value << " should be a int" << std::endl; 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be an int", value);
 			}
 
 			if (!configured_)
@@ -131,18 +106,21 @@ void DAQConfig::parseLine(std::string &line)
 			{
 				if (temp_num_controllers != num_controllers_)
 				{
-					throw std::runtime_error("DAQConfig Error: Reconfig file needs to be of same structure as initial config file!");
+					g_elastic.log(ERROR, "DAQConfig reconfig file needs to be of same structure as initial config file!");
 				}
 			}
+
+			// Set the config file name in each of the configurations
+			for (int i=0; i<num_controllers_; i++) configs_[i].config_name_ = file_name_;
 		}
 
 	} else if (num_dots == 1) {
 
 		// Check this controller is enabled
 		if (config.compare("enabled") == 0) {
-			bool enabled = false;
+			bool enabled;
 			if (!(ss >> enabled)) { 
-				std::cerr << "Error: " << value << " should be int (0 or 1)" << std::endl;
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be bool (0 or 1)", value);
 			}
 
 			if (enabled)
@@ -153,13 +131,34 @@ void DAQConfig::parseLine(std::string &line)
 			else {
 				configs_[controller_num].enabled_ = false;
 			}
-		}			
+		}	
+
+		// Get the controllers electronic type
+		if (config.compare("type") == 0) {
+			std::string type;
+			if (!(ss >> type)) { 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be string (CLB or BBB)", value);
+			}
+
+			if (type == "CLB")
+			{
+				configs_[controller_num].type_ = CLB;
+			}
+			else if (type == "BBB")
+			{
+				configs_[controller_num].type_ = BBB;
+			}
+			else 
+			{
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be string (CLB or BBB)", value);
+			}
+		}		
 
 		// Add the controllers eID
 		else if (config.compare("eid") == 0) {
 			int temp_eid;
 			if (!(ss >> temp_eid)) { 
-				std::cerr << "Error: " << value << " should be int" << std::endl; 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value);
 			}	
 
 			if (!configured_)
@@ -170,36 +169,86 @@ void DAQConfig::parseLine(std::string &line)
 			{
 				if (temp_eid != configs_[controller_num].eid_)
 				{
-					throw std::runtime_error("DAQConfig Error: Reconfig file needs to have same controllers as initial config file!");
+					g_elastic.log(ERROR, "DAQConfig reconfig file needs to have same controllers as initial config file!");
 				}
 			}
 		} 
 
+		// Add the controllers MAC address
+		else if (config.compare("mac") == 0) {
+			if (!(ss >> std::hex >> configs_[controller_num].mac_)) { 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be hex", value);
+			}	
+		} 
+
+		// Add the controllers IP address
 		else if (config.compare("ip") == 0) {
 			if (!(ss >> configs_[controller_num].ip_)) { 
-				std::cerr << "Error: " << value << " should be int" << std::endl; 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value); 
 			}			
 		}
-		
-		// Add which channels are active
-		else if (config.compare("ch_enabled") == 0) {
-			unsigned binarySet;
-			if (!(ss >> std::hex >> binarySet)) { 
-				std::cerr << "Error: " << value << " should be hex (32 bit)" << std::endl; 
-			}			
-			std::bitset<32> b(binarySet);
-			configs_[controller_num].chan_enabled_ = b;
 
-			for (int channel = 0; channel < 30; channel++) {
-				if ((int)b[channel] == 1) { enabled_channels_ += 1; }
-			}
+		// Add the controllers slow-control port
+		else if (config.compare("port") == 0) {
+			if (!(ss >> configs_[controller_num].port_)) { 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value);  
+			}			
 		}
 
-		// Check if the nanobeacon should be anabled
+		// Add the controllers relay IP address
+		else if (config.compare("relay_ip") == 0) {
+			if (!(ss >> configs_[controller_num].relay_ip_)) { 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value);  
+			}			
+		}
+
+		// Add the controllers relay port
+		else if (config.compare("relay_port") == 0) {
+			if (!(ss >> configs_[controller_num].relay_port_)) { 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value);  
+			}			
+		}
+
+		// Add the controllers relay chp
+		else if (config.compare("relay_chp") == 0) {
+			if (!(ss >> configs_[controller_num].relay_chp_)) { 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value);  
+			}			
+		}
+
+		// Add the controllers relay chn
+		else if (config.compare("relay_chn") == 0) {
+			if (!(ss >> configs_[controller_num].relay_chn_)) { 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value);  
+			}			
+		}
+
+		// Add the controllers data IP address
+		else if (config.compare("data_ip") == 0) {
+			if (!(ss >> configs_[controller_num].data_ip_)) { 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value); 
+			}			
+		}
+
+		// Add the controllers data port
+		else if (config.compare("data_port") == 0) {
+			if (!(ss >> configs_[controller_num].data_port_)) { 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value); 
+			}			
+		}
+
+		// Add the controllers data window duration
+		else if (config.compare("data_window") == 0) {
+			if (!(ss >> configs_[controller_num].data_window_)) { 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value); 
+			}			
+		}
+
+		// Check if the nanobeacon should be enabled
 		else if (config.compare("nano_enabled") == 0) {
 			bool enabled = false;
 			if (!(ss >> enabled)) { 
-				std::cerr << "Error: " << value << " should be int (0 or 1)" << std::endl;
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be bool (0 or 1)", value);
 			}
 
 			if (enabled) 
@@ -216,28 +265,49 @@ void DAQConfig::parseLine(std::string &line)
 		// Add the nanobeacon voltage
 		else if (config.compare("nano_voltage") == 0) {
 			if (!(ss >> configs_[controller_num].nano_voltage_)) { 
-				std::cerr << "Error: " << value << " should be int" << std::endl; 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value);
 			}	
 		} 	
 		
+		// Add which channels are active
+		else if (config.compare("ch_enabled") == 0) {
+			unsigned binarySet;
+			if (!(ss >> std::hex >> binarySet)) { 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be hex (32 bit)", value);
+			}			
+			std::bitset<32> b(binarySet);
+			configs_[controller_num].ch_enabled_ = b;
+
+			for (int channel = 0; channel < 30; channel++) {
+				if ((int)b[channel] == 1) { enabled_channels_ += 1; }
+			}
+		}
+
 	} else if (num_dots == 2) {
 
 		// Add the channel eID
 		if (config.compare("id") == 0) {
-			if (!(ss >> std::hex >> configs_[controller_num].chan_eid_[channel_num])) {
-				std::cerr << "Error: " << config << " = " << value << " should be hex" << std::endl;
+			if (!(ss >> std::hex >> configs_[controller_num].ch_id_[channel_num])) {
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be hex", value);
 			}			
 		} 
 
 		// Add the channel volatages
 		else if (config.compare("hv") == 0) {
-			if (!(ss >> configs_[controller_num].chan_hv_[channel_num])) {
-				std::cerr << "Error: " << config << " = " << value << " should be hex" << std::endl;
+			if (!(ss >> configs_[controller_num].ch_hv_[channel_num])) {
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value);
+			}			
+		} 
+
+		// Add the channel thresholds
+		else if (config.compare("th") == 0) {
+			if (!(ss >> configs_[controller_num].ch_th_[channel_num])) {
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value);
 			}			
 		} 
 
 	} else {
-		std::cout << "DAQConfig Error: Invalid config line!" << std::endl;
+		g_elastic.log(WARNING, "DAQControl error: Invalid config line!");
 	}
 
 	return;
@@ -299,7 +369,7 @@ void DAQConfig::extractConfig(std::string line, int &numDots, int &controllerNum
 	equals = line.find("=");
 	value = line.substr(equals + 1, (line.npos - equals - 1));
 
-	// Find the non controller specific "clb_number" line
+	// Find the non controller specific "pom_number" line
 	if ((dot_1 = line.find(".")) == line.npos) { 
 		numDots = 0;
 		controllerNum = 0;

@@ -8,6 +8,7 @@
 #include "util/command_receiver.h"
 #include "util/signal_receiver.h"
 #include <util/elastic_interface.h>
+#include "util/singleton_process.h"
 
 #include "daq_control.h"
 #include "daqontrol_publisher.h"
@@ -18,7 +19,11 @@ static constexpr int success = 0;
 
 int main(int argc, char* argv[])
 {
-    std::string config = "../data/singleConfig.opt";  // Default config file
+    // Check that no other DAQontrol instances are running
+    SingletonProcess singleton(11111);
+    if (!singleton()) throw std::runtime_error("DAQontrol already running!");
+
+    std::string config = "../data/testConfig.opt";  // Default config file
 
     boost::program_options::options_description desc("Options");
     desc.add_options()("help,h", "DAQontrol...")

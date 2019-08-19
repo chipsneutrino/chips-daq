@@ -12,6 +12,7 @@
 #include "daqsitter_publisher.h"
 #include "util/signal_receiver.h"
 #include <util/elastic_interface.h>
+#include "util/singleton_process.h"
 
 namespace exit_code {
 static constexpr int success = 0;
@@ -19,6 +20,10 @@ static constexpr int success = 0;
 
 int main(int argc, char *argv[])
 {
+    // Check that no other DAQsitter instances are running
+    SingletonProcess singleton(11113);
+    if (!singleton()) throw std::runtime_error("DAQsitter already running!");
+
     // Default settings
     std::string config = "../data/config.opt";
     bool elastic = false;

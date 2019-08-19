@@ -6,7 +6,7 @@
 
 CLBController::CLBController(ControllerConfig config)
     : Controller(config)
-    , processor_(config.ip_, io_service_)
+    , processor_(config, io_service_)
 {
     g_elastic.log(INFO, "Creating CLBController({})", config.eid_); 
 }
@@ -48,10 +48,22 @@ void CLBController::configure()
         } 
     }
 
-    if(!setPMTs()) { // Set and check the PMT voltages
+    if(!checkIDs()) { // Check the PMT eIDs first, modifies enabled channels
         working_ = false;
         return;    
-    }                                  
+    }   
+    if(!setEnabledPMTs()) { // Set which channels are enabled
+        working_ = false;
+        return;    
+    }   
+    if(!setHV()) { // Set and check the PMT voltages
+        working_ = false;
+        return;    
+    }   
+    if(!setThresholds()) { // Set and check the PMT thresholds
+        working_ = false;
+        return;    
+    }                                   
     else if(!setFlasher()) { // Set the flasher if required
         working_ = false;
         return;    
@@ -143,7 +155,7 @@ bool CLBController::setInitValues()
     unsigned char  addr4[4] = {192, 168, 11, 1};  // Server IP Address
     unsigned long ipi = ((0xFF & addr4[0]) << 24) |  ((0xFF & addr4[1]) << 16) |  ((0xFF & addr4[2]) <<  8) |  ((0xFF & addr4[3]) << 0);
     var_ids.push_back(ProcVar::NET_IPMUX_SRV_IP);       var_values.push_back(ipi);
-    var_ids.push_back(ProcVar::SYS_TIME_SLICE_DUR);     var_values.push_back(config_.window_dur_);
+    var_ids.push_back(ProcVar::SYS_TIME_SLICE_DUR);     var_values.push_back(config_.data_window_);
     var_ids.push_back(ProcVar::OPT_HR_VETO_ENA_CH);     var_values.push_back(0x00000000); // Disable all Channels HR Veto  
     var_ids.push_back(ProcVar::OPT_MULHIT_ENA_CH);      var_values.push_back(0x00000000); // Disable all Channels Multi Hits
 
@@ -253,82 +265,196 @@ bool CLBController::getState()
     return true;
 }
 
-bool CLBController::setPMTs()
+bool CLBController::setEnabledPMTs()
 {
-    unsigned long enabled = config_.chan_enabled_.to_ulong();
-
     MsgWriter mw;
-    mw.writeU16(2);
-    mw.writeI32(ProcVar::OPT_CHAN_ENABLE);  mw.writeU32(enabled);
-    mw.writeI32(ProcVar::OPT_PMT_HIGHVOLT);
-    for(int ipmt=0; ipmt<31; ++ipmt) mw.writeU8((short)config_.chan_hv_[ipmt]);
+    mw.writeU16(1);
+    mw.writeI32(ProcVar::OPT_CHAN_ENABLE);  
+    mw.writeU32(config_.ch_enabled_.to_ulong());
 
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'setPMTs'", config_.eid_); 
+        g_elastic.log(ERROR, "CLB({}), Could not process 'setEnabledPMTs'", config_.eid_); 
         return false;
     }
 
-    if(!checkPMTs()) return false; // Check the PMTs have been set correctly  
-
-    return true;  
+    if(!checkEnabledPMTs()) return false; // Check the PMTs have been enabled correctly 
+    return true;     
 }
 
-bool CLBController::checkPMTs()
+bool CLBController::setHV()
 {
-    // First lets get all the info we want back from the CLB
     MsgWriter mw;
-    mw.writeU16(3);
-    mw.writeI32(ProcVar::OPT_CHAN_ENABLE);
+    mw.writeU16(1);
+    mw.writeI32(ProcVar::OPT_PMT_HIGHVOLT);
+    for(int ipmt=0; ipmt<31; ++ipmt) mw.writeU8((short)config_.ch_hv_[ipmt]);
+
+    MsgReader mr;
+    if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
+    {
+        g_elastic.log(ERROR, "CLB({}), Could not process 'setHV'", config_.eid_); 
+        return false;
+    }
+
+    if(!checkHV()) return false; // Check the PMT HVs have been set correctly
+    return true; 
+}
+
+bool CLBController::setThresholds()
+{
+    MsgWriter mw;
+    mw.writeU16(1);
+    mw.writeI32(ProcVar::OPT_PMT_THRESHOLD);
+    for(int ipmt=0; ipmt<31; ++ipmt) mw.writeU8((short)config_.ch_th_[ipmt]);
+
+    MsgReader mr;
+    if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
+    {
+        g_elastic.log(ERROR, "CLB({}), Could not process 'setThresholds'", config_.eid_); 
+        return false;
+    }
+
+    if(!checkThresholds()) return false; // Check the PMT HVs have been set correctly
+    return true; 
+}
+
+bool CLBController::checkIDs()
+{
+    MsgWriter mw;
+    mw.writeU16(1);
     mw.writeI32(ProcVar::OPT_PMT_ID);
+
+    MsgReader mr;
+    if(!processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr))
+    {
+        g_elastic.log(ERROR, "CLB({}), Could not process 'checkIDs'", config_.eid_); 
+        return false;
+    } 
+
+    if (int count = mr.readU16() != 1)
+    {
+        g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
+        return false;           
+    }   
+
+    int varId = mr.readI32();
+    std::vector<std::tuple<int, int, int>> errors;            
+	for(int ipmt =0; ipmt<31; ++ipmt){  
+        long eid = mr.readU32();
+        if (eid != config_.ch_id_[ipmt] && config_.ch_enabled_[ipmt])
+        {
+            g_elastic.log(ERROR, "Non matching eid on CLB({}) for PMT {}, actual:{} vs config:{}!", config_.eid_, ipmt, eid, config_.ch_id_[ipmt]);  
+            errors.push_back(std::make_tuple(ipmt, config_.ch_id_[ipmt], eid));         
+        }
+    }
+
+    if (errors.size() != 0) // Check if we need to save mismatches to file
+    {
+        // Disable the mismatching channels and write to file
+        for (int e=0; e<errors.size(); e++) 
+        {
+            g_elastic.log(ERROR, "Will not enabled channel ({}) on CLB({})!", std::get<0>(errors[e]), config_.eid_);
+            config_.ch_enabled_[std::get<0>(errors[e])] = 0;
+            // TODO: Write errors to file
+        }
+    }
+
+    return true;
+}
+
+bool CLBController::checkEnabledPMTs()
+{
+    MsgWriter mw;
+    mw.writeU16(1);
+    mw.writeI32(ProcVar::OPT_CHAN_ENABLE);
+
+    MsgReader mr;
+    if(!processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr))
+    {
+        g_elastic.log(ERROR, "CLB({}), Could not process 'checkEnabledPMTs'", config_.eid_); 
+        return false;
+    } 
+
+    if (int count = mr.readU16() != 1)
+    {
+        g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
+        return false;           
+    }   
+
+    int varId = mr.readI32();
+    std::bitset<32> enabled(mr.readU32());
+    if (enabled != config_.ch_enabled_)
+    {
+        g_elastic.log(ERROR, "CLB({}), Enabled channels do not match!", config_.eid_);  
+        return false;
+    }   
+
+    return true;
+}
+
+bool CLBController::checkHV()
+{
+    MsgWriter mw;
+    mw.writeU16(1);
     mw.writeI32(ProcVar::OPT_PMT_HIGHVOLT);
 
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'checkPMTs'", config_.eid_); 
+        g_elastic.log(ERROR, "CLB({}), Could not process 'checkHV'", config_.eid_); 
         return false;
     } 
              
-    if (int count = mr.readU16() != 3)
+    if (int count = mr.readU16() != 1)
     {
         g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
         return false;           
     }
 
-    // Check the enabled channels
-    int varId = mr.readI32();   
-    std::bitset<32> enabled(mr.readU32());
-    if (enabled != config_.chan_enabled_)
-    {
-        g_elastic.log(ERROR, "CLB({}), Enabled channels do not match!", config_.eid_);  
-        return false;     
-    }
-
-    // Check the channel eids
-    varId = mr.readI32();            
-	for(int ipmt =0; ipmt<31; ++ipmt){  
-        long eid = mr.readU32();
-        if (eid != config_.chan_eid_[ipmt] && enabled[ipmt])
-        {
-            g_elastic.log(ERROR, "Non matching eid on CLB({}) for PMT {}, {} vs {}!", config_.eid_, ipmt, eid, config_.chan_eid_[ipmt]);  
-            return false;          
-        }
-    }
-
-    // Check the channel high voltage
-    varId = mr.readI32();         
+    int varId = mr.readI32();         
 	for(int ipmt =0; ipmt<31; ++ipmt){
         long voltage = (long)mr.readU8();
-        if (voltage != config_.chan_hv_[ipmt] && enabled[ipmt])
+        if (voltage != config_.ch_hv_[ipmt] && config_.ch_enabled_[ipmt])
         {
-            g_elastic.log(ERROR, "Non matching voltage on CLB({}) for PMT {}, {} vs {}!", config_.eid_, ipmt, voltage, config_.chan_hv_[ipmt]); 
+            g_elastic.log(ERROR, "Non matching voltage on CLB({}) for PMT {}, actual:{} vs config:!", config_.eid_, ipmt, voltage, config_.ch_hv_[ipmt]); 
             return false;          
         }
     }
 
     return true;
+}
+
+bool CLBController::checkThresholds()
+{
+    MsgWriter mw;
+    mw.writeU16(1);
+    mw.writeI32(ProcVar::OPT_PMT_THRESHOLD);
+
+    MsgReader mr;
+    if(!processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr))
+    {
+        g_elastic.log(ERROR, "CLB({}), Could not process 'checkThresholds'", config_.eid_); 
+        return false;
+    } 
+             
+    if (int count = mr.readU16() != 1)
+    {
+        g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
+        return false;           
+    }
+
+    int varId = mr.readI32();         
+	for(int ipmt =0; ipmt<31; ++ipmt){
+        long threshold = (long)mr.readU8();
+        if (threshold != config_.ch_th_[ipmt] && config_.ch_enabled_[ipmt])
+        {
+            g_elastic.log(ERROR, "Non matching threshold on CLB({}) for PMT {}, actual:{} vs config:!", config_.eid_, ipmt, threshold, config_.ch_th_[ipmt]); 
+            return false;          
+        }
+    }
+
+    return true; 
 }
 
 char CLBController::getSysEnabledMask()

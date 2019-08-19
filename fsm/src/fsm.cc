@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include <util/elastic_interface.h>
+#include "util/singleton_process.h"
 
 #include "fsm.h"
 #include "global.h"
@@ -25,6 +26,10 @@ void signal_handler(int signal)
 
 int main(int argc, char* argv[])
 {
+    // Check that no other FSM instances are running
+    SingletonProcess singleton(11110);
+    if (!singleton()) throw std::runtime_error("FSM already running!");
+
     g_elastic.init(true, false, 10); // log to stdout and use 10 threads for indexing
     g_elastic.log(INFO, "FSM started");
 
