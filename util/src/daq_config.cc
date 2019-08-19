@@ -21,7 +21,7 @@ DAQConfig::DAQConfig(const char * config)
 /// Print the summary of the DAQConfig
 void DAQConfig::printConfig() 
 {
-	std::cout << "\n**** DAQ Config ****" << std::endl;
+	std::cout << "\n~~~~~~~~~ DAQ Config ~~~~~~~~~" << std::endl;
 	std::cout << "Plan: " 			<< file_name_ 			<<
 				 ", Miners:" 		<< enabled_controllers_ <<
 				 ", Pickaxes:"		<< enabled_channels_ 	<< std::endl;
