@@ -42,6 +42,7 @@ add_subdirectory(lib)
 
 add_subdirectory(ops_cmd)
 add_subdirectory(util)
+add_subdirectory(relay)
 add_subdirectory(fsm)
 add_subdirectory(daqonite)
 add_subdirectory(daqulator)
