@@ -10,11 +10,18 @@ int main(int argc, char *argv[])
     MCRelay mc_relay(3232238338); // Create a master container relay
     mc_relay.status();
     mc_relay.on(1);
+    sleep(1);
     mc_relay.status();
     mc_relay.off(1);
     mc_relay.status();
 
     ECRelay ec_relay(3232238381); // Create a electronics container relay
+    ec_relay.status();
+    ec_relay.on(1);
+    sleep(1);
+    ec_relay.status();
+    ec_relay.off(1);
+    ec_relay.status();
 
     return 1;
 }

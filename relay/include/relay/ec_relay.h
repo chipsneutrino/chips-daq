@@ -7,7 +7,8 @@
 #include <relay/relay.h>
 #include <util/elastic_interface.h>
 
-#define IA_3K_PORT 23
+#define PORT_IA_3K 23
+#define DELAY_IA_3K 50000
 
 class ECRelay: public Relay {
 public:

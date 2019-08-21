@@ -8,6 +8,7 @@
 #include <util/elastic_interface.h>
 
 #define PORT_8020 17494
+#define DELAY_8020 50000
 
 class MCRelay: public Relay {
 public:

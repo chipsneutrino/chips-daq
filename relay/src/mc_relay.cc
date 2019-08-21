@@ -16,6 +16,8 @@ void MCRelay::on(int channel)
 	int n = send(fd_, msg, sizeof(msg), 0);
     if (n < 0) g_elastic.log(ERROR, "MCRelay ({}) could not send on command!", ip_); 
 
+    usleep(DELAY_8020);
+
     char buffer[256];
     n = read(fd_, buffer, 255);
     if (n < 0) g_elastic.log(ERROR, "MCRelay ({}) could not read on response!", ip_); 
@@ -26,6 +28,8 @@ void MCRelay::off(int channel)
     unsigned char msg[3] = {0x21, (unsigned char)channel, 0x00};
 	int n = send(fd_, msg, sizeof(msg), 0);
     if (n < 0) g_elastic.log(ERROR, "MCRelay ({}) could not send off command!", ip_); 
+
+    usleep(DELAY_8020);
 
     char buffer[256];
     n = read(fd_, buffer, 255);
@@ -38,22 +42,15 @@ void MCRelay::status()
 	int n = send(fd_, msg, sizeof(msg), 0);
     if (n < 0) g_elastic.log(ERROR, "MCRelay ({}) could not send status command!", ip_);  
 
+    usleep(DELAY_8020);
+
     char buffer[256];
     n = read(fd_, buffer, 255);
     if (n < 0) g_elastic.log(ERROR, "MCRelay ({}) could not read status response!", ip_); 
 
-    int tot = (0xFF & buffer[0]) + ((0xFF & buffer[1]) << 8) + ((0xFF & buffer[2]) << 16);    
-    unsigned int bits[32];
-
-    for (int chan = 1; chan < 21; chan++) printf("%02d  ", chan);
-    std::cout << std::endl;
-    for(int index = 0; index < 20; index++) 
-    {
-        bits[index] = (tot >> index) & 0x01;
-        if(bits[index] == 1) std::cout << "ON  ";
-        else std::cout << "--  ";
-    }
-    std::cout << "\n\n";
+    long tot = (0xFF & buffer[0]) + ((0xFF & buffer[1]) << 8) + ((0xFF & buffer[2]) << 16);    
+    std::bitset<32> bits(tot);
+    std::cout << "Status: " << bits.to_string() << std::endl; 
 }
 
 
