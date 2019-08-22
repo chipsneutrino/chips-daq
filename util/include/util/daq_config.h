@@ -39,7 +39,7 @@ struct ControllerConfig {
 	long mac_					= 0;			///< MAC address
 	long ip_					= 0;			///< IP address
 	int port_					= 56014;		///< Slow-control port (default CLB port)
-	bool relay_control			= false;		///< Should we use the relay to control power?
+	bool relay_control_			= false;		///< Should we use the relay to control power?
 	RelayType relay_type_		= EC;			///< Type of relay used to power this CLB
 	long relay_ip_				= 0;			///< Relay IP address
 	int relay_port_				= 0;			///< Relay port
