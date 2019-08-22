@@ -25,6 +25,9 @@
 // Enum for the different types of controller
 enum ControllerType {CLB, BBB};
 
+// Enum for the different types of relay
+enum RelayType {MC, EC, DANOUT};
+
 struct ControllerConfig {
 	// General variables
 	std::string config_name_	= "";		///< Name of config file
@@ -36,6 +39,8 @@ struct ControllerConfig {
 	long mac_					= 0;			///< MAC address
 	long ip_					= 0;			///< IP address
 	int port_					= 56014;		///< Slow-control port (default CLB port)
+	bool relay_control			= false;		///< Should we use the relay to control power?
+	RelayType relay_type_		= EC;			///< Type of relay used to power this CLB
 	long relay_ip_				= 0;			///< Relay IP address
 	int relay_port_				= 0;			///< Relay port
 	int relay_chp_				= 0;			///< Relay channel positive

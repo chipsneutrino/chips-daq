@@ -195,6 +195,38 @@ void DAQConfig::parseLine(std::string &line)
 			}			
 		}
 
+		// Should we use the relay to control the power?
+		else if (config.compare("relay_control") == 0) {
+			if (!(ss >> configs_[controller_num].relay_control_)) { 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be bool (0 or 1)", value);  
+			}			
+		}
+
+		// Get the relay type
+		if (config.compare("relay_type") == 0) {
+			std::string type;
+			if (!(ss >> type)) { 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be string (MC, EC, DANOUT)", value);
+			}
+
+			if (type == "MC")
+			{
+				configs_[controller_num].relay_type_ = MC;
+			}
+			else if (type == "EC")
+			{
+				configs_[controller_num].relay_type_ = EC;
+			}
+			else if (type == "DANOUT")
+			{
+				configs_[controller_num].relay_type_ = DANOUT;
+			}
+			else 
+			{
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be string (MC, EC, DANOUT)", value);
+			}
+		}
+
 		// Add the controllers relay IP address
 		else if (config.compare("relay_ip") == 0) {
 			if (!(ss >> configs_[controller_num].relay_ip_)) { 

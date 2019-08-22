@@ -1,3 +1,8 @@
+/**
+ * Program name: power, by Josh Tingey MSci, JoshTingeyDAQDemon.Josh
+ *
+ */
+
 #include <boost/asio.hpp>
 
 #include <relay/relay.h>
@@ -6,7 +11,6 @@
 
 int main(int argc, char *argv[])
 {
-    // Initialise the elasticsearch interface.
     g_elastic.init(true, false, 1); // log to stdout and use 1 threads for indexing
 
     if (argc != 5) {
@@ -15,13 +19,17 @@ int main(int argc, char *argv[])
     }
 
     boost::asio::ip::address_v4 address = boost::asio::ip::make_address_v4(argv[2]);
+    unsigned long ip = address.to_ulong();
 
     const std::string type{argv[1]};
     std::unique_ptr<Relay> relay;
     if(type == "mc") {
-        relay = std::unique_ptr<Relay>(new MCRelay(address.to_ulong()));
+        relay = std::unique_ptr<Relay>(new MCRelay(ip));
     } else if (type == "ec") {
-        relay = std::unique_ptr<Relay>(new ECRelay(address.to_ulong()));
+        relay = std::unique_ptr<Relay>(new ECRelay(ip));
+    } else {
+        std::cout << "Unknow relay type!" << std::endl;
+        return -1;
     }
 
     int channel = atoi(argv[3]);
@@ -32,7 +40,7 @@ int main(int argc, char *argv[])
     } else if (command == 1) {
         relay->on(channel);
     } else {
-        std::cout << "Don't know that command!" << std::endl;
+        std::cout << "Unknow command!" << std::endl;
         return -1;
     }
 
