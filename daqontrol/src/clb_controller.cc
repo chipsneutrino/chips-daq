@@ -353,9 +353,6 @@ bool CLBController::checkIDs()
         // We need to open an error file to save the mismatches to...
         size_t lastindex = config_.config_name_.find_last_of("."); 
         std::string rawname = config_.config_name_.substr(0, lastindex);
-
-        std::string file_name = "../data/";
-        file_name += rawname;
         file_name += "_mismatch_errors.dat";
 
         std::ofstream error_file;
