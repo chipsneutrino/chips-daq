@@ -635,6 +635,27 @@ bool CLBController::disableHV()
     return true;
 }
 
+bool CLBController::setIPMuxPorts()
+{
+    MsgWriter mw;
+    mw.writeU16(1);
+    mw.writeI32(ProcVar::NET_IPMUX_PORTS);
+    mw.writeI16(0);
+    mw.writeI16(0);
+    mw.writeI16(0);
+    mw.writeI16(0);  
+
+    MsgReader mr;
+    if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
+    {
+        g_elastic.log(ERROR, "CLB({}), Could not process 'setIPMuxPorts'", config_.eid_); 
+        return false;
+    }
+
+    if(!getIPMuxPorts()) return false; // Check the PMT HVs have been set correctly
+    return true;
+}
+
 bool CLBController::getIPMuxPorts()
 {
     // First lets get all the info we want back from the CLB

@@ -97,7 +97,10 @@ private:
     /// Disable the HV (NOT CURRENTLY USED)
     bool disableHV();
 
-    /// Gets the IPMux ports (NOT CURRENTLY USED)
+    /// Sets the IPMux ports
+    bool setIPMuxPorts();
+
+    /// Gets the IPMux ports
     bool getIPMuxPorts();
 
     MsgProcessor processor_;    ///< Message processor used to communicate with CLB
