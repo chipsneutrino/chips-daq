@@ -4,8 +4,8 @@
 
 #include "bbb_controller.h"
 
-BBBController::BBBController(ControllerConfig config)
-    : Controller(config)
+BBBController::BBBController(ControllerConfig config, bool disable_hv)
+    : Controller(config, disable_hv)
 {
     g_elastic.log(INFO, "Creating BBBController({})", config.eid_); 
 }

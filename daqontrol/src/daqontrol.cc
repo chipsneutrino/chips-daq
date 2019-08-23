@@ -23,12 +23,14 @@ int main(int argc, char* argv[])
     SingletonProcess singleton(11111);
     if (!singleton()) throw std::runtime_error("DAQontrol already running!");
 
-    std::string config = "../data/testConfig.opt";  // Default config file
+    std::string config  = "../data/testConfig.opt";  // Default config file
+    bool disable_hv     = false; // Should we disable the high voltage?
 
     boost::program_options::options_description desc("Options");
     desc.add_options()("help,h", "DAQontrol...")
         ("config,c", boost::program_options::value<std::string>(&config), 
-            "Configuration file (../data/singleConfig.opt)");
+            "Configuration file (../data/singleConfig.opt)")
+        ("noHV", "Disable the high voltage");
 
     try
     {
@@ -39,6 +41,10 @@ int main(int argc, char* argv[])
         {
             std::cout << desc << std::endl;
             return EXIT_SUCCESS;
+        }
+        if (vm.count("noHV"))
+        {
+            disable_hv = true;
         }
         boost::program_options::notify(vm);
     }
@@ -57,7 +63,7 @@ int main(int argc, char* argv[])
 
     {
         // Main entry point.
-        std::shared_ptr<DAQControl> daq_control{ new DAQControl(config) };
+        std::shared_ptr<DAQControl> daq_control{ new DAQControl(config, disable_hv) };
         std::shared_ptr<DaqontrolPublisher> bus_publisher{ new DaqontrolPublisher(daq_control) };
 
         std::unique_ptr<SignalReceiver> signal_receiver{ new SignalReceiver };

@@ -30,7 +30,7 @@ public:
      * Initial work is then added to the IO_service before run() is called to
      * start to main loop.
      */
-    explicit DAQControl(std::string config_file);
+    explicit DAQControl(std::string config_file, bool disable_hv);
 
     /// Destroy a DAQControl
     virtual ~DAQControl() = default;
@@ -66,7 +66,7 @@ private:
     void ioServiceThread() { io_service_->run(); }
 
     /// Create CLB and BBB controllers depending on configuration.
-    void setupFromConfig();
+    void setupFromConfig(bool disable_hv);
 
     /// Post work to the io_service to check states and attempt retries
     void stateUpdate();

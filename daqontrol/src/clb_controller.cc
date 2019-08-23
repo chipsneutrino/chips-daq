@@ -4,8 +4,8 @@
 
 #include "clb_controller.h"
 
-CLBController::CLBController(ControllerConfig config)
-    : Controller(config)
+CLBController::CLBController(ControllerConfig config, bool disable_hv)
+    : Controller(config, disable_hv)
     , processor_(config, io_service_)
 {
     g_elastic.log(INFO, "Creating CLBController({})", config.eid_); 
@@ -15,6 +15,8 @@ void CLBController::init()
 {
     g_elastic.log(DEBUG, "CLBController({}) Init...", config_.eid_); 
     working_ = true; // Set this controller to be working
+
+    if (disable_hv_) g_elastic.log(DEBUG, "Will disable HV on ({})", config_.eid_);
     
     if(!testConnection()) { // Test the connection to the CLB
         working_ = false;
@@ -28,6 +30,16 @@ void CLBController::init()
     } else if(!setState(CLBEvent(CLBEvents::INIT))) { // Set the CLB state to STAND_BY
         working_ = false;
         return; 
+    } else if(!checkIDs()) { // Check the PMT eIDs
+        working_ = false;
+        return;    
+    }  
+
+    if (disable_hv_) {
+        if(!disableHV()) {
+            working_ = false;
+            return; 
+        }
     }
 
     state_ = Control::Ready; // Set the controller state to Ready
@@ -48,27 +60,19 @@ void CLBController::configure()
         } 
     }
 
-    if(!checkIDs()) { // Check the PMT eIDs first, modifies enabled channels
-        working_ = false;
-        return;    
-    }   
     if(!setEnabledPMTs()) { // Set which channels are enabled
         working_ = false;
         return;    
-    }   
-    if(!setHV()) { // Set and check the PMT voltages
+    } else if(!setHV()) { // Set and check the PMT voltages
         working_ = false;
         return;    
-    }   
-    if(!setThresholds()) { // Set and check the PMT thresholds
+    } else if(!setThresholds()) { // Set and check the PMT thresholds
         working_ = false;
         return;    
-    }                                   
-    else if(!setFlasher()) { // Set the flasher if required
+    } else if(!setFlasher()) { // Set the flasher if required
         working_ = false;
         return;    
-    }                               
-    else if(!setState(CLBEvent(CLBEvents::CONFIGURE))) { // Set the CLB state to READY
+    } else if(!setState(CLBEvent(CLBEvents::CONFIGURE))) { // Set the CLB state to READY
         working_ = false;
         return;    
     }   
@@ -101,12 +105,10 @@ void CLBController::stopData()
     if(!setState(CLBEvent(CLBEvents::PAUSE))) { // Set the CLB state to PAUSED
         working_ = false;
         return;   
-    }       
-    else if(!setState(CLBEvent(CLBEvents::STOP))) { // Set the CLB state to STAND_BY
+    } else if(!setState(CLBEvent(CLBEvents::STOP))) { // Set the CLB state to STAND_BY
         working_ = false;
         return;   
-    }        
-    else if(!setState(CLBEvent(CLBEvents::CONFIGURE))) { // Set the CLB state to READY
+    } else if(!setState(CLBEvent(CLBEvents::CONFIGURE))) { // Set the CLB state to READY
         working_ = false;
         return;   
     }   

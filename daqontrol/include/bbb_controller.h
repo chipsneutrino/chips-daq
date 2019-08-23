@@ -12,7 +12,7 @@
 class BBBController: public Controller {
 public:
     /// Create a BBBController, calling Controller constructor and created MsgProcessor
-    BBBController(ControllerConfig config);
+    BBBController(ControllerConfig config, bool disable_hv);
 
     /// Destroy a BBBController
     ~BBBController();

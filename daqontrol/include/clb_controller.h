@@ -19,7 +19,7 @@
 class CLBController: public Controller {
 public:
     /// Create a CLBController, calling Controller constructor and created MsgProcessor
-    CLBController(ControllerConfig config);
+    CLBController(ControllerConfig config, bool disable_hv);
 
     /// Destroy a CLBController
     ~CLBController() {};
@@ -91,10 +91,10 @@ private:
     /// Checks the flasher voltage has been set correctly according to the configuration
     bool checkFlasherVoltage();
 
-    /// Enable the HV (NOT CURRENTLY USED)
+    /// Enable the HV
     bool enableHV();
 
-    /// Disable the HV (NOT CURRENTLY USED)
+    /// Disable the HV
     bool disableHV();
 
     /// Sets the IPMux ports

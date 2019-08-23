@@ -15,11 +15,12 @@ enum Status {Initialising, Ready, Configured, Started};
 class Controller {
 public:
     /// Create a Controller using a ControllerConfig
-    Controller(ControllerConfig config)
+    Controller(ControllerConfig config, bool disable_hv)
         : config_(config)
         , io_service_{ new boost::asio::io_service }
         , run_work_{ new boost::asio::io_service::work(*io_service_) }
         , thread_( [&]{(*io_service_).run();} )
+        , disable_hv_(disable_hv)
         , dropped_(false)
         , working_(false)
         , state_(Control::Initialising) {};
@@ -79,6 +80,7 @@ protected:
     std::unique_ptr<boost::asio::io_service::work> run_work_;   ///< Work for the io_service
     boost::thread thread_;                                      ///< Thread this controller uses
 
+    bool disable_hv_;                                           ///< Should the high voltage be disabled
     bool dropped_;                                              ///< Has this controller been dropped?
     bool working_;                                              ///< Is this controller currently doing work?
     Control::Status state_;                                     ///< Control state of this controller

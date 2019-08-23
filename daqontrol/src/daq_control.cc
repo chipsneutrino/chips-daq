@@ -4,7 +4,7 @@
 
 #include "daq_control.h"
 
-DAQControl::DAQControl(std::string config_file)
+DAQControl::DAQControl(std::string config_file, bool disable_hv)
     : config_(config_file.c_str())
     , controllers_{}
     , n_threads_(1)
@@ -14,7 +14,7 @@ DAQControl::DAQControl(std::string config_file)
     , run_work_{ new boost::asio::io_service::work(*io_service_) }
     , thread_group_{}
 {
-    setupFromConfig(); // Setup the topology from the configuration
+    setupFromConfig(disable_hv); // Setup the topology from the configuration
 }
 
 void DAQControl::handleConfigCommand(std::string config_file)
@@ -110,8 +110,10 @@ void DAQControl::init()
     for(int i=0; i<controllers_.size(); i++) controllers_[i]->postInit(); 
 }
 
-void DAQControl::setupFromConfig()
+void DAQControl::setupFromConfig(bool disable_hv)
 {
+    if (disable_hv) g_elastic.log(INFO, "Will disable the HV on all controllers!");
+
     // Build the app topology of controllers from the configuration
     for (int controller=0; controller<config_.num_controllers_; controller++)
     {
@@ -119,11 +121,11 @@ void DAQControl::setupFromConfig()
         {
             if (config_.configs_[controller].type_ == CLB)
             {
-                controllers_.push_back(new CLBController(config_.configs_[controller]));
+                controllers_.push_back(new CLBController(config_.configs_[controller], disable_hv));
             }
             else if (config_.configs_[controller].type_ == BBB)
             {
-                controllers_.push_back(new BBBController(config_.configs_[controller]));
+                controllers_.push_back(new BBBController(config_.configs_[controller], disable_hv));
             }
         }
     }
