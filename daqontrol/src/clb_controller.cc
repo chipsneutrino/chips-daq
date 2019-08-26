@@ -352,19 +352,21 @@ bool CLBController::checkIDs()
     {
         // We need to open an error file to save the mismatches to...
         size_t lastindex = config_.config_name_.find_last_of("."); 
-        std::string rawname = config_.config_name_.substr(0, lastindex);
+        std::string file_name = config_.config_name_.substr(0, lastindex);
+        file_name += "_";
+        file_name += config_.eid_;
         file_name += "_mismatch_errors.dat";
 
         std::ofstream error_file;
         error_file.open(file_name);
-        error_file << "Channel,config,actual\n";
+        error_file << "CLB,Channel,Config,Actual\n";
 
         // Disable the mismatching channels and write to file
         for (int e=0; e<errors.size(); e++) 
         {
             g_elastic.log(ERROR, "Will not enabled channel ({}) on CLB({})!", std::get<0>(errors[e]), config_.eid_);
             config_.ch_enabled_[std::get<0>(errors[e])] = 0;
-            error_file << std::get<0>(errors[e]) << "," << std::get<0>(errors[e]) << "," << std::get<0>(errors[e]) << "\n";
+            error_file << config_.eid_ << "," << std::get<0>(errors[e]) << "," << std::get<1>(errors[e]) << "," << std::get<2>(errors[e]) << "\n";
         }
 
         error_file.close();
