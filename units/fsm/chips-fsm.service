@@ -1,0 +1,11 @@
+[Unit]
+Description=Finite State Machine
+
+[Service]
+ExecStart=/opt/chips-dist/run/run_with_env.sh ../bin/fsm
+WorkingDirectory=/opt/chips-dist/run
+Restart=always
+
+[Install]
+WantedBy=network.target
+

@@ -1,0 +1,456 @@
+#! /usr/bin/perl
+#
+# front-end to run some program within a periodically refreshed kerberos/AFS environment.
+#
+# syntax:
+#   $0 [-v]
+#      [ -p <principal> ]
+#      [ -k <keytab> ]
+#      [ -l <logfile> ]
+#      [ -c <cleanup routine> ]
+#      [ -f ]
+#      [ -x ]
+#                 <command line>
+
+use strict;
+use vars qw(%OPT);
+use Sys::Hostname;
+use Getopt::Long;
+use File::Temp qw(tempfile);
+
+#-------------------------------------------------------------------------------
+#
+# Globals
+#
+#-------------------------------------------------------------------------------
+
+my $myName = "k5reauth";
+my $refresh = 25200;      # refresh interval in seconds (7 hours)
+
+# to get credentials, we need a good kinit, and maybe aklog if using the genuine MIT kinit.
+# in addition:
+# -  if the principal has not been specified through the -p option, kinit will default it
+#    to the current user.
+# -  if the principal is root (defaulted or specified), kinit uses the principal host/<longhostname>
+#    and creates an AFS token for rcmd.<short hostname>
+# -  if a keytab has not been specified through the -k option, kinit will default it to
+#    to /etc/krb5.keytab, in which case the current user should better be "root".
+
+my $kinit = Locate('kinit', '/usr/sue/bin' , '/usr/kerberos/bin', '/usr/heimdal/bin', '/usr/bin');
+my $klist = "/usr/bin/klist";
+my $aklog = "/usr/bin/aklog";
+my $kagain = "$kinit -R";
+my $kcmd;
+my ($princ, $pass);
+my $createPAG;
+
+#-------------------------------------------------------------------------------
+#
+# Subroutines
+#
+#-------------------------------------------------------------------------------
+
+sub Locate {
+	my $cmd = shift(@_);
+	my $path = "";
+	foreach my $d ((@_)) {
+		if (-e "$d/$cmd") { $path = "$d/$cmd"; last; }
+	}
+	die("cannot find $cmd") unless $path;
+	return $path;
+}
+
+sub Print {
+	chomp (my $now = `/bin/date`);
+	print F0 $now , ": ", @_, "\n";
+}
+
+
+sub isTicketValid() {
+
+	# check if the Kerberos5 ticket is (still)
+	# valid.
+	#
+	# returns  0 if yes
+	#         !0 otherwise
+
+	return (system("$klist -5 -s")>>8);
+}
+
+sub getCredentials() {
+	
+	# acquire Kerberos and AFS credentials
+	#
+	# returns nothing
+
+	if ($OPT{R}) {
+
+		# refresh mode
+		system "$kagain >/dev/null 2>&1";	
+
+	} elsif ($OPT{k}) {
+
+		# keytab
+		system "$kcmd >/dev/null 2>&1";
+
+	} else {
+
+		# password
+		open(P,"|$kcmd >/dev/null 2>&1") || die "cannot open pipe\n";
+		print P $pass;
+		close(P);
+	}
+
+	if ($aklog) {
+		if ($createPAG) {
+			Print "new PAG!" if $OPT{v};
+			system "$aklog -setpag -force >/dev/null 2>&1";
+			$createPAG = 0;
+		}
+		system "$aklog >/dev/null 2>&1";	
+	}
+}
+
+sub setKRB5CCNAME() {
+	
+        # create a unique cache name
+	#
+	# returns nothing
+
+	my ($fh, $fn) = tempfile("/tmp/krb5cc_".$<."_".$$."_XXXXXX", UNLINK => 0);
+	$ENV{KRB5CCNAME} = $fn;
+	chmod(0600, $fn); # kinit may correct this anyways
+	close $fh;
+}
+
+#-------------------------------------------------------------------------------
+#
+# Main
+#
+#-------------------------------------------------------------------------------
+
+my $rc = GetOptions (\%OPT, 'h', 'v', 'x', 'f', 'p:s', 'k:s', 'r', 'R', 'l:s', 'c:s', 'i:s');
+if (($rc==0) | ($OPT{h})) {
+print <<EXPLAIN; exit 0;
+
+  $myName: run some program within a periodically refreshed Kerberos5/AFS
+            environment
+
+  syntax:
+   $myName [-c <cleanup routine>] [-h] [-k <keytab>] [-l <logfile>]
+            [-p <principal>] [-r|-R] [-v] [--] [<command>]
+
+   where:
+       -c <cleanup routine> : something to run after <command>
+
+       -f                   : really run forever. do NOT check for <command> termination
+
+       -h                   : display this help and exit
+
+       -i                   : refresh interval in seconds, default is 25200 (7 hours)
+
+       -k <keytab>          : the keytab to use, defaults to /etc/krb5.keytab
+                              the keytab MUST be readable by the current user
+
+       -l <logfile>         : the logfile to write messages to, defaults to STDOUT
+
+       -p <principal>       : the principal to "kinit" as, defaults to current user
+
+       -r | -R              : use existing PAG & tickets
+
+       -v                   : verbose mode
+
+       -x                   : suppress the creation of a new PAG
+
+       <command>            : the command to be run, defaults to \$SHELL
+
+EXPLAIN
+
+}
+
+my $cmdline = "@ARGV";
+my $cmd = $ARGV[0];
+unless ($cmd || ($OPT{f} && $OPT{x})) {
+	$cmd = $cmdline = $ENV{'SHELL'} || "/bin/bash";
+}
+
+if ($OPT{R} | $OPT{r}) {
+
+	die "-r option incompatible with -k or -p\n" if (defined($OPT{k}) | defined($OPT{p}));
+	$OPT{R} = 1;
+
+} else {
+
+	if (defined $OPT{'p'}) {
+		if ($OPT{'p'}) { $princ = $OPT{'p'}; }
+		else { die "no value specified for -p option\n"; }
+	} elsif ($> == 0) {
+		my $host = hostname();
+		my @h = gethostbyname($host);
+		$host = shift @h;
+		$princ = "host/$host";
+		$OPT{'k'} = "" unless $OPT{'k'};
+	} else {
+		my @P = getpwuid($>);
+		$princ = shift @P;
+	}
+	
+	if (defined $OPT{'x'}) {
+		# no new PAG
+		# no new KRB5CCNAME
+		$createPAG = 0;
+	} else {
+		&setKRB5CCNAME();
+		$createPAG = 1;
+	}
+
+	if (defined $OPT{'k'}) {
+		$kcmd = "$kinit -k" .
+		    (($OPT{k}) ? " -t $OPT{k}" : "") .
+		    " $princ";
+	} else {
+		$kcmd = "$kinit $princ >/dev/null";
+		if (-t STDIN) {
+			print STDERR "Please enter ${princ}'s password: " if -t STDERR;
+			system("stty -echo");
+		}
+		chomp($pass = <STDIN>);
+		if (-t STDIN) {
+			system("stty echo");
+			print STDERR "\n" if -t STDERR;
+		}
+	}
+}
+
+# to log events, we print either to STDOUT, or to the file designated by -l
+#
+if ($OPT{l}) {
+	open(F0, ">>$OPT{l}") || die "cannot open log file $OPT{l} for append\n";
+	select F0;
+} else {
+	open(F0, ">&1");
+}
+
+
+if ($OPT{i} && $OPT{i} =~ /^\d+$/) {
+	$refresh = $OPT{i};
+}
+Print "Refresh cycle is $refresh seconds" if $OPT{v};
+
+# get or renew the initial credentials
+#
+&getCredentials();
+if (0 != &isTicketValid()) {
+	die "Could not acquire initial credentials!\n";		
+} else {
+	Print "initial token acquired OK"  if (($rc==0) & ($OPT{v}) & (!$OPT{R}));
+}
+
+# now fork a child to run refresh on a timer, then launch the command from parent
+#
+my $ppid = $$;
+my $pid;
+
+if ($pid = fork()) {
+
+	Print "Returned pid is $pid" if $OPT{v};
+	
+	# in parent , run command
+	# if we were to respect -u, we should do an SU here
+	Print "Ready to start >>$cmd<<" if $OPT{v};	
+	system "$cmdline";
+	$rc = $?;
+	Print "$cmd ended, rc=$rc" if $OPT{v};
+	if ( $OPT{c} ) {
+		system "$OPT{c} $rc";
+	}
+
+        #  if <$cmdline> acts as a daemon, it may terminate early, and yet leave behind active children
+        #  in which case we should better ignore its return code
+	exit $rc if $OPT{f};    # do NOT kill our child, wait until machine is rebooted.
+
+	# determine the exit code
+	if (-1 == $rc) {
+		Print "failed to execute: $cmd";
+	} elsif ($rc & 127) {
+		Print "$cmd died with signal: " . ($rc & 127);
+	} else {
+		$rc >>= 8;
+	}
+
+	Print "ready to kill $pid";
+	close(F0);
+	kill 9, $pid;
+
+	exit $rc;
+
+} elsif (defined $pid) {
+
+	# child (refresh loop)	
+	while (1) {
+
+		sleep $refresh;
+		
+		# check the parent's status
+		exit unless ($OPT{f} || kill(0, $ppid));
+		
+		Print "time to renew/reacquire credentials" if $OPT{v};
+		&getCredentials();
+	
+		# check if we have now valid credentials
+		if (0 == &isTicketValid()) {
+			Print "valid credentials available" if $OPT{v};
+			next;
+		} else {
+			die "unable to refresh or reacquire credentials";
+		}
+	}
+} else {
+	die "cannot fork a child to refresh tokens\n";
+}
+
+exit;
+
+__END__
+
+
+=head1 NAME
+
+k5reauth - periodically renew Kerberos5 and AFS credentials
+
+=head1 SYNOPSIS
+
+B<k5reauth> [B<-c> <cleanup routine>] [B<-f>] [B<-h>] [B<-k> <keytab>] [B<-l> <logfile>] [B<-p> <principal>] [B<-r>|B<-R>] [B<-v>] [B<-x>] [--] [<command>]
+
+=head1 DESCRIPTION
+
+B<k5reauth> provides a way to regularly refresh Kerberos and AFS
+credentials, either from a password given at startup or from a keytab.
+
+Unless the option B<-r> or B<-R> are specified, B<k5reauth> creates a
+new PAG in order to avoid any interference with any other processes.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-c> <cleanup routine>
+
+Specifies a cleanup routine to be run after the <command>.
+
+=item B<-f>
+
+Do not check for <command> to terminate. Let the "refresh" child run
+forever.
+
+This option may be used with daemons, i.e. processes that fork and let
+the parent exit. Normally, k5reauth would only watch the initial
+(parent) process. If that exits, k5reauth starts its cleanup. Since it
+has no idea that there is still a child process running, it will hence
+leave the child process without credential provisioning. B<-f>
+suppresses the check of the launched process. When using the B<-f>
+option be aware however that there is no cleanup: even if all
+processes have exited, i.e. parent and children, k5reauth will still
+refresh credentials.
+
+If your daemon has a foreground mode, an alternative to B<-f> is to
+wrap k5reauth and the daemon in foreground mode into another script
+and let that daemonize itself. This way one preserves reauth's cleanup
+on command exit.
+
+=item B<-h>
+
+Prints this help.
+
+=item B<-i>
+
+Refresh interval (in seconds). Default value is 25200 (7 hours).
+
+=item B<-k> <keytab>
+
+Specifies the keytab file to be used. The keytab file must be readable
+by the current user. See the B<EXAMPLES> section below on how to
+create a keytab file.
+
+=item B<-l>
+
+The log files all events shall be written to.
+
+=item B<-p> <principal>
+
+Specifies the principal to be used. This parameter defaults to the
+current user if not given. If the current user is root, the principal
+host/<longhostname> is used and an AFS token for rcmd.<short hostname>
+is created.
+
+=item B<-r>, B<-R>
+
+Simply renew the existing credentials (until they finally
+expire). When this option is given, no new PAG is established.
+
+=item B<-v>
+
+Be verbose.
+
+=item B<-x>
+
+Suppress the creation of a new PAG. Useful to mimic the old reauth's
+behaviour (esp. in conjunction with B<-f>).
+
+=item B<-->
+
+Command separator, used to separate the options of k5reauth from the
+actual command to be executed (which may also comes with options).
+
+=item B<without command>,
+
+Assumes <command> to be a shell. Exception: when run with B<-x> B<-f>
+no shell is started (to reproduce the old reauth's bahaviour).
+
+=back
+
+=head1 EXAMPLES
+
+B<$ k5reauth>
+
+will prompt for the current user's Kerberos password, create a new PAG
+and then start a shell with never-expiring Kerberos and AFS
+credentials.
+
+B<$ k5reauth -R myprog>
+
+will use the existing PAG and the existing credentials to run the
+program 'myprog'. The credentials are renewed until they expire, which
+is typically 5 days after the initial kinit. (Replace 'myprog' by your
+program name when using this command.)
+
+B<$ kerberos-keytab-creator dwight dwight.keytab>
+
+will create a keytab file for user dwight. (Replace 'dwight' by your
+user name when using this command.)
+
+Note: a keytab file is very similar to a password and should hence be
+very well protected!
+
+B<$ k5reauth -k mykeytab myprog>
+
+will use the keytab in 'mykeytab' and the current user's ID to acquire
+credentials, create a new PAG and run the program 'myprog'. The
+credentials will be refreshed as long as the job runs. (Replace
+'mykeytab' by the name of your keytab file and 'myprog' by the name of
+your program when using this command.)
+
+B<$ k5reauth -x -f>
+
+can be used to mimic the old reauth's behaviour: no new PAG will
+created (so the credentials are visible to all processes in the same
+session) and launched child processes will not be watched (so k5reauth
+will run until explicitly killed or a mchine reboot). In addition, if
+there is no command specified when using B<-x> B<-f>, no default for
+the command will be assumed, i.e. no additional shell is created.
+
+=head1 SEE ALSO
+
+klist(1), kinit(1), kdestroy(1)
+
+=cut

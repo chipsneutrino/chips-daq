@@ -1,0 +1,12 @@
+[Unit]
+Description=DAQ Monitoring Service
+
+[Service]
+ExecStart=/opt/chips-dist/run/run_with_env.sh ../bin/daqsitter --elastic
+WorkingDirectory=/opt/chips-dist/run
+Restart=always
+Nice=3
+
+[Install]
+WantedBy=network.target
+

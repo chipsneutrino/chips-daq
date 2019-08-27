@@ -14,3 +14,5 @@ daqonite/src/Monitoring_gui_dict_rdict.pcm
 daqonite/src/monitoring_gui_dict.cc
 daqonite/src/monitoring_gui_dict.h
 env
+scripts/run_with_env.sh
+*.keytab
