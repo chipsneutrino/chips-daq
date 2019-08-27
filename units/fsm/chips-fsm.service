@@ -2,7 +2,7 @@
 Description=Finite State Machine
 
 [Service]
-ExecStart=/opt/chips-dist/run/run_with_env.sh ../bin/fsm
+ExecStart=/opt/chips-dist/run/run_with_env.sh ../bin/fsm --ops-bus-url=tcp://:7010 --control-bus-url=tcp://:7020 --daqonite-bus-url=tcp://chipsshore01:7030 --daqontrol-bus-url=tcp://chipsshore04:7031 --daqsitter-bus-url=tcp://chipsshore04:7032
 WorkingDirectory=/opt/chips-dist/run
 Restart=always
 

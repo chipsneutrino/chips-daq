@@ -22,7 +22,7 @@ public:
 
 class CommandReceiver {
 public:
-    explicit CommandReceiver();
+    explicit CommandReceiver(const std::string& url);
     virtual ~CommandReceiver() = default;
 
     void setHandler(std::shared_ptr<CommandHandler> handler);
@@ -32,6 +32,7 @@ public:
 
 private:
     std::shared_ptr<CommandHandler> handler_;
+    std::string url_;
 
     std::atomic_bool running_;
     std::unique_ptr<std::thread> receiver_thread_;

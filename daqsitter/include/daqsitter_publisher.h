@@ -8,14 +8,14 @@
 #include <mutex>
 #include <thread>
 
-#include "monitoring_handler.h"
-#include <util/control_msg.h>
 #include <util/bus_publisher.h>
+#include <util/control_msg.h>
+
+#include "monitoring_handler.h"
 
 class DaqsitterPublisher : public BusPublisher<DaqsitterStateMessage> {
 public:
-
-    explicit DaqsitterPublisher(std::shared_ptr<MonitoringHandler> monitoring_handler);
+    explicit DaqsitterPublisher(std::shared_ptr<MonitoringHandler> monitoring_handler, const std::string& url);
     virtual ~DaqsitterPublisher() = default;
 
 private:

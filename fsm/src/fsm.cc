@@ -2,7 +2,7 @@
 #include <iostream>
 
 #include <util/elastic_interface.h>
-#include "util/singleton_process.h"
+#include <util/singleton_process.h>
 
 #include "fsm.h"
 #include "global.h"
@@ -16,7 +16,7 @@ void signal_handler(int signal)
     switch (signal) {
     case SIGINT:
         g_elastic.log(INFO, "Received signal {}. Terminating...", signal);
-        global.sendEvent(KillSignal{});
+        global.sendEvent(KillSignal {});
         break;
     default:
         g_elastic.log(WARNING, "Caught unhandled signal {}.", signal);
@@ -28,13 +28,15 @@ int main(int argc, char* argv[])
 {
     // Check that no other FSM instances are running
     SingletonProcess singleton(11110);
-    if (!singleton()) throw std::runtime_error("FSM already running!");
+    if (!singleton())
+        throw std::runtime_error("FSM already running!");
 
     g_elastic.init(true, false, 10); // log to stdout and use 10 threads for indexing
     g_elastic.log(INFO, "FSM started");
 
     std::signal(SIGINT, signal_handler);
 
+    global.readSettings(argc, argv);
     global.setupComponents();
 
     MainFSM::start();

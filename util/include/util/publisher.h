@@ -25,16 +25,16 @@ protected:
         while (running_) {
             try {
                 auto sock = nng::pub::open();
-                sock.listen(message_type::URL);
+                sock.listen(bus_url_.c_str());
 
                 connected();
 
                 while (running_) {
-                    std::unique_lock<std::mutex> lk{ mtx_publish_queue_ };
+                    std::unique_lock<std::mutex> lk { mtx_publish_queue_ };
 
                     // We now have exclusive access to the queue, publish as many messages as possible.
                     while (!publish_queue_.empty()) {
-                        sock.send(nng::view{ &publish_queue_.front(), sizeof(message_type) });
+                        sock.send(nng::view { &publish_queue_.front(), sizeof(message_type) });
                         publish_queue_.pop_front();
                     }
 
@@ -54,12 +54,13 @@ protected:
     }
 
 public:
-    explicit Publisher()
-        : AsyncComponent{}
-        , publish_queue_{}
-        , cv_publish_queue_{}
-        , mtx_publish_queue_{}
-        , reconnect_interval_{ 2000 }
+    explicit Publisher(const std::string& bus_url)
+        : AsyncComponent {}
+        , bus_url_ { bus_url }
+        , publish_queue_ {}
+        , cv_publish_queue_ {}
+        , mtx_publish_queue_ {}
+        , reconnect_interval_ { 2000 }
     {
     }
 
@@ -67,7 +68,7 @@ public:
 
     void publish(message_type&& message)
     {
-        std::lock_guard<std::mutex> lk{ mtx_publish_queue_ };
+        std::lock_guard<std::mutex> lk { mtx_publish_queue_ };
         publish_queue_.emplace_back(std::move(message));
         cv_publish_queue_.notify_one();
     }
@@ -78,7 +79,14 @@ public:
         cv_publish_queue_.notify_one();
     }
 
+    const std::string& bus_url() const
+    {
+        return bus_url_;
+    }
+
 private:
+    std::string bus_url_;
+
     std::list<message_type> publish_queue_;
     std::condition_variable cv_publish_queue_;
     std::mutex mtx_publish_queue_;

@@ -34,6 +34,9 @@ int main(int argc, char *argv[])
     bool print_debug = false;
     int index_threads = 100;
 
+    std::string state_bus_url;
+    std::string control_bus_url;
+
     // Argument handling
     boost::program_options::options_description desc("Options");
     desc.add_options()("help,h", "DAQsitter...")
@@ -43,7 +46,9 @@ int main(int argc, char *argv[])
         ("sample", boost::program_options::value<float>(&sample_frac), "Fraction of packets to use (0.01)")
         ("logs", boost::program_options::value<bool>(&print_logs), "Print logs to stdout (true)")
         ("debug", boost::program_options::value<bool>(&print_debug), "Print ElasticInterface debug messages (false)")
-        ("threads", boost::program_options::value<int>(&index_threads), "Number of ElasticInterface indexing threads (100)");
+        ("threads", boost::program_options::value<int>(&index_threads), "Number of ElasticInterface indexing threads (100)")
+        ("state-bus-url", boost::program_options::value<std::string>(&state_bus_url)->implicit_value("ipc:///tmp/chips_daqsitter.ipc"), "where DAQsitter publishes state messages")
+        ("control-bus-url", boost::program_options::value<std::string>(&control_bus_url)->implicit_value("ipc:///tmp/chips_control.ipc"), "where DAQsitter listens for control messages");
 
     try
     {
@@ -81,13 +86,13 @@ int main(int argc, char *argv[])
     {
         // Main entry point.
         std::shared_ptr<MonitoringHandler> mon_handler{ new MonitoringHandler(config, elastic, file, sample_frac) };
-        std::shared_ptr<DaqsitterPublisher> bus_publisher{ new DaqsitterPublisher(mon_handler) };
+        std::shared_ptr<DaqsitterPublisher> bus_publisher{ new DaqsitterPublisher(mon_handler, state_bus_url) };
 
         std::unique_ptr<SignalReceiver> signal_receiver{ new SignalReceiver };
         signal_receiver->setHandler(mon_handler);
         signal_receiver->runAsync();
 
-        std::unique_ptr<CommandReceiver> cmd_receiver{ new CommandReceiver };
+        std::unique_ptr<CommandReceiver> cmd_receiver{ new CommandReceiver(control_bus_url) };
         cmd_receiver->setHandler(mon_handler);
         cmd_receiver->runAsync();
 

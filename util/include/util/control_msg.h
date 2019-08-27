@@ -10,14 +10,12 @@ enum class RunType {
 };
 
 struct OpsMessage {
-    static const char* const URL;
-
     disc_t Discriminator;
 
     /// Configure from config files
     struct Config {
         static constexpr disc_t Discriminator = 0;
-        char config_file[200];  ///< Config file location
+        char config_file[200]; ///< Config file location
     };
 
     /// Start data flow
@@ -33,7 +31,7 @@ struct OpsMessage {
     /// Start a new data taking run
     struct StartRun {
         static constexpr disc_t Discriminator = 3;
-        RunType run_type;       ///< Type of run
+        RunType run_type; ///< Type of run
     };
 
     /// Stop current data taking run
@@ -57,15 +55,13 @@ struct OpsMessage {
 };
 
 struct ControlMessage {
-    static const char* const URL;
-
     const char Zero = '\0'; ///< The first bit must be '\0' otherwise NNG pub/sub discards the message.
     disc_t Discriminator;
 
     /// Configure from config files
     struct Config {
         static constexpr disc_t Discriminator = 0;
-        char config_file[200];  ///< Config file location
+        char config_file[200]; ///< Config file location
     };
 
     /// Start data flow
@@ -81,7 +77,7 @@ struct ControlMessage {
     /// Start a new data taking run
     struct StartRun {
         static constexpr disc_t Discriminator = 3;
-        RunType run_type;       ///< Type of run
+        RunType run_type; ///< Type of run
     };
 
     /// Stop current data taking run
@@ -105,8 +101,6 @@ struct ControlMessage {
 };
 
 struct DaqoniteStateMessage {
-    static const char* const URL;
-
     const char Zero = '\0'; ///< The first bit must be '\0' otherwise NNG pub/sub discards the message.
     disc_t Discriminator;
 
@@ -128,8 +122,6 @@ struct DaqoniteStateMessage {
 };
 
 struct DaqontrolStateMessage {
-    static const char* const URL;
-
     const char Zero = '\0'; ///< The first bit must be '\0' otherwise NNG pub/sub discards the message.
     disc_t Discriminator;
 
@@ -162,8 +154,6 @@ struct DaqontrolStateMessage {
 };
 
 struct DaqsitterStateMessage {
-    static const char* const URL;
-
     const char Zero = '\0'; ///< The first bit must be '\0' otherwise NNG pub/sub discards the message.
     disc_t Discriminator;
 

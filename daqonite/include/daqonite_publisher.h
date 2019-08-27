@@ -15,7 +15,7 @@
 class DaqonitePublisher : public BusPublisher<DaqoniteStateMessage> {
 public:
 
-    explicit DaqonitePublisher(std::shared_ptr<DAQHandler> daq_handler);
+    explicit DaqonitePublisher(std::shared_ptr<DAQHandler> daq_handler, const std::string& url);
     virtual ~DaqonitePublisher() = default;
 
 private:

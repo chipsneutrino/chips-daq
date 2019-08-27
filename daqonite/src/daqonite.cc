@@ -9,7 +9,9 @@
  */
 
 #include <boost/program_options.hpp>
+
 #include <memory>
+#include <string>
 
 #include "daqonite_publisher.h"
 #include "util/command_receiver.h"
@@ -26,6 +28,9 @@ namespace settings {
 // Default settings
 static bool collect_clb_data = true;
 static bool collect_bbb_data = false;
+
+static std::string state_bus_url{};
+static std::string control_bus_url{};
 }
 
 void readSettings(int argc, char* argv[])
@@ -34,7 +39,9 @@ void readSettings(int argc, char* argv[])
 
     // Argument handling
     opts::options_description desc{ "Options" };
-    desc.add_options()("help,h", "DAQonite");
+    desc.add_options()("help,h", "DAQonite")
+                      ("state-bus-url", opts::value(&settings::state_bus_url)->implicit_value("ipc:///tmp/chips_daqonite.ipc"), "where DAQonite publishes state messages")
+                      ("control-bus-url", opts::value(&settings::control_bus_url)->implicit_value("ipc:///tmp/chips_control.ipc"), "where DAQonite listens for control messages");
 
     opts::variables_map vm{};
     opts::store(opts::command_line_parser(argc, argv).options(desc).run(), vm);
@@ -63,13 +70,13 @@ int main(int argc, char* argv[])
     {
         // Main entry point.
         std::shared_ptr<DAQHandler> daq_handler{ new DAQHandler(settings::collect_clb_data, settings::collect_bbb_data) };
-        std::shared_ptr<DaqonitePublisher> bus_publisher{ new DaqonitePublisher(daq_handler) };
+        std::shared_ptr<DaqonitePublisher> bus_publisher{ new DaqonitePublisher(daq_handler, settings::state_bus_url) };
 
         std::unique_ptr<SignalReceiver> signal_receiver{ new SignalReceiver };
         signal_receiver->setHandler(daq_handler);
         signal_receiver->runAsync();
 
-        std::unique_ptr<CommandReceiver> cmd_receiver{ new CommandReceiver };
+        std::unique_ptr<CommandReceiver> cmd_receiver{ new CommandReceiver(settings::control_bus_url) };
         cmd_receiver->setHandler(daq_handler);
         cmd_receiver->runAsync();
 

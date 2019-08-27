@@ -15,7 +15,7 @@ class BusPublisher {
 public:
     using message_type = T;
 
-    explicit BusPublisher();
+    explicit BusPublisher(const std::string& url);
     virtual ~BusPublisher() = default;
 
     void runAsync();
@@ -23,6 +23,7 @@ public:
 
 protected:
     std::atomic_bool running_;
+    std::string url_;
     std::unique_ptr<std::thread> comm_thread_;
     std::unique_ptr<std::thread> status_thread_;
 
