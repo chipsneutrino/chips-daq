@@ -56,7 +56,7 @@ void DAQConfig::loadConfig()
 	input_file.open(file_name_.c_str()); // Open the file
 
 	if (!input_file.is_open()) { // Check it is open
-		g_elastic.log(ERROR, "DAQConfig could not open config file!");
+		g_elastic.log(ERROR, "DAQConfig could not open config file '{}'!", file_name_);
 		return;
 	}
 

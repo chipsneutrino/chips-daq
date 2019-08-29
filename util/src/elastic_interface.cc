@@ -317,7 +317,7 @@ void ElasticInterface::initFile(std::string error)
     time(&rawtime);
     timeinfo = localtime(&rawtime);
 
-    strftime(buffer, 80, "../data/%d-%m-%Y-%H-%M-%S-log.txt", timeinfo);
+    strftime(buffer, 80, "%d-%m-%Y-%H-%M-%S-log.txt", timeinfo);
     file_name_ = std::string(buffer);
 
     // Write reason for switching to FILE_LOG mode to the file

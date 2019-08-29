@@ -9,23 +9,23 @@
 #include <util/elastic_interface.h>
 
 DataHandler::DataHandler()
-    : output_thread_{}
-    , scheduling_thread_{}
-    , output_running_{ false }
-    , scheduling_running_{ false }
-    , run_type_{}
-    , run_num_{}
-    , file_name_{}
-    , waiting_batches_{}
-    , last_approx_timestamp_{ 0 }
-    , batch_scheduler_{}
-    , infinite_scheduler_{ new InfiniteScheduler }
-    , regular_scheduler_{ new RegularScheduler(8, std::chrono::minutes(1)) }
-    , spill_scheduler_{ new SpillScheduler(55812, 20, 1.5, 8, 0.5) }
-    , current_schedule_{}
-    , current_schedule_mtx_{}
-    , n_slots_{ 0 }
-    , n_batches_{ 0 }
+    : output_thread_ {}
+    , scheduling_thread_ {}
+    , output_running_ { false }
+    , scheduling_running_ { false }
+    , run_type_ {}
+    , run_num_ {}
+    , file_name_ {}
+    , waiting_batches_ {}
+    , last_approx_timestamp_ { 0 }
+    , batch_scheduler_ {}
+    , infinite_scheduler_ { new InfiniteScheduler }
+    , regular_scheduler_ { new RegularScheduler(8, std::chrono::minutes(1)) }
+    , spill_scheduler_ { new SpillScheduler(55812, 20, 1.5, 8, 0.5) }
+    , current_schedule_ {}
+    , current_schedule_mtx_ {}
+    , n_slots_ { 0 }
+    , n_batches_ { 0 }
 {
 }
 
@@ -38,20 +38,20 @@ void DataHandler::startRun(RunType which)
     // Prepare queues and schedule.
     waiting_batches_.consume_all([](Batch& b) { ; });
     {
-        boost::unique_lock<boost::upgrade_mutex> l{ current_schedule_mtx_ };
+        boost::unique_lock<boost::upgrade_mutex> l { current_schedule_mtx_ };
         current_schedule_.clear();
     }
 
     // TODO: determine this from run_type
     last_approx_timestamp_ = 0;
     n_batches_ = 0;
-    batch_scheduler_ = static_cast<const std::shared_ptr<RegularScheduler>&>(regular_scheduler_);
+    batch_scheduler_ = static_cast<const std::shared_ptr<SpillScheduler>&>(spill_scheduler_);
 
     // Start output thread.
     g_elastic.log(WARNING, "Start mining into container {}", file_name_);
     output_running_ = scheduling_running_ = true;
-    output_thread_ = std::unique_ptr<std::thread>{ new std::thread(std::bind(&DataHandler::outputThread, this)) };
-    scheduling_thread_ = std::unique_ptr<std::thread>{ new std::thread(std::bind(&DataHandler::schedulingThread, this)) };
+    output_thread_ = std::unique_ptr<std::thread> { new std::thread(std::bind(&DataHandler::outputThread, this)) };
+    scheduling_thread_ = std::unique_ptr<std::thread> { new std::thread(std::bind(&DataHandler::schedulingThread, this)) };
 
     // Set the Elasticsearch ingest pipeline run.num and run.type
     g_elastic.run(run_num_, (int)run_type_);
@@ -77,13 +77,14 @@ void DataHandler::stopRun()
 
 void DataHandler::getRunNumAndName()
 {
+    static constexpr auto run_file_path { "runNumbers.dat" };
     const int run_type_no = static_cast<int>(run_type_);
     int runNums[NUMRUNTYPES];
-    std::ifstream runNumFile("../data/runNumbers.dat");
+    std::ifstream runNumFile(run_file_path);
     if (runNumFile.fail()) {
         runNumFile.close();
         // The file does not yet exist so lets create it
-        std::ofstream newFile("../data/runNumbers.dat");
+        std::ofstream newFile(run_file_path);
         if (newFile.is_open()) {
             for (int i = 0; i < NUMRUNTYPES; i++) {
                 if (run_type_no == i) {
@@ -94,7 +95,7 @@ void DataHandler::getRunNumAndName()
             }
             newFile.close();
         } else {
-            throw std::runtime_error("daqonite - Error: Unable to create ../data/runNumbers.dat!");
+            throw std::runtime_error("daqonite - Error: Unable to create runNumbers.dat!");
         }
     } else {
         // The file exists so read from it
@@ -103,17 +104,17 @@ void DataHandler::getRunNumAndName()
             if (runNums[i] < 1) {
                 runNums[i] = 1;
             }
-            if (run_type_no == i+1) {
+            if (run_type_no == i + 1) {
                 run_num_ = runNums[i];
             }
         }
         runNumFile.close();
 
         // Now create the updated file
-        std::ofstream updateFile("../data/runNumbers.dat");
+        std::ofstream updateFile(run_file_path);
         if (updateFile.is_open()) {
             for (int i = 0; i < NUMRUNTYPES; i++) {
-                if (run_type_no == i+1) {
+                if (run_type_no == i + 1) {
                     updateFile << runNums[i] + 1 << "\n";
                 } else {
                     updateFile << runNums[i] << "\n";
@@ -125,7 +126,7 @@ void DataHandler::getRunNumAndName()
         }
     }
 
-    file_name_ = fmt::format("../data/type{}_run{:05d}.root", run_type_no, run_num_);
+    file_name_ = fmt::format("type{}_run{:05d}.root", run_type_no, run_num_);
 }
 
 std::size_t DataHandler::insertSort(CLBEventQueue& queue) noexcept
@@ -134,7 +135,7 @@ std::size_t DataHandler::insertSort(CLBEventQueue& queue) noexcept
     // Here utilized because insert-sort is actually O(n+k*n) for k-sorted sequences.
     // Since event queue should already be sorted, insert-sort will frequently only scan it in O(n).
 
-    std::size_t n_swaps{ 0 };
+    std::size_t n_swaps { 0 };
     for (std::size_t i = 1; i < queue.size(); ++i) {
         for (std::size_t j = i; j > 0 && queue[j - 1] > queue[j]; --j) {
             std::swap(queue[j], queue[j - 1]);
@@ -148,7 +149,7 @@ std::size_t DataHandler::insertSort(CLBEventQueue& queue) noexcept
 CLBEventMultiQueue* DataHandler::findCLBOpticalQueue(double timestamp, int data_slot_idx)
 {
     // For reading schedule, we need reader's access.
-    boost::shared_lock<boost::upgrade_mutex> lk{ current_schedule_mtx_ };
+    boost::shared_lock<boost::upgrade_mutex> lk { current_schedule_mtx_ };
 
     // TODO: if current_schedule_ is sorted, use binary search
     for (Batch& batch : current_schedule_) {
@@ -171,7 +172,7 @@ void DataHandler::closeBatch(Batch&& batch)
 
     // Wait for any ongoing writes to finish.
     for (int i = 0; i < n_slots_; ++i) {
-        std::lock_guard<std::mutex> lk{ batch.clb_opt_data[i].write_mutex };
+        std::lock_guard<std::mutex> lk { batch.clb_opt_data[i].write_mutex };
     }
 
     // At this point, no thread should be writing data to any of the queues.
@@ -188,7 +189,8 @@ void DataHandler::closeBatch(Batch&& batch)
 
 void DataHandler::closeOldBatches(BatchSchedule& schedule)
 {
-    static constexpr std::chrono::seconds MATURATION_PERIOD{ 20 };
+    // TODO: make maturation period configurable
+    static constexpr std::chrono::seconds MATURATION_PERIOD { 4 };
     const auto close_time = Clock::now() - MATURATION_PERIOD;
 
     for (auto it = schedule.begin(); it != schedule.end();) {
@@ -215,10 +217,10 @@ void DataHandler::schedulingThread()
 
     while (scheduling_running_) {
         {
-            boost::upgrade_lock<boost::upgrade_mutex> lk{ current_schedule_mtx_ };
+            boost::upgrade_lock<boost::upgrade_mutex> lk { current_schedule_mtx_ };
 
             // Copy current schedule
-            BatchSchedule new_schedule{ std::cref(current_schedule_) };
+            BatchSchedule new_schedule { std::cref(current_schedule_) };
 
             // Remove old batches from the schedule
             closeOldBatches(new_schedule);
@@ -228,7 +230,7 @@ void DataHandler::schedulingThread()
             prepareNewBatches(new_schedule);
 
             {
-                boost::upgrade_to_unique_lock<boost::upgrade_mutex> ulk{ lk };
+                boost::upgrade_to_unique_lock<boost::upgrade_mutex> ulk { lk };
                 current_schedule_.swap(new_schedule);
             }
         }
@@ -237,14 +239,14 @@ void DataHandler::schedulingThread()
     }
 
     // Close remaining batches.
-    BatchSchedule new_schedule{ std::cref(current_schedule_) };
+    BatchSchedule new_schedule { std::cref(current_schedule_) };
     for (auto it = new_schedule.begin(); it != new_schedule.end();) {
         closeBatch(std::move(*it));
         it = new_schedule.erase(it);
     }
 
     {
-        boost::unique_lock<boost::upgrade_mutex> ulk{ current_schedule_mtx_ };
+        boost::unique_lock<boost::upgrade_mutex> ulk { current_schedule_mtx_ };
         current_schedule_.swap(new_schedule);
     }
 
@@ -263,7 +265,7 @@ void DataHandler::prepareNewBatches(BatchSchedule& schedule)
             batch.last_updated_time = Clock::now();
             batch.clb_opt_data = new CLBEventMultiQueue[n_slots_];
 
-            g_elastic.log(INFO, "Scheduling batch {} at with time interval: [{}, {}]", batch.idx, batch.start_time, batch.end_time);
+            g_elastic.log(INFO, "Scheduling batch {} with time interval: [{}, {}]", batch.idx, batch.start_time, batch.end_time);
         }
     }
 }
@@ -278,18 +280,18 @@ void DataHandler::outputThread()
     g_elastic.log(INFO, "Output thread up and running");
 
     // Open output.
-    RunFile out_file{ file_name_ };
+    RunFile out_file { file_name_ };
     if (!out_file.isOpen()) {
         g_elastic.log(ERROR, "Error opening file at path: '{}'", file_name_);
         return;
     }
 
-    MergeSorter sorter{};
-    CLBEventQueue out_queue{};
+    MergeSorter sorter {};
+    CLBEventQueue out_queue {};
     for (;;) {
         // Obtain a batch to process.
         bool have_batch = false;
-        Batch current_batch{};
+        Batch current_batch {};
 
         if (waiting_batches_.pop(current_batch)) {
             // If there's something to process, dequeue.
@@ -309,7 +311,7 @@ void DataHandler::outputThread()
         // At this point, we always have a valid batch.
 
         // Consolidate multi-queue by moving it into a single instance.
-        CLBEventMultiQueue events{};
+        CLBEventMultiQueue events {};
         for (int i = 0; i < n_slots_; ++i) {
             CLBEventMultiQueue& slot_multiqueue = current_batch.clb_opt_data[i];
             for (auto it = slot_multiqueue.begin(); it != slot_multiqueue.end(); ++it) {
@@ -320,7 +322,7 @@ void DataHandler::outputThread()
         g_elastic.log(INFO, "Processing batch {} (from {} POMs)", current_batch.idx, events.size());
 
         // Calculate complete timestamps & make sure sequence is sorted
-        std::size_t n_hits{ 0 };
+        std::size_t n_hits { 0 };
         for (auto& key_value : events) {
             CLBEventQueue& queue = key_value.second;
             n_hits += queue.size();

@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
 {
     // Check the command and additional arguments are valid
     if (argc < 3 || argc > 4) {
-        std::cerr << "usage: " << argv[0] << " ops_bus_url [ config | startData | stopData | startRun N | stopRun | exit ]" << std::endl;
+        std::cerr << "usage: " << argv[0] << " ops_bus_url [ config <opt file> | startData | stopData | startRun N | stopRun | exit ]" << std::endl;
         return ExitCode::BadArgs;
     }
 
@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
     const std::string command { argv[2] };
 
     if (command == "config") {
-        if (argc != 3) {
+        if (argc != 4) {
             std::cerr << argv[0] << ": expected a config file" << std::endl;
             return ExitCode::BadArgs;
         }
@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
     } else if (command == "stopData") {
         msg.Discriminator = OpsMessage::StopData::Discriminator;
     } else if (command == "startRun") {
-        if (argc != 3) {
+        if (argc != 4) {
             std::cerr << argv[0] << ": expected a run type [1-4]" << std::endl;
             return ExitCode::BadArgs;
         }

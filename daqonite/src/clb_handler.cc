@@ -12,15 +12,15 @@
 
 CLBHandler::CLBHandler(std::shared_ptr<boost::asio::io_service> io_service,
     std::shared_ptr<DataHandler> data_handler, bool* mode, int opt_port, int handler_id)
-    : data_handler_{ std::move(data_handler) }
-    , mode_{ mode }
-    , buffer_size_{ buffer_size_opt }
-    , socket_optical_{ *io_service, udp::endpoint(udp::v4(), opt_port) }
-    , data_slot_idx_{ data_handler_->assignNewSlot() }
-    , handler_id_{ handler_id }
+    : data_handler_ { std::move(data_handler) }
+    , mode_ { mode }
+    , buffer_size_ { buffer_size_opt }
+    , socket_optical_ { *io_service, udp::endpoint(udp::v4(), opt_port) }
+    , data_slot_idx_ { data_handler_->assignNewSlot() }
+    , handler_id_ { handler_id }
 {
     // Setup the sockets
-    socket_optical_.set_option(udp::socket::receive_buffer_size{ 33554432 });
+    socket_optical_.set_option(udp::socket::receive_buffer_size { 33554432 });
 
     g_elastic.log(INFO, "CLB Handler {} started on port {}", handler_id_, opt_port);
 }
@@ -43,7 +43,7 @@ void CLBHandler::handleOpticalData(const boost::system::error_code& error, std::
     if (*mode_ != true) {
         // We are not in a run so just call the work method again
         workOpticalData();
-        return;      
+        return;
     }
 
     // Check the packet has at least a CLB header in it
@@ -83,7 +83,7 @@ void CLBHandler::handleOpticalData(const boost::system::error_code& error, std::
 
 bool CLBHandler::processPacket(const CLBCommonHeader& header, int n_hits, const hit_t* hit) const
 {
-    CLBEvent new_event{};
+    CLBEvent new_event {};
 
     // Assign the variables we need from the header
     new_event.PomId = header.pomIdentifier();
@@ -98,7 +98,7 @@ bool CLBHandler::processPacket(const CLBCommonHeader& header, int n_hits, const 
         return false;
     }
 
-    std::lock_guard<std::mutex> l{ multi_queue->write_mutex };
+    std::lock_guard<std::mutex> l { multi_queue->write_mutex };
     if (multi_queue->closed_for_writing) {
         // Have a batch, which has been closed but not yet removed from the schedule. Discard packet.
         return false;

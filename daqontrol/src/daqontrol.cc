@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
         ("config,c", boost::program_options::value<std::string>(&config), 
             "Configuration file (../data/singleConfig.opt)")
         ("noHV", "Disable the high voltage")
-        ("state-bus-url", boost::program_options::value<std::string>(&state_bus_url)->implicit_value("ipc:///tmp/chips_daqontrol.ipc"), "where DAQontrol publishes state messages");
+        ("state-bus-url", boost::program_options::value<std::string>(&state_bus_url)->implicit_value("ipc:///tmp/chips_daqontrol.ipc"), "where DAQontrol publishes state messages")
         ("control-bus-url", boost::program_options::value<std::string>(&control_bus_url)->implicit_value("ipc:///tmp/chips_control.ipc"), "where DAQontrol listens for control messages");
 
     try
