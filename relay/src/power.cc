@@ -39,6 +39,8 @@ int main(int argc, char *argv[])
         relay->off(channel);
     } else if (command == 1) {
         relay->on(channel);
+    } else if (command == 2) {
+        relay->pulse(channel);
     } else {
         std::cout << "Unknow command!" << std::endl;
         return -1;

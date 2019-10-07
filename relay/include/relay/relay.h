@@ -44,13 +44,16 @@ public:
     virtual ~Relay() {}
 
     /// Turn on a relay channel
-    virtual void on(int channel)   = 0;
+    virtual void on(int channel)    = 0;
+
+    /// Pulse a relay channel
+    virtual void pulse(int channel) = 0;
 
     /// Turn off a relay channel
-    virtual void off(int channel)  = 0;
+    virtual void off(int channel)   = 0;
 
     /// Get the channel status from the relay
-    virtual void status()          = 0;
+    virtual void status()           = 0;
 
 protected:
     std::string ip_;    ///< IP address of the relay

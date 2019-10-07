@@ -18,6 +18,9 @@ public:
     /// Turn on a relay channel
     void on(int channel);
 
+    // Pulse a relay channel
+    void pulse(int channel);
+
     /// Turn off a relay channel
     void off(int channel);
 

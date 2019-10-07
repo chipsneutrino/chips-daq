@@ -30,6 +30,11 @@ void ECRelay::on(int channel)
     if (n != 5) g_elastic.log(ERROR, "ECRelay ({}) could not read on response!", ip_);
 }
 
+void ECRelay::pulse(int channel)
+{
+    //TODO
+}
+
 void ECRelay::off(int channel)
 {
     char relnum[2];
@@ -50,17 +55,18 @@ void ECRelay::status()
 {
     char msg[5] = {0x3F, 0x30, 0x30, 0x32, 0x0D};
 
-	int n = send(fd_, msg, sizeof(msg), 0);
-    if (n < 0) g_elastic.log(ERROR, "ECRelay ({}) could not send off command!", ip_); 
+    int n = send(fd_, msg, sizeof(msg), 0);
+    if (n < 0) g_elastic.log(ERROR, "ECRelay ({}) could not send status command!", ip_); 
 
     usleep(DELAY_IA_3K);
 
     char buffer[256];
     n = read(fd_, buffer, 255);
-    if (n != 10) g_elastic.log(ERROR, "ECRelay ({}) could not read off response!", ip_); 
+    if (n != 10) g_elastic.log(ERROR, "ECRelay ({}) could not read status response!", ip_); 
 
-    std::bitset<32> bits(stol(std::string(buffer, 1, 8)));
-    std::cout << "Status: " << bits.to_string() << std::endl;   
+    std::cout << n << std::endl;
+    //std::bitset<32> bits(stol(std::string(buffer, 1, 8)));
+    //std::cout << "Status: " << bits.to_string() << std::endl;   
 }
 
 

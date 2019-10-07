@@ -15,6 +15,11 @@ void DanoutRelay::on(int channel)
     //TODO
 }
 
+void DanoutRelay::pulse(int channel)
+{
+    //TODO
+}
+
 void DanoutRelay::off(int channel)
 {
     //TODO    

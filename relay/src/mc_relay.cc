@@ -23,6 +23,19 @@ void MCRelay::on(int channel)
     if (n < 0) g_elastic.log(ERROR, "MCRelay ({}) could not read on response!", ip_); 
 }
 
+void MCRelay::pulse(int channel)
+{
+    unsigned char msg[3] = {0x20, (unsigned char)channel, 0x01};
+	int n = send(fd_, msg, sizeof(msg), 0);
+    if (n < 0) g_elastic.log(ERROR, "MCRelay ({}) could not send pulse command!", ip_); 
+
+    usleep(DELAY_8020);
+
+    char buffer[256];
+    n = read(fd_, buffer, 255);
+    if (n < 0) g_elastic.log(ERROR, "MCRelay ({}) could not read pulse response!", ip_); 
+}
+
 void MCRelay::off(int channel)
 {
     unsigned char msg[3] = {0x21, (unsigned char)channel, 0x00};
