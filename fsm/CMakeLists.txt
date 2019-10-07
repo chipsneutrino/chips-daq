@@ -30,6 +30,7 @@ add_executable(fsm
 
 target_include_directories(fsm PUBLIC include)
 
+target_link_libraries(fsm PUBLIC Boost::program_options)
 target_link_libraries(fsm PUBLIC nngpp)
 target_link_libraries(fsm PUBLIC tinyfsm)
 target_link_libraries(fsm PUBLIC util)

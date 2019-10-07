@@ -2,8 +2,8 @@
 
 #include <tinyfsm.hpp>
 
-#include <util/control_msg.h>
 #include <util/async_component.h>
+#include <util/control_msg.h>
 
 namespace nng {
 struct socket;
@@ -16,12 +16,14 @@ protected:
     void run() override;
 
 public:
-    explicit OpsUplink() = default;
+    explicit OpsUplink(const std::string& bus_url);
     virtual ~OpsUplink() = default;
 
 private:
     void handleMessage(nng::socket& sock, const OpsMessage& message);
     void acknowledge(nng::socket& sock, bool ok);
+
+    std::string bus_url_;
 };
 
 namespace OpsCommands {

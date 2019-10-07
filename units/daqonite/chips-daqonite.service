@@ -1,0 +1,12 @@
+[Unit]
+Description=Optical DAQ
+
+[Service]
+ExecStart=/opt/chips-dist/run/run_with_env.sh ../bin/daqonite --state-bus-url=tcp://:7030 --control-bus-url=tcp://chipsshore04:7020
+WorkingDirectory=/opt/chips-dist/run
+Restart=always
+Nice=3
+
+[Install]
+WantedBy=network.target
+

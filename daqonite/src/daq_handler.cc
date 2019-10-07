@@ -8,20 +8,27 @@
 #include <util/elastic_interface.h>
 
 DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data)
-    : collect_clb_data_{ collect_clb_data }
-    , collect_bbb_data_{ collect_bbb_data }
-    , clb_ports_{}
-    , n_threads_{}
-    , mode_{ false }
-    , run_type_{}
-    , io_service_{ new boost::asio::io_service }
-    , run_work_{ new boost::asio::io_service::work(*io_service_) }
-    , thread_group_{}
-    , data_handler_{ new DataHandler }
-    , clb_handlers_{}
-    , bbb_handler_{}
+    : collect_clb_data_ { collect_clb_data }
+    , collect_bbb_data_ { collect_bbb_data }
+    , clb_ports_ {}
+    , n_threads_ {}
+    , mode_ { false }
+    , run_type_ {}
+    , io_service_ { new boost::asio::io_service }
+    , run_work_ { new boost::asio::io_service::work(*io_service_) }
+    , thread_group_ {}
+    , data_handler_ { new DataHandler }
+    , clb_handlers_ {}
+    , bbb_handler_ {}
 {
-    clb_ports_.push_back(56015); // TODO: use configurable CLB ports here
+    clb_ports_.push_back(57001);
+    clb_ports_.push_back(57002);
+    clb_ports_.push_back(57003);
+    clb_ports_.push_back(57004);
+    clb_ports_.push_back(57005);
+    clb_ports_.push_back(57006);
+    clb_ports_.push_back(57007);
+    clb_ports_.push_back(57008);
 
     // Calculate thread count
     n_threads_ = 0;
@@ -48,7 +55,7 @@ void DAQHandler::setupHandlers()
 
     // Setup the BBB handler (if required)
     if (collect_bbb_data_) {
-        bbb_handler_ = std::unique_ptr<BBBHandler>{ new BBBHandler }; // TODO: std::make_unique in c++14
+        bbb_handler_ = std::unique_ptr<BBBHandler> { new BBBHandler }; // TODO: std::make_unique in c++14
     }
 }
 

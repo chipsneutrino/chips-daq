@@ -10,7 +10,7 @@ protected:
     void disconnected(const nng::exception& e) override;
 
 public:
-    explicit BusMaster() = default;
+    explicit BusMaster(const std::string& bus_url);
     virtual ~BusMaster() = default;
 };
 }

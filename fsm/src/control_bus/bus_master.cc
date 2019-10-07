@@ -5,15 +5,20 @@
 #include "global.h"
 
 namespace ControlBus {
+BusMaster::BusMaster(const std::string& bus_url)
+    : Publisher { bus_url }
+{
+}
+
 void BusMaster::connected()
 {
-    g_elastic.log(INFO, "ControlBus publishing to '{}'", message_type::URL);
-    global.sendEvent(events::Connected{});
+    g_elastic.log(INFO, "ControlBus publishing to '{}'", bus_url());
+    global.sendEvent(events::Connected {});
 }
 
 void BusMaster::disconnected(const nng::exception& e)
 {
     g_elastic.log(ERROR, "ControlBus caught error: {}: {}", e.who(), e.what());
-    global.sendEvent(events::Disconnected{});
+    global.sendEvent(events::Disconnected {});
 }
 }

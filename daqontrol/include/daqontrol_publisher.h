@@ -8,14 +8,14 @@
 #include <mutex>
 #include <thread>
 
-#include "daq_control.h"
-#include <util/control_msg.h>
 #include <util/bus_publisher.h>
+#include <util/control_msg.h>
+
+#include "daq_control.h"
 
 class DaqontrolPublisher : public BusPublisher<DaqontrolStateMessage> {
 public:
-
-    explicit DaqontrolPublisher(std::shared_ptr<DAQControl> daq_control);
+    explicit DaqontrolPublisher(std::shared_ptr<DAQControl> daq_control, const std::string& url);
     virtual ~DaqontrolPublisher() = default;
 
 private:

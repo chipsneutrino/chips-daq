@@ -8,6 +8,11 @@
 #include <util/elastic_interface.h>
 
 namespace Daqsitter {
+Observer::Observer(const std::string& bus_url)
+    : bus_url_ { bus_url }
+{
+}
+
 void Observer::run()
 {
     while (running_) {
@@ -15,21 +20,21 @@ void Observer::run()
             auto sock = nng::sub::open();
             nng::sub::set_opt_subscribe(sock, "");
             nng::set_opt_recv_timeout(sock, 2000);
-            sock.dial(DaqsitterStateMessage::URL);
+            sock.dial(bus_url_.c_str());
 
-            global.sendEvent(events::Connected{});
+            global.sendEvent(events::Connected {});
 
-            DaqsitterStateMessage message{};
+            DaqsitterStateMessage message {};
             while (running_) {
-                sock.recv(nng::view{ &message, sizeof(message) });
+                sock.recv(nng::view { &message, sizeof(message) });
 
                 switch (message.Discriminator) {
                 case DaqsitterStateMessage::Ready::Discriminator:
-                    global.sendEvent(events::Ready{});
+                    global.sendEvent(events::Ready {});
                     break;
 
                 case DaqsitterStateMessage::Started::Discriminator:
-                    global.sendEvent(events::Started{});
+                    global.sendEvent(events::Started {});
                     break;
 
                 default:
@@ -39,7 +44,7 @@ void Observer::run()
             }
         } catch (const nng::exception& e) {
             g_elastic.log(DEBUG, "Daqsitter error: {}: {}", e.who(), e.what());
-            global.sendEvent(events::Disconnected{});
+            global.sendEvent(events::Disconnected {});
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
     }

@@ -6,12 +6,13 @@
 #include "command_receiver.h"
 #include <util/elastic_interface.h>
 
-CommandReceiver::CommandReceiver()
-    : handler_{}
-    , running_{ false }
-    , receiver_thread_{}
-    , cv_receiver_thread_{}
-    , mtx_receiver_thread_{}
+CommandReceiver::CommandReceiver(const std::string& url)
+    : handler_ {}
+    , url_ { url }
+    , running_ { false }
+    , receiver_thread_ {}
+    , cv_receiver_thread_ {}
+    , mtx_receiver_thread_ {}
 {
 }
 
@@ -27,7 +28,7 @@ void CommandReceiver::runAsync()
     }
 
     running_ = true;
-    receiver_thread_ = std::unique_ptr<std::thread>{ new std::thread(std::bind(&CommandReceiver::receiverThread, this)) }; // TODO: std::make_unique in c++14
+    receiver_thread_ = std::unique_ptr<std::thread> { new std::thread(std::bind(&CommandReceiver::receiverThread, this)) }; // TODO: std::make_unique in c++14
 }
 
 void CommandReceiver::join()
@@ -60,12 +61,12 @@ void CommandReceiver::receiverThread()
             auto sock = nng::sub::open();
             nng::sub::set_opt_subscribe(sock, "");
             nng::set_opt_recv_timeout(sock, 200);
-            sock.dial(ControlMessage::URL);
+            sock.dial(url_.c_str());
 
-            ControlMessage message{};
+            ControlMessage message {};
             while (running_) {
                 try {
-                    sock.recv(nng::view{ &message, sizeof(message) });
+                    sock.recv(nng::view { &message, sizeof(message) });
                 } catch (const nng::exception& e) {
                     switch (e.get_error()) {
                     case nng::error::timedout:
@@ -81,7 +82,7 @@ void CommandReceiver::receiverThread()
             g_elastic.log(ERROR, "CommandReceiver caught error when listening: {}", e.what());
             g_elastic.log(INFO, "CommandReceiver will reconnect in 5 seconds");
 
-            std::unique_lock<std::mutex> lk{ mtx_receiver_thread_ };
+            std::unique_lock<std::mutex> lk { mtx_receiver_thread_ };
             cv_receiver_thread_.wait_for(lk, std::chrono::seconds(5), [this] { return !running_; });
         }
     }

@@ -3,10 +3,10 @@
 #include "trigger_predictor.h"
 
 TriggerPredictor::TriggerPredictor(std::size_t n_last, TimeDiff init_interval)
-    : observed_{}
-    , sorted_{}
-    , last_timestamp_{ -1 }
-    , next_{ 0 }
+    : observed_ {}
+    , sorted_ {}
+    , last_timestamp_ { -1 }
+    , next_ { 0 }
 {
     observed_.resize(n_last);
     sorted_.resize(n_last);
@@ -27,6 +27,11 @@ void TriggerPredictor::addTrigger(Timestamp timestamp)
     std::copy(observed_.begin(), observed_.end(), sorted_.begin());
     std::sort(sorted_.begin(), sorted_.end());
     learned_interval_ = sorted_[sorted_.size() / 2];
+}
+
+Timestamp TriggerPredictor::lastTimestamp() const
+{
+    return last_timestamp_;
 }
 
 TimeDiff TriggerPredictor::learnedInterval() const

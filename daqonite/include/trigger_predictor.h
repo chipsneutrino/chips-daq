@@ -23,5 +23,6 @@ public:
     explicit TriggerPredictor(std::size_t n_last, TimeDiff init_interval);
 
     void addTrigger(Timestamp timestamp);
+    Timestamp lastTimestamp() const;
     TimeDiff learnedInterval() const;
 };
