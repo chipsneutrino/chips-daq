@@ -33,7 +33,6 @@ public:
             g_elastic.log(ERROR, "Could not create relay socket!");
         } 
      
-    
         if (connect(fd_, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) 
         { 
             g_elastic.log(ERROR, "Could not connect to relay ({})", ip_); 

@@ -64,9 +64,8 @@ void ECRelay::status()
     n = read(fd_, buffer, 255);
     if (n != 10) g_elastic.log(ERROR, "ECRelay ({}) could not read status response!", ip_); 
 
-    std::cout << n << std::endl;
-    //std::bitset<32> bits(stol(std::string(buffer, 1, 8)));
-    //std::cout << "Status: " << bits.to_string() << std::endl;   
+    std::bitset<32> bits(stol(std::string(buffer, 1, 8)));
+    std::cout << "Status: " << bits.to_string() << std::endl;   
 }
 
 

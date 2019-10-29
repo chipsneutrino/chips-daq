@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
     } else if (type == "ec") {
         relay = std::unique_ptr<Relay>(new ECRelay(ip));
     } else {
-        std::cout << "Unknow relay type!" << std::endl;
+        std::cout << "Unknown relay type!" << std::endl;
         return -1;
     }
 
@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
     } else if (command == 2) {
         relay->pulse(channel);
     } else {
-        std::cout << "Unknow command!" << std::endl;
+        std::cout << "Unknown command!" << std::endl;
         return -1;
     }
 
