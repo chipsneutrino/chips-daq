@@ -1,3 +1,4 @@
+#include <ctime>
 #include <functional>
 #include <sstream>
 
@@ -13,6 +14,7 @@ SpillScheduler::SpillScheduler(int port, std::size_t trigger_memory_size, double
     , spill_server_running_ {}
     , spill_server_thread_ {}
     , spill_server_ {}
+    , bypass_os_time_ { false } // TODO: this should be a configurable setting
 {
     spill_server_running_ = true;
     spill_server_thread_ = std::unique_ptr<std::thread> { new std::thread(std::bind(&SpillScheduler::workSpillServer, this)) };
@@ -48,7 +50,17 @@ void SpillScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t last_
     //   (2) we know how trigger predictions and signals will be matched
     //   (3) white rabbits start giving sensible timestamps
 
-    Timestamp schedule_basis_timestamp { static_cast<Timestamp>(last_approx_timestamp) };
+    Timestamp schedule_basis_timestamp {};
+    if (!bypass_os_time_) {
+        // The basis timestamp comes from the OS.
+        // Hope it's /roughly/ in sync with the data. Fortunately, we only need second-ish precision.
+        schedule_basis_timestamp = static_cast<Timestamp>(std::time(nullptr));
+    } else {
+        // Use the last approximate timestamp received in the optical stream.
+        // If data just started coming in, this may still be zero and cause the temporary "no packets received" warning.
+        schedule_basis_timestamp = static_cast<Timestamp>(last_approx_timestamp);
+    }
+
     if (!schedule.empty()) {
         // Ensure that the timestamp we use as a basis for scheduling is as recent as possible.
         // This prevents creating batch in the past if the schedule capacity is too small.
