@@ -49,6 +49,7 @@ class SpillScheduler : public BatchScheduler {
     double init_period_guess_; ///< Initial guess of trigger period in seconds. Will be eventually overwritten.
     std::size_t n_batches_ahead_; ///< How many batches to open in the future?
     double time_window_radius_; ///< Duration around spill time for batches.
+    bool bypass_os_time_; ///< If true, spill scheduler will wait for optical data to get timestamps instead of calling OS functions. Use if OS time is not in sync with WR time.
 
     std::atomic_bool spill_server_running_; ///< Is the spill server supposed to be running?
     std::unique_ptr<std::thread> spill_server_thread_; ///< Spill server thread.
