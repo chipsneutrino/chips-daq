@@ -47,7 +47,8 @@ struct ControllerConfig {
 	int relay_chn_				= 0;			///< Relay channel neutral
 	unsigned long data_ip_		= 3232241153;	///< Data server IP address (192.168.22.1)
 	int data_port_				= 56015;		///< Data server port (CLB optical port)
-	int data_window_			= 100;   		///< Data window duration (ms)
+	int data_window_			= 100;   		///< Data window duration (microseconds)
+	int data_size_				= 1500;   		///< Max data packet size (bytes)
 	bool nano_enabled_			= false;		///< Is nanobeacon enabled?
 	int nano_voltage_			= 0;			///< Nano voltage (mv)
 	std::bitset<32> ch_enabled_;				///< Enabled channels (default is all disabled)

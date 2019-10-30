@@ -153,10 +153,11 @@ bool CLBController::setInitValues()
 {
     std::vector<int>  var_ids;
     std::vector<long> var_values;
-    var_ids.push_back(ProcVar::NET_IPMUX_SRV_IP);       var_values.push_back(config_.data_ip_); // Data server IP address
+    var_ids.push_back(ProcVar::NET_IPMUX_SRV_IP);       var_values.push_back(config_.data_ip_);     // Data server IP address
     var_ids.push_back(ProcVar::SYS_TIME_SLICE_DUR);     var_values.push_back(config_.data_window_); // Data server port
-    var_ids.push_back(ProcVar::OPT_HR_VETO_ENA_CH);     var_values.push_back(0x00000000); // Disable all Channels HR Veto  
-    var_ids.push_back(ProcVar::OPT_MULHIT_ENA_CH);      var_values.push_back(0x00000000); // Disable all Channels Multi Hits
+    var_ids.push_back(ProcVar::SYS_STMACH_PKTSIZE);     var_values.push_back(config_.data_size_);   // Max data packet size 
+    var_ids.push_back(ProcVar::OPT_HR_VETO_ENA_CH);     var_values.push_back(0x00000000);           // Disable all Channels HR Veto  
+    var_ids.push_back(ProcVar::OPT_MULHIT_ENA_CH);      var_values.push_back(0x00000000);           // Disable all Channels Multi Hits
 
     MsgWriter mw;
     mw.writeU16(var_ids.size() + 2);

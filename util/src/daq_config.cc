@@ -276,6 +276,13 @@ void DAQConfig::parseLine(std::string &line)
 			}			
 		}
 
+		// Add the controllers max packet data size
+		else if (config.compare("data_size") == 0) {
+			if (!(ss >> configs_[controller_num].data_size_)) { 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value); 
+			}			
+		}
+
 		// Check if the nanobeacon should be enabled
 		else if (config.compare("nano_enabled") == 0) {
 			bool enabled = false;
