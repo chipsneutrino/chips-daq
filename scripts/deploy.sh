@@ -16,6 +16,7 @@ cp_tunnel() {
 cp_run() {
 	mkdir "${BPATH}/run"
 	cp ./scripts/run_with_env.sh "${BPATH}/run"
+	cp ./scripts/restart.sh "${BPATH}/run"
 }
 
 cp_units() {
