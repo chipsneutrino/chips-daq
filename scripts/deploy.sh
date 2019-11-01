@@ -40,6 +40,12 @@ create_config() {
 	echo "export BPATH=\"${TGTPATH}/chips-dist\"" >${BPATH}/config.sh
 }
 
+stop() {
+	echo "Stopping DAQ services..."
+    ssh root@chipsshore04 "systemctl stop chips-fsm; systemctl stop chips-daqontrol; systemctl stop chips-daqsitter;"
+    ssh root@chipsshore01 "systemctl stop chips-daqonite; systemctl stop chips-tunnel"	
+}
+
 distribute() {
 	for MACHINE in $MACHINES ; do
 		echo "Deploying to ${MACHINE}..."
@@ -51,6 +57,12 @@ distribute() {
 			${BPATH} \
 			${TGTUSR}@${MACHINE}:${TGTPATH}
 	done
+}
+
+start() {
+	echo "Starting DAQ services..."
+    ssh root@chipsshore04 "systemctl start chips-fsm; systemctl start chips-daqontrol; systemctl start chips-daqsitter;"
+    ssh root@chipsshore01 "systemctl start chips-daqonite; systemctl start chips-tunnel"	
 }
 
 if [ ! -d .git ]; then
@@ -71,6 +83,8 @@ cp_units
 cp_artifacts
 create_config
 
+stop
 distribute
+start
 
 rm -rf "${BPATH}"
