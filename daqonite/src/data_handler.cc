@@ -45,7 +45,14 @@ void DataHandler::startRun(RunType which)
     // TODO: determine this from run_type
     last_approx_timestamp_ = 0;
     n_batches_ = 0;
-    batch_scheduler_ = static_cast<const std::shared_ptr<SpillScheduler>&>(spill_scheduler_);
+    if ((int)run_type_ == 1)
+    {
+        batch_scheduler_ = static_cast<const std::shared_ptr<SpillScheduler>&>(spill_scheduler_);
+    }
+    else 
+    {
+        batch_scheduler_ = static_cast<const std::shared_ptr<RegularScheduler>&>(regular_scheduler_);
+    }
 
     // Start output thread.
     g_elastic.log(WARNING, "Start mining into container {}", file_name_);
