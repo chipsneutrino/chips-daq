@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
     std::string config = "../data/config.opt";
     bool elastic = false;
     bool file = false;
-    float sample_frac = 0.01;
+    float sample_frac = 0.001;
 
     bool print_logs = true;
     bool print_debug = false;

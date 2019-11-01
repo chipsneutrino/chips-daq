@@ -65,7 +65,7 @@ struct channel_data
 };
 
 #define MAX_LOG_RATE 100
-#define MAX_ATTEMPTS 3
+#define MAX_ELASTIC_ATTEMPTS 1
 
 /// Callback for elasticlient logs
 inline void elasticlientCallback(elasticlient::LogLevel logLevel, const std::string &msg)

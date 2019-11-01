@@ -142,12 +142,11 @@ void MonitoringHandler::handleCLBSocket(boost::system::error_code const &error, 
             return;
         }
 
-        // Check the timestamp of the packet is valid
+        // If we don't have a valid timestamp, just don't record the packets
         if (!validTimeStamp(header))
         {
-            g_elastic.log(WARNING, "MonitoringHandler CLB socket invalid timestamp");
             workCLBSocket();
-            return;
+            return;            
         }
 
         // Cast the next section of the packet to the monitoring hits

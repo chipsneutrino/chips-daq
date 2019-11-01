@@ -184,7 +184,7 @@ void ElasticInterface::channelWork(channel_data data)
             bulk.indexDocument("_doc", "", Json::writeString(builder_, document));
         }
 
-        for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++)
+        for (int attempt = 0; attempt < MAX_ELASTIC_ATTEMPTS; attempt++)
         {
             try
             {
@@ -199,7 +199,7 @@ void ElasticInterface::channelWork(channel_data data)
             }
         }
 
-        initFile("Exceeded MAX_ATTEMPTS in bulkIndex()"); // Init file logging as elasticsearch unreachable
+        //initFile("Exceeded MAX_ELASTIC_ATTEMPTS in bulkIndex()"); // Init file logging as elasticsearch unreachable
     }
 }
 
@@ -279,7 +279,7 @@ void ElasticInterface::index(std::string index, Json::Value document)
     elasticlient::Client client(client_list_); /// Create the elasticsearch client
 
     // Now and again the client will not respond, therefore, we try a few times
-    for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++)
+    for (int attempt = 0; attempt < MAX_ELASTIC_ATTEMPTS; attempt++)
     {
         try
         {
@@ -300,7 +300,7 @@ void ElasticInterface::index(std::string index, Json::Value document)
         }
     }
 
-    initFile("Exceeded MAX_ATTEMPTS in index()"); // Init file logging as elasticsearch unreachable
+    //initFile("Exceeded MAX_ELASTIC_ATTEMPTS in index()"); // Init file logging as elasticsearch unreachable
 }
 
 void ElasticInterface::initFile(std::string error)
