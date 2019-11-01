@@ -80,11 +80,8 @@ bool MsgProcessor::getResponse(std::vector<unsigned char> &resp)
     unsigned char buff[MCFPACKET_MAX_SIZE];
     ssize_t size = read(socket_.native_handle(), buff, MCFPACKET_MAX_SIZE);
 
-    if (size == 0)
+    if (size == -1) 
     {
-        g_elastic.log(DEBUG, "Did not receive any bytes");
-        return false;
-    } else if (size == -1) {
         g_elastic.log(DEBUG, "Got timeout");
         return false;        
     }

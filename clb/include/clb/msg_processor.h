@@ -20,7 +20,7 @@
 
 #define DEFAULT_PORT 0xDACE /// Default CLBv2 slow-control port (56014)
 #define MAX_ATTEMPTS 3
-#define READ_TIMEOUT 1
+#define READ_TIMEOUT 2
 #define PROCESS_WAIT 1000000
 
 class MsgProcessor {
