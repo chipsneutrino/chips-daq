@@ -9,14 +9,12 @@ namespace states {
     void Offline::entry()
     {
         g_elastic.log(INFO, "Daqontrol : Offline");
-        g_elastic.state("daqontrol", "Offline");
         global.sendEvent(StateUpdate{});
     }
 
     void Unknown::entry()
     {
         g_elastic.log(INFO, "Daqontrol : Unknown");
-        g_elastic.state("daqontrol", "Unknown");
         global.sendEvent(StateUpdate{});
     }
 
@@ -43,7 +41,6 @@ namespace states {
     void Initialising::entry()
     {
         g_elastic.log(INFO, "Daqontrol : Initialising");
-        g_elastic.state("daqontrol", "Initialising");
         global.sendEvent(StateUpdate{});
     }
 
@@ -55,7 +52,6 @@ namespace states {
     void Ready::entry()
     {
         g_elastic.log(INFO, "Daqontrol : Ready");
-        g_elastic.state("daqontrol", "Ready");
         global.sendEvent(StateUpdate{});
     }
 
@@ -67,7 +63,6 @@ namespace states {
     void Configured::entry()
     {
         g_elastic.log(INFO, "Daqontrol : Configured");
-        g_elastic.state("daqontrol", "Configured");
         global.sendEvent(StateUpdate{});
     }
 
@@ -79,7 +74,6 @@ namespace states {
     void Started::entry()
     {
         g_elastic.log(INFO, "Daqontrol : Started");
-        g_elastic.state("daqontrol", "Started");
         global.sendEvent(StateUpdate{});
     }
 

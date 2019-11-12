@@ -3,6 +3,8 @@ add_executable(fsm
     include/global.h                            src/global.cc
 
     include/ops_uplink.h                        src/ops_uplink.cc
+
+    include/reporter.h                          src/reporter.cc
     
     include/control_bus/events.h
     include/control_bus/fsm.h                   src/control_bus/fsm.cc

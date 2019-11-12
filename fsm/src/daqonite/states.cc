@@ -9,14 +9,12 @@ namespace states {
     void Offline::entry()
     {
         g_elastic.log(INFO, "Daqonite : Offline");
-        g_elastic.state("daqonite", "Offline");
         global.sendEvent(StateUpdate{});
     }
 
     void Unknown::entry()
     {
         g_elastic.log(INFO, "Daqonite : Unknown");
-        g_elastic.state("daqonite", "Unknown");
         global.sendEvent(StateUpdate{});
     }
 
@@ -33,7 +31,6 @@ namespace states {
     void Ready::entry()
     {
         g_elastic.log(INFO, "Daqonite : Ready");
-        g_elastic.state("daqonite", "Ready");
         global.sendEvent(StateUpdate{});
     }
 
@@ -45,7 +42,6 @@ namespace states {
     void Running::entry()
     {
         g_elastic.log(INFO, "Daqonite : Running");
-        g_elastic.state("daqonite", "Running");
         global.sendEvent(StateUpdate{});
     }
 

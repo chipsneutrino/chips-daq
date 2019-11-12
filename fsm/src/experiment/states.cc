@@ -15,7 +15,6 @@ namespace states {
     void Init::entry()
     {
         g_elastic.log(INFO, "Experiment : Init");
-        g_elastic.state("fsm", "Init");
         global.sendEvent(StateUpdate{});
     }
 
@@ -39,7 +38,6 @@ namespace states {
     void Exit::entry()
     {
         g_elastic.log(INFO, "Experiment : Exit");
-        g_elastic.state("fsm", "Exit");
         global.sendEvent(StateUpdate{});
 
         {
@@ -59,7 +57,6 @@ namespace states {
     void Ready::entry()
     {
         g_elastic.log(INFO, "Experiment : Ready");
-        g_elastic.state("fsm", "Ready");
         global.sendEvent(StateUpdate{});
     }
 
@@ -91,7 +88,6 @@ namespace states {
     void Configuring::entry()
     {
         g_elastic.log(INFO, "Experiment : Configuring");
-        g_elastic.state("fsm", "Configuring");
         global.sendEvent(StateUpdate{});
     }
 
@@ -136,7 +132,6 @@ namespace states {
     void Configured::entry()
     {
         g_elastic.log(INFO, "Experiment : Configured");
-        g_elastic.state("fsm", "Configured");
         global.sendEvent(StateUpdate{});
     }
 
@@ -179,7 +174,6 @@ namespace states {
     void StartingData::entry()
     {
         g_elastic.log(INFO, "Experiment : StartingData");
-        g_elastic.state("fsm", "StartingData");
         global.sendEvent(StateUpdate{});
 
         {
@@ -230,7 +224,6 @@ namespace states {
     void Started::entry()
     {
         g_elastic.log(INFO, "Experiment : Started");
-        g_elastic.state("fsm", "Started");
         global.sendEvent(StateUpdate{});
     }
 
@@ -267,7 +260,6 @@ namespace states {
     void StoppingData::entry()
     {
         g_elastic.log(INFO, "Experiment : StoppingData");
-        g_elastic.state("fsm", "StoppingData");
         global.sendEvent(StateUpdate{});
 
         {
@@ -318,7 +310,6 @@ namespace states {
     void StartingRun::entry()
     {
         g_elastic.log(INFO, "Experiment : StartingRun");
-        g_elastic.state("fsm", "StartingRun");
         global.sendEvent(StateUpdate{});
     }
 
@@ -362,7 +353,6 @@ namespace states {
     void Running::entry()
     {
         g_elastic.log(INFO, "Experiment : Running");
-        g_elastic.state("fsm", "Running");
         global.sendEvent(StateUpdate{});
     }
 
@@ -384,7 +374,6 @@ namespace states {
     void StoppingRun::entry()
     {
         g_elastic.log(INFO, "Experiment : StoppingRun");
-        g_elastic.state("fsm", "StoppingRun");
         global.sendEvent(StateUpdate{});
 
         {
@@ -434,7 +423,6 @@ namespace states {
     void Error::entry()
     {
         g_elastic.log(INFO, "Experiment : Error");
-        g_elastic.state("fsm", "Error");
         global.sendEvent(StateUpdate{});
     }
 

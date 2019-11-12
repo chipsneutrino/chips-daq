@@ -7,6 +7,7 @@
 #include "daqsitter/observer.h"
 #include "global.h"
 #include "ops_uplink.h"
+#include "reporter.h"
 
 Global global {};
 
@@ -54,6 +55,7 @@ void Global::setupComponents()
     async_components_.add(std::make_shared<Daqontrol::Observer>(daqontrol_bus_url_));
     async_components_.add(std::make_shared<Daqsitter::Observer>(daqsitter_bus_url_));
     async_components_.add(std::make_shared<OpsUplink>(ops_bus_url_));
+    async_components_.add(std::make_shared<Reporter>());
 }
 
 void Global::runComponents()

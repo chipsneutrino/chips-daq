@@ -9,14 +9,12 @@ namespace states {
     void Offline::entry()
     {
         g_elastic.log(INFO, "Daqsitter : Offline");
-        g_elastic.state("daqsitter", "Offline");
         global.sendEvent(StateUpdate{});
     }
 
     void Unknown::entry()
     {
         g_elastic.log(INFO, "Daqsitter : Unknown");
-        g_elastic.state("daqsitter", "Unknown");
         global.sendEvent(StateUpdate{});
     }
 
@@ -33,7 +31,6 @@ namespace states {
     void Ready::entry()
     {
         g_elastic.log(INFO, "Daqsitter : Ready");
-        g_elastic.state("daqsitter", "Ready");
         global.sendEvent(StateUpdate{});
     }
 
@@ -45,7 +42,6 @@ namespace states {
     void Started::entry()
     {
         g_elastic.log(INFO, "Daqsitter : Started");
-        g_elastic.state("daqsitter", "Started");
         global.sendEvent(StateUpdate{});
     }
 
