@@ -119,13 +119,17 @@ void DAQControl::setupFromConfig(bool disable_hv)
     {
         if (config_.configs_[controller].enabled_)
         {
+            bool hv_flag;
+            if (disable_hv) hv_flag = true;
+            else hv_flag = !config_.configs_[controller].hv_enabled_;
+
             if (config_.configs_[controller].type_ == CLB)
             {
-                controllers_.push_back(new CLBController(config_.configs_[controller], disable_hv));
+                controllers_.push_back(new CLBController(config_.configs_[controller], hv_flag));
             }
             else if (config_.configs_[controller].type_ == BBB)
             {
-                controllers_.push_back(new BBBController(config_.configs_[controller], disable_hv));
+                controllers_.push_back(new BBBController(config_.configs_[controller], hv_flag));
             }
         }
     }
@@ -141,17 +145,15 @@ void DAQControl::stateUpdate()
 
         Control::Status state = controllers_[i]->getState(); // Get the current controller state
 
-	int max_sleep_time   = 10000000;  // 10e6 us 
-	int total_sleep_time = 0;
-	int sleep_time       = 500; // us
+	    int max_sleep_time   = 10000000;  // 10e6 us 
+	    int total_sleep_time = 0;
+	    int sleep_time       = 500; // us
 
         while( state != target_state_ && total_sleep_time < max_sleep_time ){
-          usleep(sleep_time);
-          total_sleep_time += sleep_time;
-          state = controllers_[i]->getState(); // Get the current controller state                                                                   
+            usleep(sleep_time);
+            total_sleep_time += sleep_time;
+            state = controllers_[i]->getState(); // Get the current controller state                                                                   
         }
-
-
 
         if (state != target_state_ && !controllers_[i]->isWorking()) 
         {

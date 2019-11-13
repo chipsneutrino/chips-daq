@@ -133,6 +133,13 @@ void DAQConfig::parseLine(std::string &line)
 			}
 		}	
 
+		// Get the HV enabled flag
+		if (config.compare("hv_enabled") == 0) {
+			if (!(ss >> configs_[controller_num].hv_enabled_)) { 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be bool (0 or 1)", value);
+			}
+		}	
+
 		// Get the controllers electronic type
 		if (config.compare("type") == 0) {
 			std::string type;

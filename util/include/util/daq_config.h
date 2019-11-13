@@ -34,6 +34,7 @@ struct ControllerConfig {
 
 	// Controller wide variables
 	bool enabled_				= false;		///< Is it enabled?
+	bool hv_enabled_			= true;			///< Should the HV be enabled?
 	ControllerType type_		= CLB;			///< Electronic type
 	int eid_					= 0;			///< Electronic ID
 	long mac_					= 0;			///< MAC address
