@@ -1,11 +1,20 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 import subprocess
+import time
+
+# TODO: configure from environment
+FORWARDER_PROC_NAME = ['NssSpillForwarder', '-c NovaSpillServer/config/SpillForwarderConfig-CHIPS.xml', '-D 0', '-M 0']
+FORWARDER_HOLDOFF_SEC = 1
 
 def run_forwarder():
-    # TODO: start forwarder, keep watching over it
-    # TODO: restart forwarder if it stops for any reason
-    pass
+    running_forwarder = True
+
+    while running_forwarder:
+        forwarder = subprocess.run(FORWARDER_PROC_NAME)
+        # TODO: react on `forwarder.returncode`
+
+        time.sleep(FORWARDER_HOLDOFF_SEC)
 
 def run_loopback_receiver():
     # TODO: run XML-RPC server
