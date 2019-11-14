@@ -2,10 +2,14 @@
 
 import subprocess
 import time
+from xmlrpc.server import SimpleXMLRPCServer
 
 # TODO: configure from environment
 FORWARDER_PROC_NAME = ['NssSpillForwarder', '-c NovaSpillServer/config/SpillForwarderConfig-CHIPS.xml', '-D 0', '-M 0']
 FORWARDER_HOLDOFF_SEC = 1
+
+LOOPBACK_HOSTNAME = 'localhost'
+LOOPBACK_PORT = 17898
 
 def run_forwarder():
     running_forwarder = True
@@ -16,10 +20,14 @@ def run_forwarder():
 
         time.sleep(FORWARDER_HOLDOFF_SEC)
 
-def run_loopback_receiver():
-    # TODO: run XML-RPC server
+def loopback_spill(nova_time, spill_type):
     # TODO: keep track of last signal received grouped by type
-    pass
+    return 'Ok'
+
+def run_loopback_receiver():
+    server = SimpleXMLRPCServer((LOOPBACK_HOSTNAME, LOOPBACK_PORT))
+    server.register_function(loopback_spill, 'Spill')
+    server.serve_forever()
 
 def run_fsm_reporter():
     # TODO: run on timer
