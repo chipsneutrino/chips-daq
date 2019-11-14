@@ -366,7 +366,7 @@ bool CLBController::checkIDs()
         size_t lastindex = config_.config_name_.find_last_of("."); 
         std::string file_name = config_.config_name_.substr(0, lastindex);
         file_name += "_";
-        file_name += config_.eid_;
+        file_name += std::to_string(config_.eid_);
         file_name += "_mismatch_errors.dat";
 
         std::ofstream error_file;
