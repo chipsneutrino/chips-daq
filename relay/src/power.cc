@@ -31,8 +31,21 @@ int pulse_channels[6][2] = {{17, 14},
 
 int pulse_relay[6] = {0, 0, 0, 0, 0, 0};
 
+unsigned long box_ips[6] = {3232238436, 3232238456, 3232238476, 3232238496, 3232238516, 3232238352};
+
+//                             1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 
+int active_channels[6][16] = {{0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0},
+                              {0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1},
+                              {0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0},
+                              {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0},
+                              {0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0},
+                              {0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
+
 void boxOn(int box);
 void boxOff(int box);
+
+void clbsOn(int box);
+void clbsOff(int box);
 
 int main(int argc, char *argv[])
 {
@@ -56,6 +69,26 @@ int main(int argc, char *argv[])
             boxOff(channel);
         } else if (command == 1) {
             boxOn(channel);
+        } else {
+            std::cout << "Unknown command!" << std::endl;
+            return -1;
+        }       
+    }
+    else if(type == "clbs") // We want to turn on/off an entire boxes CLBs
+    {
+
+        if (argc != 4) {
+            std::cout << "Wrong number of arguments!" << std::endl;
+            return -1;
+        }
+
+        int channel = atoi(argv[2]);
+        int command = atoi(argv[3]);       
+
+        if (command == 0) {
+            clbsOff(channel);
+        } else if (command == 1) {
+            clbsOn(channel);
         } else {
             std::cout << "Unknown command!" << std::endl;
             return -1;
@@ -146,4 +179,37 @@ void boxOff(int box)
 
     jb_relay_1.status(); // Print out the relay status
     jb_relay_2.status(); // Print out the relay status
+}
+
+void clbsOn(int box)
+{
+    ECRelay ec_relay(box_ips[box-1]);
+    
+    ec_relay.off(30); // Flush relay using simple off command
+
+    for(int chan=0; chan<16; chan++)
+    {
+        if(active_channels[box-1][chan] == 1) // Check if the channel is active
+        {
+            std::cout << "Box:" << box << " chan:" << (chan+1) << " on" << std::endl;
+            ec_relay.on(chan+1);
+        } 
+    }
+}
+
+void clbsOff(int box)
+{
+    ECRelay ec_relay(box_ips[box-1]);
+
+    ec_relay.off(30); // Flush relay using simple off command
+
+    for(int chan=0; chan<16; chan++)
+    {
+        // Check if the channel is active
+        if(active_channels[box-1][chan] == 1)
+        {
+            std::cout << "Box:" << box << " chan:" << (chan+1) << " off" << std::endl;
+            ec_relay.off(chan+1);
+        }
+    }
 }
