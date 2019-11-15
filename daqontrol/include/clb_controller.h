@@ -47,7 +47,7 @@ private:
     bool testConnection();
 
     /// Sets server_ip, time_slice_duration, AHRS and disabled acoustic data
-    bool setInitValues();    
+    bool setInitValues();  
 
     /// Resets the CLB from any state to Idle
     bool resetState();

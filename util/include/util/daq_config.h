@@ -49,6 +49,7 @@ struct ControllerConfig {
 	unsigned long data_ip_		= 3232241153;	///< Data server IP address (192.168.22.1)
 	int data_port_				= 56015;		///< Data server port (CLB optical port)
 	int data_window_			= 100;   		///< Data window duration (microseconds)
+	int data_size_				= 1536;   		///< Max data packet size (bytes)
 	bool veto_enabled_			= true;			///< Should we enable the high-rate veto?
 	int veto_value_				= 100;			///< Number of hits per timeslice to veto on
 	bool nano_enabled_			= false;		///< Is nanobeacon enabled?

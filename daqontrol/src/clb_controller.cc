@@ -171,14 +171,15 @@ bool CLBController::setInitValues()
     }
 
     MsgWriter mw;
-    mw.writeU16(var_ids.size() + 2);
+    mw.writeU16(var_ids.size() + 3);
     for(int ii=0; ii<var_ids.size(); ++ii){
         mw.writeI32(var_ids[ii]);
         mw.writeU32(var_values[ii]);
     }
 
-    mw.writeI32(ProcVar::SYS_SYS_DISABLE);  mw.writeU8(0); // Make sure the AHRS is not disabled
-    mw.writeI32(ProcVar::SYS_SYS_RUN_ENA);  mw.writeU8(0 | ProcVar::SYS_SYS_RUN_ENA_TDC | ProcVar::SYS_SYS_RUN_ENA_MON); // Disable the acoustic data
+    mw.writeI32(ProcVar::SYS_STMACH_PKTSIZE);           mw.writeU16(config_.data_size_); // Set the maximum packet size
+    mw.writeI32(ProcVar::SYS_SYS_DISABLE);              mw.writeU8(0); // Make sure the AHRS is not disabled
+    mw.writeI32(ProcVar::SYS_SYS_RUN_ENA);              mw.writeU8(0 | ProcVar::SYS_SYS_RUN_ENA_TDC | ProcVar::SYS_SYS_RUN_ENA_MON); // Disable the acoustic data
 
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))

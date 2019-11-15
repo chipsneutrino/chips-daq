@@ -114,6 +114,8 @@ void DAQControl::setupFromConfig(bool disable_hv)
 {
     if (disable_hv) g_elastic.log(INFO, "Will disable the HV on all controllers!");
 
+    g_elastic.log(INFO, "Setting up {} controllers...", config_.num_controllers_);
+
     // Build the app topology of controllers from the configuration
     for (int controller=0; controller<config_.num_controllers_; controller++)
     {

@@ -283,6 +283,13 @@ void DAQConfig::parseLine(std::string &line)
 			}			
 		}
 
+		// Add the controllers max data packet size
+		else if (config.compare("data_size") == 0) {
+			if (!(ss >> configs_[controller_num].data_size_)) { 
+				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value); 
+			}			
+		}
+
 		// Add the controllers high rate veto flag
 		else if (config.compare("veto_enabled") == 0) {
 			if (!(ss >> configs_[controller_num].veto_enabled_)) { 
