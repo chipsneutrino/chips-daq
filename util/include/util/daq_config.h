@@ -34,7 +34,7 @@ struct ControllerConfig {
 
 	// Controller wide variables
 	bool enabled_				= false;		///< Is it enabled?
-	bool hv_enabled_			= true;			///< Should the HV be enabled?
+	bool hv_enabled_			= false;		///< Should the HV be enabled?
 	ControllerType type_		= CLB;			///< Electronic type
 	int eid_					= 0;			///< Electronic ID
 	long mac_					= 0;			///< MAC address
@@ -46,9 +46,9 @@ struct ControllerConfig {
 	int relay_port_				= 0;			///< Relay port
 	int relay_chp_				= 0;			///< Relay channel positive
 	int relay_chn_				= 0;			///< Relay channel neutral
-	unsigned long data_ip_		= 3232241153;	///< Data server IP address (192.168.22.1)
+	unsigned long data_ip_		= 3232238337;	///< Data server IP address (192.168.22.1)
 	int data_port_				= 56015;		///< Data server port (CLB optical port)
-	int data_window_			= 100;   		///< Data window duration (microseconds)
+	int data_window_			= 10000;   		///< Data window duration (microseconds)
 	int data_size_				= 1536;   		///< Max data packet size (bytes)
 	bool veto_enabled_			= true;			///< Should we enable the high-rate veto?
 	int veto_value_				= 100;			///< Number of hits per timeslice to veto on
@@ -92,24 +92,19 @@ struct ControllerConfig {
 class DAQConfig {
 public:
 	/// Create a DAQConfig
+	DAQConfig() {};
+
+	/// Create a DAQConfig
 	DAQConfig(const char * config);
 
 	/// Destroy a DAQConfig
 	~DAQConfig() {};
 
-	/// Print a summary of the DAQConfig
-	void printConfig();
-
-	/// Load a new configuration from file
-	void loadConfig(const char * config);
-
 	std::string file_name_;                 ///< Configuration file path
-
 	int num_controllers_;					///< Total number of controller from "clb_number"
 	int enabled_controllers_;				///< Total number of "enabled" controllers
 	int enabled_channels_;					///< Total number of "enabled" channels
 	bool is_nano_enabled_;					///< Do any of the controllers have an enabled nanobeacon?
-
 	std::vector<ControllerConfig> configs_;	///< Vector of controller configs
 
 private:
@@ -153,8 +148,8 @@ private:
 	void extractConfig(std::string line, int &numDots, int &controllerNum, int &channelNum, 
 						std::string &config, std::string &value);
 
-	/// Setup all the vectors given the number of controllers in the config file
-	void setupVectors();
+	/// Setup the configs given the number of controllers in the config file
+	void setupConfigs();
 
 	bool configured_; ///< Has the DAQConfig already been configured from a config file?
 };

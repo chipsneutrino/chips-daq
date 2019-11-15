@@ -19,20 +19,20 @@
 class CLBController: public Controller {
 public:
     /// Create a CLBController, calling Controller constructor and created MsgProcessor
-    CLBController(ControllerConfig config, bool disable_hv);
+    CLBController(ControllerConfig config);
 
     /// Destroy a CLBController
     ~CLBController() {};
 
     /// Methods to post the transition work to the controllers io_service
-    void postInit() { io_service_->post(boost::bind(&CLBController::init, this)); };
+    void postReset() { io_service_->post(boost::bind(&CLBController::reset, this)); };
     void postConfigure() { io_service_->post(boost::bind(&CLBController::configure, this)); };
     void postStartData() { io_service_->post(boost::bind(&CLBController::startData, this)); };
     void postStopData() { io_service_->post(boost::bind(&CLBController::stopData, this)); };
 
 private:
-    /// Calls methods to initialise the CLB and updates the state accordingly
-    void init();
+    /// Calls methods to reset the CLB
+    void reset();
 
     /// Calls methods to configure the CLB and updates the state accordingly
     void configure();
@@ -43,14 +43,14 @@ private:
     /// Calls methods to stop data on the CLB and updates the state accordingly
     void stopData();
 
+    /// Resets the state on the CLB to IDLE
+    bool resetState();
+
     /// Tests the connection to the CLB by sending a message and matching the response eid
     bool testConnection();
 
     /// Sets server_ip, time_slice_duration, AHRS and disabled acoustic data
     bool setInitValues();  
-
-    /// Resets the CLB from any state to Idle
-    bool resetState();
 
     /// Makes a state change on the CLB ensuring it is a valid transition
     bool setState(CLBEvent event);

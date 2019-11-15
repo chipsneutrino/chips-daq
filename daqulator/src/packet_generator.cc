@@ -10,9 +10,6 @@ PacketGenerator::PacketGenerator(std::string config_file, std::string dataFile,
     : fConfig(config_file.c_str()), fFile(dataFile.c_str()), fSock_clb_opt(fIO_service, boost::asio::ip::udp::udp::v4()), fSock_clb_mon(fIO_service, boost::asio::ip::udp::udp::v4()), fTimer(fIO_service, boost::posix_time::millisec(time_slice_duration)), fDelta_ts(time_slice_duration), fHit_dist(hitR * time_slice_duration, (hitR * time_slice_duration) / 10), fTemperature_dist(3000, 500), fHumidity_dist(5000, 500)
 {
 
-    // Print the configuration
-    fConfig.printConfig();
-
     // Set up the CLB optical output
     boost::asio::ip::udp::udp::resolver resolver_clb_opt(fIO_service);
     boost::asio::ip::udp::udp::resolver::query query_clb_opt(boost::asio::ip::udp::udp::v4(), address,

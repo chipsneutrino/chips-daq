@@ -7,46 +7,14 @@
 /// Create a DAQConfig
 DAQConfig::DAQConfig(const char * config) 
 	: file_name_(config)
-	, configured_(false)
 {
-	num_controllers_ = 0;
-	enabled_controllers_ = 0;
-	enabled_channels_ = 0;
-	is_nano_enabled_ = false;
+	num_controllers_ 		= 0;
+	enabled_controllers_ 	= 0;
+	enabled_channels_ 		= 0;
+	is_nano_enabled_ 		= false;
 	configs_.clear();
 	
 	loadConfig(); // Load the configuration from file
-}
- 
-/// Print the summary of the DAQConfig
-void DAQConfig::printConfig() 
-{
-	std::cout << "\n~~~~~~~~~ DAQ Config ~~~~~~~~~" << std::endl;
-	std::cout << "Plan: " 			<< file_name_ 			<<
-				 ", Miners:" 		<< enabled_controllers_ <<
-				 ", Pickaxes:"		<< enabled_channels_ 	<< std::endl;
-	for (int i = 0; i<num_controllers_; i++) {
-		std::cout << "Miner" 		<< i << "(" << configs_[i].enabled_ << ")" << 
-					": ID(" 		<< configs_[i].eid_ <<
-					"), Type(" 		<< configs_[i].type_ <<
-					"), Shaft(" 	<< configs_[i].ipAsString() <<
-		 			"), Pickaxes(" 	<< configs_[i].ch_enabled_.count() <<
-					"), Headlamp(" 	<< configs_[i].nano_enabled_ << ")" << std::endl;
-	}
-	std::cout << std::endl;
-}
-
-/// Load a new configuration from file
-void DAQConfig::loadConfig(const char * config)
-{
-	// Reset some of the variables that we allow to change
-	enabled_controllers_ = 0;
-	enabled_channels_ = 0;
-	is_nano_enabled_ = false;
-
-	file_name_ = config; // Set the new configuration file name
-
-	loadConfig(); // Load the new configuration from file
 }
 
 /// Read the configuration text file specified by file_name_
@@ -65,8 +33,8 @@ void DAQConfig::loadConfig()
 		parseLine(line);
 	}
 
-	configured_ = true; // Set that this DAQConfig has been configured
-	printConfig();	// Print the configuration
+	g_elastic.log(INFO, "DAQ Config -> Plan:{}, Miners:{}, Pickaxes:{}, Headlamps:{}"
+				  , file_name_, enabled_controllers_, enabled_channels_, is_nano_enabled_);
 
 	return;
 }
@@ -75,9 +43,7 @@ void DAQConfig::loadConfig()
 void DAQConfig::parseLine(std::string &line) 
 {
 	ignoreComments(line); // Remove comments from the line 
-
 	removeWhitespace(line); // Remove whitespace from the line
-
 	if (!(isGoodLine(line))) { return; } // Check if we can use this line
 
 	int num_dots, controller_num, channel_num;
@@ -92,26 +58,10 @@ void DAQConfig::parseLine(std::string &line)
 
 		// Get how many controllers there are in this config file
 		if (config.compare("pom_number") == 0) {
-			int temp_num_controllers;
-			if (!(ss >> temp_num_controllers)) { 
+			if (!(ss >> num_controllers_)) { 
 				g_elastic.log(WARNING, "DAQControl error: ({}) should be an int", value);
 			}
-
-			if (!configured_)
-			{
-				num_controllers_ = temp_num_controllers;
-				setupVectors();
-			}
-			else 
-			{
-				if (temp_num_controllers != num_controllers_)
-				{
-					g_elastic.log(ERROR, "DAQConfig reconfig file needs to be of same structure as initial config file!");
-				}
-			}
-
-			// Set the config file name in each of the configurations
-			for (int i=0; i<num_controllers_; i++) configs_[i].config_name_ = file_name_;
+			setupConfigs();
 		}
 
 	} else if (num_dots == 1) {
@@ -164,21 +114,9 @@ void DAQConfig::parseLine(std::string &line)
 		// Add the controllers eID
 		else if (config.compare("eid") == 0) {
 			int temp_eid;
-			if (!(ss >> temp_eid)) { 
+			if (!(ss >> configs_[controller_num].eid_)) { 
 				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value);
 			}	
-
-			if (!configured_)
-			{
-				configs_[controller_num].eid_ = temp_eid;
-			}
-			else
-			{
-				if (temp_eid != configs_[controller_num].eid_)
-				{
-					g_elastic.log(ERROR, "DAQConfig reconfig file needs to have same controllers as initial config file!");
-				}
-			}
 		} 
 
 		// Add the controllers MAC address
@@ -457,9 +395,13 @@ void DAQConfig::extractConfig(std::string line, int &numDots, int &controllerNum
 	return;	
 }
 
-/// Setup all the vectors given the number of controllers in the config file
-void DAQConfig::setupVectors() 
+/// Setup the configs given the number of controllers in the config file
+void DAQConfig::setupConfigs() 
 {
 	ControllerConfig default_config; // Add the default configuration to the vector
-	for (int i=0; i<num_controllers_; i++) configs_.push_back(default_config);
+	for (int i=0; i<num_controllers_; i++)
+	{
+		configs_.push_back(default_config);
+		configs_[i].config_name_ = file_name_;
+	} 
 }

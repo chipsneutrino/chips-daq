@@ -26,11 +26,10 @@ class DAQControl : public CommandHandler {
 public:
     /**
      * Create a DAQControl
-     * This creates a DAQControl, setting up the controllers etc...
-     * Initial work is then added to the IO_service before run() is called to
+     * Initial work is added to the IO_service before run() is called to
      * start to main loop.
      */
-    explicit DAQControl(std::string config_file, bool disable_hv);
+    explicit DAQControl();
 
     /// Destroy a DAQControl
     virtual ~DAQControl() = default;
@@ -50,10 +49,7 @@ public:
     virtual void handleExitCommand() override;
 
     /// Starts the io_service on a thread group and then blocks at join_all()
-    void run();
-
-    /// Posts Initialisation work to all controller io_services
-    void init();  
+    void runAsync();
 
     /// Get the current mode of the overall DAQontrol application
     Control::Status getMode()
@@ -65,15 +61,11 @@ private:
     /// Calls run() on the io_service in a seperate threas
     void ioServiceThread() { io_service_->run(); }
 
-    /// Create CLB and BBB controllers depending on configuration.
-    void setupFromConfig(bool disable_hv);
-
     /// Post work to the io_service to check states and attempt retries
     void stateUpdate();
 
     DAQConfig config_;                                          ///< DAQConfig read from config file
     std::vector<Controller*> controllers_;                      ///< List of controllers
-    int n_threads_;                                             ///< The number of threads to use
     Control::Status current_state_;                             ///< Current state of control operation
     Control::Status target_state_;                              ///< Target state of operation
 

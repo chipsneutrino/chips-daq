@@ -4,19 +4,26 @@
 
 #include "clb_controller.h"
 
-CLBController::CLBController(ControllerConfig config, bool disable_hv)
-    : Controller(config, disable_hv)
+CLBController::CLBController(ControllerConfig config)
+    : Controller(config)
     , processor_(config, io_service_)
 {
     g_elastic.log(INFO, "Creating CLBController({})", config.eid_); 
 }
 
-void CLBController::init()
+void CLBController::reset()
 {
-    g_elastic.log(DEBUG, "CLBController({}) Init...", config_.eid_); 
     working_ = true; // Set this controller to be working
+    resetState();
+    working_ = true;
 
-    if (disable_hv_) g_elastic.log(DEBUG, "Will disable HV on ({})", config_.eid_);
+    return;
+}
+
+void CLBController::configure()
+{
+    g_elastic.log(DEBUG, "CLBController({}) Configure...", config_.eid_); 
+    working_ = true; // Set this controller to be working
     
     if(!testConnection()) { // Test the connection to the CLB
         working_ = false;
@@ -33,34 +40,10 @@ void CLBController::init()
     } else if(!checkIDs()) { // Check the PMT eIDs
         working_ = false;
         return;    
-    }  
-
-    if (disable_hv_) {
-        if(!disableHV()) {
-            working_ = false;
-            return; 
-        }
-    }
-
-    state_ = Control::Ready; // Set the controller state to Ready
-    g_elastic.log(DEBUG, "CLBController({}) Init DONE", config_.eid_); 
-    working_ = false; 
-}
-
-void CLBController::configure()
-{
-    g_elastic.log(DEBUG, "CLBController({}) Configure...", config_.eid_); 
-    working_ = true; // Set this controller to be working
-
-    if (clb_state_ == READY) { // We have already configured this controller
-        state_ = Control::Ready; // Set the controller state to Ready
-        if(!setState(CLBEvent(CLBEvents::QUIT))) { // Set the CLB state to STAND_BY
-            working_ = false;
-            return;    
-        } 
-    }
-
-    if(!setEnabledPMTs()) { // Set which channels are enabled
+    } else if(!disableHV()) {
+        working_ = false;
+        return; 
+    } else if(!setEnabledPMTs()) { // Set which channels are enabled
         working_ = false;
         return;    
     } else if(!setHV()) { // Set and check the PMT voltages
@@ -75,7 +58,7 @@ void CLBController::configure()
     } else if(!setState(CLBEvent(CLBEvents::CONFIGURE))) { // Set the CLB state to READY
         working_ = false;
         return;    
-    }   
+    }  
 
     state_ = Control::Configured; // Set the controller state to Configured
     g_elastic.log(DEBUG, "CLBController({}) Configure DONE", config_.eid_); 
@@ -116,6 +99,32 @@ void CLBController::stopData()
     state_ = Control::Configured; // Set the controller state to Configured
     g_elastic.log(DEBUG, "CLBController({}) Stop Data DONE", config_.eid_);
     working_ = false;
+}
+
+bool CLBController::resetState()
+{
+    if(!getState()) return false; // Update the locally stored CLB state
+
+    if (clb_state_ == IDLE) {
+        return true;
+    } else if (clb_state_ == STAND_BY) {
+        if (!setState(CLBEvent(CLBEvents::RESET)))  return false;
+    } else if (clb_state_ == READY) {
+        if (!setState(CLBEvent(CLBEvents::QUIT)))   return false;
+        if (!setState(CLBEvent(CLBEvents::RESET)))  return false;
+    } else if (clb_state_ == PAUSED) {
+        if (!setState(CLBEvent(CLBEvents::STOP)))   return false;
+        if (!setState(CLBEvent(CLBEvents::RESET)))  return false;
+    } else if (clb_state_ == RUNNING) {
+        if (!setState(CLBEvent(CLBEvents::PAUSE)))  return false;
+        if (!setState(CLBEvent(CLBEvents::STOP)))   return false;
+        if (!setState(CLBEvent(CLBEvents::RESET)))  return false;
+    } else {
+        g_elastic.log(WARNING, "CLB({}), do not know how to reset from this state", config_.eid_);
+        return false;
+    }
+
+    return true;
 }
 
 bool CLBController::testConnection()
@@ -185,32 +194,6 @@ bool CLBController::setInitValues()
     if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
     {
         g_elastic.log(ERROR, "CLB({}), Could not process 'setInitValues'", config_.eid_); 
-        return false;
-    }
-
-    return true;
-}
-
-bool CLBController::resetState()
-{
-    if(!getState()) return false; // Update the locally stored CLB state
-
-    if (clb_state_ == IDLE) {
-        return true;
-    } else if (clb_state_ == STAND_BY) {
-        if (!setState(CLBEvent(CLBEvents::RESET)))  return false;
-    } else if (clb_state_ == READY) {
-        if (!setState(CLBEvent(CLBEvents::QUIT)))   return false;
-        if (!setState(CLBEvent(CLBEvents::RESET)))  return false;
-    } else if (clb_state_ == PAUSED) {
-        if (!setState(CLBEvent(CLBEvents::STOP)))   return false;
-        if (!setState(CLBEvent(CLBEvents::RESET)))  return false;
-    } else if (clb_state_ == RUNNING) {
-        if (!setState(CLBEvent(CLBEvents::PAUSE)))  return false;
-        if (!setState(CLBEvent(CLBEvents::STOP)))   return false;
-        if (!setState(CLBEvent(CLBEvents::RESET)))  return false;
-    } else {
-        g_elastic.log(WARNING, "CLB({}), do not know how to reset from this state", config_.eid_);
         return false;
     }
 
@@ -627,7 +610,7 @@ bool CLBController::enableHV()
 
 bool CLBController::disableHV()
 {
-    g_elastic.log(DEBUG, "CLBController({}) Disabling High Voltage..", config_.eid_);
+    if(config_.hv_enabled_) return true;
 
     char disabled;
     if(disabled = getSysDisabledMask() == -1) return false; // get the current SYS_SYS_DISABLE mask
@@ -642,9 +625,7 @@ bool CLBController::disableHV()
     {
         g_elastic.log(ERROR, "CLB({}), Could not process 'disableHV'", config_.eid_); 
         return false;
-    }   
-
-    g_elastic.log(DEBUG, "CLBController({}) Disabling High Voltage DONE", config_.eid_);
+    }  
 
     return true;
 }

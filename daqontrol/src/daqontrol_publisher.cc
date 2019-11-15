@@ -16,9 +16,7 @@ void DaqontrolPublisher::publishStatus()
 {
     message_type message {};
 
-    if (daq_control_->getMode() == Control::Initialising) {
-        message.Discriminator = DaqontrolStateMessage::Initialising::Discriminator;
-    } else if (daq_control_->getMode() == Control::Ready) {
+    if (daq_control_->getMode() == Control::Ready) {
         message.Discriminator = DaqontrolStateMessage::Ready::Discriminator;
     } else if (daq_control_->getMode() == Control::Configured) {
         message.Discriminator = DaqontrolStateMessage::Configured::Discriminator;

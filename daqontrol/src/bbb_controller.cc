@@ -4,8 +4,8 @@
 
 #include "bbb_controller.h"
 
-BBBController::BBBController(ControllerConfig config, bool disable_hv)
-    : Controller(config, disable_hv)
+BBBController::BBBController(ControllerConfig config)
+    : Controller(config)
 {
     g_elastic.log(INFO, "Creating BBBController({})", config.eid_); 
 }
@@ -16,9 +16,14 @@ BBBController::~BBBController()
     fh_message_destroy(&msg_);    
 }
 
-void BBBController::init()
+void BBBController::reset()
 {
-    g_elastic.log(DEBUG, "BBBController({}) Init...", config_.eid_);  
+    // Empty
+}
+
+void BBBController::configure()
+{
+    g_elastic.log(DEBUG, "BBBController({}) Configure...", config_.eid_);
     working_ = true;
 
     // Connect to the bbb
@@ -38,16 +43,6 @@ void BBBController::init()
 
     //fh_transport_enable_protocol_trace(transport_, stdout);
     //fh_transport_enable_stream_trace(transport_, stdout);
-
-    state_ = Control::Ready; // Set the controller state to Ready
-    g_elastic.log(DEBUG, "BBBController({}) Init DONE", config_.eid_); 
-    working_ = false;
-}
-
-void BBBController::configure()
-{
-    g_elastic.log(DEBUG, "BBBController({}) Configure...", config_.eid_);
-    working_ = true;
 
     // Send a FH_CONFIGURE command to configure the BBB/uDAQs
     fh_message_init(msg_, FH_CTRL_SERVICE, FH_CONFIGURE);

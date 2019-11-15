@@ -23,17 +23,11 @@ int main(int argc, char* argv[])
     SingletonProcess singleton(11111);
     if (!singleton()) throw std::runtime_error("DAQontrol already running!");
 
-    std::string config  = "../data/testConfig.opt";  // Default config file
-    bool disable_hv     = false; // Should we disable the high voltage?
-
     std::string state_bus_url;
     std::string control_bus_url;
 
     boost::program_options::options_description desc("Options");
     desc.add_options()("help,h", "DAQontrol...")
-        ("config,c", boost::program_options::value<std::string>(&config), 
-            "Configuration file (../data/singleConfig.opt)")
-        ("noHV", "Disable the high voltage")
         ("state-bus-url", boost::program_options::value<std::string>(&state_bus_url)->implicit_value("ipc:///tmp/chips_daqontrol.ipc"), "where DAQontrol publishes state messages")
         ("control-bus-url", boost::program_options::value<std::string>(&control_bus_url)->implicit_value("ipc:///tmp/chips_control.ipc"), "where DAQontrol listens for control messages");
 
@@ -46,10 +40,6 @@ int main(int argc, char* argv[])
         {
             std::cout << desc << std::endl;
             return EXIT_SUCCESS;
-        }
-        if (vm.count("noHV"))
-        {
-            disable_hv = true;
         }
         boost::program_options::notify(vm);
     }
@@ -68,7 +58,7 @@ int main(int argc, char* argv[])
 
     {
         // Main entry point.
-        std::shared_ptr<DAQControl> daq_control{ new DAQControl(config, disable_hv) };
+        std::shared_ptr<DAQControl> daq_control{ new DAQControl() };
         std::shared_ptr<DaqontrolPublisher> bus_publisher{ new DaqontrolPublisher(daq_control, state_bus_url) };
 
         std::unique_ptr<SignalReceiver> signal_receiver{ new SignalReceiver };
@@ -79,10 +69,8 @@ int main(int argc, char* argv[])
         cmd_receiver->setHandler(daq_control);
         cmd_receiver->runAsync();
 
-	    daq_control->init(); // Init to test CLB connections etc...
-
         bus_publisher->runAsync();
-        daq_control->run();
+        daq_control->runAsync();
 
         bus_publisher->join();
 	    cmd_receiver->join();
