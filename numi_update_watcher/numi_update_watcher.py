@@ -3,6 +3,7 @@
 import http.client
 import re
 import pprint
+import time
 
 GET_SERVER = 'www-bd.fnal.gov'
 GET_PATH = '/notifyservlet/www'
@@ -111,10 +112,17 @@ def extract_features(data):
     return features
 
 def main():
-    data = request_data()
-    features = extract_features(data)
-    pp = pprint.PrettyPrinter(indent=4)
-    pp.pprint(features)
+    running = True
+    while running:
+        try:
+            data = request_data()
+            features = extract_features(data)
+            pp = pprint.PrettyPrinter(indent=4)
+            pp.pprint(features)
+
+            time.sleep(REFRESH_INTERVAL_SEC)
+        except KeyboardInterrupt:
+            running = False
 
 if __name__ == '__main__':
     main()
