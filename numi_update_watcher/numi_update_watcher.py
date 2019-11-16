@@ -6,6 +6,7 @@ import time
 import logging
 import datetime
 import pytz
+import os
 from elasticsearch6 import Elasticsearch, ElasticsearchException
 
 GET_SERVER = 'www-bd.fnal.gov'
@@ -14,7 +15,7 @@ GET_TIMEOUT_SEC = 2
 DATA_TZ = pytz.timezone("America/Chicago")
 REFRESH_INTERVAL_SEC = 1
 RE_OPTS = re.IGNORECASE
-ELASTIC_SEARCH_URL = 'http://user:secret@localhost:9200/'
+ELASTIC_SEARCH_URL = os.environ['ELASTIC_CLIENT']
 ELASTIC_SEARCH_MSG_INDEX = 'admsg'
 ELASTIC_SEARCH_STATE_INDEX = 'adstate'
 
