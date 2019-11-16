@@ -2,15 +2,17 @@
 
 import http.client
 import re
-import pprint
 import time
 import logging
+import sys
+from elasticsearch import Elasticsearch, ElasticsearchException
 
 GET_SERVER = 'www-bd.fnal.gov'
 GET_PATH = '/notifyservlet/www'
 GET_TIMEOUT_SEC = 2
 REFRESH_INTERVAL_SEC = 1
 RE_OPTS = re.IGNORECASE
+ELASTIC_SEARCH_URL = 'http://user:secret@localhost:9200/'
 
 ###
 
@@ -59,10 +61,9 @@ def request_data():
 
         logging.info('Got response in %.2f s.', toc - tic)
 
-        data = response.read().decode('utf-8')
-        return data
-    except Exception as error:
-        logging.error('HTTP load failed: %s', error)
+        return response.read().decode('utf-8')
+    except HTTPException as error:
+        logging.error('HTTP load failed, %s', error)
         return None
     finally:
         connection.close()
@@ -123,7 +124,10 @@ def extract_features(data):
     return features
 
 def main():
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
+    es = Elasticsearch([ELASTIC_SEARCH_URL])
+
+    logging.info('Will refresh %s every %.2f s. Data will be reported to ElasticSearch.', ('https://%s%s' % (GET_SERVER, GET_PATH)), REFRESH_INTERVAL_SEC)
 
     running = True
     while running:
@@ -137,7 +141,10 @@ def main():
                 if len(none_keys) > 0:
                     logging.warning('Failed to extract some features %s', none_keys)
 
-                # TODO: report features to ElasticSearch
+                try:
+                    es.index(index='adnotify', body=features)
+                except ElasticsearchException as error:
+                    logging.error('ES index failed, %s', error)
             else:
                 logging.warning('No data received. Is the other side online?')
 
