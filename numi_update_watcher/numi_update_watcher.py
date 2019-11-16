@@ -13,6 +13,8 @@ GET_TIMEOUT_SEC = 2
 REFRESH_INTERVAL_SEC = 1
 RE_OPTS = re.IGNORECASE
 ELASTIC_SEARCH_URL = 'http://user:secret@localhost:9200/'
+ELASTIC_SEARCH_MSG_INDEX = 'admsg'
+ELASTIC_SEARCH_STATE_INDEX = 'adstate'
 
 ###
 
@@ -48,9 +50,9 @@ RE_MESSAGE = re.compile('<p><pre>([^<]*)</pre>', RE_OPTS)
 ###
 
 def request_data():
+    connection = http.client.HTTPSConnection(GET_SERVER, timeout=GET_TIMEOUT_SEC)
+
     try:
-        connection = http.client.HTTPSConnection(GET_SERVER, timeout=GET_TIMEOUT_SEC)
-        
         tic = time.time()
         connection.request('GET', GET_PATH)
         response = connection.getresponse()
@@ -62,7 +64,7 @@ def request_data():
         logging.info('Got response in %.2f s.', toc - tic)
 
         return response.read().decode('utf-8')
-    except HTTPException as error:
+    except http.client.HTTPException as error:
         logging.error('HTTP load failed, %s', error)
         return None
     finally:
@@ -91,7 +93,7 @@ def extract_features(data):
 
     features = {}
 
-    features['dateGenerated'] = match_single(data, RE_DATE_GENERATED)
+    features['timestamp'] = match_single(data, RE_DATE_GENERATED)
 
     features['complexState'], features['complexLastDateChanged'] = match_single(data, RE_COMPLEX_STATE, default=(None, None))
     features['mainInjectorState'], features['mainInjectorLastDateChanged'] = match_single(data, RE_MAIN_INJECTOR_STATE, default=(None, None))
@@ -123,10 +125,25 @@ def extract_features(data):
 
     return features
 
+def is_msg_new(current, prev):
+    sensitive_keys = ['message', 'importantMessage']
+    for key in sensitive_keys:
+        if key not in current:
+            return True
+        if key not in prev:
+            return True
+    
+    for key in sensitive_keys:
+        if current[key].lower() != prev[key].lower():
+            return True
+
+    return False
+
 def main():
     logging.basicConfig(level=logging.INFO)
     es = Elasticsearch([ELASTIC_SEARCH_URL])
 
+    last_admsg = {}
     logging.info('Will refresh %s every %.2f s. Data will be reported to ElasticSearch.', ('https://%s%s' % (GET_SERVER, GET_PATH)), REFRESH_INTERVAL_SEC)
 
     running = True
@@ -141,8 +158,20 @@ def main():
                 if len(none_keys) > 0:
                     logging.warning('Failed to extract some features %s', none_keys)
 
+                adstate = {key: features[key] for key in features if key not in ['message', 'importantMessage']}
+                admsg = {key: features[key] for key in features if key in ['timestamp', 'message', 'importantMessage']}
+
+                es_body = [{'doc': adstate, 'index': ELASTIC_SEARCH_STATE_INDEX}]
+                if is_msg_new(admsg, last_admsg):
+                    es_body.append({'doc': admsg, 'index': ELASTIC_SEARCH_MSG_INDEX})
+                last_admsg = admsg
+
                 try:
-                    es.index(index='adnotify', body=features)
+                    tic = time.time()
+                    es.bulk(body=es_body) # TODO: this bit needs to be tested against real ES instance
+                    toc = time.time()
+
+                    logging.info('ES indexed bulk request of size %d in %.2f s.', len(es_body), toc - tic)
                 except ElasticsearchException as error:
                     logging.error('ES index failed, %s', error)
             else:
@@ -150,7 +179,10 @@ def main():
 
             time.sleep(REFRESH_INTERVAL_SEC)
         except KeyboardInterrupt:
+            logging.warning('Received interrupt, will terminate.')
             running = False
+
+    logging.info('Done.')
 
 if __name__ == '__main__':
     main()
