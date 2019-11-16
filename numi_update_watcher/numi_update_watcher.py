@@ -4,12 +4,14 @@ import http.client
 import re
 import time
 import logging
-import sys
-from elasticsearch import Elasticsearch, ElasticsearchException
+import datetime
+import pytz
+from elasticsearch6 import Elasticsearch, ElasticsearchException
 
 GET_SERVER = 'www-bd.fnal.gov'
 GET_PATH = '/notifyservlet/www'
 GET_TIMEOUT_SEC = 2
+DATA_TZ = pytz.timezone("America/Chicago")
 REFRESH_INTERVAL_SEC = 1
 RE_OPTS = re.IGNORECASE
 ELASTIC_SEARCH_URL = 'http://user:secret@localhost:9200/'
@@ -91,9 +93,15 @@ def extract_features(data):
         num, unit = pair
         return apply_if_some(num, float_or_none), unit
 
+    def datetime_or_none(dt_str):
+        try:
+            return DATA_TZ.localize(datetime.datetime.strptime(dt_str, '%b %d %Y-%H:%M:%S'))
+        except ValueError:
+            return None
+
     features = {}
 
-    features['timestamp'] = match_single(data, RE_DATE_GENERATED)
+    features['timestamp'] = datetime_or_none(match_single(data, RE_DATE_GENERATED))
 
     features['complexState'], features['complexLastDateChanged'] = match_single(data, RE_COMPLEX_STATE, default=(None, None))
     features['mainInjectorState'], features['mainInjectorLastDateChanged'] = match_single(data, RE_MAIN_INJECTOR_STATE, default=(None, None))
@@ -161,14 +169,14 @@ def main():
                 adstate = {key: features[key] for key in features if key not in ['message', 'importantMessage']}
                 admsg = {key: features[key] for key in features if key in ['timestamp', 'message', 'importantMessage']}
 
-                es_body = [{'doc': adstate, 'index': ELASTIC_SEARCH_STATE_INDEX}]
+                es_body = [{'index': {'_index': ELASTIC_SEARCH_STATE_INDEX}}, adstate]
                 if is_msg_new(admsg, last_admsg):
-                    es_body.append({'doc': admsg, 'index': ELASTIC_SEARCH_MSG_INDEX})
+                    es_body += [{'index': {'_index': ELASTIC_SEARCH_MSG_INDEX}}, admsg]
                 last_admsg = admsg
 
                 try:
                     tic = time.time()
-                    es.bulk(body=es_body) # TODO: this bit needs to be tested against real ES instance
+                    es.bulk(body=es_body)
                     toc = time.time()
 
                     logging.info('ES indexed bulk request of size %d in %.2f s.', len(es_body), toc - tic)
