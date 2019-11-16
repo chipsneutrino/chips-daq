@@ -4,9 +4,11 @@ import http.client
 import re
 import pprint
 import time
+import logging
 
 GET_SERVER = 'www-bd.fnal.gov'
 GET_PATH = '/notifyservlet/www'
+GET_TIMEOUT_SEC = 2
 REFRESH_INTERVAL_SEC = 1
 RE_OPTS = re.IGNORECASE
 
@@ -44,17 +46,26 @@ RE_MESSAGE = re.compile('<p><pre>([^<]*)</pre>', RE_OPTS)
 ###
 
 def request_data():
-    connection = http.client.HTTPSConnection(GET_SERVER)
-    connection.request('GET', GET_PATH)
-    response = connection.getresponse()
+    try:
+        connection = http.client.HTTPSConnection(GET_SERVER, timeout=GET_TIMEOUT_SEC)
+        
+        tic = time.time()
+        connection.request('GET', GET_PATH)
+        response = connection.getresponse()
+        toc = time.time()
 
-    if response.status != 200:
+        if response.status != 200:
+            raise Exception('Unexpected response code: %d' % response.status)
+
+        logging.info('Got response in %.2f s.', toc - tic)
+
+        data = response.read().decode('utf-8')
+        return data
+    except Exception as error:
+        logging.error('HTTP load failed: %s', error)
+        return None
+    finally:
         connection.close()
-        raise Exception('Unexpected response code: %d' % response.status)
-    
-    data = response.read().decode('utf-8')
-    connection.close()
-    return data
 
 def extract_features(data):
     def match_single(text, regexp, default=None):
@@ -112,13 +123,23 @@ def extract_features(data):
     return features
 
 def main():
+    logging.basicConfig(level=logging.DEBUG)
+
     running = True
     while running:
         try:
             data = request_data()
-            features = extract_features(data)
-            pp = pprint.PrettyPrinter(indent=4)
-            pp.pprint(features)
+
+            if data is not None:
+                features = extract_features(data)
+
+                none_keys = [key for key in features if features[key] is None]
+                if len(none_keys) > 0:
+                    logging.warning('Failed to extract some features %s', none_keys)
+
+                # TODO: report features to ElasticSearch
+            else:
+                logging.warning('No data received. Is the other side online?')
 
             time.sleep(REFRESH_INTERVAL_SEC)
         except KeyboardInterrupt:
