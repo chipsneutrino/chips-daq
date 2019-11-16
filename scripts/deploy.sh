@@ -39,6 +39,10 @@ cp_artifacts() {
 	cp -P ${SRC_PATH}/lib/nng/*.so* "${BPATH}/lib"
 }
 
+cp_scripts() {
+	cp -r ./numi_update_watcher/numi_update_watcher.py "${BPATH}/bin"
+}
+
 create_config() {
 	echo "export BPATH=\"${TGTPATH}/chips-dist\"" >${BPATH}/config.sh
 }
@@ -84,6 +88,7 @@ cp_tunnel
 cp_run
 cp_units
 cp_artifacts
+cp_scripts
 create_config
 
 stop
