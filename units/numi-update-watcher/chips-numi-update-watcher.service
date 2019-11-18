@@ -1,0 +1,11 @@
+[Unit]
+Description=Watcher of Fermilab status updates
+
+[Service]
+ExecStart=/opt/chips-dist/run/run_with_env.sh ../bin/numi_update_watcher.py
+WorkingDirectory=/opt/chips-dist/run
+Restart=always
+
+[Install]
+WantedBy=network.target
+

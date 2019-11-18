@@ -7,7 +7,9 @@ export BPATH="/tmp/chips-dist.$$/chips-dist"
 export TGTPATH="/opt"
 export TGTUSR="root"
 export RSYNC="/usr/bin/rsync"
-export MACHINES="chipsshore01 chipsshore04"
+export DATA_MACHINE="chipsshore01"
+export MON_MACHINE="chipsshore04"
+export MACHINES="${DATA_MACHINE} ${MON_MACHINE}"
 
 cp_tunnel() {
 	cp -r ./tunnel "${BPATH}"
@@ -37,14 +39,18 @@ cp_artifacts() {
 	cp -P ${SRC_PATH}/lib/nng/*.so* "${BPATH}/lib"
 }
 
+cp_scripts() {
+	cp -r ./numi_update_watcher/numi_update_watcher.py "${BPATH}/bin"
+}
+
 create_config() {
 	echo "export BPATH=\"${TGTPATH}/chips-dist\"" >${BPATH}/config.sh
 }
 
 stop() {
 	echo "Stopping DAQ services..."
-    ssh root@chipsshore04 "systemctl stop chips-fsm; systemctl stop chips-daqontrol; systemctl stop chips-daqsitter;"
-    ssh root@chipsshore01 "systemctl stop chips-daqonite; systemctl stop chips-tunnel"	
+    ssh root@${DATA_MACHINE} "systemctl stop chips-daqonite; systemctl stop chips-tunnel"
+    ssh root@${MON_MACHINE} "systemctl stop chips-numi-update-watcher; systemctl stop chips-fsm; systemctl stop chips-daqontrol; systemctl stop chips-daqsitter;"
 }
 
 distribute() {
@@ -62,8 +68,8 @@ distribute() {
 
 start() {
 	echo "Starting DAQ services..."
-    ssh root@chipsshore04 "systemctl start chips-fsm; systemctl start chips-daqontrol; systemctl start chips-daqsitter;"
-    ssh root@chipsshore01 "systemctl start chips-daqonite; systemctl start chips-tunnel"	
+    ssh root@${MON_MACHINE} "systemctl start chips-numi-update-watcher; systemctl start chips-fsm; systemctl start chips-daqontrol; systemctl start chips-daqsitter;"
+    ssh root@${DATA_MACHINE} "systemctl start chips-daqonite; systemctl start chips-tunnel"	
 }
 
 if [ ! -d .git ]; then
@@ -82,6 +88,7 @@ cp_tunnel
 cp_run
 cp_units
 cp_artifacts
+cp_scripts
 create_config
 
 stop
