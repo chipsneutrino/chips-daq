@@ -339,7 +339,6 @@ bool CLBController::checkIDs()
         long eid = mr.readU32();
         if (eid != config_.ch_id_[ipmt] && config_.ch_enabled_[ipmt])
         {
-            g_elastic.log(ERROR, "Non matching eid on CLB({}) for PMT {}, actual:{} vs config:{}!", config_.eid_, ipmt, eid, config_.ch_id_[ipmt]);  
             errors.push_back(std::make_tuple(ipmt, config_.ch_id_[ipmt], eid));         
         }
     }
@@ -353,6 +352,8 @@ bool CLBController::checkIDs()
         file_name += std::to_string(config_.eid_);
         file_name += "_mismatch_errors.dat";
 
+        g_elastic.log(ERROR, "{} non matching eid's on CLB({}) see file {} for details!", errors.size(), config_.eid_, file_name);  
+
         std::ofstream error_file;
         error_file.open(file_name);
         error_file << "CLB,Channel,Config,Actual\n";
@@ -360,7 +361,6 @@ bool CLBController::checkIDs()
         // Disable the mismatching channels and write to file
         for (int e=0; e<errors.size(); e++) 
         {
-            g_elastic.log(ERROR, "Will not enabled channel ({}) on CLB({})!", std::get<0>(errors[e]), config_.eid_);
             config_.ch_enabled_[std::get<0>(errors[e])] = 0;
             error_file << config_.eid_ << "," << std::get<0>(errors[e]) << "," << std::get<1>(errors[e]) << "," << std::get<2>(errors[e]) << "\n";
         }

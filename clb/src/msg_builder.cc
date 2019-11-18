@@ -72,7 +72,7 @@ bool MsgBuilder::fromBytes(std::vector<unsigned char> bb)
     // First check the received message is big enough	
 	if (bb.size() < (SRP_SIZE + HDR_SIZE + MSG_HDR_SIZE)) 
 	{
-		g_elastic.log(WARNING, "MsgBuilder: Received data too small, got {}", bb.size());
+		//g_elastic.log(WARNING, "MsgBuilder: Received data too small, got {}", bb.size());
 		return false;
 	}
 

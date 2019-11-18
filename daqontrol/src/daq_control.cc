@@ -46,7 +46,11 @@ void DAQControl::handleConfigCommand(std::string config_file)
     // Configure the controllers
     for (auto c : controllers_) 
     {
-        if (c->config_.enabled_) c->postConfigure();
+        if (c->config_.enabled_) 
+        {
+            sleep(2);
+            c->postConfigure();
+        }
     }   
 
     target_state_ = Control::Configured;
