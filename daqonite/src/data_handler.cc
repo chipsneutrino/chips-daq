@@ -49,9 +49,13 @@ void DataHandler::startRun(RunType which)
     {
         batch_scheduler_ = static_cast<const std::shared_ptr<SpillScheduler>&>(spill_scheduler_);
     }
-    else 
+    else if ((int)run_type_ == 2)
     {
         batch_scheduler_ = static_cast<const std::shared_ptr<RegularScheduler>&>(regular_scheduler_);
+    }
+    else if ((int)run_type_ == 3)
+    {
+        batch_scheduler_ = static_cast<const std::shared_ptr<InfiniteScheduler>&>(infinite_scheduler_);
     }
 
     // Start output thread.
