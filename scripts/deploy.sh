@@ -46,11 +46,8 @@ create_config() {
 stop() {
 	echo "Stopping DAQ services..."
 
-	DATA_STOP_CMD=$(awk -v 'RS= ' '{ print "systemctl stop chips-" $0 ";" }' <<<"${DATA_SERVICES}")
-    ssh ${TGTUSR}@${DATA_MACHINE} "${DATA_STOP_CMD}"
-
-	MON_STOP_CMD=$(awk -v 'RS= ' '{ print "systemctl stop chips-" $0 ";" }' <<<"${MON_SERVICES}")
-    ssh ${TGTUSR}@${MON_MACHINE} "${MON_STOP_CMD}"
+    ssh ${TGTUSR}@${DATA_MACHINE} `awk -v 'RS= ' '{ print "systemctl stop chips-" $0 ";" }' <<< "${DATA_SERVICES}"`
+    ssh ${TGTUSR}@${MON_MACHINE} `awk -v 'RS= ' '{ print "systemctl stop chips-" $0 ";" }' <<< "${MON_SERVICES}"`
 }
 
 distribute() {
@@ -69,11 +66,8 @@ distribute() {
 start() {
 	echo "Starting DAQ services..."
 
-	DATA_START_CMD=$(awk -v 'RS= ' '{ print "systemctl start chips-" $0 ";" }' <<<"${DATA_SERVICES}")
-    ssh ${TGTUSR}@${DATA_MACHINE} "${DATA_START_CMD}"
-
-	MON_START_CMD=$(awk -v 'RS= ' '{ print "systemctl start chips-" $0 ";" }' <<<"${MON_SERVICES}")
-    ssh ${TGTUSR}@${MON_MACHINE} "${MON_START_CMD}"
+	ssh ${TGTUSR}@${DATA_MACHINE} `awk -v 'RS= ' '{ print "systemctl start chips-" $0 ";" }' <<< "${DATA_SERVICES}"`
+    ssh ${TGTUSR}@${MON_MACHINE} `awk -v 'RS= ' '{ print "systemctl start chips-" $0 ";" }' <<< "${MON_SERVICES}"`
 }
 
 if [ ! -d .git ]; then
