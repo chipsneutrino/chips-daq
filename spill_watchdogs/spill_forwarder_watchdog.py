@@ -7,8 +7,22 @@ import threading
 import signal
 from xmlrpc.server import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
 
+kNuMI           = 0  # MIBS $74 proton extraction into NuMI
+kBNB            = 1  # $1B paratisitic beam inhibit
+kNuMItclk       = 2  # tevatron clock, either $A9 or $AD depending on xml parameter
+kBNBtclk        = 3  # booster extraction, $1F (possibly sequence with $1D depending on configuration
+kAccelOneHztclk = 4  # $8F 1 Hz clock
+kFake           = 5  # assigned if there is a parity error
+kTestConnection = 6
+kSuperCycle     = 7  # $00, Super cycle and master clock reset
+kNuMISampleTrig = 8  # $A4,NuMI cycle sample trigger, reference for $A5
+kNuMIReset      = 9  # $A5, NuMI reset for beam
+kTBSpill        = 10 # $39, start of testbeam slow extraction
+kTBTrig         = 11 # testbeam trigger card signal
+kNSpillType     = 12 #  needs to be at the end, is used for range checking
+
 # TODO: configure from environment
-FORWARDER_PROC_NAME = ['NssSpillForwarder', '-c NovaSpillServer/config/SpillForwarderConfig-CHIPS.xml', '-D 0', '-M 0']
+FORWARDER_PROC_NAME = ['NssSpillForwarder', '-cNovaSpillServer/config/NssSpillForwarderConfig-CHIPS.xml', '-D0', '-M0']
 FORWARDER_HOLDOFF_SEC = 1
 
 LOOPBACK_HOSTNAME = 'localhost'
@@ -17,8 +31,10 @@ LOOPBACK_PORT = 17898
 SEC2NOVA = 64e6 # 1s contains 64M NOvA ticks
 FSM_REPORTER_INTERVAL = 1
 MONITORED_SIGNALS = {
-    0: 2 * SEC2NOVA,
-    3: 1 * SEC2NOVA
+    kNuMI: 2 * SEC2NOVA,
+    kNuMIReset: 2 * SEC2NOVA,
+    kAccelOneHztclk: 1.5 * SEC2NOVA,
+    kSuperCycle: 70 * SEC2NOVA
 }
 
 ###
@@ -45,13 +61,19 @@ def signal_handler(sig_number, frame):
         sys.exit(0)
 
 def run_forwarder():
-    running_forwarder = True
+    global g_stopping
+    forwarder_returncode = None
 
-    while running_forwarder:
-        forwarder = subprocess.run(FORWARDER_PROC_NAME)
+    while not g_stopping:
+        print('Starting child forwarder: %s' % ' '.join(FORWARDER_PROC_NAME))
+        forwarder_returncode = subprocess.call(FORWARDER_PROC_NAME)
+        print('Child forwarder exited with code %d' % forwarder_returncode)
+
         # TODO: react on `forwarder.returncode`
 
-        time.sleep(FORWARDER_HOLDOFF_SEC)
+        if not g_stopping:
+            print('Restarting child forwarder in %d s' % FORWARDER_HOLDOFF_SEC)
+            time.sleep(FORWARDER_HOLDOFF_SEC)
 
 class LoopbackDispatcher():
     def _dispatch(self, method, params):
@@ -77,12 +99,12 @@ def run_loopback_receiver():
     global g_stopping
 
     print('Loopback receiver starting at %s:%d' % (LOOPBACK_HOSTNAME, LOOPBACK_PORT))
-    with SimpleXMLRPCServer((LOOPBACK_HOSTNAME, LOOPBACK_PORT), logRequests=False) as server:
-        server.timeout = 0.2
-        server.register_instance(LoopbackDispatcher())
-        
-        while not g_stopping:
-            server.handle_request()
+    server = SimpleXMLRPCServer((LOOPBACK_HOSTNAME, LOOPBACK_PORT), logRequests=False)
+    server.timeout = 0.2
+    server.register_instance(LoopbackDispatcher())
+    
+    while not g_stopping:
+        server.handle_request()
 
     print('Loopback receiver done.')
 
@@ -139,7 +161,7 @@ def run_fsm_reporter():
 
 def main():
     threads = []
-    #threads.append(threading.Thread(target=run_forwarder))
+    threads.append(threading.Thread(target=run_forwarder))
     threads.append(threading.Thread(target=run_loopback_receiver))
     threads.append(threading.Thread(target=run_fsm_reporter))
 
