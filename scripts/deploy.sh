@@ -2,13 +2,9 @@
 
 set -e
 
-export BPATH="/tmp/chips-dist.$$/chips-dist"
+source scripts/deploy_config.sh
 
-export TGTPATH="/opt"
-export TGTUSR="root"
-export RSYNC="/usr/bin/rsync"
-export DATA_MACHINE="chipsshore01"
-export MON_MACHINE="chipsshore04"
+export BPATH="/tmp/chips-dist.$$/chips-dist"
 export MACHINES="${DATA_MACHINE} ${MON_MACHINE}"
 
 cp_tunnel() {
@@ -49,8 +45,12 @@ create_config() {
 
 stop() {
 	echo "Stopping DAQ services..."
-    ssh root@${DATA_MACHINE} "systemctl stop chips-daqonite; systemctl stop chips-tunnel"
-    ssh root@${MON_MACHINE} "systemctl stop chips-numi-update-watcher; systemctl stop chips-fsm; systemctl stop chips-daqontrol; systemctl stop chips-daqsitter;"
+
+	DATA_STOP_CMD=$(awk -v 'RS= ' '{ print "systemctl stop chips-" $0 ";" }' <<<"${DATA_SERVICES}")
+    ssh ${TGTUSR}@${DATA_MACHINE} "${DATA_STOP_CMD}"
+
+	MON_STOP_CMD=$(awk -v 'RS= ' '{ print "systemctl stop chips-" $0 ";" }' <<<"${MON_SERVICES}")
+    ssh ${TGTUSR}@${MON_MACHINE} "${MON_STOP_CMD}"
 }
 
 distribute() {
@@ -68,8 +68,12 @@ distribute() {
 
 start() {
 	echo "Starting DAQ services..."
-    ssh root@${MON_MACHINE} "systemctl start chips-numi-update-watcher; systemctl start chips-fsm; systemctl start chips-daqontrol; systemctl start chips-daqsitter;"
-    ssh root@${DATA_MACHINE} "systemctl start chips-daqonite; systemctl start chips-tunnel"	
+
+	DATA_START_CMD=$(awk -v 'RS= ' '{ print "systemctl start chips-" $0 ";" }' <<<"${DATA_SERVICES}")
+    ssh ${TGTUSR}@${DATA_MACHINE} "${DATA_START_CMD}"
+
+	MON_START_CMD=$(awk -v 'RS= ' '{ print "systemctl start chips-" $0 ";" }' <<<"${MON_SERVICES}")
+    ssh ${TGTUSR}@${MON_MACHINE} "${MON_START_CMD}"
 }
 
 if [ ! -d .git ]; then
