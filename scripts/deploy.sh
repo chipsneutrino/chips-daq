@@ -40,7 +40,8 @@ cp_scripts() {
 }
 
 create_config() {
-	echo "export BPATH=\"${TGTPATH}/chips-dist\"" >${BPATH}/config.sh
+	cp ./scripts/dist_config.sh ${BPATH}/config.sh
+	echo "export BPATH=\"${TGTPATH}/chips-dist\"" >>${BPATH}/config.sh
 }
 
 stop() {
