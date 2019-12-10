@@ -1,7 +1,7 @@
 # Where to deploy
 export TGTPATH="/opt"
 
-# User used to deploy
+# User used to deploy, must be the same on all machines, also must have passwordless login
 export TGTUSR="root"
 
 # Path to rsync (or alternative with similar interface)
