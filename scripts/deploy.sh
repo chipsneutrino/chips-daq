@@ -46,9 +46,8 @@ create_config() {
 	echo "export BPATH=\"${TGTPATH}/chips-dist\"" >>${BPATH}/config.sh
 }
 
-stop() {
+srv_stop() {
 	echo "Stopping DAQ services..."
-
     ssh ${TGTUSR}@${DATA_MACHINE} `awk -v 'RS= ' '{ print "systemctl stop chips-" $0 ";" }' <<< "${DATA_SERVICES}"`
     ssh ${TGTUSR}@${MON_MACHINE} `awk -v 'RS= ' '{ print "systemctl stop chips-" $0 ";" }' <<< "${MON_SERVICES}"`
 }
@@ -66,9 +65,8 @@ distribute() {
 	done
 }
 
-start() {
+srv_start() {
 	echo "Starting DAQ services..."
-
 	ssh ${TGTUSR}@${DATA_MACHINE} `awk -v 'RS= ' '{ print "systemctl start chips-" $0 ";" }' <<< "${DATA_SERVICES}"`
     ssh ${TGTUSR}@${MON_MACHINE} `awk -v 'RS= ' '{ print "systemctl start chips-" $0 ";" }' <<< "${MON_SERVICES}"`
 }
@@ -92,8 +90,8 @@ cp_artifacts
 cp_scripts
 create_config
 
-stop
+srv_stop
 distribute
-start
+srv_start
 
 rm -rf "${BPATH}"
