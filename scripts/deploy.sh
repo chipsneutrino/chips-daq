@@ -41,6 +41,8 @@ cp_scripts() {
 
 create_config() {
 	cp ./scripts/dist_config.sh ${BPATH}/config.sh
+
+	echo "# Base path of the deployment package" >>${BPATH}/config.sh
 	echo "export BPATH=\"${TGTPATH}/chips-dist\"" >>${BPATH}/config.sh
 }
 
