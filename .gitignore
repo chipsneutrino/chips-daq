@@ -16,3 +16,4 @@ daqonite/src/monitoring_gui_dict.h
 env
 scripts/run_with_env.sh
 *.keytab
+scripts/dist_config.sh
