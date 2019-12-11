@@ -79,6 +79,8 @@ if [ ! -d build ]; then
 	exit 2
 fi
 
+echo "Will deploy to machines: ${MACHINES}"
+
 mkdir -p "${BPATH}"
 
 cp_tunnel
@@ -92,3 +94,5 @@ distribute
 ./scripts/restart.sh start
 
 rm -rf "${BPATH}"
+
+echo "Deployment done."
