@@ -28,4 +28,4 @@ export MON_MACHINE="chipsshore04"
 export DATA_SERVICES="daqonite spill-tunnel"
 
 # Which services run on the monitoring machine
-export MON_SERVICES="numi-update-watcher fsm daqontrol daqsitter"
+export MON_SERVICES="numi-update-watcher fsm daqontrol daqsitter monitoring-tunnel"
