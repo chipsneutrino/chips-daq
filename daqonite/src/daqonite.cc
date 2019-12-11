@@ -13,10 +13,11 @@
 #include <memory>
 #include <string>
 
+#include "daq_handler.h"
 #include "daqonite_publisher.h"
 #include "util/command_receiver.h"
-#include "daq_handler.h"
 #include "util/signal_receiver.h"
+#include <util/chips_config.h>
 #include <util/elastic_interface.h>
 #include <util/singleton_process.h>
 
@@ -29,8 +30,8 @@ namespace settings {
 static bool collect_clb_data = true;
 static bool collect_bbb_data = false;
 
-static std::string state_bus_url{};
-static std::string control_bus_url{};
+static std::string state_bus_url {};
+static std::string control_bus_url {};
 }
 
 void readSettings(int argc, char* argv[])
@@ -38,12 +39,10 @@ void readSettings(int argc, char* argv[])
     namespace opts = boost::program_options;
 
     // Argument handling
-    opts::options_description desc{ "Options" };
-    desc.add_options()("help,h", "DAQonite")
-                      ("state-bus-url", opts::value(&settings::state_bus_url)->implicit_value("ipc:///tmp/chips_daqonite.ipc"), "where DAQonite publishes state messages")
-                      ("control-bus-url", opts::value(&settings::control_bus_url)->implicit_value("ipc:///tmp/chips_control.ipc"), "where DAQonite listens for control messages");
+    opts::options_description desc { "Options" };
+    desc.add_options()("help,h", "DAQonite");
 
-    opts::variables_map vm{};
+    opts::variables_map vm {};
     opts::store(opts::command_line_parser(argc, argv).options(desc).run(), vm);
 
     if (vm.count("help")) {
@@ -52,13 +51,17 @@ void readSettings(int argc, char* argv[])
     }
 
     opts::notify(vm);
+
+    settings::state_bus_url = Config::getString("DAQONITE_BUS");
+    settings::control_bus_url = Config::getString("CONTROL_BUS");
 }
 
 int main(int argc, char* argv[])
 {
     // Check that no other DAQonite instances are running
     SingletonProcess singleton(11112);
-    if (!singleton()) throw std::runtime_error("DAQonite already running!");
+    if (!singleton())
+        throw std::runtime_error("DAQonite already running!");
 
     // Read configuration.
     readSettings(argc, argv);
@@ -69,14 +72,14 @@ int main(int argc, char* argv[])
 
     {
         // Main entry point.
-        std::shared_ptr<DAQHandler> daq_handler{ new DAQHandler(settings::collect_clb_data, settings::collect_bbb_data) };
-        std::shared_ptr<DaqonitePublisher> bus_publisher{ new DaqonitePublisher(daq_handler, settings::state_bus_url) };
+        std::shared_ptr<DAQHandler> daq_handler { new DAQHandler(settings::collect_clb_data, settings::collect_bbb_data) };
+        std::shared_ptr<DaqonitePublisher> bus_publisher { new DaqonitePublisher(daq_handler, settings::state_bus_url) };
 
-        std::unique_ptr<SignalReceiver> signal_receiver{ new SignalReceiver };
+        std::unique_ptr<SignalReceiver> signal_receiver { new SignalReceiver };
         signal_receiver->setHandler(daq_handler);
         signal_receiver->runAsync();
 
-        std::unique_ptr<CommandReceiver> cmd_receiver{ new CommandReceiver(settings::control_bus_url) };
+        std::unique_ptr<CommandReceiver> cmd_receiver { new CommandReceiver(settings::control_bus_url) };
         cmd_receiver->setHandler(daq_handler);
         cmd_receiver->runAsync();
 
