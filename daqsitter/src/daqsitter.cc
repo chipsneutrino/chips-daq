@@ -12,6 +12,7 @@
 #include "daqsitter_publisher.h"
 #include "util/signal_receiver.h"
 #include <util/elastic_interface.h>
+#include <util/chips_config.h>
 #include "util/singleton_process.h"
 
 namespace exit_code {
@@ -46,9 +47,7 @@ int main(int argc, char *argv[])
         ("sample", boost::program_options::value<float>(&sample_frac), "Fraction of packets to use (0.01)")
         ("logs", boost::program_options::value<bool>(&print_logs), "Print logs to stdout (true)")
         ("debug", boost::program_options::value<bool>(&print_debug), "Print ElasticInterface debug messages (false)")
-        ("threads", boost::program_options::value<int>(&index_threads), "Number of ElasticInterface indexing threads (100)")
-        ("state-bus-url", boost::program_options::value<std::string>(&state_bus_url)->implicit_value("ipc:///tmp/chips_daqsitter.ipc"), "where DAQsitter publishes state messages")
-        ("control-bus-url", boost::program_options::value<std::string>(&control_bus_url)->implicit_value("ipc:///tmp/chips_control.ipc"), "where DAQsitter listens for control messages");
+        ("threads", boost::program_options::value<int>(&index_threads), "Number of ElasticInterface indexing threads (100)");
 
     try
     {
@@ -78,6 +77,9 @@ int main(int argc, char *argv[])
     {
         throw std::runtime_error("DAQsitter - runtime Argument Error");
     }
+
+    state_bus_url = Config::getString("DAQSITTER_BUS");
+    control_bus_url = Config::getString("CONTROL_BUS");
 
     g_elastic.init(print_logs, print_debug, index_threads); // Initialise the ElasticInterface
 

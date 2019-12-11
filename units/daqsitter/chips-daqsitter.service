@@ -2,7 +2,7 @@
 Description=DAQ Monitoring Service
 
 [Service]
-ExecStart=/chips/dist/bin/run_with_env.sh daqsitter --elastic --state-bus-url=tcp://:7032 --control-bus-url=tcp://chipsshore04:7020
+ExecStart=/chips/dist/bin/run_with_env.sh daqsitter --elastic
 WorkingDirectory=/chips/run
 Restart=always
 Nice=3
