@@ -34,7 +34,7 @@ public:
      * Initial work is then added to the IO_service before run() is called to
      * start to main loop.
      */
-    explicit DAQHandler(bool collect_clb_data, bool collect_bbb_data);
+    explicit DAQHandler(bool collect_clb_data, bool collect_bbb_data, const std::string& data_path);
 
     /// Destroy a DAQHandler
     virtual ~DAQHandler() = default;

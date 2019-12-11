@@ -8,11 +8,10 @@
 
 #include <util/elastic_interface.h>
 
-#include "daqonite.h"
 #include "data_handler.h"
 #include "run_file.h"
 
-DataHandler::DataHandler()
+DataHandler::DataHandler(const std::string& data_path)
     : output_thread_ {}
     , scheduling_thread_ {}
     , output_running_ { false }
@@ -30,6 +29,7 @@ DataHandler::DataHandler()
     , current_schedule_mtx_ {}
     , n_slots_ { 0 }
     , n_batches_ { 0 }
+    , data_path_ { data_path }
 {
 }
 
@@ -136,7 +136,7 @@ void DataHandler::getRunNumAndName()
         }
     }
 
-    file_name_ = fmt::format("{}/type{}_run{:05d}.root", get_settings()::data_path, run_type_no, run_num_);
+    file_name_ = fmt::format("{}/type{}_run{:05d}.root", data_path_, run_type_no, run_num_);
 }
 
 std::size_t DataHandler::insertSort(CLBEventQueue& queue) noexcept

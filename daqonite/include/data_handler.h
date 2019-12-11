@@ -34,7 +34,7 @@
 class DataHandler {
 public:
     /// Create a DataHandler
-    explicit DataHandler();
+    explicit DataHandler(const std::string& data_path);
 
     DataHandler(const DataHandler& other) = delete;
     DataHandler(DataHandler&& other) = delete;
@@ -99,6 +99,8 @@ private:
 
     int n_slots_; ///< Number of open data slots. Must be constant during runs.
     int n_batches_; ///< Number of opened batches. Used for indexing.
+
+    std::string data_path_; ///< Where to save data files.
 
     /// Close all batches which were not modified for a sufficiently long duration.
     void closeOldBatches(BatchSchedule& schedule);

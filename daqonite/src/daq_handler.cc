@@ -7,7 +7,7 @@
 #include "daq_handler.h"
 #include <util/elastic_interface.h>
 
-DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data)
+DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data, const std::string& data_path)
     : collect_clb_data_ { collect_clb_data }
     , collect_bbb_data_ { collect_bbb_data }
     , clb_ports_ {}
@@ -17,7 +17,7 @@ DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data)
     , io_service_ { new boost::asio::io_service }
     , run_work_ { new boost::asio::io_service::work(*io_service_) }
     , thread_group_ {}
-    , data_handler_ { new DataHandler }
+    , data_handler_ { new DataHandler(data_path) }
     , clb_handlers_ {}
     , bbb_handler_ {}
 {
