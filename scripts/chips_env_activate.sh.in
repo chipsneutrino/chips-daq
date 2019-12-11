@@ -1,0 +1,11 @@
+#!/bin/bash
+
+C_RED=`tput setaf 1`
+C_GREEN=`tput setaf 2`
+C_RESET=`tput sgr0`
+
+echo "${C_RED}Setting Up the CHIPS-DAQ Environment${C_RESET}"
+
+source %BASE_PATH%/config.sh
+
+echo "${C_GREEN}CHIPS-DAQ Environment Enabled${C_RESET}"

@@ -21,6 +21,15 @@ cp_units() {
 	cp -r ./units "${BPATH}"
 }
 
+customize_template() {
+	SOURCE_FILE=$1 ; shift
+	TARGET_FILE=$1 ; shift
+	sed \
+		-e "s/%BASE_PATH%/${TGTPATH//\//\\/}\/${DIST_DIR_NAME//\//\\/}/" \
+		./${SOURCE_FILE} \
+		>${BPATH}/${TARGET_FILE}
+}
+
 cp_artifacts() {
 	SRC_PATH="./build"
 
@@ -31,6 +40,7 @@ cp_artifacts() {
 	cp ./scripts/run_with_env.sh "${BPATH}/bin"
 	cp ./scripts/restart.sh "${BPATH}/bin"
 	cp ./scripts/jumbo.sh "${BPATH}/bin"
+	customize_template scripts/chips_env_activate.sh.in bin/chips_env_activate.sh
 
 	mkdir "${BPATH}/lib"
 	cp -P ${SRC_PATH}/lib/*.so* "${BPATH}/lib"
@@ -42,10 +52,7 @@ cp_scripts() {
 }
 
 create_config() {
-	sed \
-		-e "s/%BASE_PATH%/${TGTPATH//\//\\/}\/${DIST_DIR_NAME//\//\\/}/" \
-		./scripts/dist_config.sh \
-		>${BPATH}/config.sh
+	customize_template scripts/dist_config.sh config.sh
 }
 
 distribute() {
