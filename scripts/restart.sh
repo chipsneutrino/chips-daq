@@ -27,11 +27,11 @@ srv_restart() {
     srv_start
 }
 
-COMMAND=$1 ; shift
-
-if [ -z "$COMMAND" ]; then
+if [ $# == 0 ]; then
     # Default
     COMMAND="restart"
+else
+    COMMAND=$1 ; shift
 fi
 
 echo "Requested command: ${COMMAND}"
