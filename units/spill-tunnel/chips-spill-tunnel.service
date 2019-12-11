@@ -2,7 +2,7 @@
 Description=Reverse Proxy Spill Signal Tunnel to FNAL
 
 [Service]
-ExecStart=/chips/dist/tunnel/spill_tunnel.sh
+ExecStart=/chips/dist/bin/spill_tunnel.sh
 WorkingDirectory=/chips/run
 Restart=always
 User=daq

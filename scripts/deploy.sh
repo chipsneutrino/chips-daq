@@ -15,10 +15,6 @@ export DEPLOY_VERSION=`git describe --always`
 
 set -e
 
-cp_tunnel() {
-	cp -r ./tunnel "${BPATH}"
-}
-
 cp_units() {
 	cp -r ./units "${BPATH}"
 }
@@ -42,6 +38,8 @@ cp_artifacts() {
 	mkdir "${BPATH}/bin"
 	cp ${SRC_PATH}/bin/* "${BPATH}/bin"
 	cp ./scripts/run_with_env.sh "${BPATH}/bin"
+	cp ./scripts/k5reauth "${BPATH}/bin"
+	cp ./scripts/spill_tunnel.sh "${BPATH}/bin"
 	cp ./scripts/restart.sh "${BPATH}/bin"
 	cp ./scripts/jumbo.sh "${BPATH}/bin"
 	customize_template scripts/chips_env_activate.sh.in bin/chips_env_activate.sh
@@ -87,7 +85,6 @@ echo "Will deploy to machines: ${MACHINES}"
 
 mkdir -p "${BPATH}"
 
-cp_tunnel
 cp_units
 cp_artifacts
 cp_scripts
