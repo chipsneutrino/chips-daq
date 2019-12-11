@@ -2,6 +2,8 @@
 
 #include <boost/program_options.hpp>
 
+#include <util/chips_config.h>
+
 #include "daqonite/observer.h"
 #include "daqontrol/observer.h"
 #include "daqsitter/observer.h"
