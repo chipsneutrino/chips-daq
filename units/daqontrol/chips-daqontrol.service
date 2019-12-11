@@ -2,7 +2,7 @@
 Description=DAQ Control
 
 [Service]
-ExecStart=/chips/dist/bin/run_with_env.sh daqontrol --state-bus-url=tcp://:7031 --control-bus-url=tcp://chipsshore04:7020
+ExecStart=/chips/dist/bin/run_with_env.sh daqontrol
 WorkingDirectory=/chips/run
 Restart=always
 User=daq

@@ -8,6 +8,7 @@
 #include "util/command_receiver.h"
 #include "util/signal_receiver.h"
 #include <util/elastic_interface.h>
+#include <util/chips_config.h>
 #include "util/singleton_process.h"
 
 #include "daq_control.h"
@@ -27,9 +28,7 @@ int main(int argc, char* argv[])
     std::string control_bus_url;
 
     boost::program_options::options_description desc("Options");
-    desc.add_options()("help,h", "DAQontrol...")
-        ("state-bus-url", boost::program_options::value<std::string>(&state_bus_url)->implicit_value("ipc:///tmp/chips_daqontrol.ipc"), "where DAQontrol publishes state messages")
-        ("control-bus-url", boost::program_options::value<std::string>(&control_bus_url)->implicit_value("ipc:///tmp/chips_control.ipc"), "where DAQontrol listens for control messages");
+    desc.add_options()("help,h", "DAQontrol...");
 
     try
     {
@@ -51,6 +50,9 @@ int main(int argc, char* argv[])
     {
         throw std::runtime_error("DAQontrol - runtime Argument Error");
     }
+
+    state_bus_url = Config::getString("DAQONTROL_BUS");
+    control_bus_url = Config::getString("CONTROL_BUS");
 
     // Initialise the elasticsearch interface.
     g_elastic.init(true, false, 10); // log to stdout and use 10 threads for indexing
