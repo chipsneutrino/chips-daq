@@ -8,6 +8,8 @@ source scripts/deploy_config.sh
 
 export BPATH="/tmp/chips-dist.$$/${DIST_DIR_NAME}"
 export MACHINES="${DATA_MACHINE} ${MON_MACHINE}"
+export DEPLOY_DATE_READABLE=`date -R`
+export DEPLOY_VERSION=`git describe --always`
 
 ##############################################################
 
@@ -26,6 +28,8 @@ customize_template() {
 	TARGET_FILE=$1 ; shift
 	sed \
 		-e "s/%BASE_PATH%/${TGTPATH//\//\\/}\/${DIST_DIR_NAME//\//\\/}/" \
+		-e "s/%DEPLOY_DATE_READABLE%/${DEPLOY_DATE_READABLE}/" \
+		-e "s/%DEPLOY_VERSION%/${DEPLOY_VERSION}/" \
 		./${SOURCE_FILE} \
 		>${BPATH}/${TARGET_FILE}
 }
