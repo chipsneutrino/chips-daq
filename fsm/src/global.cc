@@ -29,12 +29,7 @@ void Global::readSettings(int argc, char* argv[])
 
     // Argument handling
     opts::options_description desc { "Options" };
-    desc.add_options()("help,h", "FSM")
-                      ("ops-bus-url", opts::value(&ops_bus_url_)->implicit_value("ipc:///tmp/chips_ops.ipc"), "where FSM listens for ops messages")
-                      ("daqonite-bus-url", opts::value(&daqonite_bus_url_)->implicit_value("ipc:///tmp/chips_daqonite.ipc"), "where FSM listens for state messages from DAQonite")
-                      ("daqontrol-bus-url", opts::value(&daqontrol_bus_url_)->implicit_value("ipc:///tmp/chips_daqontrol.ipc"), "where FSM listens for state messages from DAQontrol")
-                      ("daqsitter-bus-url", opts::value(&daqsitter_bus_url_)->implicit_value("ipc:///tmp/chips_daqsitter.ipc"), "where FSM listens for state messages from DAQsitter")
-                      ("control-bus-url", opts::value(&control_bus_url_)->implicit_value("ipc:///tmp/chips_control.ipc"), "where FSM sends control messages");
+    desc.add_options()("help,h", "FSM");
 
     opts::variables_map vm {};
     opts::store(opts::command_line_parser(argc, argv).options(desc).run(), vm);
@@ -45,6 +40,12 @@ void Global::readSettings(int argc, char* argv[])
     }
 
     opts::notify(vm);
+
+    ops_bus_url_ = Config::getString("OPS_BUS");
+    daqonite_bus_url_ = Config::getString("DAQONITE_BUS");
+    daqontrol_bus_url_ = Config::getString("DAQONTROL_BUS");
+    daqsitter_bus_url_ = Config::getString("DAQSITTER_BUS");
+    control_bus_url_ = Config::getString("CONTROL_BUS");
 }
 
 void Global::setupComponents()
