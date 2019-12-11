@@ -4,15 +4,18 @@
  */
 
 #include "elastic_interface.h"
+#include "chips_config.h"
 
 ElasticInterface g_elastic; ///< Global instance of this class
 
 ElasticInterface::ElasticInterface()
-    : mode_(ELASTIC), index_work_(index_service_), log_counter_(0)
+    : mode_(ELASTIC)
+    , index_work_(index_service_)
+    , log_counter_(0)
 {
     // elasticlient requires a vector of elasticsearch nodes, for now we just add the one
     client_list_.clear();
-    client_list_.push_back(getenv("CHIPS_ELASTIC_CLIENT"));
+    client_list_.push_back(Config::getString("ELASTIC_CLIENT"));
 
     builder_["commentStyle"] = "None";
     builder_["indentation"] = ""; // If you want whitespace-less output
@@ -90,19 +93,17 @@ void ElasticInterface::logWork(severity level, std::string message, long timesta
     if (suppress()) // Should we suppress this log?
         return;
 
-    Json::Value document;                // Populate daqlog JSON document
-    document["timestamp"] = timestamp;   // Milliseconds since epoch timestamp
+    Json::Value document; // Populate daqlog JSON document
+    document["timestamp"] = timestamp; // Milliseconds since epoch timestamp
     document["process"] = process_name_; // Process name
-    document["pid"] = pid_;              // Process ID
-    document["severity"] = level;        // severity level
-    document["message"] = message;       // log message
+    document["pid"] = pid_; // Process ID
+    document["severity"] = level; // severity level
+    document["message"] = message; // log message
 
     if (mode() == ELASTIC) // only ELASTIC mode
     {
         index("daqlog", document); // Index to elasticsearch
-    }
-    else if (mode_ == FILE_LOG)
-    { // Log to File
+    } else if (mode_ == FILE_LOG) { // Log to File
         work_mutex_.lock();
         std::ofstream file;
         file.open(file_name_, std::ios_base::app);
@@ -112,12 +113,12 @@ void ElasticInterface::logWork(severity level, std::string message, long timesta
     }
 }
 
-void ElasticInterface::stateWork(std::string process, std::string state, long timestamp) 
+void ElasticInterface::stateWork(std::string process, std::string state, long timestamp)
 {
-    Json::Value document;               // Populate daqstate JSON document
-    document["timestamp"] = timestamp;  // Milliseconds since epoch timestamp
-    document["process"] = process;      // Process name
-    document["state"] = state;          // Process state keyword
+    Json::Value document; // Populate daqstate JSON document
+    document["timestamp"] = timestamp; // Milliseconds since epoch timestamp
+    document["process"] = process; // Process name
+    document["state"] = state; // Process state keyword
 
     if (mode() == ELASTIC) // only ELASTIC mode
     {
@@ -139,9 +140,9 @@ void ElasticInterface::valueWork(std::string name, float value, long timestamp)
 {
     if (mode() == ELASTIC) // only ELASTIC mode
     {
-        Json::Value document;              // populate JSON document
+        Json::Value document; // populate JSON document
         document["timestamp"] = timestamp; // timestamp
-        document["value"] = value;         // monitoring value
+        document["value"] = value; // monitoring value
 
         index(name, document); // Index to elasticsearch
     }
@@ -151,12 +152,12 @@ void ElasticInterface::pomWork(pom_data data)
 {
     if (mode() == ELASTIC) // only ELASTIC mode
     {
-        Json::Value document;                       // populate daqmon JSON document
-        document["timestamp"] = data.timestamp;     // timestamp from the monitoring packet
-        document["pom"] = data.pom;                 // planar optical module ID
+        Json::Value document; // populate daqmon JSON document
+        document["timestamp"] = data.timestamp; // timestamp from the monitoring packet
+        document["pom"] = data.pom; // planar optical module ID
         document["temperature"] = data.temperature; // planar optical module temperature
-        document["humidity"] = data.humidity;       // planar optical module humidity
-        document["sync"] = data.sync;               // is planar optical module time synced?
+        document["humidity"] = data.humidity; // planar optical module humidity
+        document["sync"] = data.sync; // is planar optical module time synced?
 
         index("monpom", document); // Index to elasticsearch
     }
@@ -172,11 +173,10 @@ void ElasticInterface::channelWork(channel_data data)
 
         // Populate the bulk data
         elasticlient::SameIndexBulkData bulk("monchannel", 30);
-        for (int i = 0; i < 30; i++)
-        {
+        for (int i = 0; i < 30; i++) {
             Json::Value document;
             document["timestamp"] = data.timestamp; // timestamp from the monitoring packet
-            document["pom"] = data.pom;             // planar optical module ID
+            document["pom"] = data.pom; // planar optical module ID
             document["channel"] = i;
             document["eid"] = 0;
             document["rate"]["rate"] = data.rate[i];
@@ -184,18 +184,13 @@ void ElasticInterface::channelWork(channel_data data)
             bulk.indexDocument("_doc", "", Json::writeString(builder_, document));
         }
 
-        for (int attempt = 0; attempt < MAX_ELASTIC_ATTEMPTS; attempt++)
-        {
-            try
-            {
+        for (int attempt = 0; attempt < MAX_ELASTIC_ATTEMPTS; attempt++) {
+            try {
                 size_t errors = bulkIndexer.perform(bulk);
-                if (errors == 0)
-                {
+                if (errors == 0) {
                     return;
                 }
-            }
-            catch (const std::runtime_error &e)
-            {
+            } catch (const std::runtime_error& e) {
             }
         }
 
@@ -214,16 +209,13 @@ void ElasticInterface::runWork(int run_num, int run_type)
     body["processors"][2]["set"]["field"] = "_source.indextime";
     body["processors"][2]["set"]["value"] = "{{_ingest.timestamp}}";
 
-    cpr::Response res = cpr::Put(cpr::Url{client_list_[0] + "_ingest/pipeline/info"},
-                                 cpr::Header{{"Content-Type", "application/json"}},
-                                 cpr::Body{Json::writeString(builder_, body)});
+    cpr::Response res = cpr::Put(cpr::Url { client_list_[0] + "_ingest/pipeline/info" },
+        cpr::Header { { "Content-Type", "application/json" } },
+        cpr::Body { Json::writeString(builder_, body) });
 
-    if (res.status_code == 200)
-    {
+    if (res.status_code == 200) {
         return;
-    }
-    else
-    {
+    } else {
         print_mutex_.lock();
         fmt::print("{}\n", res.text);
         print_mutex_.unlock();
@@ -238,34 +230,24 @@ void ElasticInterface::runThread()
 bool ElasticInterface::suppress()
 {
     work_mutex_.lock();
-    if (log_counter_ == 0)
-    {
+    if (log_counter_ == 0) {
         timer_start_ = std::chrono::system_clock::now();
         log_counter_++;
-    }
-    else if (log_counter_ < MAX_LOG_RATE)
-    {
+    } else if (log_counter_ < MAX_LOG_RATE) {
         log_counter_++;
-    }
-    else
-    {
+    } else {
         std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
         int diff = std::chrono::duration_cast<std::chrono::milliseconds>(now - timer_start_).count();
-        if (diff < 1000)
-        {
+        if (diff < 1000) {
             log_counter_++;
             work_mutex_.unlock();
             return true;
-        }
-        else if (log_counter_ > MAX_LOG_RATE)
-        {
+        } else if (log_counter_ > MAX_LOG_RATE) {
             print_mutex_.lock();
             fmt::print("ElasticInterface suppressed a rate of: {}\n", log_counter_);
             print_mutex_.unlock();
             log_counter_ = 0;
-        }
-        else
-        {
+        } else {
             log_counter_ = 0;
         }
     }
@@ -279,24 +261,17 @@ void ElasticInterface::index(std::string index, Json::Value document)
     elasticlient::Client client(client_list_); /// Create the elasticsearch client
 
     // Now and again the client will not respond, therefore, we try a few times
-    for (int attempt = 0; attempt < MAX_ELASTIC_ATTEMPTS; attempt++)
-    {
-        try
-        {
+    for (int attempt = 0; attempt < MAX_ELASTIC_ATTEMPTS; attempt++) {
+        try {
             cpr::Response res = client.index(index, "_doc", "?pipeline=info", Json::writeString(builder_, document));
-            if (res.status_code == 201)
-            {
+            if (res.status_code == 201) {
                 return;
-            }
-            else
-            {
+            } else {
                 print_mutex_.lock();
                 fmt::print("{}\n", res.text);
                 print_mutex_.unlock();
             }
-        }
-        catch (const std::runtime_error &e)
-        {
+        } catch (const std::runtime_error& e) {
         }
     }
 
@@ -311,7 +286,7 @@ void ElasticInterface::initFile(std::string error)
 
     // Generate a log file name
     time_t rawtime;
-    struct tm *timeinfo;
+    struct tm* timeinfo;
     char buffer[80];
 
     time(&rawtime);
