@@ -12,7 +12,7 @@ ElasticInterface::ElasticInterface()
 {
     // elasticlient requires a vector of elasticsearch nodes, for now we just add the one
     client_list_.clear();
-    client_list_.push_back(getenv("ELASTIC_CLIENT"));
+    client_list_.push_back(getenv("CHIPS_ELASTIC_CLIENT"));
 
     builder_["commentStyle"] = "None";
     builder_["indentation"] = ""; // If you want whitespace-less output
