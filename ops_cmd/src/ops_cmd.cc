@@ -17,6 +17,7 @@
 #include <nngpp/nngpp.h>
 #include <nngpp/protocol/req0.h>
 
+#include <util/chips_config.h>
 #include <util/control_msg.h>
 
 namespace ExitCode {
@@ -31,40 +32,40 @@ static constexpr int CommError = 4;
 int main(int argc, char* argv[])
 {
     // Check the command and additional arguments are valid
-    if (argc < 3 || argc > 4) {
-        std::cerr << "usage: " << argv[0] << " ops_bus_url [ config <opt file> | startData | stopData | startRun N | stopRun | exit ]" << std::endl;
+    if (argc < 2 || argc > 3) {
+        std::cerr << "usage: " << argv[0] << " [ config <opt file> | startData | stopData | startRun N | stopRun | exit ]" << std::endl;
         return ExitCode::BadArgs;
     }
 
     // Construct a message
     OpsMessage msg {};
-    const std::string ops_bus_url { argv[1] };
-    const std::string command { argv[2] };
+    const std::string command { argv[1] };
+    const std::string ops_bus_url { Config::getString("OPS_BUS") };
 
     if (command == "config") {
-        if (argc != 4) {
+        if (argc != 3) {
             std::cerr << argv[0] << ": expected a config file" << std::endl;
             return ExitCode::BadArgs;
         }
 
         msg.Discriminator = OpsMessage::Config::Discriminator;
-        strcpy(msg.Payload.pConfig.config_file, argv[3]);
+        strcpy(msg.Payload.pConfig.config_file, argv[2]);
     } else if (command == "startData") {
         msg.Discriminator = OpsMessage::StartData::Discriminator;
     } else if (command == "stopData") {
         msg.Discriminator = OpsMessage::StopData::Discriminator;
     } else if (command == "startRun") {
-        if (argc != 4) {
+        if (argc != 3) {
             std::cerr << argv[0] << ": expected a run type [1-4]" << std::endl;
             return ExitCode::BadArgs;
         }
-        if (atoi(argv[3]) < 1 || atoi(argv[3]) > 4) {
+        if (atoi(argv[2]) < 1 || atoi(argv[2]) > 4) {
             std::cerr << argv[0] << ": expected a run type between [1-4]" << std::endl;
             return ExitCode::BadArgs;
         }
 
         msg.Discriminator = OpsMessage::StartRun::Discriminator;
-        msg.Payload.pStartRun.run_type = (RunType)std::atoi(argv[3]);
+        msg.Payload.pStartRun.run_type = (RunType)std::atoi(argv[2]);
     } else if (command == "stopRun") {
         msg.Discriminator = OpsMessage::StopRun::Discriminator;
     } else if (command == "exit") {
