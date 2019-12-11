@@ -4,18 +4,11 @@ set -e
 
 source scripts/deploy_config.sh
 
-export BPATH="/tmp/chips-dist.$$/chips-dist"
+export BPATH="/tmp/chips-dist.$$/${DIST_DIR_NAME}"
 export MACHINES="${DATA_MACHINE} ${MON_MACHINE}"
 
 cp_tunnel() {
 	cp -r ./tunnel "${BPATH}"
-}
-
-cp_run() {
-	mkdir "${BPATH}/run"
-	cp ./scripts/run_with_env.sh "${BPATH}/run"
-	cp ./scripts/restart.sh "${BPATH}/run"
-	cp ./scripts/jumbo.sh "${BPATH}/run"
 }
 
 cp_units() {
@@ -29,6 +22,9 @@ cp_artifacts() {
 
 	mkdir "${BPATH}/bin"
 	cp ${SRC_PATH}/bin/* "${BPATH}/bin"
+	cp ./scripts/run_with_env.sh "${BPATH}/bin"
+	cp ./scripts/restart.sh "${BPATH}/bin"
+	cp ./scripts/jumbo.sh "${BPATH}/bin"
 
 	mkdir "${BPATH}/lib"
 	cp -P ${SRC_PATH}/lib/*.so* "${BPATH}/lib"
@@ -40,10 +36,10 @@ cp_scripts() {
 }
 
 create_config() {
-	cp ./scripts/dist_config.sh ${BPATH}/config.sh
-
-	echo "# Base path of the deployment package" >>${BPATH}/config.sh
-	echo "export CHIPS_BASE_PATH=\"${TGTPATH}/chips-dist\"" >>${BPATH}/config.sh
+	sed \
+		-e "s/%BASE_PATH%/${TGTPATH//\//\\/}\/${DIST_DIR_NAME//\//\\/}/" \
+		./scripts/dist_config.sh \
+		>${BPATH}/config.sh
 }
 
 srv_stop() {
@@ -62,6 +58,7 @@ distribute() {
 			--delete \
 			${BPATH} \
 			${TGTUSR}@${MACHINE}:${TGTPATH}
+		ssh ${TGTUSR}@${MACHINE} "chown -R ${TGTRUNUSR}:${TGTRUNUSR} ${TGTPATH}/${DIST_DIR_NAME}"
 	done
 }
 
@@ -84,7 +81,6 @@ fi
 mkdir -p "${BPATH}"
 
 cp_tunnel
-cp_run
 cp_units
 cp_artifacts
 cp_scripts

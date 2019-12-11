@@ -1,8 +1,8 @@
 [Unit]
-Description=Watcher of Fermilab status updates
+Description=Reverse Proxy Spill Signal Tunnel to FNAL
 
 [Service]
-ExecStart=/chips/dist/bin/run_with_env.sh numi_update_watcher.py
+ExecStart=/chips/dist/tunnel/spill_tunnel.sh
 WorkingDirectory=/chips/run
 Restart=always
 User=daq

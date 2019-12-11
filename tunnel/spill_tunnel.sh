@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -e
-source ../config.sh
+source config.sh
 
 K5REAUTH="${CHIPS_BASE_PATH}/tunnel/k5reauth"
 PRINCIPAL="pmanek@FNAL.GOV"
