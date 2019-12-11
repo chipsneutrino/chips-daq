@@ -40,6 +40,7 @@ cp_artifacts() {
 	cp ./scripts/run_with_env.sh "${BPATH}/bin"
 	cp ./scripts/k5reauth "${BPATH}/bin"
 	cp ./scripts/spill_tunnel.sh "${BPATH}/bin"
+	cp ./scripts/monitoring_tunnel.sh "${BPATH}/bin"
 	cp ./scripts/restart.sh "${BPATH}/bin"
 	cp ./scripts/jumbo.sh "${BPATH}/bin"
 	customize_template scripts/chips_env_activate.sh.in bin/chips_env_activate.sh

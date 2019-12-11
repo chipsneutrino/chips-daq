@@ -1,7 +1,7 @@
 #!/bin/bash
 ##############################################################
-# spill_tunnel.sh
-# Script to set up and maintain spill tunnel to FNAL
+# moniotring_tunnel.sh
+# Script to set up and maintain monitoring tunnel to FNAL
 ##############################################################
 
 source config.sh
@@ -16,5 +16,5 @@ k5reauth \
 	${CHIPS_AUTOSSH} \
 		-M 0 \
 		-nNT \
-		-R ${CHIPS_TUNNEL_SPILL_REMOTE_PORT}:localhost:${CHIPS_TUNNEL_SPILL_LOCAL_PORT} \
-		${CHIPS_TUNNEL_SPILL_REMOTE_HOST}
+		-R ${CHIPS_TUNNEL_MONITORING_REMOTE_PORT}:localhost:${CHIPS_TUNNEL_MONITORING_LOCAL_PORT} \
+		${CHIPS_TUNNEL_MONITORING_REMOTE_HOST}

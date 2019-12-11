@@ -1,0 +1,13 @@
+[Unit]
+Description=Reverse Proxy Monitoring Tunnel to FNAL
+
+[Service]
+ExecStart=/chips/dist/bin/monitoring_tunnel.sh
+WorkingDirectory=/chips/run
+Restart=always
+User=daq
+Group=daq
+
+[Install]
+WantedBy=network.target
+
