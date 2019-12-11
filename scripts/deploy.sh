@@ -1,11 +1,17 @@
 #!/bin/bash
-
-set -e
+##############################################################
+# deploy.sh
+# Script to stop, distribute and start CHIPS services
+##############################################################
 
 source scripts/deploy_config.sh
 
 export BPATH="/tmp/chips-dist.$$/${DIST_DIR_NAME}"
 export MACHINES="${DATA_MACHINE} ${MON_MACHINE}"
+
+##############################################################
+
+set -e
 
 cp_tunnel() {
 	cp -r ./tunnel "${BPATH}"
@@ -42,12 +48,6 @@ create_config() {
 		>${BPATH}/config.sh
 }
 
-srv_stop() {
-	echo "Stopping DAQ services..."
-    ssh ${TGTUSR}@${DATA_MACHINE} `awk -v 'RS= ' '{ print "systemctl stop chips-" $0 ";" }' <<< "${DATA_SERVICES}"`
-    ssh ${TGTUSR}@${MON_MACHINE} `awk -v 'RS= ' '{ print "systemctl stop chips-" $0 ";" }' <<< "${MON_SERVICES}"`
-}
-
 distribute() {
 	for MACHINE in $MACHINES ; do
 		echo "Deploying to ${MACHINE}..."
@@ -60,12 +60,6 @@ distribute() {
 			${TGTUSR}@${MACHINE}:${TGTPATH}
 		ssh ${TGTUSR}@${MACHINE} "chown -R ${TGTRUNUSR}:${TGTRUNUSR} ${TGTPATH}/${DIST_DIR_NAME}"
 	done
-}
-
-srv_start() {
-	echo "Starting DAQ services..."
-	ssh ${TGTUSR}@${DATA_MACHINE} `awk -v 'RS= ' '{ print "systemctl start chips-" $0 ";" }' <<< "${DATA_SERVICES}"`
-    ssh ${TGTUSR}@${MON_MACHINE} `awk -v 'RS= ' '{ print "systemctl start chips-" $0 ";" }' <<< "${MON_SERVICES}"`
 }
 
 if [ ! -d .git ]; then
@@ -86,8 +80,8 @@ cp_artifacts
 cp_scripts
 create_config
 
-srv_stop
+./scripts/restart.sh stop
 distribute
-srv_start
+./scripts/restart.sh start
 
 rm -rf "${BPATH}"

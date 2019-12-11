@@ -1,3 +1,8 @@
+##############################################################
+# deploy_config.sh
+# Configuration of the CHIPS deployment used by deploy.sh
+##############################################################
+
 # Where to deploy
 export TGTPATH="/chips"
 
