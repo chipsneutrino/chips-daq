@@ -4,9 +4,13 @@
 
 #include <functional>
 
+#include <fmt/format.h>
+
+#include <util/elastic_interface.h>
+
+#include "daqonite.h"
 #include "data_handler.h"
 #include "run_file.h"
-#include <util/elastic_interface.h>
 
 DataHandler::DataHandler()
     : output_thread_ {}
@@ -45,16 +49,11 @@ void DataHandler::startRun(RunType which)
     // TODO: determine this from run_type
     last_approx_timestamp_ = 0;
     n_batches_ = 0;
-    if ((int)run_type_ == 1)
-    {
+    if ((int)run_type_ == 1) {
         batch_scheduler_ = static_cast<const std::shared_ptr<SpillScheduler>&>(spill_scheduler_);
-    }
-    else if ((int)run_type_ == 2)
-    {
+    } else if ((int)run_type_ == 2) {
         batch_scheduler_ = static_cast<const std::shared_ptr<RegularScheduler>&>(regular_scheduler_);
-    }
-    else if ((int)run_type_ == 3)
-    {
+    } else if ((int)run_type_ == 3) {
         batch_scheduler_ = static_cast<const std::shared_ptr<InfiniteScheduler>&>(infinite_scheduler_);
     }
 
@@ -137,7 +136,7 @@ void DataHandler::getRunNumAndName()
         }
     }
 
-    file_name_ = fmt::format("type{}_run{:05d}.root", run_type_no, run_num_);
+    file_name_ = fmt::format("{}/type{}_run{:05d}.root", get_settings()::data_path, run_type_no, run_num_);
 }
 
 std::size_t DataHandler::insertSort(CLBEventQueue& queue) noexcept

@@ -11,9 +11,9 @@
 #include <boost/program_options.hpp>
 
 #include <memory>
-#include <string>
 
 #include "daq_handler.h"
+#include "daqonite.h"
 #include "daqonite_publisher.h"
 #include "util/command_receiver.h"
 #include "util/signal_receiver.h"
@@ -21,17 +21,11 @@
 #include <util/elastic_interface.h>
 #include <util/singleton_process.h>
 
+static daqonite_settings settings {};
+const daqonite_settings& get_settings() { return settings; }
+
 namespace exit_code {
 static constexpr int success = 0;
-}
-
-namespace settings {
-// Default settings
-static bool collect_clb_data = true;
-static bool collect_bbb_data = false;
-
-static std::string state_bus_url {};
-static std::string control_bus_url {};
 }
 
 void readSettings(int argc, char* argv[])
@@ -54,6 +48,7 @@ void readSettings(int argc, char* argv[])
 
     settings::state_bus_url = Config::getString("DAQONITE_BUS");
     settings::control_bus_url = Config::getString("CONTROL_BUS");
+    settings::data_path = Config::getString("DATA_PATH");
 }
 
 int main(int argc, char* argv[])
