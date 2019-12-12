@@ -6,14 +6,21 @@
 # Where to deploy
 export TGTPATH="/chips"
 
-# Deployment directory name in TGTPATH (WARNING: gets wiped!)
+# Deployment directory name relative to TGTPATH, must be writable to deploy user and readable to run user
+# WARNING: gets wiped upon every deployment!
 export DIST_DIR_NAME="dist"
 
+# Data directory name relative to TGTPATH, must be writable to run user (persistent between deployments)
+export DATA_DIR_NAME="data"
+
+# Configuration directory name relative to TGTPATH, must be readable to run user (persistent between deployments)
+export CONFIG_DIR_NAME="config"
+
 # User used to deploy, must be the same on all machines, also must have passwordless login
-export TGTUSR="root"
+export DEPLOY_USER="root"
 
 # User used to run, must be the same on all machines, and have appropriate permissions
-export TGTRUNUSR="daq"
+export RUN_USER="daq"
 
 # Path to rsync (or alternative with similar interface)
 export RSYNC="/usr/bin/rsync"

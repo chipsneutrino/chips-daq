@@ -24,6 +24,8 @@ customize_template() {
 	TARGET_FILE=$1 ; shift
 	sed \
 		-e "s/%BASE_PATH%/${TGTPATH//\//\\/}\/${DIST_DIR_NAME//\//\\/}/" \
+		-e "s/%CONFIG_PATH%/${TGTPATH//\//\\/}\/${CONFIG_DIR_NAME//\//\\/}/" \
+		-e "s/%DATA_PATH%/${TGTPATH//\//\\/}\/${DATA_DIR_NAME//\//\\/}/" \
 		-e "s/%DEPLOY_DATE_READABLE%/${DEPLOY_DATE_READABLE}/" \
 		-e "s/%DEPLOY_VERSION%/${DEPLOY_VERSION}/" \
 		./${SOURCE_FILE} \
@@ -67,8 +69,8 @@ distribute() {
 			--compress \
 			--delete \
 			${BPATH} \
-			${TGTUSR}@${MACHINE}:${TGTPATH}
-		ssh ${TGTUSR}@${MACHINE} "chown -R ${TGTRUNUSR}:${TGTRUNUSR} ${TGTPATH}/${DIST_DIR_NAME}"
+			${DEPLOY_USER}@${MACHINE}:${TGTPATH}
+		ssh ${DEPLOY_USER}@${MACHINE} "chown -R ${RUN_USER}:${RUN_USER} ${TGTPATH}/${DIST_DIR_NAME}"
 	done
 }
 
