@@ -14,6 +14,7 @@
 #include <iostream>
 #include <string>
 
+#include <fmt/format.h>
 #include <nngpp/nngpp.h>
 #include <nngpp/protocol/req0.h>
 
@@ -41,6 +42,7 @@ int main(int argc, char* argv[])
     OpsMessage msg {};
     const std::string command { argv[1] };
     const std::string ops_bus_url { Config::getString("OPS_BUS") };
+    const std::string config_path { Config::getString("CONFIG_PATH") };
 
     if (command == "config") {
         if (argc != 3) {
@@ -48,8 +50,11 @@ int main(int argc, char* argv[])
             return ExitCode::BadArgs;
         }
 
+        const std::string config_file { argv[2] };
+        const std::string full_path_to_config_file { (!config_file.empty() && config_file[0] == '/') ? config_file : fmt::format("{}/{}", config_path, config_file) };
+
         msg.Discriminator = OpsMessage::Config::Discriminator;
-        strcpy(msg.Payload.pConfig.config_file, argv[2]);
+        strcpy(msg.Payload.pConfig.config_file, full_path_to_config_file.c_str());
     } else if (command == "startData") {
         msg.Discriminator = OpsMessage::StartData::Discriminator;
     } else if (command == "stopData") {
