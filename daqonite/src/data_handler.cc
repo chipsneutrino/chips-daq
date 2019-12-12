@@ -87,7 +87,8 @@ void DataHandler::stopRun()
 
 void DataHandler::getRunNumAndName()
 {
-    static constexpr auto run_file_path { "runNumbers.dat" };
+    static constexpr auto run_file_name { "runNumbers.dat" };
+    const std::string run_file_path { fmt::format("{}/{}", data_path_, run_file_name) };
     const int run_type_no = static_cast<int>(run_type_);
     int runNums[NUMRUNTYPES];
     std::ifstream runNumFile(run_file_path);
