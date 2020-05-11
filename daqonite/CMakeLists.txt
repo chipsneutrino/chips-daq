@@ -18,8 +18,8 @@ add_executable(daqonite
 target_include_directories(daqonite PUBLIC include)
 
 target_link_libraries(daqonite PUBLIC clb)
+target_link_libraries(daqonite PUBLIC bbb)
 target_link_libraries(daqonite PUBLIC util)
-target_link_libraries(daqonite PUBLIC fh_message)
 target_link_libraries(daqonite PUBLIC XmlRpc)
 target_link_libraries(daqonite PUBLIC nngpp)
 target_link_libraries(daqonite PUBLIC ${ROOT_LIBRARIES})
