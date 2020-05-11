@@ -1,7 +1,6 @@
 add_executable(daqonite
     src/daqonite.cc
     include/batch_scheduler.h          src/batch_scheduler.cc
-    include/bbb_api.h
     include/bbb_handler.h              src/bbb_handler.cc
     include/daqonite_publisher.h       src/daqonite_publisher.cc
     include/clb_event.h
