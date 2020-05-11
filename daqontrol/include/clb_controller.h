@@ -12,7 +12,6 @@
 #include <clb/clb_event.h>
 
 #include "controller.h"
-#include <util/elastic_interface.h>
 
 #include <tuple>
 

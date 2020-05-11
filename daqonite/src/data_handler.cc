@@ -12,7 +12,8 @@
 #include "run_file.h"
 
 DataHandler::DataHandler(const std::string& data_path)
-    : output_thread_ {}
+    : Logging {}
+    , output_thread_ {}
     , scheduling_thread_ {}
     , output_running_ { false }
     , scheduling_running_ { false }
@@ -31,6 +32,7 @@ DataHandler::DataHandler(const std::string& data_path)
     , n_batches_ { 0 }
     , data_path_ { data_path }
 {
+    setUnitName("DataHandler");
 }
 
 void DataHandler::startRun(RunType which)
@@ -58,7 +60,7 @@ void DataHandler::startRun(RunType which)
     }
 
     // Start output thread.
-    g_elastic.log(WARNING, "Start mining into container {}", file_name_);
+    log(WARNING, "Start mining into container {}", file_name_);
     output_running_ = scheduling_running_ = true;
     output_thread_ = std::unique_ptr<std::thread> { new std::thread(std::bind(&DataHandler::outputThread, this)) };
     scheduling_thread_ = std::unique_ptr<std::thread> { new std::thread(std::bind(&DataHandler::schedulingThread, this)) };
@@ -69,11 +71,11 @@ void DataHandler::startRun(RunType which)
 
 void DataHandler::stopRun()
 {
-    g_elastic.log(WARNING, "Signal stop mining into container {}, waiting for output threads to complete...", file_name_);
+    log(WARNING, "Signal stop mining into container {}, waiting for output threads to complete...", file_name_);
 
     // Wait for the output thread to end
     joinThreads();
-    g_elastic.log(WARNING, "Stop mining into container {}", file_name_);
+    log(WARNING, "Stop mining into container {}", file_name_);
 
     // Set the Elasticsearch ingest pipeline run.num and run.type
     // Put as -1 for both when outside a run
@@ -189,12 +191,12 @@ void DataHandler::closeBatch(Batch&& batch)
     // At this point, no thread should be writing data to any of the queues.
 
     if (!batch.started) {
-        g_elastic.log(INFO, "Batch {} was discarded because it was not started at the time of closing.", batch.idx);
+        log(INFO, "Batch {} was discarded because it was not started at the time of closing.", batch.idx);
         disposeBatch(batch);
         return;
     }
 
-    g_elastic.log(INFO, "Closing batch {} for processing.", batch.idx);
+    log(INFO, "Closing batch {} for processing.", batch.idx);
     waiting_batches_.push(std::move(batch));
 }
 
@@ -223,7 +225,7 @@ void DataHandler::updateLastApproxTimestamp(std::uint32_t timestamp)
 
 void DataHandler::schedulingThread()
 {
-    g_elastic.log(INFO, "Scheduling thread up and running");
+    log(INFO, "Scheduling thread up and running");
     batch_scheduler_->beginScheduling();
 
     while (scheduling_running_) {
@@ -262,7 +264,7 @@ void DataHandler::schedulingThread()
     }
 
     batch_scheduler_->endScheduling();
-    g_elastic.log(INFO, "Scheduling thread signing off");
+    log(INFO, "Scheduling thread signing off");
 }
 
 void DataHandler::prepareNewBatches(BatchSchedule& schedule)
@@ -276,7 +278,7 @@ void DataHandler::prepareNewBatches(BatchSchedule& schedule)
             batch.last_updated_time = Clock::now();
             batch.clb_opt_data = new CLBEventMultiQueue[n_slots_];
 
-            g_elastic.log(INFO, "Scheduling batch {} with time interval: [{}, {}]", batch.idx, batch.start_time, batch.end_time);
+            log(INFO, "Scheduling batch {} with time interval: [{}, {}]", batch.idx, batch.start_time, batch.end_time);
         }
     }
 }
@@ -288,12 +290,12 @@ void DataHandler::disposeBatch(Batch& batch)
 
 void DataHandler::outputThread()
 {
-    g_elastic.log(INFO, "Output thread up and running");
+    log(INFO, "Output thread up and running");
 
     // Open output.
     RunFile out_file { file_name_ };
     if (!out_file.isOpen()) {
-        g_elastic.log(ERROR, "Error opening file at path: '{}'", file_name_);
+        log(ERROR, "Error opening file at path: '{}'", file_name_);
         return;
     }
 
@@ -330,7 +332,7 @@ void DataHandler::outputThread()
             }
         }
 
-        g_elastic.log(INFO, "Processing batch {} (from {} POMs)", current_batch.idx, events.size());
+        log(INFO, "Processing batch {} (from {} POMs)", current_batch.idx, events.size());
 
         // Calculate complete timestamps & make sure sequence is sorted
         std::size_t n_hits { 0 };
@@ -340,13 +342,13 @@ void DataHandler::outputThread()
 
             // TODO: report disorder measure to backend
             const std::size_t n_swaps = insertSort(queue);
-            g_elastic.log(INFO, "POM #{} ({} hits) required {} swaps to achieve time ordering", key_value.first, queue.size(), n_swaps);
+            log(INFO, "POM #{} ({} hits) required {} swaps to achieve time ordering", key_value.first, queue.size(), n_swaps);
         }
 
         if (n_hits > 0) {
             // Merge-sort CLB events.
             out_queue.clear();
-            g_elastic.log(INFO, "Merge-sorting {} hits", n_hits);
+            log(INFO, "Merge-sorting {} hits", n_hits);
             sorter.merge(events, out_queue);
 
             // Write sorted events out.
@@ -356,17 +358,17 @@ void DataHandler::outputThread()
 
             // TODO: report metrics to backend
         } else {
-            g_elastic.log(INFO, "Batch {} is empty.", current_batch.idx);
+            log(INFO, "Batch {} is empty.", current_batch.idx);
         }
 
-        g_elastic.log(INFO, "Batch {} done and written", current_batch.idx);
+        log(INFO, "Batch {} done and written", current_batch.idx);
         disposeBatch(current_batch);
     }
 
     // Close output file.
     out_file.close();
 
-    g_elastic.log(INFO, "Output thread signing off");
+    log(INFO, "Output thread signing off");
 }
 
 void DataHandler::joinThreads()

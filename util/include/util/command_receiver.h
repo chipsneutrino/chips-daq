@@ -7,6 +7,7 @@
 #include <thread>
 
 #include <util/control_msg.h>
+#include <util/logging.h>
 
 class CommandHandler {
 public:
@@ -20,7 +21,7 @@ public:
     virtual void handleExitCommand() = 0;
 };
 
-class CommandReceiver {
+class CommandReceiver : protected Logging {
 public:
     explicit CommandReceiver(const std::string& url);
     virtual ~CommandReceiver() = default;

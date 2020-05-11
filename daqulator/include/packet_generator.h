@@ -34,7 +34,7 @@
 typedef std::vector<unsigned int> POMRange_t;
 typedef std::vector<char> raw_data_t;
 
-class PacketGenerator
+class PacketGenerator: protected Logging
 {
 public:
     PacketGenerator(std::string config_file,

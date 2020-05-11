@@ -8,14 +8,14 @@ namespace Daqsitter {
 namespace states {
     void Offline::entry()
     {
-        g_elastic.log(INFO, "Daqsitter : Offline");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Daqsitter : Offline");
+        global.sendEvent(StateUpdate {});
     }
 
     void Unknown::entry()
     {
-        g_elastic.log(INFO, "Daqsitter : Unknown");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Daqsitter : Unknown");
+        global.sendEvent(StateUpdate {});
     }
 
     void Unknown::react(events::Ready const& e)
@@ -30,8 +30,8 @@ namespace states {
 
     void Ready::entry()
     {
-        g_elastic.log(INFO, "Daqsitter : Ready");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Daqsitter : Ready");
+        global.sendEvent(StateUpdate {});
     }
 
     void Ready::react(events::Started const& e)
@@ -41,8 +41,8 @@ namespace states {
 
     void Started::entry()
     {
-        g_elastic.log(INFO, "Daqsitter : Started");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Daqsitter : Started");
+        global.sendEvent(StateUpdate {});
     }
 
     void Started::react(events::Ready const& e)

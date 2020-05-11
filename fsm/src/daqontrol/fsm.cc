@@ -2,6 +2,13 @@
 #include "daqontrol/states.h"
 
 namespace Daqontrol {
+FSM::FSM()
+    : Fsm<FSM> {}
+    , Logging {}
+{
+    setUnitName("Daqontrol");
+}
+
 void FSM::react(events::Disconnected const& e)
 {
     transit<states::Offline>();

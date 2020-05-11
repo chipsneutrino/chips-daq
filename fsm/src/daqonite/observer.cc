@@ -9,8 +9,10 @@
 
 namespace Daqonite {
 Observer::Observer(const std::string& bus_url)
-    : bus_url_ { bus_url }
+    : Logging {}
+    , bus_url_ { bus_url }
 {
+    setUnitName("Daqonite::Observer");
 }
 
 void Observer::run()
@@ -38,12 +40,12 @@ void Observer::run()
                     break;
 
                 default:
-                    g_elastic.log(WARNING, "Daqonite received unknown discriminator: {}", message.Discriminator);
+                    log(WARNING, "Daqonite received unknown discriminator: {}", message.Discriminator);
                     break;
                 }
             }
         } catch (const nng::exception& e) {
-            g_elastic.log(DEBUG, "Daqonite error: {}: {}", e.who(), e.what());
+            log(DEBUG, "Daqonite error: {}: {}", e.who(), e.what());
             global.sendEvent(events::Disconnected {});
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }

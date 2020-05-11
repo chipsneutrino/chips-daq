@@ -6,8 +6,11 @@
 
 /// Create a DAQConfig
 DAQConfig::DAQConfig(const char * config) 
-	: file_name_(config)
+	: Logging{}
+	, file_name_(config)
 {
+	setUnitName("DAQConfig");
+
 	num_controllers_ 		= 0;
 	enabled_controllers_ 	= 0;
 	enabled_channels_ 		= 0;
@@ -24,7 +27,7 @@ void DAQConfig::loadConfig()
 	input_file.open(file_name_.c_str()); // Open the file
 
 	if (!input_file.is_open()) { // Check it is open
-		g_elastic.log(ERROR, "DAQConfig could not open config file '{}'!", file_name_);
+		log(ERROR, "DAQConfig could not open config file '{}'!", file_name_);
 		return;
 	}
 
@@ -33,7 +36,7 @@ void DAQConfig::loadConfig()
 		parseLine(line);
 	}
 
-	g_elastic.log(INFO, "DAQ Config -> Plan:{}, Miners:{}, Pickaxes:{}, Headlamps:{}"
+	log(INFO, "DAQ Config -> Plan:{}, Miners:{}, Pickaxes:{}, Headlamps:{}"
 				  , file_name_, enabled_controllers_, enabled_channels_, is_nano_enabled_);
 
 	return;
@@ -59,7 +62,7 @@ void DAQConfig::parseLine(std::string &line)
 		// Get how many controllers there are in this config file
 		if (config.compare("pom_number") == 0) {
 			if (!(ss >> num_controllers_)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be an int", value);
+				log(WARNING, "DAQControl error: ({}) should be an int", value);
 			}
 			setupConfigs();
 		}
@@ -70,7 +73,7 @@ void DAQConfig::parseLine(std::string &line)
 		if (config.compare("enabled") == 0) {
 			bool enabled;
 			if (!(ss >> enabled)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be bool (0 or 1)", value);
+				log(WARNING, "DAQControl error: ({}) should be bool (0 or 1)", value);
 			}
 
 			if (enabled)
@@ -86,7 +89,7 @@ void DAQConfig::parseLine(std::string &line)
 		// Get the HV enabled flag
 		if (config.compare("hv_enabled") == 0) {
 			if (!(ss >> configs_[controller_num].hv_enabled_)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be bool (0 or 1)", value);
+				log(WARNING, "DAQControl error: ({}) should be bool (0 or 1)", value);
 			}
 		}	
 
@@ -94,7 +97,7 @@ void DAQConfig::parseLine(std::string &line)
 		if (config.compare("type") == 0) {
 			std::string type;
 			if (!(ss >> type)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be string (CLB or BBB)", value);
+				log(WARNING, "DAQControl error: ({}) should be string (CLB or BBB)", value);
 			}
 
 			if (type == "CLB")
@@ -107,7 +110,7 @@ void DAQConfig::parseLine(std::string &line)
 			}
 			else 
 			{
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be string (CLB or BBB)", value);
+				log(WARNING, "DAQControl error: ({}) should be string (CLB or BBB)", value);
 			}
 		}		
 
@@ -115,35 +118,35 @@ void DAQConfig::parseLine(std::string &line)
 		else if (config.compare("eid") == 0) {
 			int temp_eid;
 			if (!(ss >> configs_[controller_num].eid_)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value);
+				log(WARNING, "DAQControl error: ({}) should be int", value);
 			}	
 		} 
 
 		// Add the controllers MAC address
 		else if (config.compare("mac") == 0) {
 			if (!(ss >> std::hex >> configs_[controller_num].mac_)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be hex", value);
+				log(WARNING, "DAQControl error: ({}) should be hex", value);
 			}	
 		} 
 
 		// Add the controllers IP address
 		else if (config.compare("ip") == 0) {
 			if (!(ss >> configs_[controller_num].ip_)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value); 
+				log(WARNING, "DAQControl error: ({}) should be int", value); 
 			}			
 		}
 
 		// Add the controllers slow-control port
 		else if (config.compare("port") == 0) {
 			if (!(ss >> configs_[controller_num].port_)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value);  
+				log(WARNING, "DAQControl error: ({}) should be int", value);  
 			}			
 		}
 
 		// Should we use the relay to control the power?
 		else if (config.compare("relay_control") == 0) {
 			if (!(ss >> configs_[controller_num].relay_control_)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be bool (0 or 1)", value);  
+				log(WARNING, "DAQControl error: ({}) should be bool (0 or 1)", value);  
 			}			
 		}
 
@@ -151,7 +154,7 @@ void DAQConfig::parseLine(std::string &line)
 		if (config.compare("relay_type") == 0) {
 			std::string type;
 			if (!(ss >> type)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be string (MC, EC, DANOUT)", value);
+				log(WARNING, "DAQControl error: ({}) should be string (MC, EC, DANOUT)", value);
 			}
 
 			if (type == "MC")
@@ -168,70 +171,70 @@ void DAQConfig::parseLine(std::string &line)
 			}
 			else 
 			{
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be string (MC, EC, DANOUT)", value);
+				log(WARNING, "DAQControl error: ({}) should be string (MC, EC, DANOUT)", value);
 			}
 		}
 
 		// Add the controllers relay IP address
 		else if (config.compare("relay_ip") == 0) {
 			if (!(ss >> configs_[controller_num].relay_ip_)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value);  
+				log(WARNING, "DAQControl error: ({}) should be int", value);  
 			}			
 		}
 
 		// Add the controllers relay port
 		else if (config.compare("relay_port") == 0) {
 			if (!(ss >> configs_[controller_num].relay_port_)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value);  
+				log(WARNING, "DAQControl error: ({}) should be int", value);  
 			}			
 		}
 
 		// Add the controllers relay chp
 		else if (config.compare("relay_chp") == 0) {
 			if (!(ss >> configs_[controller_num].relay_chp_)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value);  
+				log(WARNING, "DAQControl error: ({}) should be int", value);  
 			}			
 		}
 
 		// Add the controllers relay chn
 		else if (config.compare("relay_chn") == 0) {
 			if (!(ss >> configs_[controller_num].relay_chn_)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value);  
+				log(WARNING, "DAQControl error: ({}) should be int", value);  
 			}			
 		}
 
 		// Add the controllers data IP address
 		else if (config.compare("data_ip") == 0) {
 			if (!(ss >> configs_[controller_num].data_ip_)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value); 
+				log(WARNING, "DAQControl error: ({}) should be int", value); 
 			}			
 		}
 
 		// Add the controllers data port
 		else if (config.compare("data_port") == 0) {
 			if (!(ss >> configs_[controller_num].data_port_)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value); 
+				log(WARNING, "DAQControl error: ({}) should be int", value); 
 			}			
 		}
 
 		// Add the controllers data window duration
 		else if (config.compare("data_window") == 0) {
 			if (!(ss >> configs_[controller_num].data_window_)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value); 
+				log(WARNING, "DAQControl error: ({}) should be int", value); 
 			}			
 		}
 
 		// Add the controllers max data packet size
 		else if (config.compare("data_size") == 0) {
 			if (!(ss >> configs_[controller_num].data_size_)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value); 
+				log(WARNING, "DAQControl error: ({}) should be int", value); 
 			}			
 		}
 
 		// Add the controllers high rate veto flag
 		else if (config.compare("veto_enabled") == 0) {
 			if (!(ss >> configs_[controller_num].veto_enabled_)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be bool (0 or 1)", value); 
+				log(WARNING, "DAQControl error: ({}) should be bool (0 or 1)", value); 
 			}			
 		}
 
@@ -239,7 +242,7 @@ void DAQConfig::parseLine(std::string &line)
 		// Add the controllers high rate veto value
 		else if (config.compare("veto_value") == 0) {
 			if (!(ss >> configs_[controller_num].veto_value_)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value); 
+				log(WARNING, "DAQControl error: ({}) should be int", value); 
 			}			
 		}
 		
@@ -247,7 +250,7 @@ void DAQConfig::parseLine(std::string &line)
 		else if (config.compare("nano_enabled") == 0) {
 			bool enabled = false;
 			if (!(ss >> enabled)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be bool (0 or 1)", value);
+				log(WARNING, "DAQControl error: ({}) should be bool (0 or 1)", value);
 			}
 
 			if (enabled) 
@@ -264,7 +267,7 @@ void DAQConfig::parseLine(std::string &line)
 		// Add the nanobeacon voltage
 		else if (config.compare("nano_voltage") == 0) {
 			if (!(ss >> configs_[controller_num].nano_voltage_)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value);
+				log(WARNING, "DAQControl error: ({}) should be int", value);
 			}	
 		} 	
 		
@@ -272,7 +275,7 @@ void DAQConfig::parseLine(std::string &line)
 		else if (config.compare("ch_enabled") == 0) {
 			unsigned binarySet;
 			if (!(ss >> std::hex >> binarySet)) { 
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be hex (32 bit)", value);
+				log(WARNING, "DAQControl error: ({}) should be hex (32 bit)", value);
 			}			
 			std::bitset<32> b(binarySet);
 			configs_[controller_num].ch_enabled_ = b;
@@ -287,26 +290,26 @@ void DAQConfig::parseLine(std::string &line)
 		// Add the channel eID
 		if (config.compare("id") == 0) {
 			if (!(ss >> std::hex >> configs_[controller_num].ch_id_[channel_num])) {
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be hex", value);
+				log(WARNING, "DAQControl error: ({}) should be hex", value);
 			}			
 		} 
 
 		// Add the channel volatages
 		else if (config.compare("hv") == 0) {
 			if (!(ss >> configs_[controller_num].ch_hv_[channel_num])) {
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value);
+				log(WARNING, "DAQControl error: ({}) should be int", value);
 			}			
 		} 
 
 		// Add the channel thresholds
 		else if (config.compare("th") == 0) {
 			if (!(ss >> configs_[controller_num].ch_th_[channel_num])) {
-				g_elastic.log(WARNING, "DAQControl error: ({}) should be int", value);
+				log(WARNING, "DAQControl error: ({}) should be int", value);
 			}			
 		} 
 
 	} else {
-		g_elastic.log(WARNING, "DAQControl error: Invalid config line!");
+		log(WARNING, "DAQControl error: Invalid config line!");
 	}
 
 	return;

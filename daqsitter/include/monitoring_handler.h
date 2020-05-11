@@ -20,8 +20,9 @@
 
 #include <clb/data_structs.h>
 #include <clb/header_structs.h>
-#include "util/command_receiver.h"
+#include <util/command_receiver.h>
 #include <util/elastic_interface.h>
+#include <util/logging.h>
 
 #define BUFFERSIZE 10000
 
@@ -30,7 +31,7 @@
 
 const static std::size_t clb_mon_size = 240;
 
-class MonitoringHandler : public CommandHandler {
+class MonitoringHandler : public CommandHandler, protected Logging {
 public:
     /// Create a MonitoringHandler
     MonitoringHandler(std::string config_file, bool save_elastic,

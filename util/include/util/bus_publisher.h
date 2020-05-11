@@ -9,9 +9,10 @@
 #include <thread>
 
 #include <util/control_msg.h>
+#include <util/logging.h>
 
 template <class T>
-class BusPublisher {
+class BusPublisher : protected Logging {
 public:
     using message_type = T;
 

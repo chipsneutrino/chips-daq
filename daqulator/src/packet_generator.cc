@@ -7,8 +7,9 @@
 PacketGenerator::PacketGenerator(std::string config_file, std::string dataFile,
                                  std::string address, int time_slice_duration,
                                  int runNum, int MTU, int hitR)
-    : fConfig(config_file.c_str()), fFile(dataFile.c_str()), fSock_clb_opt(fIO_service, boost::asio::ip::udp::udp::v4()), fSock_clb_mon(fIO_service, boost::asio::ip::udp::udp::v4()), fTimer(fIO_service, boost::posix_time::millisec(time_slice_duration)), fDelta_ts(time_slice_duration), fHit_dist(hitR * time_slice_duration, (hitR * time_slice_duration) / 10), fTemperature_dist(3000, 500), fHumidity_dist(5000, 500)
+    : Logging{}, fConfig(config_file.c_str()), fFile(dataFile.c_str()), fSock_clb_opt(fIO_service, boost::asio::ip::udp::udp::v4()), fSock_clb_mon(fIO_service, boost::asio::ip::udp::udp::v4()), fTimer(fIO_service, boost::posix_time::millisec(time_slice_duration)), fDelta_ts(time_slice_duration), fHit_dist(hitR * time_slice_duration, (hitR * time_slice_duration) / 10), fTemperature_dist(3000, 500), fHumidity_dist(5000, 500)
 {
+    setUnitName("PacketGenerator");
 
     // Set up the CLB optical output
     boost::asio::ip::udp::udp::resolver resolver_clb_opt(fIO_service);
@@ -99,7 +100,7 @@ PacketGenerator::PacketGenerator(std::string config_file, std::string dataFile,
     fMon_data.Humidity = htonl(0); // Humidity in 100th RH
 
     // Log the setup to elasticsearch
-    g_elastic.log(INFO, "Packet Generator Start");
+    log(INFO, "Packet Generator Start");
 
     // Work the generation
     workGeneration();

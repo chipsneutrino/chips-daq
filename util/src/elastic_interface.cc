@@ -47,7 +47,7 @@ void ElasticInterface::init(bool print_logs, bool print_debug, int index_threads
     }
 }
 
-void ElasticInterface::log(severity level, std::string message)
+void ElasticInterface::log(severity level, const std::string& unit, std::string&& message)
 {
     if (print_logs_) // Print to stdout if required
     {

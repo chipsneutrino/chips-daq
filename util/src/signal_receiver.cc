@@ -4,12 +4,14 @@
 #include <util/elastic_interface.h>
 
 SignalReceiver::SignalReceiver()
-    : handler_{}
-    , running_{ false }
-    , receiver_thread_{}
-    , io_service_{}
-    , signal_set_{ io_service_, SIGINT }
+    : Logging {}
+    , handler_ {}
+    , running_ { false }
+    , receiver_thread_ {}
+    , io_service_ {}
+    , signal_set_ { io_service_, SIGINT }
 {
+    setUnitName("SignalReceiver");
 }
 
 void SignalReceiver::setHandler(std::shared_ptr<CommandHandler> handler)
@@ -24,7 +26,7 @@ void SignalReceiver::runAsync()
     }
 
     running_ = true;
-    receiver_thread_ = std::unique_ptr<std::thread>{ new std::thread(std::bind(&SignalReceiver::receiverThread, this)) }; // TODO: std::make_unique in c++14
+    receiver_thread_ = std::unique_ptr<std::thread> { new std::thread(std::bind(&SignalReceiver::receiverThread, this)) }; // TODO: std::make_unique in c++14
 
     workSignals();
 }
@@ -48,20 +50,20 @@ void SignalReceiver::join()
 void SignalReceiver::receiverThread()
 {
     if (!handler_) {
-        g_elastic.log(WARNING, "SignalReceiver started without a CommandHandler, commands will not be carried out! Terminating to avoid crash.");
+        log(WARNING, "SignalReceiver started without a CommandHandler, commands will not be carried out! Terminating to avoid crash.");
         return;
     }
 
-    g_elastic.log(INFO, "SignalReceiver started");
+    log(INFO, "SignalReceiver started");
     io_service_.run();
-    g_elastic.log(INFO, "SignalReceiver finished");
+    log(INFO, "SignalReceiver finished");
 }
 
 void SignalReceiver::handleSignals(boost::system::error_code const& error, int signum)
 {
     if (error) {
         // TODO: handle it separately!
-        g_elastic.log(ERROR, "Signal handler caught error {}: {}", error.value(), error.category().name());
+        log(ERROR, "Signal handler caught error {}: {}", error.value(), error.category().name());
         workSignals();
         return;
     }
@@ -71,13 +73,13 @@ void SignalReceiver::handleSignals(boost::system::error_code const& error, int s
         // This is just for nice output.
         std::cout << std::endl;
 
-        g_elastic.log(INFO, "Received signal {}. Terminating...", signum);
+        log(INFO, "Received signal {}. Terminating...", signum);
         handler_->handleExitCommand();
         io_service_.stop();
         break;
 
     default:
-        g_elastic.log(WARNING, "Signal handler caught unhandled signal {}.", signum);
+        log(WARNING, "Signal handler caught unhandled signal {}.", signum);
         break;
     }
 

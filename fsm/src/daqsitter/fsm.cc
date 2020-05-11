@@ -2,6 +2,13 @@
 #include "daqsitter/states.h"
 
 namespace Daqsitter {
+FSM::FSM()
+    : Fsm<FSM> {}
+    , Logging {}
+{
+    setUnitName("Daqsitter");
+}
+
 void FSM::react(events::Disconnected const& e)
 {
     transit<states::Offline>();

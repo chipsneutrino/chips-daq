@@ -9,8 +9,10 @@
 #include "ops_uplink.h"
 
 OpsUplink::OpsUplink(const std::string& bus_url)
-    : bus_url_ { bus_url }
+    : Logging {}
+    , bus_url_ { bus_url }
 {
+    setUnitName("OpsUplink");
 }
 
 void OpsUplink::run()
@@ -38,7 +40,7 @@ void OpsUplink::run()
                 handleMessage(sock, message);
             }
         } catch (const nng::exception& e) {
-            g_elastic.log(DEBUG, "Ops error: {}: {}", e.who(), e.what());
+            log(DEBUG, "Ops error: {}: {}", e.who(), e.what());
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
     }

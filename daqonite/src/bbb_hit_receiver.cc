@@ -13,7 +13,8 @@ BBBHitReceiver::BBBHitReceiver(std::shared_ptr<boost::asio::io_service> io_servi
     : HitReceiver { io_service, data_handler, mode, opt_port, handler_id, sizeof(opt_packet_header_t) }
     , next_sequence_number_ { 0 }
 {
-    g_elastic.log(INFO, "BBB hit receiver {} started on port {}", handler_id, opt_port);
+    setUnitName("BBBHitReceiver[{}]", handler_id);
+    log(INFO, "BBB hit receiver {} started on port {}", handler_id, opt_port);
 }
 
 bool BBBHitReceiver::processPacket(const char* datagram, std::size_t size)
@@ -22,7 +23,7 @@ bool BBBHitReceiver::processPacket(const char* datagram, std::size_t size)
     const std::size_t remaining_bytes = size - sizeof(opt_packet_header_t);
     const std::ldiv_t div = std::div((long)remaining_bytes, sizeof(opt_packet_hit_t));
     if (div.rem != 0) {
-        g_elastic.log(WARNING, "BBB hit receiver {} received packet with invalid body (expected multiple of {}, got {} which has remainder {})",
+        log(WARNING, "BBB hit receiver {} received packet with invalid body (expected multiple of {}, got {} which has remainder {})",
             handlerID(), sizeof(opt_packet_hit_t), remaining_bytes, div.rem);
         return false;
     }
@@ -31,11 +32,11 @@ bool BBBHitReceiver::processPacket(const char* datagram, std::size_t size)
     const opt_packet_header_t& header_optical = *reinterpret_cast<const opt_packet_header_t*>(datagram);
 
     const auto& header { *reinterpret_cast<const opt_packet_header_t*>(datagram) };
-    g_elastic.log(DEBUG, "Have optical header with run = {},\t plane = {},\t seq = {},\t hits = {},\t data_hits = {}.",
+    log(DEBUG, "Have optical header with run = {},\t plane = {},\t seq = {},\t hits = {},\t data_hits = {}.",
         header.common.run_number, header.common.plane_number, header.common.sequence_number, header.hit_count, div.quot);
 
     if (header.common.sequence_number != next_sequence_number_) {
-        g_elastic.log(WARNING, "Received a packet out of order (or after a gap), expected sequence number {}, got {} instead", next_sequence_number_, header.common.sequence_number);
+        log(WARNING, "Received a packet out of order (or after a gap), expected sequence number {}, got {} instead", next_sequence_number_, header.common.sequence_number);
     }
     next_sequence_number_ = 1 + header.common.sequence_number;
 
@@ -82,7 +83,7 @@ bool BBBHitReceiver::processPacket(const char* datagram, std::size_t size)
 
         // FIXME: adc0
 
-        g_elastic.log(DEBUG, "Have hit with channel = {},\t timestamp = [{}, {}, {}],\t ToT = {},\t ADC0 = {}.", new_event.Channel, header.common.window_start.year, new_event.Timestamp_s, new_event.Timestamp_ns, new_event.Tot, hit->adc0);
+        log(DEBUG, "Have hit with channel = {},\t timestamp = [{}, {}, {}],\t ToT = {},\t ADC0 = {}.", new_event.Channel, header.common.window_start.year, new_event.Timestamp_s, new_event.Timestamp_ns, new_event.Tot, hit->adc0);
 
         event_queue.emplace_back(std::cref(new_event));
     }

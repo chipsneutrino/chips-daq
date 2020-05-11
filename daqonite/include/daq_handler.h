@@ -21,11 +21,13 @@
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 
+#include <util/logging.h>
+
 #include "data_handler.h"
 #include "hit_receiver.h"
 #include "util/command_receiver.h"
 
-class DAQHandler : public CommandHandler {
+class DAQHandler : public CommandHandler, protected Logging {
 public:
     /**
      * Create a DAQHandler

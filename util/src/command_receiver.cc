@@ -4,16 +4,17 @@
 #include <nngpp/protocol/sub0.h>
 
 #include "command_receiver.h"
-#include <util/elastic_interface.h>
 
 CommandReceiver::CommandReceiver(const std::string& url)
-    : handler_ {}
+    : Logging {}
+    , handler_ {}
     , url_ { url }
     , running_ { false }
     , receiver_thread_ {}
     , cv_receiver_thread_ {}
     , mtx_receiver_thread_ {}
 {
+    setUnitName("CommandReceiver");
 }
 
 void CommandReceiver::setHandler(std::shared_ptr<CommandHandler> handler)
@@ -50,11 +51,11 @@ void CommandReceiver::join()
 void CommandReceiver::receiverThread()
 {
     if (!handler_) {
-        g_elastic.log(WARNING, "CommandReceiver started without a CommandHandler, commands will not be carried out! Terminating to avoid crash.");
+        log(WARNING, "CommandReceiver started without a CommandHandler, commands will not be carried out! Terminating to avoid crash.");
         return;
     }
 
-    g_elastic.log(INFO, "CommandReceiver started");
+    log(INFO, "CommandReceiver started");
 
     while (running_) {
         try {
@@ -79,15 +80,15 @@ void CommandReceiver::receiverThread()
                 processMessage(message);
             }
         } catch (const nng::exception& e) {
-            g_elastic.log(ERROR, "CommandReceiver caught error when listening: {}", e.what());
-            g_elastic.log(INFO, "CommandReceiver will reconnect in 5 seconds");
+            log(ERROR, "CommandReceiver caught error when listening: {}", e.what());
+            log(INFO, "CommandReceiver will reconnect in 5 seconds");
 
             std::unique_lock<std::mutex> lk { mtx_receiver_thread_ };
             cv_receiver_thread_.wait_for(lk, std::chrono::seconds(5), [this] { return !running_; });
         }
     }
 
-    g_elastic.log(INFO, "CommandReceiver finished");
+    log(INFO, "CommandReceiver finished");
 }
 
 void CommandReceiver::processMessage(const ControlMessage& message)
@@ -112,7 +113,7 @@ void CommandReceiver::processMessage(const ControlMessage& message)
         handler_->handleExitCommand();
         break;
     default:
-        g_elastic.log(WARNING, "CommandReceiver got message with unknown discriminator: {}", message.Discriminator);
+        log(WARNING, "CommandReceiver got message with unknown discriminator: {}", message.Discriminator);
         break;
     }
 }

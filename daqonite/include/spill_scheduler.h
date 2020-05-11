@@ -18,6 +18,8 @@
 
 #include "XmlRpc.h"
 
+#include <util/logging.h>
+
 #include "batch_scheduler.h"
 #include "trigger_predictor.h"
 
@@ -43,7 +45,7 @@ std::string getSpillNameFromType(int type);
 /// Clock signal conversion from NoVA to UTC. Nicked from NSS time utils.
 void convertNovaTimeToUnixTime(const std::uint64_t& inputNovaTime, struct timeval& outputUnixTime);
 
-class SpillScheduler : public BatchScheduler {
+class SpillScheduler : public BatchScheduler, protected Logging {
     int port_; ///< Port where spill messages are expected to come.
     std::size_t trigger_memory_size_; ///< How many past triggers to remember (more = robust, less = quickly adapting)
     double init_period_guess_; ///< Initial guess of trigger period in seconds. Will be eventually overwritten.
@@ -54,7 +56,7 @@ class SpillScheduler : public BatchScheduler {
     std::atomic_bool spill_server_running_; ///< Is the spill server supposed to be running?
     std::unique_ptr<std::thread> spill_server_thread_; ///< Spill server thread.
 
-    class Spill : public XmlRpc::XmlRpcServerMethod {
+    class Spill : public XmlRpc::XmlRpcServerMethod, protected Logging {
         std::shared_ptr<TriggerPredictor> predictor_; ///< Spill interval predictor.
 
     public:

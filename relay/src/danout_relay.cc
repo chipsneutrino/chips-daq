@@ -7,7 +7,8 @@
 DanoutRelay::DanoutRelay(int ip, int port)
     : Relay(ip, port)
 {
-    g_elastic.log(INFO, "Creating DanoutRelay({})", ip_); 
+    setUnitName("DanoutRelay[{}]", ip_);
+    log(INFO, "Creating DanoutRelay({})", ip_); 
 }
 
 void DanoutRelay::on(int channel)

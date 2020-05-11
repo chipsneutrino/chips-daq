@@ -14,8 +14,8 @@ namespace states {
     /// Init State
     void Init::entry()
     {
-        g_elastic.log(INFO, "Experiment : Init");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Experiment : Init");
+        global.sendEvent(StateUpdate {});
     }
 
     void Init::react(OpsCommands::Exit const& e)
@@ -25,11 +25,10 @@ namespace states {
 
     void Init::react(StateUpdate const&)
     {
-        if (ControlBus::FSM::is_in_state<ControlBus::states::Online>() 
+        if (ControlBus::FSM::is_in_state<ControlBus::states::Online>()
             && Daqonite::FSM::is_in_state<Daqonite::states::Ready>()
             && Daqontrol::FSM::is_in_state<Daqontrol::states::Ready>()
-            && Daqsitter::FSM::is_in_state<Daqsitter::states::Ready>()) 
-        {
+            && Daqsitter::FSM::is_in_state<Daqsitter::states::Ready>()) {
             transit<states::Ready>();
         }
     }
@@ -37,11 +36,11 @@ namespace states {
     /// Exit State
     void Exit::entry()
     {
-        g_elastic.log(INFO, "Experiment : Exit");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Experiment : Exit");
+        global.sendEvent(StateUpdate {});
 
         {
-            ControlMessage msg{};
+            ControlMessage msg {};
             msg.Discriminator = ControlMessage::Exit::Discriminator;
             global.sendControlMessage(std::move(msg));
         }
@@ -56,20 +55,20 @@ namespace states {
     /// Ready State
     void Ready::entry()
     {
-        g_elastic.log(INFO, "Experiment : Ready");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Experiment : Ready");
+        global.sendEvent(StateUpdate {});
     }
 
     void Ready::react(OpsCommands::Config const& e)
     {
         // We perform the ControlMessage "action" before calling entry
         // We can then pass the config_file from here
-        auto action = [=] { 
-            ControlMessage msg{};
+        auto action = [=] {
+            ControlMessage msg {};
             msg.Discriminator = ControlMessage::Config::Discriminator;
-            msg.Payload.pConfig = ControlMessage::Config{};
+            msg.Payload.pConfig = ControlMessage::Config {};
             strcpy(msg.Payload.pConfig.config_file, e.config_file.c_str());
-            global.sendControlMessage(std::move(msg)); 
+            global.sendControlMessage(std::move(msg));
         };
 
         transit<states::Configuring>(action);
@@ -87,8 +86,8 @@ namespace states {
     /// Configuring State
     void Configuring::entry()
     {
-        g_elastic.log(INFO, "Experiment : Configuring");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Experiment : Configuring");
+        global.sendEvent(StateUpdate {});
     }
 
     void Configuring::react(StateUpdate const&)
@@ -105,10 +104,9 @@ namespace states {
         }
 
         // Check DAQontrol is in a valid state
-        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Ready>() 
+        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Ready>()
             && !Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
-            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) 
-        {
+            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) {
             transit<states::Error>();
             return;
         }
@@ -120,7 +118,7 @@ namespace states {
         }
 
         // Check applications are in the correct state to transmit state
-        if (Daqonite::FSM::is_in_state<Daqonite::states::Ready>() 
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Ready>()
             && Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
             && Daqsitter::FSM::is_in_state<Daqsitter::states::Ready>()) {
             transit<states::Configured>();
@@ -131,30 +129,30 @@ namespace states {
     /// Configured State
     void Configured::entry()
     {
-        g_elastic.log(INFO, "Experiment : Configured");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Experiment : Configured");
+        global.sendEvent(StateUpdate {});
     }
 
     void Configured::react(StateUpdate const&)
     {
-        if (!Daqonite::FSM::is_in_state<Daqonite::states::Ready>() 
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Ready>()
             && !Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
             && !Daqsitter::FSM::is_in_state<Daqsitter::states::Ready>()) {
             transit<states::Error>();
             return;
         }
     }
-    
+
     void Configured::react(OpsCommands::Config const& e)
     {
         // We perform the ControlMessage "action" before calling entry
         // We can then pass the config_file from here
-        auto action = [=] { 
-            ControlMessage msg{};
+        auto action = [=] {
+            ControlMessage msg {};
             msg.Discriminator = ControlMessage::Config::Discriminator;
-            msg.Payload.pConfig = ControlMessage::Config{};
+            msg.Payload.pConfig = ControlMessage::Config {};
             strcpy(msg.Payload.pConfig.config_file, e.config_file.c_str());
-            global.sendControlMessage(std::move(msg)); 
+            global.sendControlMessage(std::move(msg));
         };
 
         transit<states::Configuring>(action);
@@ -173,11 +171,11 @@ namespace states {
     /// StartingData State
     void StartingData::entry()
     {
-        g_elastic.log(INFO, "Experiment : StartingData");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Experiment : StartingData");
+        global.sendEvent(StateUpdate {});
 
         {
-            ControlMessage msg{};
+            ControlMessage msg {};
             msg.Discriminator = ControlMessage::StartData::Discriminator;
             global.sendControlMessage(std::move(msg));
         }
@@ -197,10 +195,9 @@ namespace states {
         }
 
         // Check DAQontrol is in a valid state
-        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Ready>() 
+        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Ready>()
             && !Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
-            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) 
-        {
+            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) {
             transit<states::Error>();
             return;
         }
@@ -212,7 +209,7 @@ namespace states {
         }
 
         // Check applications are in the correct state to transmit state
-        if (Daqonite::FSM::is_in_state<Daqonite::states::Ready>() 
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Ready>()
             && Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()
             && Daqsitter::FSM::is_in_state<Daqsitter::states::Started>()) {
             transit<states::Started>();
@@ -223,13 +220,13 @@ namespace states {
     /// Started State
     void Started::entry()
     {
-        g_elastic.log(INFO, "Experiment : Started");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Experiment : Started");
+        global.sendEvent(StateUpdate {});
     }
 
     void Started::react(StateUpdate const&)
     {
-        if (!Daqonite::FSM::is_in_state<Daqonite::states::Ready>() 
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Ready>()
             && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()
             && !Daqsitter::FSM::is_in_state<Daqsitter::states::Started>()) {
             transit<states::Error>();
@@ -246,12 +243,12 @@ namespace states {
     {
         // We perform the ControlMessage "action" before calling entry
         // We can then pass the RunType from here
-        auto action = [=] { 
-            ControlMessage msg{};
+        auto action = [=] {
+            ControlMessage msg {};
             msg.Discriminator = ControlMessage::StartRun::Discriminator;
-            msg.Payload.pStartRun = ControlMessage::StartRun{};
+            msg.Payload.pStartRun = ControlMessage::StartRun {};
             msg.Payload.pStartRun.run_type = e.run_type;
-            global.sendControlMessage(std::move(msg)); 
+            global.sendControlMessage(std::move(msg));
         };
         transit<states::StartingRun>(action);
     }
@@ -259,11 +256,11 @@ namespace states {
     /// StoppingData State
     void StoppingData::entry()
     {
-        g_elastic.log(INFO, "Experiment : StoppingData");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Experiment : StoppingData");
+        global.sendEvent(StateUpdate {});
 
         {
-            ControlMessage msg{};
+            ControlMessage msg {};
             msg.Discriminator = ControlMessage::StopData::Discriminator;
             global.sendControlMessage(std::move(msg));
         }
@@ -283,10 +280,9 @@ namespace states {
         }
 
         // Check DAQontrol is in a valid state
-        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Ready>() 
+        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Ready>()
             && !Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
-            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) 
-        {
+            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) {
             transit<states::Error>();
             return;
         }
@@ -298,7 +294,7 @@ namespace states {
         }
 
         // Check applications are in the correct state to transmit state
-        if (Daqonite::FSM::is_in_state<Daqonite::states::Ready>() 
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Ready>()
             && Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
             && Daqsitter::FSM::is_in_state<Daqsitter::states::Ready>()) {
             transit<states::Configured>();
@@ -309,8 +305,8 @@ namespace states {
     /// StartingRun State
     void StartingRun::entry()
     {
-        g_elastic.log(INFO, "Experiment : StartingRun");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Experiment : StartingRun");
+        global.sendEvent(StateUpdate {});
     }
 
     void StartingRun::react(StateUpdate const&)
@@ -327,10 +323,9 @@ namespace states {
         }
 
         // Check DAQontrol is in a valid state
-        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Ready>() 
+        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Ready>()
             && !Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
-            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) 
-        {
+            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) {
             transit<states::Error>();
             return;
         }
@@ -342,7 +337,7 @@ namespace states {
         }
 
         // Check applications are in the correct state to transmit state
-        if (Daqonite::FSM::is_in_state<Daqonite::states::Running>() 
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Running>()
             && Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()
             && Daqsitter::FSM::is_in_state<Daqsitter::states::Started>()) {
             transit<states::Running>();
@@ -352,13 +347,13 @@ namespace states {
 
     void Running::entry()
     {
-        g_elastic.log(INFO, "Experiment : Running");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Experiment : Running");
+        global.sendEvent(StateUpdate {});
     }
 
     void Running::react(StateUpdate const&)
     {
-        if (!Daqonite::FSM::is_in_state<Daqonite::states::Running>() 
+        if (!Daqonite::FSM::is_in_state<Daqonite::states::Running>()
             && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()
             && !Daqsitter::FSM::is_in_state<Daqsitter::states::Started>()) {
             transit<states::Error>();
@@ -373,11 +368,11 @@ namespace states {
 
     void StoppingRun::entry()
     {
-        g_elastic.log(INFO, "Experiment : StoppingRun");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Experiment : StoppingRun");
+        global.sendEvent(StateUpdate {});
 
         {
-            ControlMessage msg{};
+            ControlMessage msg {};
             msg.Discriminator = ControlMessage::StopRun::Discriminator;
             global.sendControlMessage(std::move(msg));
         }
@@ -397,10 +392,9 @@ namespace states {
         }
 
         // Check DAQontrol is in a valid state
-        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Ready>() 
+        if (!Daqontrol::FSM::is_in_state<Daqontrol::states::Ready>()
             && !Daqontrol::FSM::is_in_state<Daqontrol::states::Configured>()
-            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) 
-        {
+            && !Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()) {
             transit<states::Error>();
             return;
         }
@@ -412,7 +406,7 @@ namespace states {
         }
 
         // Check applications are in the correct state to transmit state
-        if (Daqonite::FSM::is_in_state<Daqonite::states::Ready>() 
+        if (Daqonite::FSM::is_in_state<Daqonite::states::Ready>()
             && Daqontrol::FSM::is_in_state<Daqontrol::states::Started>()
             && Daqsitter::FSM::is_in_state<Daqsitter::states::Started>()) {
             transit<states::Started>();
@@ -422,8 +416,8 @@ namespace states {
 
     void Error::entry()
     {
-        g_elastic.log(INFO, "Experiment : Error");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Experiment : Error");
+        global.sendEvent(StateUpdate {});
     }
 
     void Error::react(OpsCommands::Exit const& e)

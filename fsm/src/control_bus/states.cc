@@ -8,8 +8,8 @@ namespace ControlBus {
 namespace states {
     void Offline::entry()
     {
-        g_elastic.log(INFO, "ControlBus : Offline");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "ControlBus : Offline");
+        global.sendEvent(StateUpdate {});
     }
 
     void Offline::react(events::Connected const& e)
@@ -19,8 +19,8 @@ namespace states {
 
     void Online::entry()
     {
-        g_elastic.log(INFO, "ControlBus : Online");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "ControlBus : Online");
+        global.sendEvent(StateUpdate {});
     }
 
     void Online::react(events::Disconnected const& e)

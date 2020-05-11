@@ -7,6 +7,7 @@
 #include <sys/time.h>
 #include <vector>
 #include <util/elastic_interface.h>
+#include <util/logging.h>
 
 // Packet and SRP defines
 #define SRP_SIZE            4
@@ -41,7 +42,7 @@ enum MCFClass
 	event
 };
 
-class MsgBuilder {
+class MsgBuilder: protected Logging {
 public:
 	/// MsgBuilder Constructor
 	MsgBuilder();

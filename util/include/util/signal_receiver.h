@@ -3,9 +3,11 @@
 
 #include <boost/asio.hpp>
 
+#include <util/logging.h>
+
 #include "command_receiver.h"
 
-class SignalReceiver {
+class SignalReceiver : protected Logging {
 public:
     explicit SignalReceiver();
     virtual ~SignalReceiver() = default;

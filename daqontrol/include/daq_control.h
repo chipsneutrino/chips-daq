@@ -12,17 +12,18 @@
 #include <boost/thread.hpp>
 
 #include "clb_controller.h"
+#include <clb/clb_subsys.h>
 #include <clb/msg_types.h>
 #include <clb/proc_var.h>
-#include <clb/clb_subsys.h>
-
-#include "bbb_controller.h"
 
 #include <util/command_receiver.h>
 #include <util/daq_config.h>
 #include <util/elastic_interface.h>
+#include <util/logging.h>
 
-class DAQControl : public CommandHandler {
+#include "bbb_controller.h"
+
+class DAQControl : public CommandHandler, protected Logging {
 public:
     /**
      * Create a DAQControl
@@ -64,12 +65,12 @@ private:
     /// Post work to the io_service to check states and attempt retries
     void stateUpdate();
 
-    DAQConfig config_;                                          ///< DAQConfig read from config file
-    std::vector<Controller*> controllers_;                      ///< List of controllers
-    Control::Status current_state_;                             ///< Current state of control operation
-    Control::Status target_state_;                              ///< Target state of operation
+    DAQConfig config_; ///< DAQConfig read from config file
+    std::vector<Controller*> controllers_; ///< List of controllers
+    Control::Status current_state_; ///< Current state of control operation
+    Control::Status target_state_; ///< Target state of operation
 
-    std::shared_ptr<boost::asio::io_service> io_service_;       ///< BOOST io_service. The heart of everything
-    std::unique_ptr<boost::asio::io_service::work> run_work_;   ///< Work for the io_service
-    boost::thread_group thread_group_;                          ///< Group of threads to do the work
+    std::shared_ptr<boost::asio::io_service> io_service_; ///< BOOST io_service. The heart of everything
+    std::unique_ptr<boost::asio::io_service::work> run_work_; ///< Work for the io_service
+    boost::thread_group thread_group_; ///< Group of threads to do the work
 };

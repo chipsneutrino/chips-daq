@@ -17,16 +17,18 @@ void InfiniteScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t la
 }
 
 RegularScheduler::RegularScheduler(std::size_t n_batches_ahead, std::chrono::milliseconds batch_duration)
-    : n_batches_ahead_ { n_batches_ahead }
+    : Logging {}
+    , n_batches_ahead_ { n_batches_ahead }
     , batch_duration_s_ { batch_duration.count() / 1000. }
 {
+    setUnitName("RegularScheduler");
 }
 
 void RegularScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t last_approx_timestamp)
 {
     if (last_approx_timestamp == 0) {
         // If there is no data, wait for more.
-        g_elastic.log(WARNING, "No packets received. Cannot schedule batches yet.");
+        log(WARNING, "No packets received. Cannot schedule batches yet.");
         return;
     }
 

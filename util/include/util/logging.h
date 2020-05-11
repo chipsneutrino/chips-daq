@@ -20,7 +20,11 @@ public:
     virtual ~Logging() = default;
 
 protected:
-    void setUnitName(std::string&& unit_name);
+    template <typename S, typename... Args>
+    inline void setUnitName(const S& format_str, const Args&... args)
+    {
+        setUnitName(fmt::format(format_str, args...));
+    }
 
     /// Nice pretty-print formatting using fmt for logging
     template <typename S, typename... Args>
@@ -32,5 +36,6 @@ protected:
 private:
     std::string unit_name_;
 
+    void setUnitName(std::string&& unit_name);
     void log(severity level, std::string&& message);
 };

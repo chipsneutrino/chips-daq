@@ -9,16 +9,17 @@
 #include <nngpp/protocol/pub0.h>
 
 #include <util/async_component.h>
+#include <util/logging.h>
 
 template <typename MessageType>
-class Publisher : public AsyncComponent {
+class Publisher : public AsyncComponent, protected Logging {
 public:
     using message_type = MessageType;
 
 protected:
-    virtual void connected() {}
+    virtual void connected() { }
 
-    virtual void disconnected(const nng::exception& e) {}
+    virtual void disconnected(const nng::exception& e) { }
 
     virtual void run() override
     {
@@ -56,12 +57,14 @@ protected:
 public:
     explicit Publisher(const std::string& bus_url)
         : AsyncComponent {}
+        , Logging {}
         , bus_url_ { bus_url }
         , publish_queue_ {}
         , cv_publish_queue_ {}
         , mtx_publish_queue_ {}
         , reconnect_interval_ { 2000 }
     {
+        setUnitName("Publisher");
     }
 
     virtual ~Publisher() = default;

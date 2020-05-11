@@ -11,7 +11,8 @@
 #include "daq_handler.h"
 
 DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data, const std::string& data_path)
-    : collect_clb_data_ { collect_clb_data }
+    : Logging {}
+    , collect_clb_data_ { collect_clb_data }
     , collect_bbb_data_ { collect_bbb_data }
     , clb_ports_ {}
     , bbb_ports_ {}
@@ -24,6 +25,8 @@ DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data, const std::
     , data_handler_ { new DataHandler(data_path) }
     , hit_receivers_ {}
 {
+    setUnitName("DAQHandler");
+
     clb_ports_.push_back(57001);
     clb_ports_.push_back(57002);
     clb_ports_.push_back(57003);
@@ -71,10 +74,10 @@ void DAQHandler::setupHandlers()
 
 void DAQHandler::run()
 {
-    g_elastic.log(INFO, "DAQ Handler started ({}) ({}{})", n_threads_, collect_clb_data_ ? "clb" : "", collect_bbb_data_ ? ",bbb" : "");
+    log(INFO, "DAQ Handler started ({}) ({}{})", n_threads_, collect_clb_data_ ? "clb" : "", collect_bbb_data_ ? ",bbb" : "");
 
     // Setup the thread group and call io_service.run() in each
-    g_elastic.log(INFO, "DAQ Handler starting I/O service on {} threads", n_threads_);
+    log(INFO, "DAQ Handler starting I/O service on {} threads", n_threads_);
     for (int i = 0; i < n_threads_; ++i) {
         thread_group_.create_thread(boost::bind(&DAQHandler::ioServiceThread, this));
     }
@@ -83,7 +86,7 @@ void DAQHandler::run()
     thread_group_.join_all();
     data_handler_->join();
 
-    g_elastic.log(INFO, "DAQ Handler finished.");
+    log(INFO, "DAQ Handler finished.");
 }
 
 void DAQHandler::ioServiceThread()
@@ -93,12 +96,12 @@ void DAQHandler::ioServiceThread()
 
 void DAQHandler::handleConfigCommand(std::string config_file)
 {
-    g_elastic.log(INFO, "DAQonite: Config");
+    log(INFO, "DAQonite: Config");
 }
 
 void DAQHandler::handleStartDataCommand()
 {
-    g_elastic.log(INFO, "DAQonite: Starting Data");
+    log(INFO, "DAQonite: Starting Data");
 
     // Call the first work method to the optical data
     for (const auto& hit_receiver : hit_receivers_) {
@@ -108,17 +111,17 @@ void DAQHandler::handleStartDataCommand()
 
 void DAQHandler::handleStopDataCommand()
 {
-    g_elastic.log(INFO, "DAQonite: Stopping Data");
+    log(INFO, "DAQonite: Stopping Data");
 
     //TODO: Stop the work method for the optical data
 }
 
 void DAQHandler::handleStartRunCommand(RunType which)
 {
-    g_elastic.log(INFO, "DAQonite: Starting Run");
+    log(INFO, "DAQonite: Starting Run");
     // If we are currently running first stop the current run
     if (mode_ == true) {
-        g_elastic.log(INFO, "DAQ Handler stopping current mine");
+        log(INFO, "DAQ Handler stopping current mine");
         handleStopRunCommand();
     }
 
@@ -132,7 +135,7 @@ void DAQHandler::handleStartRunCommand(RunType which)
 
 void DAQHandler::handleStopRunCommand()
 {
-    g_elastic.log(INFO, "DAQonite: Stopping Run");
+    log(INFO, "DAQonite: Stopping Run");
     // Check we are actually running
     if (mode_ == true) {
         // Set the mode to monitoring
@@ -141,13 +144,13 @@ void DAQHandler::handleStopRunCommand()
         // Stop the data_handler run
         data_handler_->stopRun();
     } else {
-        g_elastic.log(INFO, "DAQ Handler already stopped mining");
+        log(INFO, "DAQ Handler already stopped mining");
     }
 }
 
 void DAQHandler::handleExitCommand()
 {
-    g_elastic.log(INFO, "DAQControl: Exit");
+    log(INFO, "DAQControl: Exit");
     handleStopRunCommand();
     run_work_.reset();
     io_service_->stop();

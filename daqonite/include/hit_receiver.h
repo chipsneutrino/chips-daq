@@ -15,12 +15,14 @@
 
 #include <boost/asio.hpp>
 
+#include <util/logging.h>
+
 #include "data_handler.h"
 
 /// Buffer size in bytes for optical data
 const static size_t BUFFER_SIZE_HITS = 10000;
 
-class HitReceiver {
+class HitReceiver : protected Logging {
 public:
     explicit HitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
         std::shared_ptr<DataHandler> data_handler, bool* mode, int opt_port,

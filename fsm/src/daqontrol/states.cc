@@ -8,14 +8,14 @@ namespace Daqontrol {
 namespace states {
     void Offline::entry()
     {
-        g_elastic.log(INFO, "Daqontrol : Offline");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Daqontrol : Offline");
+        global.sendEvent(StateUpdate {});
     }
 
     void Unknown::entry()
     {
-        g_elastic.log(INFO, "Daqontrol : Unknown");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Daqontrol : Unknown");
+        global.sendEvent(StateUpdate {});
     }
 
     void Unknown::react(events::Initialising const& e)
@@ -40,8 +40,8 @@ namespace states {
 
     void Initialising::entry()
     {
-        g_elastic.log(INFO, "Daqontrol : Initialising");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Daqontrol : Initialising");
+        global.sendEvent(StateUpdate {});
     }
 
     void Initialising::react(events::Ready const& e)
@@ -51,8 +51,8 @@ namespace states {
 
     void Ready::entry()
     {
-        g_elastic.log(INFO, "Daqontrol : Ready");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Daqontrol : Ready");
+        global.sendEvent(StateUpdate {});
     }
 
     void Ready::react(events::Configured const& e)
@@ -62,8 +62,8 @@ namespace states {
 
     void Configured::entry()
     {
-        g_elastic.log(INFO, "Daqontrol : Configured");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Daqontrol : Configured");
+        global.sendEvent(StateUpdate {});
     }
 
     void Configured::react(events::Started const& e)
@@ -73,8 +73,8 @@ namespace states {
 
     void Started::entry()
     {
-        g_elastic.log(INFO, "Daqontrol : Started");
-        global.sendEvent(StateUpdate{});
+        log(INFO, "Daqontrol : Started");
+        global.sendEvent(StateUpdate {});
     }
 
     void Started::react(events::Configured const& e)

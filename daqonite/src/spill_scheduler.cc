@@ -6,7 +6,8 @@
 #include <util/elastic_interface.h>
 
 SpillScheduler::SpillScheduler(int port, std::size_t trigger_memory_size, double init_period_guess, std::size_t n_batches_ahead, double time_window_radius)
-    : port_ { port }
+    : Logging {}
+    , port_ { port }
     , trigger_memory_size_ { trigger_memory_size }
     , init_period_guess_ { init_period_guess }
     , n_batches_ahead_ { n_batches_ahead }
@@ -16,6 +17,8 @@ SpillScheduler::SpillScheduler(int port, std::size_t trigger_memory_size, double
     , spill_server_ {}
     , bypass_os_time_ { false } // TODO: this should be a configurable setting
 {
+    setUnitName("SpillScheduler");
+
     spill_server_running_ = true;
     spill_server_thread_ = std::unique_ptr<std::thread> { new std::thread(std::bind(&SpillScheduler::workSpillServer, this)) };
 }
@@ -69,14 +72,14 @@ void SpillScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t last_
         if (last_scheduled_timestamp >= schedule_basis_timestamp) {
             schedule_basis_timestamp = last_scheduled_timestamp;
         } else {
-            g_elastic.log(WARNING, "Data ({}) is more recent than the last scheduled batch ({}). Some batches likely were missed. Try increasing schedule capacity!",
+            log(WARNING, "Data ({}) is more recent than the last scheduled batch ({}). Some batches likely were missed. Try increasing schedule capacity!",
                 schedule_basis_timestamp, last_scheduled_timestamp);
         }
     }
 
     if (schedule_basis_timestamp < 1e-3) {
         // If there is no data, wait for more.
-        g_elastic.log(WARNING, "No packets received. Cannot schedule batches yet.");
+        log(WARNING, "No packets received. Cannot schedule batches yet.");
         return;
     }
 
@@ -90,7 +93,7 @@ void SpillScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t last_
         coef = 1 + (schedule_basis_timestamp - last_timestamp) / learned_interval;
     }
 
-    g_elastic.log(INFO, "Will schedule {} more batches. Starting after timestamp {} (extrapolation factor {}x).",
+    log(INFO, "Will schedule {} more batches. Starting after timestamp {} (extrapolation factor {}x).",
         n_batches_ahead_ - schedule.size(), schedule_basis_timestamp, coef);
 
     while (schedule.size() < n_batches_ahead_) {
@@ -110,7 +113,7 @@ void SpillScheduler::workSpillServer()
 {
     using namespace XmlRpc;
 
-    g_elastic.log(INFO, "SpillServer up and running at port {}!", port_);
+    log(INFO, "SpillServer up and running at port {}!", port_);
     spill_server_ = std::unique_ptr<XmlRpcServer>(new XmlRpcServer);
     predictor_ = std::make_shared<TriggerPredictor>(trigger_memory_size_, init_period_guess_);
 
@@ -127,7 +130,7 @@ void SpillScheduler::workSpillServer()
     }
 
     spill_server_.reset();
-    g_elastic.log(INFO, "SpillServer signing off!");
+    log(INFO, "SpillServer signing off!");
 }
 
 std::string getSpillNameFromType(int type)
@@ -154,8 +157,10 @@ std::string getSpillNameFromType(int type)
 
 SpillScheduler::Spill::Spill(XmlRpc::XmlRpcServer* server, std::shared_ptr<TriggerPredictor> predictor)
     : XmlRpc::XmlRpcServerMethod("Spill", server)
+    , Logging {}
     , predictor_ { predictor }
 {
+    setUnitName("Spill");
 }
 
 void convertNovaTimeToUnixTime(const std::uint64_t& inputNovaTime, struct timeval& outputUnixTime)
@@ -196,7 +201,7 @@ void SpillScheduler::Spill::execute(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcV
 
     const int n_args = params.size();
     if (n_args != 2) {
-        g_elastic.log(WARNING, "SpillServer received bad request (expected 2 arguments, got {})", n_args);
+        log(WARNING, "SpillServer received bad request (expected 2 arguments, got {})", n_args);
         result = bad;
         return;
     }
@@ -219,7 +224,7 @@ void SpillScheduler::Spill::execute(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcV
     const double botchedTime = unixTime.tv_sec + 1e-6 * unixTime.tv_usec;
 
     // TODO: log this but do not clutter
-    // g_elastic.log(INFO, "Received spill '{}' at timestamp {}.", getSpillNameFromType(ttype), botchedTime);
+    // log(INFO, "Received spill '{}' at timestamp {}.", getSpillNameFromType(ttype), botchedTime);
 
     predictor_->addTrigger(botchedTime);
     result = ok;

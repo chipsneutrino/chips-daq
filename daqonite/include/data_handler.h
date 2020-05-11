@@ -23,15 +23,17 @@
 #include <boost/lockfree/queue.hpp>
 #include <boost/thread.hpp>
 
+#include <util/control_msg.h>
+#include <util/logging.h>
+
 #include "batch_scheduler.h"
 #include "clb_event.h"
 #include "merge_sorter.h"
 #include "spill_scheduler.h"
-#include <util/control_msg.h>
 
 #define NUMRUNTYPES 4
 
-class DataHandler {
+class DataHandler : protected Logging {
 public:
     /// Create a DataHandler
     explicit DataHandler(const std::string& data_path);

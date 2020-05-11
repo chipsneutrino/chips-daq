@@ -18,9 +18,11 @@
 #include <bitset>
 #include <fstream>
 #include <stdexcept>
+
 #include <boost/asio.hpp>
 
 #include <util/elastic_interface.h>
+#include <util/logging.h>
 
 // Enum for the different types of controller
 enum ControllerType {CLB, BBB};
@@ -89,7 +91,7 @@ struct ControllerConfig {
 	}
 };
 
-class DAQConfig {
+class DAQConfig: protected Logging {
 public:
 	/// Create a DAQConfig
 	DAQConfig() {};

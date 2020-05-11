@@ -4,11 +4,11 @@
 #include <nngpp/protocol/pub0.h>
 
 #include "util/bus_publisher.h"
-#include <util/elastic_interface.h>
 
 template <typename T>
 BusPublisher<T>::BusPublisher(const std::string& url)
-    : running_ { false }
+    : Logging {}
+    , running_ { false }
     , url_ { url }
     , comm_thread_ {}
     , status_thread_ {}
@@ -20,6 +20,7 @@ BusPublisher<T>::BusPublisher(const std::string& url)
     , mtx_status_thread_ {}
     , status_interval_ { 200 }
 {
+    setUnitName("BusPublisher");
 }
 
 template <typename T>
@@ -60,7 +61,7 @@ void BusPublisher<T>::join()
 template <typename T>
 void BusPublisher<T>::statusThread()
 {
-    g_elastic.log(INFO, "BusPublisher status thread started");
+    log(INFO, "BusPublisher status thread started");
 
     while (running_) {
         publishStatus();
@@ -69,19 +70,19 @@ void BusPublisher<T>::statusThread()
         cv_status_thread_.wait_for(lk, status_interval_, [this] { return !running_; });
     }
 
-    g_elastic.log(INFO, "BusPublisher status thread finished");
+    log(INFO, "BusPublisher status thread finished");
 }
 
 template <typename T>
 void BusPublisher<T>::communicationThread()
 {
-    g_elastic.log(INFO, "BusPublisher communication thread started");
+    log(INFO, "BusPublisher communication thread started");
 
     while (running_) {
         try {
             auto sock = nng::pub::open();
             sock.listen(url_.c_str());
-            g_elastic.log(INFO, "BusPublisher publishing to '{}'", url_);
+            log(INFO, "BusPublisher publishing to '{}'", url_);
 
             for (;;) {
                 std::unique_lock<std::mutex> lk { mtx_publish_queue_ };
@@ -98,12 +99,12 @@ void BusPublisher<T>::communicationThread()
                 }
             }
         } catch (const nng::exception& e) {
-            g_elastic.log(ERROR, "BusPublisher caught error: {}: {}", e.who(), e.what());
+            log(ERROR, "BusPublisher caught error: {}: {}", e.who(), e.what());
             std::this_thread::sleep_for(reconnect_interval_);
         }
     }
 
-    g_elastic.log(INFO, "BusPublisher communication thread finished");
+    log(INFO, "BusPublisher communication thread finished");
 }
 
 template class BusPublisher<DaqoniteStateMessage>;

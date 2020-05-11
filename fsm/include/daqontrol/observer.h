@@ -1,7 +1,8 @@
 #include <util/async_component.h>
+#include <util/logging.h>
 
 namespace Daqontrol {
-class Observer : public AsyncComponent {
+class Observer : public AsyncComponent, protected Logging {
 protected:
     void run() override;
 

@@ -7,12 +7,13 @@
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 #include <util/daq_config.h>
+#include <util/logging.h>
 
 namespace Control {
 enum Status {Ready, Configured, Started};
 }
 
-class Controller {
+class Controller: protected Logging {
 public:
     /// Create a Controller using a ControllerConfig
     Controller(ControllerConfig config)

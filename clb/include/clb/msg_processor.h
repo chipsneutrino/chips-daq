@@ -17,13 +17,14 @@
 #include <clb/msg_reader.h>
 #include <util/elastic_interface.h>
 #include <util/daq_config.h>
+#include <util/logging.h>
 
 #define DEFAULT_PORT 0xDACE /// Default CLBv2 slow-control port (56014)
 #define MAX_ATTEMPTS 3
 #define READ_TIMEOUT 2
 #define PROCESS_WAIT 1000000
 
-class MsgProcessor {
+class MsgProcessor: protected Logging {
 public:
 	/**
 	 * Creates a new MsgProcessor object for the given CLB. Message processors take care of

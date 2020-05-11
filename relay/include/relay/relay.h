@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <boost/asio.hpp>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -13,15 +12,20 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <iostream>
-#include <util/elastic_interface.h>
 
-class Relay {
+#include <boost/asio.hpp>
+
+#include <util/logging.h>
+
+class Relay: protected Logging {
 public:
     /// Create a Relay
     Relay(int ip, int port)
         : ip_(boost::asio::ip::address_v4(ip).to_string())
         , port_(port) 
     {
+        setUnitName("Relay[{}]", ip_);
+
         struct sockaddr_in serv_addr;
         serv_addr.sin_family = AF_INET;
         serv_addr.sin_port = htons(port_);
@@ -30,12 +34,12 @@ public:
         char buffer[1024] = {0}; 
         if ((fd_ = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
         { 
-            g_elastic.log(ERROR, "Could not create relay socket!");
+            log(ERROR, "Could not create relay socket!");
         } 
      
         if (connect(fd_, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) 
         { 
-            g_elastic.log(ERROR, "Could not connect to relay ({})", ip_); 
+            log(ERROR, "Could not connect to relay ({})", ip_); 
         }
     };
 

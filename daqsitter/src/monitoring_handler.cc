@@ -5,30 +5,31 @@
 #include "monitoring_handler.h"
 
 /// Create a MonitoringHandler
-MonitoringHandler::MonitoringHandler(std::string config_file, bool save_elastic, 
-                                     bool save_file, float sample_frac)
-    : save_elastic_(save_elastic)
+MonitoringHandler::MonitoringHandler(std::string config_file, bool save_elastic,
+    bool save_file, float sample_frac)
+    : Logging {}
+    , save_elastic_(save_elastic)
     , save_file_(save_file)
     , sample_frac_(sample_frac)
     , n_threads_(4)
     , mode_(false)
-    , io_service_{ new boost::asio::io_service }
+    , io_service_ { new boost::asio::io_service }
     , clb_socket_(*io_service_, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), CLBMONPORT))
     , bbb_socket_(*io_service_, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), BBBMONPORT))
 {
+    setUnitName("MonitoringHandler");
+
     // Initialise the random number generator
     srand((unsigned)time(NULL));
 
-    if (save_file_)
-    {
+    if (save_file_) {
         // Open the monitoring file to save data to
         std::string fileName = generateFilename();
-        g_elastic.log(INFO, "MonitoringHandler Opening monitoring file {}", fileName);
+        log(INFO, "MonitoringHandler Opening monitoring file {}", fileName);
 
         file_ = new TFile(fileName.c_str(), "RECREATE");
-        if (!file_)
-        {
-            g_elastic.log(FATAL, "MonitoringHandler Could not open file_");
+        if (!file_) {
+            log(FATAL, "MonitoringHandler Could not open file_");
             throw std::runtime_error("MonitoringHandler Could not open file_");
         }
 
@@ -49,7 +50,7 @@ MonitoringHandler::MonitoringHandler(std::string config_file, bool save_elastic,
 void MonitoringHandler::run()
 {
     // Setup the thread group and call io_service.run() in each
-    g_elastic.log(INFO, "Monitoring Handler starting I/O service on {} threads", n_threads_);
+    log(INFO, "Monitoring Handler starting I/O service on {} threads", n_threads_);
     for (int i = 0; i < n_threads_; ++i) {
         thread_group_.create_thread(boost::bind(&MonitoringHandler::runThread, this));
     }
@@ -57,14 +58,14 @@ void MonitoringHandler::run()
     // Wait for all the threads to finish
     thread_group_.join_all();
 
-    g_elastic.log(INFO, "Monitoring Handler finished.");
+    log(INFO, "Monitoring Handler finished.");
 }
 
 /// Generate a filename for the ROOT output file
 std::string MonitoringHandler::generateFilename()
 {
     time_t rawtime;
-    struct tm *timeinfo;
+    struct tm* timeinfo;
     char buffer[80];
 
     time(&rawtime);
@@ -77,18 +78,14 @@ std::string MonitoringHandler::generateFilename()
 /// Setup the ROOT file TTree with the needed branches
 void MonitoringHandler::setupTree()
 {
-    if (file_ != NULL)
-    {
+    if (file_ != NULL) {
         clb_tree_ = new TTree("clb_tree", "clb_tree");
-        if (!clb_tree_)
-        {
-            g_elastic.log(FATAL, "MonitoringHandler Could not create 'clb_tree'");
+        if (!clb_tree_) {
+            log(FATAL, "MonitoringHandler Could not create 'clb_tree'");
             throw std::runtime_error("MonitoringHandler Could not create 'clb_tree'");
         }
-    }
-    else
-    {
-        g_elastic.log(FATAL, "MonitoringHandler Could not create 'clb_tree' as TFile does not exist");
+    } else {
+        log(FATAL, "MonitoringHandler Could not create 'clb_tree' as TFile does not exist");
         throw std::runtime_error("MonitoringHandler Could not create 'clb_tree' as TFile does not exist");
     }
 
@@ -105,57 +102,50 @@ void MonitoringHandler::setupTree()
 void MonitoringHandler::workCLBSocket()
 {
     clb_socket_.async_receive(boost::asio::buffer(&clb_buffer_[0], BUFFERSIZE),
-                              boost::bind(&MonitoringHandler::handleCLBSocket, this,
-                                          boost::asio::placeholders::error,
-                                          boost::asio::placeholders::bytes_transferred));
+        boost::bind(&MonitoringHandler::handleCLBSocket, this,
+            boost::asio::placeholders::error,
+            boost::asio::placeholders::bytes_transferred));
 }
 
-void MonitoringHandler::handleCLBSocket(boost::system::error_code const &error, std::size_t size) // ~30 microseconds
+void MonitoringHandler::handleCLBSocket(boost::system::error_code const& error, std::size_t size) // ~30 microseconds
 {
 
-    if (!error)
-    {
+    if (!error) {
 
         // Shall we skip this packet?
-        if (((float)rand() / RAND_MAX) > sample_frac_)
-        {
+        if (((float)rand() / RAND_MAX) > sample_frac_) {
             workCLBSocket();
             return;
         }
 
         // Check the packet is of the correct size
-        if (size != clb_mon_size)
-        {
-            g_elastic.log(WARNING, "MonitoringHandler CLB socket invalid packet size");
+        if (size != clb_mon_size) {
+            log(WARNING, "MonitoringHandler CLB socket invalid packet size");
             workCLBSocket();
             return;
         }
 
         // Cast the beggining of the packet to the CLBCommonHeader
-        CLBCommonHeader const &header = *static_cast<CLBCommonHeader const *>(static_cast<void const *>(&clb_buffer_[0]));
+        CLBCommonHeader const& header = *static_cast<CLBCommonHeader const*>(static_cast<void const*>(&clb_buffer_[0]));
 
         // Check the type of the packet is monitoring from the CLBCommonHeader
-        if (getType(header).first != MONI)
-        {
-            g_elastic.log(WARNING, "MonitoringHandler CLB socket incorrect packet type (expected {}, got {})", getType(header).first, MONI);
+        if (getType(header).first != MONI) {
+            log(WARNING, "MonitoringHandler CLB socket incorrect packet type (expected {}, got {})", getType(header).first, MONI);
             workCLBSocket();
             return;
         }
 
         // If we don't have a valid timestamp, just don't record the packets
-        if (!validTimeStamp(header))
-        {
+        if (!validTimeStamp(header)) {
             workCLBSocket();
-            return;            
+            return;
         }
 
         // Cast the next section of the packet to the monitoring hits
-        MONHits const &hits =
-            *static_cast<MONHits const *>(static_cast<void const *>(&clb_buffer_[0] + sizeof(CLBCommonHeader)));
+        MONHits const& hits = *static_cast<MONHits const*>(static_cast<void const*>(&clb_buffer_[0] + sizeof(CLBCommonHeader)));
 
         // Cast the next section of the packet to the SCData struct
-        SCData const &scData =
-            *static_cast<SCData const *>(static_cast<void const *>(&clb_buffer_[0] + sizeof(CLBCommonHeader) + sizeof(MONHits)));
+        SCData const& scData = *static_cast<SCData const*>(static_cast<void const*>(&clb_buffer_[0] + sizeof(CLBCommonHeader) + sizeof(MONHits)));
 
         // Fill the mon_data
         pom_data_.timestamp = header.timeStamp().inMilliSeconds();
@@ -169,27 +159,22 @@ void MonitoringHandler::handleCLBSocket(boost::system::error_code const &error, 
         channel_data_.pom = header.pomIdentifier();
         channel_data_.veto = hits.vetoBitset();
         float rate_scale = 1000000 / scData.duration(); // Window length in microseconds
-        for (int i = 0; i < 30; ++i)
-        {
+        for (int i = 0; i < 30; ++i) {
             channel_data_.rate[i] = (float)hits.hit(i) * rate_scale;
         }
 
         // If we are saving to ROOT file, fill the TTree
-        if (save_file_ && clb_tree_ != NULL)
-        {
+        if (save_file_ && clb_tree_ != NULL) {
             clb_tree_->Fill();
         }
 
         // Save the monitoring data to elasticsearch
-        if (save_elastic_)
-        {
+        if (save_elastic_) {
             g_elastic.pom(pom_data_);
             g_elastic.channel(channel_data_);
         }
-    }
-    else
-    {
-        g_elastic.log(WARNING, "MonitoringHandler CLB socket packet error");
+    } else {
+        log(WARNING, "MonitoringHandler CLB socket packet error");
     }
 
     workCLBSocket();
@@ -199,25 +184,21 @@ void MonitoringHandler::handleCLBSocket(boost::system::error_code const &error, 
 void MonitoringHandler::workBBBSocket()
 {
     bbb_socket_.async_receive(boost::asio::buffer(&bbb_buffer_[0], BUFFERSIZE),
-                              boost::bind(&MonitoringHandler::handleBBBSocket, this,
-                                          boost::asio::placeholders::error,
-                                          boost::asio::placeholders::bytes_transferred));
+        boost::bind(&MonitoringHandler::handleBBBSocket, this,
+            boost::asio::placeholders::error,
+            boost::asio::placeholders::bytes_transferred));
 }
 
-void MonitoringHandler::handleBBBSocket(boost::system::error_code const &error, std::size_t size)
+void MonitoringHandler::handleBBBSocket(boost::system::error_code const& error, std::size_t size)
 {
-    if (!error)
-    {
+    if (!error) {
         // Shall we skip this packet?
-        if (((float)rand() / RAND_MAX) > sample_frac_)
-        {
+        if (((float)rand() / RAND_MAX) > sample_frac_) {
             workBBBSocket();
             return;
         }
-    }
-    else
-    {
-        g_elastic.log(WARNING, "MonitoringHandler BBB socket packet error");
+    } else {
+        log(WARNING, "MonitoringHandler BBB socket packet error");
     }
     workBBBSocket();
 }
@@ -229,48 +210,47 @@ void MonitoringHandler::runThread()
 
 void MonitoringHandler::handleConfigCommand(std::string config_file)
 {
-    g_elastic.log(INFO, "DAQsitter: Config");
+    log(INFO, "DAQsitter: Config");
 }
 
 void MonitoringHandler::handleStartDataCommand()
 {
-    g_elastic.log(INFO, "DAQsitter: Starting Data");
+    log(INFO, "DAQsitter: Starting Data");
     // Check we are not running
     if (mode_ != true) {
         // Set the mode to monitoring
         mode_ = true;
 
     } else {
-        g_elastic.log(INFO, "Monitoring Handler already running");
+        log(INFO, "Monitoring Handler already running");
     }
 }
 
 void MonitoringHandler::handleStopDataCommand()
 {
-    g_elastic.log(INFO, "DAQsitter: Stopping Data");
+    log(INFO, "DAQsitter: Stopping Data");
     // Check we are actually running
     if (mode_ == true) {
         // Set the mode to not monitoring
         mode_ = false;
 
     } else {
-        g_elastic.log(INFO, "Monitoring Handler already not running");
+        log(INFO, "Monitoring Handler already not running");
     }
 }
 
 void MonitoringHandler::handleStartRunCommand(RunType which)
 {
-    g_elastic.log(INFO, "DAQsitter: Starting Run");
+    log(INFO, "DAQsitter: Starting Run");
 }
 
 void MonitoringHandler::handleStopRunCommand()
 {
-    g_elastic.log(INFO, "DAQsitter: Stopping Run");
+    log(INFO, "DAQsitter: Stopping Run");
 }
 
 void MonitoringHandler::handleExitCommand()
 {
-    g_elastic.log(INFO, "DAQsitter: Exit");
+    log(INFO, "DAQsitter: Exit");
     io_service_->stop();
 }
-

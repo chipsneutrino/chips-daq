@@ -5,7 +5,6 @@
 #pragma once
 
 #include "controller.h"
-#include <util/elastic_interface.h>
 
 class BBBController: public Controller {
 public:

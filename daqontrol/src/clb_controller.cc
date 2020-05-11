@@ -8,7 +8,8 @@ CLBController::CLBController(ControllerConfig config)
     : Controller(config)
     , processor_(config, io_service_)
 {
-    g_elastic.log(INFO, "Creating CLBController({})", config.eid_); 
+    setUnitName("CLBController[{}]", config.eid_);
+    log(INFO, "Creating CLBController({})", config.eid_); 
 }
 
 void CLBController::reset()
@@ -22,7 +23,7 @@ void CLBController::reset()
 
 void CLBController::configure()
 {
-    g_elastic.log(DEBUG, "CLBController({}) Configure...", config_.eid_); 
+    log(DEBUG, "CLBController({}) Configure...", config_.eid_); 
     working_ = true; // Set this controller to be working
     
     if(!testConnection()) { // Test the connection to the CLB
@@ -61,13 +62,13 @@ void CLBController::configure()
     }  
 
     state_ = Control::Configured; // Set the controller state to Configured
-    g_elastic.log(DEBUG, "CLBController({}) Configure DONE", config_.eid_); 
+    log(DEBUG, "CLBController({}) Configure DONE", config_.eid_); 
     working_ = false;
 }
 
 void CLBController::startData() 
 {
-    g_elastic.log(DEBUG, "CLBController({}) Start Data...", config_.eid_);
+    log(DEBUG, "CLBController({}) Start Data...", config_.eid_);
     working_ = true; // Set this controller to be working
 
     if(!setState(CLBEvent(CLBEvents::START))) { // Set the CLB state to RUNNING
@@ -76,13 +77,13 @@ void CLBController::startData()
     }       
 
     state_ = Control::Started; // Set the controller state to Started
-    g_elastic.log(DEBUG, "CLBController({}) Start Data DONE", config_.eid_);
+    log(DEBUG, "CLBController({}) Start Data DONE", config_.eid_);
     working_ = false;
 }
 
 void CLBController::stopData()
 {
-    g_elastic.log(DEBUG, "CLBController({}) Stop Data...", config_.eid_); 
+    log(DEBUG, "CLBController({}) Stop Data...", config_.eid_); 
     working_ = true; // Set this controller to be working
 
     if(!setState(CLBEvent(CLBEvents::PAUSE))) { // Set the CLB state to PAUSED
@@ -97,7 +98,7 @@ void CLBController::stopData()
     }   
 
     state_ = Control::Configured; // Set the controller state to Configured
-    g_elastic.log(DEBUG, "CLBController({}) Stop Data DONE", config_.eid_);
+    log(DEBUG, "CLBController({}) Stop Data DONE", config_.eid_);
     working_ = false;
 }
 
@@ -120,7 +121,7 @@ bool CLBController::resetState()
         if (!setState(CLBEvent(CLBEvents::STOP)))   return false;
         if (!setState(CLBEvent(CLBEvents::RESET)))  return false;
     } else {
-        g_elastic.log(WARNING, "CLB({}), do not know how to reset from this state", config_.eid_);
+        log(WARNING, "CLB({}), do not know how to reset from this state", config_.eid_);
         return false;
     }
 
@@ -136,13 +137,13 @@ bool CLBController::testConnection()
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'testConnection'", config_.eid_); 
+        log(ERROR, "CLB({}), Could not process 'testConnection'", config_.eid_); 
         return false;
     }  
          
     if (int count = mr.readU16() != 1)
     {
-        g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
+        log(ERROR, "Got wrong number of return variables {}", count); 
         return false;           
     }
 
@@ -151,7 +152,7 @@ bool CLBController::testConnection()
 
     if (eid != config_.eid_)
     {
-        g_elastic.log(ERROR, "CLB({}), Does not match eid {}", config_.eid_, eid); 
+        log(ERROR, "CLB({}), Does not match eid {}", config_.eid_, eid); 
         return false;        
     }
 
@@ -193,7 +194,7 @@ bool CLBController::setInitValues()
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'setInitValues'", config_.eid_); 
+        log(ERROR, "CLB({}), Could not process 'setInitValues'", config_.eid_); 
         return false;
     }
 
@@ -203,7 +204,7 @@ bool CLBController::setInitValues()
 bool CLBController::setState(CLBEvent event)
 {
     if (clb_state_ != event.source_) {
-        g_elastic.log(WARNING, "CLB({}) is not in the correct source state! {} {}", config_.eid_, clb_state_, event.source_);
+        log(WARNING, "CLB({}) is not in the correct source state! {} {}", config_.eid_, clb_state_, event.source_);
         return false;
     }
 
@@ -213,7 +214,7 @@ bool CLBController::setState(CLBEvent event)
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_EVENT, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'setState'", config_.eid_); 
+        log(ERROR, "CLB({}), Could not process 'setState'", config_.eid_); 
         return false;
     }
 
@@ -227,7 +228,7 @@ bool CLBController::getState()
     MsgWriter mw; MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_EXT_UPDATE, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'getState'", config_.eid_); 
+        log(ERROR, "CLB({}), Could not process 'getState'", config_.eid_); 
         return false;
     }
 
@@ -242,7 +243,7 @@ bool CLBController::getState()
         std::string errMsg;
         if (errCode > 0) {
             errMsg = mr.readString();
-            g_elastic.log(ERROR, "CLB({}), Subsys {} in state {} has err code {} with message {}!", config_.eid_, subsys, state, errCode, errMsg); 
+            log(ERROR, "CLB({}), Subsys {} in state {} has err code {} with message {}!", config_.eid_, subsys, state, errCode, errMsg); 
             return false;
         } else {
             errMsg = "";
@@ -251,7 +252,7 @@ bool CLBController::getState()
         else { 
             if (currentState != state) 
             {
-                g_elastic.log(ERROR, "CLB({}), Not all subsystems in the current state!", config_.eid_); 
+                log(ERROR, "CLB({}), Not all subsystems in the current state!", config_.eid_); 
                 return false;
             }
         }
@@ -270,7 +271,7 @@ bool CLBController::setEnabledPMTs()
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'setEnabledPMTs'", config_.eid_); 
+        log(ERROR, "CLB({}), Could not process 'setEnabledPMTs'", config_.eid_); 
         return false;
     }
 
@@ -288,7 +289,7 @@ bool CLBController::setHV()
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'setHV'", config_.eid_); 
+        log(ERROR, "CLB({}), Could not process 'setHV'", config_.eid_); 
         return false;
     }
 
@@ -306,7 +307,7 @@ bool CLBController::setThresholds()
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'setThresholds'", config_.eid_); 
+        log(ERROR, "CLB({}), Could not process 'setThresholds'", config_.eid_); 
         return false;
     }
 
@@ -323,13 +324,13 @@ bool CLBController::checkIDs()
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'checkIDs'", config_.eid_); 
+        log(ERROR, "CLB({}), Could not process 'checkIDs'", config_.eid_); 
         return false;
     } 
 
     if (int count = mr.readU16() != 1)
     {
-        g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
+        log(ERROR, "Got wrong number of return variables {}", count); 
         return false;           
     }   
 
@@ -352,7 +353,7 @@ bool CLBController::checkIDs()
         file_name += std::to_string(config_.eid_);
         file_name += "_mismatch_errors.dat";
 
-        g_elastic.log(ERROR, "{} non matching eid's on CLB({}) see file {} for details!", errors.size(), config_.eid_, file_name);  
+        log(ERROR, "{} non matching eid's on CLB({}) see file {} for details!", errors.size(), config_.eid_, file_name);  
 
         std::ofstream error_file;
         error_file.open(file_name);
@@ -380,13 +381,13 @@ bool CLBController::checkEnabledPMTs()
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'checkEnabledPMTs'", config_.eid_); 
+        log(ERROR, "CLB({}), Could not process 'checkEnabledPMTs'", config_.eid_); 
         return false;
     } 
 
     if (int count = mr.readU16() != 1)
     {
-        g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
+        log(ERROR, "Got wrong number of return variables {}", count); 
         return false;           
     }   
 
@@ -394,7 +395,7 @@ bool CLBController::checkEnabledPMTs()
     std::bitset<32> enabled(mr.readU32());
     if (enabled != config_.ch_enabled_)
     {
-        g_elastic.log(ERROR, "CLB({}), Enabled channels do not match!", config_.eid_);  
+        log(ERROR, "CLB({}), Enabled channels do not match!", config_.eid_);  
         return false;
     }   
 
@@ -410,13 +411,13 @@ bool CLBController::checkHV()
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'checkHV'", config_.eid_); 
+        log(ERROR, "CLB({}), Could not process 'checkHV'", config_.eid_); 
         return false;
     } 
              
     if (int count = mr.readU16() != 1)
     {
-        g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
+        log(ERROR, "Got wrong number of return variables {}", count); 
         return false;           
     }
 
@@ -425,7 +426,7 @@ bool CLBController::checkHV()
         long voltage = (long)mr.readU8();
         if (voltage != config_.ch_hv_[ipmt] && config_.ch_enabled_[ipmt])
         {
-            g_elastic.log(ERROR, "Non matching voltage on CLB({}) for PMT {}, actual:{} vs config:!", config_.eid_, ipmt, voltage, config_.ch_hv_[ipmt]); 
+            log(ERROR, "Non matching voltage on CLB({}) for PMT {}, actual:{} vs config:!", config_.eid_, ipmt, voltage, config_.ch_hv_[ipmt]); 
             return false;          
         }
     }
@@ -442,13 +443,13 @@ bool CLBController::checkThresholds()
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'checkThresholds'", config_.eid_); 
+        log(ERROR, "CLB({}), Could not process 'checkThresholds'", config_.eid_); 
         return false;
     } 
              
     if (int count = mr.readU16() != 1)
     {
-        g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
+        log(ERROR, "Got wrong number of return variables {}", count); 
         return false;           
     }
 
@@ -457,7 +458,7 @@ bool CLBController::checkThresholds()
         long threshold = (long)mr.readU8();
         if (threshold != config_.ch_th_[ipmt] && config_.ch_enabled_[ipmt])
         {
-            g_elastic.log(ERROR, "Non matching threshold on CLB({}) for PMT {}, actual:{} vs config:!", config_.eid_, ipmt, threshold, config_.ch_th_[ipmt]); 
+            log(ERROR, "Non matching threshold on CLB({}) for PMT {}, actual:{} vs config:!", config_.eid_, ipmt, threshold, config_.ch_th_[ipmt]); 
             return false;          
         }
     }
@@ -474,13 +475,13 @@ char CLBController::getSysEnabledMask()
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'getSysEnabledMask'", config_.eid_); 
+        log(ERROR, "CLB({}), Could not process 'getSysEnabledMask'", config_.eid_); 
         return -1;
     } 
          
     if (int count = mr.readU16() != 1)
     {
-        g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
+        log(ERROR, "Got wrong number of return variables {}", count); 
         return -1;           
     }
 
@@ -500,13 +501,13 @@ char CLBController::getSysDisabledMask()
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'getSysDisabledMask'", config_.eid_); 
+        log(ERROR, "CLB({}), Could not process 'getSysDisabledMask'", config_.eid_); 
         return -1;
     }  
          
     if (int count = mr.readU16() != 1)
     {
-        g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
+        log(ERROR, "Got wrong number of return variables {}", count); 
         return -1;           
     }
 
@@ -530,13 +531,13 @@ bool CLBController::setFlasher()
         MsgReader mr;
         if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
         {
-            g_elastic.log(ERROR, "CLB({}), Could not process 'setFlasher'", config_.eid_); 
+            log(ERROR, "CLB({}), Could not process 'setFlasher'", config_.eid_); 
             return false;
         }    
 
         if(!checkFlasherVoltage()) return false;
 
-        g_elastic.log(ERROR, "CLB({}), Flasher on at ({})", config_.eid_, config_.nano_voltage_);
+        log(ERROR, "CLB({}), Flasher on at ({})", config_.eid_, config_.nano_voltage_);
     } 
     else 
     {
@@ -547,7 +548,7 @@ bool CLBController::setFlasher()
         MsgReader mr;
         if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
         {
-            g_elastic.log(ERROR, "CLB({}), Could not process 'setFlasher'", config_.eid_); 
+            log(ERROR, "CLB({}), Could not process 'setFlasher'", config_.eid_); 
             return false;
         }           
     }
@@ -564,13 +565,13 @@ bool CLBController::checkFlasherVoltage()
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'checkFlasherVoltage'", config_.eid_); 
+        log(ERROR, "CLB({}), Could not process 'checkFlasherVoltage'", config_.eid_); 
         return false;
     } 
          
     if (int count = mr.readU16() != 1)
     {
-        g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
+        log(ERROR, "Got wrong number of return variables {}", count); 
         return false;           
     }
 
@@ -578,7 +579,7 @@ bool CLBController::checkFlasherVoltage()
     float voltage = (float)mr.readU16();
     if ((config_.nano_voltage_) != voltage) 
     {
-        g_elastic.log(ERROR, "The nanobeacon voltage has not been set to {} correctly it is {}", config_.nano_voltage_, voltage); 
+        log(ERROR, "The nanobeacon voltage has not been set to {} correctly it is {}", config_.nano_voltage_, voltage); 
         return false;             
     }
 
@@ -587,7 +588,7 @@ bool CLBController::checkFlasherVoltage()
 
 bool CLBController::enableHV()
 {
-    g_elastic.log(DEBUG, "CLBController({}) Enabling High Voltage..", config_.eid_);
+    log(DEBUG, "CLBController({}) Enabling High Voltage..", config_.eid_);
 
     char disabled;
     if(disabled = getSysDisabledMask() == -1) return false; // get the current SYS_SYS_DISABLE mask
@@ -600,11 +601,11 @@ bool CLBController::enableHV()
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'enableHV'", config_.eid_); 
+        log(ERROR, "CLB({}), Could not process 'enableHV'", config_.eid_); 
         return false;
     }   
 
-    g_elastic.log(DEBUG, "CLBController({}) Enabling High Voltage DONE", config_.eid_);
+    log(DEBUG, "CLBController({}) Enabling High Voltage DONE", config_.eid_);
     return true;
 }
 
@@ -623,7 +624,7 @@ bool CLBController::disableHV()
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'disableHV'", config_.eid_); 
+        log(ERROR, "CLB({}), Could not process 'disableHV'", config_.eid_); 
         return false;
     }  
 
@@ -643,7 +644,7 @@ bool CLBController::setIPMuxPorts()
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_SET_VARS, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'setIPMuxPorts'", config_.eid_); 
+        log(ERROR, "CLB({}), Could not process 'setIPMuxPorts'", config_.eid_); 
         return false;
     }
 
@@ -661,18 +662,18 @@ bool CLBController::getIPMuxPorts()
     MsgReader mr;
     if(!processor_.processCommand(MsgTypes::MSG_CLB_GET_VARS, mw, mr))
     {
-        g_elastic.log(ERROR, "CLB({}), Could not process 'getIPMuxPorts'", config_.eid_); 
+        log(ERROR, "CLB({}), Could not process 'getIPMuxPorts'", config_.eid_); 
         return false;
     }       
 
     if (int count = mr.readU16() != 1)
     {
-        g_elastic.log(ERROR, "Got wrong number of return variables {}", count); 
+        log(ERROR, "Got wrong number of return variables {}", count); 
         return false;           
     }
 
     int varId = mr.readU32(); 
-    g_elastic.log(DEBUG, "Ports: {}, {}, {}, {}", mr.readU16(), mr.readU16(), mr.readU16(), mr.readU16()); 
+    log(DEBUG, "Ports: {}, {}, {}, {}", mr.readU16(), mr.readU16(), mr.readU16(), mr.readU16()); 
 
     return true;
 }

@@ -4,6 +4,7 @@
 
 #include <util/async_component.h>
 #include <util/control_msg.h>
+#include <util/logging.h>
 
 namespace nng {
 struct socket;
@@ -11,7 +12,7 @@ struct socket;
 
 struct OpsMessage;
 
-class OpsUplink : public AsyncComponent {
+class OpsUplink : public AsyncComponent, protected Logging {
 protected:
     void run() override;
 

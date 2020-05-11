@@ -5,8 +5,11 @@
 #include <clb/msg_processor.h>
 
 MsgProcessor::MsgProcessor(ControllerConfig config, std::shared_ptr<boost::asio::io_service> io_service) 
-    : socket_(*io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0)) 
+    : Logging{}
+    , socket_(*io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0)) 
 {
+    setUnitName("MsgProcessor");
+
     boost::asio::ip::udp::resolver resolver(*io_service);
     boost::asio::ip::udp::resolver::query query(boost::asio::ip::udp::v4(), config.ipAsString(), std::to_string(config.port_));
     endpoint_ = *resolver.resolve(query);
@@ -67,7 +70,7 @@ bool MsgProcessor::sendCommand(std::vector<unsigned char> msg)
 
     if (sent != msg.size())
     {
-        //g_elastic.log(WARNING, "Only sent {} of {} bytes", sent, msg.size());   
+        //log(WARNING, "Only sent {} of {} bytes", sent, msg.size());   
         return false;
     }
     
@@ -82,7 +85,7 @@ bool MsgProcessor::getResponse(std::vector<unsigned char> &resp)
 
     if (size == -1) 
     {
-        //g_elastic.log(DEBUG, "Got timeout");
+        //log(DEBUG, "Got timeout");
         return false;        
     }
 
@@ -94,25 +97,25 @@ bool MsgProcessor::checkResponse(MsgBuilder &response, std::vector<unsigned char
 {
     if (!response.fromBytes(resp)) // Create the response message from the byte vector
     {
-        //g_elastic.log(WARNING, "Could not read response!");
+        //log(WARNING, "Could not read response!");
         return false;
     }
 
     if ((response.msg_id_ != msg.msg_id_)) // Check the response ID matches the sent message ID
     {
-        //g_elastic.log(WARNING, "Response ID does not match {}!", response.msg_id_);   
+        //log(WARNING, "Response ID does not match {}!", response.msg_id_);   
         return false;     
     }
 
     if (response.class_ != reply) // Check the response is a "reply"
     {
-        //g_elastic.log(WARNING, "Response is not a reply {}!", response.class_);     
+        //log(WARNING, "Response is not a reply {}!", response.class_);     
         return false;   
     }
 
     if (response.type_ != msg.type_) // Check the response type matches the sent message type
     {
-        //g_elastic.log(WARNING, "Response is not of the same type {}!", response.type_); 
+        //log(WARNING, "Response is not of the same type {}!", response.type_); 
         return false;       
     }
 

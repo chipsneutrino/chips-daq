@@ -13,6 +13,8 @@
 #include <chrono>
 #include <list>
 
+#include <util/logging.h>
+
 #include "clb_event.h"
 
 struct Batch {
@@ -45,7 +47,7 @@ public:
 };
 
 /// Scheduler which produces batches of uniform length.
-class RegularScheduler : public BatchScheduler {
+class RegularScheduler : public BatchScheduler, protected Logging {
     std::size_t n_batches_ahead_;
     double batch_duration_s_;
 

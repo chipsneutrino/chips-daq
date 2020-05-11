@@ -5,7 +5,9 @@
 #include <msg_builder.h>
 
 MsgBuilder::MsgBuilder() 
+	:Logging{}
 {
+	setUnitName("MsgBuilder");
   	content_.clear();
 }
 
@@ -72,7 +74,7 @@ bool MsgBuilder::fromBytes(std::vector<unsigned char> bb)
     // First check the received message is big enough	
 	if (bb.size() < (SRP_SIZE + HDR_SIZE + MSG_HDR_SIZE)) 
 	{
-		//g_elastic.log(WARNING, "MsgBuilder: Received data too small, got {}", bb.size());
+		//log(WARNING, "MsgBuilder: Received data too small, got {}", bb.size());
 		return false;
 	}
 
@@ -81,7 +83,7 @@ bool MsgBuilder::fromBytes(std::vector<unsigned char> bb)
     // int c = ((flags & SRP_FLAG_ACK_MASK) >> SRP_FLAG_ACK_SHIFT); // This is number of acks attached to message
     if ((flags & SRP_FLAG_MSG) == 0) // Check that there is an SRP_FLAG_MSG is present
     {
-        g_elastic.log(WARNING, "MsgBuilder: No SRP_FLAG_MSG flag in response");
+        log(WARNING, "MsgBuilder: No SRP_FLAG_MSG flag in response");
         return false;
     }
     packet_id_ = bb[1];
@@ -94,7 +96,7 @@ bool MsgBuilder::fromBytes(std::vector<unsigned char> bb)
     int count = (0xFF & bb[9]) + 1;  // number of messgages from element 5 in packet header 
     if (count != 1)
     {
-        g_elastic.log(WARNING, "MsgBuilder: {} messages in the packet", count);
+        log(WARNING, "MsgBuilder: {} messages in the packet", count);
         return false;        
     }  
 
@@ -102,7 +104,7 @@ bool MsgBuilder::fromBytes(std::vector<unsigned char> bb)
     //long tOffset = (long)( 0xFFFF & ((bb[10]<<8) | bb[11]) ) - time_;
     //if (tOffset != 0)
     //{
-    //    g_elastic.log(WARNING, "tOffset is not zero, it's {}", tOffset);
+    //    log(WARNING, "tOffset is not zero, it's {}", tOffset);
     //    return false;        
     //}
 
@@ -122,7 +124,7 @@ bool MsgBuilder::fromBytes(std::vector<unsigned char> bb)
 
     if (len < 0)
     {
-        g_elastic.log(WARNING, "Invalid message payload length {}", len);
+        log(WARNING, "Invalid message payload length {}", len);
         return false;        
     }    
 	  

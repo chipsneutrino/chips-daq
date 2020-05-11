@@ -2,6 +2,13 @@
 #include "daqonite/states.h"
 
 namespace Daqonite {
+FSM::FSM()
+    : Fsm<FSM> {}
+    , Logging {}
+{
+    setUnitName("Daqonite");
+}
+
 void FSM::react(events::Disconnected const& e)
 {
     transit<states::Offline>();
