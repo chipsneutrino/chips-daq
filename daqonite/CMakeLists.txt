@@ -4,6 +4,7 @@ add_executable(daqonite
     include/bbb_handler.h              src/bbb_handler.cc
     include/daqonite_publisher.h       src/daqonite_publisher.cc
     include/clb_event.h
+    include/hit_receiver.h             src/hit_receiver.cc
     include/clb_handler.h              src/clb_handler.cc
     include/daq_handler.h              src/daq_handler.cc
     include/daq_logging.h

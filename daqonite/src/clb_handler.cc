@@ -12,77 +12,34 @@
 
 CLBHandler::CLBHandler(std::shared_ptr<boost::asio::io_service> io_service,
     std::shared_ptr<DataHandler> data_handler, bool* mode, int opt_port, int handler_id)
-    : data_handler_ { std::move(data_handler) }
-    , mode_ { mode }
-    , buffer_size_ { buffer_size_opt }
-    , socket_optical_ { *io_service, udp::endpoint(udp::v4(), opt_port) }
-    , data_slot_idx_ { data_handler_->assignNewSlot() }
-    , handler_id_ { handler_id }
+    : HitReceiver { io_service, data_handler, mode, opt_port, handler_id, sizeof(CLBCommonHeader) }
 {
-    // Setup the sockets
-    socket_optical_.set_option(udp::socket::receive_buffer_size { 33554432 });
-
-    g_elastic.log(INFO, "CLB Handler {} started on port {}", handler_id_, opt_port);
+    g_elastic.log(INFO, "CLB Handler {} started on port {}", handler_id, opt_port);
 }
 
-void CLBHandler::workOpticalData()
+bool CLBHandler::processPacket(const char* datagram, std::size_t size)
 {
-    using namespace boost::asio::placeholders;
-    socket_optical_.async_receive(boost::asio::buffer(&buffer_optical_[0], buffer_size_),
-        boost::bind(&CLBHandler::handleOpticalData, this, error, bytes_transferred));
-}
-
-void CLBHandler::handleOpticalData(const boost::system::error_code& error, std::size_t size)
-{
-    if (error) {
-        g_elastic.log(ERROR, "CLB Handler {} caught error {}: {}", handler_id_, error.value(), error.category().name());
-        g_elastic.log(WARNING, "CLB Handler {} stopping work on optical socket due to error.", handler_id_);
-        return;
-    }
-
-    if (*mode_ != true) {
-        // We are not in a run so just call the work method again
-        workOpticalData();
-        return;
-    }
-
-    // Check the packet has at least a CLB header in it
-    if (size < sizeof(CLBCommonHeader)) {
-        g_elastic.log(WARNING, "CLB Handler {} received packet without header (expected at least {}, got {})",
-            handler_id_, sizeof(CLBCommonHeader), size);
-        workOpticalData();
-        return;
-    }
-
     // Check the size of the packet is consistent with CLBCommonHeader + some hits
     const std::size_t remaining_bytes = size - sizeof(CLBCommonHeader);
     const std::ldiv_t div = std::div((long)remaining_bytes, sizeof(hit_t));
     if (div.rem != 0) {
         g_elastic.log(WARNING, "CLB Handler {} received packet with invalid body (expected multiple of {}, got {} which has remainder {})",
-            handler_id_, sizeof(hit_t), remaining_bytes, div.rem);
-        workOpticalData();
-        return;
+            handlerID(), sizeof(hit_t), remaining_bytes, div.rem);
+        return false;
     }
 
     // Cast the beggining of the packet to the CLBCommonHeader
-    const CLBCommonHeader& header_optical = *reinterpret_cast<const CLBCommonHeader*>(buffer_optical_);
+    const CLBCommonHeader& header = *reinterpret_cast<const CLBCommonHeader*>(datagram);
 
     // Check the type of the packet is optical from the CLBCommonHeader
-    const std::pair<int, std::string>& type = getType(header_optical);
+    const std::pair<int, std::string>& type = getType(header);
     if (type.first != OPTO) {
         g_elastic.log(WARNING, "CLB Handler {} received other than optical packet (expected {}, got {} which is {})",
-            handler_id_, OPTO, type.first, type.second);
-        workOpticalData();
-        return;
+            handlerID(), OPTO, type.first, type.second);
+        return false;
     }
 
-    const hit_t* hit_start = reinterpret_cast<const hit_t*>(buffer_optical_ + sizeof(CLBCommonHeader));
-    processPacket(header_optical, div.quot, hit_start);
-    workOpticalData();
-}
-
-bool CLBHandler::processPacket(const CLBCommonHeader& header, int n_hits, const hit_t* hit) const
-{
+    int n_hits = div.quot;
     CLBEvent new_event {};
 
     // Assign the variables we need from the header
@@ -91,7 +48,7 @@ bool CLBHandler::processPacket(const CLBCommonHeader& header, int n_hits, const 
     const std::uint32_t time_stamp_ns = header.timeStamp().tics() * 16;
 
     data_handler_->updateLastApproxTimestamp(new_event.Timestamp_s);
-    CLBEventMultiQueue* multi_queue = data_handler_->findCLBOpticalQueue(new_event.Timestamp_s + 1e-9 * time_stamp_ns, data_slot_idx_);
+    CLBEventMultiQueue* multi_queue = data_handler_->findCLBOpticalQueue(new_event.Timestamp_s + 1e-9 * time_stamp_ns, dataSlotIndex());
 
     if (!multi_queue) {
         // Timestamp not matched to any open batch, discard packet.
@@ -109,6 +66,7 @@ bool CLBHandler::processPacket(const CLBCommonHeader& header, int n_hits, const 
 
     // Find the number of hits this packet contains and loop over them all
     event_queue.reserve(event_queue.size() + n_hits);
+    const hit_t* hit = reinterpret_cast<const hit_t*>(datagram + sizeof(CLBCommonHeader));
     for (int i = 0; i < n_hits; ++i, ++hit) { // TODO: find a way to unroll and vectorize this loop
         // Assign the hit channel
         new_event.Channel = hit->channel;
