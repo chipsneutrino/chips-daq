@@ -1,5 +1,5 @@
 /**
- * BBBHandler - Handler class for the BBB data stream
+ * BBBHitReceiver - Handler class for the BBB data stream
  * 
  * This class deals with the specifics of the BBB data stream, using the
  * fh_library API, to communicate with the Madison beaglebones.
@@ -17,12 +17,12 @@
 #include "data_handler.h"
 #include "hit_receiver.h"
 
-class BBBHandler : public HitReceiver {
+class BBBHitReceiver : public HitReceiver {
 public:
-    BBBHandler(std::shared_ptr<boost::asio::io_service> io_service,
+    BBBHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
         std::shared_ptr<DataHandler> data_handler, bool* mode, int opt_port, int handler_id);
 
-    ~BBBHandler() = default;
+    ~BBBHitReceiver() = default;
 
 protected:
     /// Process CLB optical data packet.

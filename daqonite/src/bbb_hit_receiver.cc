@@ -1,28 +1,28 @@
 /**
- * BBBHandler - Handler class for the BBB optical data stream
+ * BBBHitReceiver - Hit receiver class for the BBB optical data stream
  */
 
 #include <boost/bind.hpp>
 
 #include <util/elastic_interface.h>
 
-#include "bbb_handler.h"
+#include "bbb_hit_receiver.h"
 
-BBBHandler::BBBHandler(std::shared_ptr<boost::asio::io_service> io_service,
+BBBHitReceiver::BBBHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
     std::shared_ptr<DataHandler> data_handler, bool* mode, int opt_port, int handler_id)
     : HitReceiver { io_service, data_handler, mode, opt_port, handler_id, sizeof(opt_packet_header_t) }
     , next_sequence_number_ { 0 }
 {
-    g_elastic.log(INFO, "BBB Handler {} started on port {}", handler_id, opt_port);
+    g_elastic.log(INFO, "BBB hit receiver {} started on port {}", handler_id, opt_port);
 }
 
-bool BBBHandler::processPacket(const char* datagram, std::size_t size)
+bool BBBHitReceiver::processPacket(const char* datagram, std::size_t size)
 {
     // Check the size of the packet is consistent with opt_packet_header_t + some hits
     const std::size_t remaining_bytes = size - sizeof(opt_packet_header_t);
     const std::ldiv_t div = std::div((long)remaining_bytes, sizeof(opt_packet_hit_t));
     if (div.rem != 0) {
-        g_elastic.log(WARNING, "BBB Handler {} received packet with invalid body (expected multiple of {}, got {} which has remainder {})",
+        g_elastic.log(WARNING, "BBB hit receiver {} received packet with invalid body (expected multiple of {}, got {} which has remainder {})",
             handlerID(), sizeof(opt_packet_hit_t), remaining_bytes, div.rem);
         return false;
     }

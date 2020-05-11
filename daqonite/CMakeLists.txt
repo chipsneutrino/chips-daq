@@ -1,11 +1,11 @@
 add_executable(daqonite
     src/daqonite.cc
     include/batch_scheduler.h          src/batch_scheduler.cc
-    include/bbb_handler.h              src/bbb_handler.cc
+    include/bbb_hit_receiver.h         src/bbb_hit_receiver.cc
     include/daqonite_publisher.h       src/daqonite_publisher.cc
     include/clb_event.h
     include/hit_receiver.h             src/hit_receiver.cc
-    include/clb_handler.h              src/clb_handler.cc
+    include/clb_hit_receiver.h         src/clb_hit_receiver.cc
     include/daq_handler.h              src/daq_handler.cc
     include/daq_logging.h
     include/data_handler.h             src/data_handler.cc

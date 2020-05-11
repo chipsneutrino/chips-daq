@@ -1,5 +1,5 @@
 /**
- * CLBHandler - Handler class for the CLB optical data stream
+ * CLBHitReceiver - Hit receiver class for the CLB optical data stream
  * 
  * This class deals with the specifics of the CLB data stream, unpacking
  * the UDP binary stream into the actual data and storing into .root
@@ -25,12 +25,12 @@ const static unsigned int default_opto_port = 56015;
 class CLBCommonHeader;
 struct hit_t;
 
-class CLBHandler : public HitReceiver {
+class CLBHitReceiver : public HitReceiver {
 public:
-    explicit CLBHandler(std::shared_ptr<boost::asio::io_service> io_service,
+    explicit CLBHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
         std::shared_ptr<DataHandler> data_handler, bool* mode, int opt_port, int handler_id);
 
-    virtual ~CLBHandler() = default;
+    virtual ~CLBHitReceiver() = default;
 
 private:
     /// Process CLB optical data packet.

@@ -21,9 +21,8 @@
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 
-#include "bbb_handler.h"
-#include "clb_handler.h"
 #include "data_handler.h"
+#include "hit_receiver.h"
 #include "util/command_receiver.h"
 
 class DAQHandler : public CommandHandler {
@@ -86,6 +85,5 @@ private:
 
     // Other components
     std::shared_ptr<DataHandler> data_handler_; ///< DataHandler object
-    std::list<std::unique_ptr<CLBHandler>> clb_handlers_; ///< Pointers to CLBHandlers
-    std::list<std::unique_ptr<BBBHandler>> bbb_handlers_; ///< Pointers to BBBHandlers
+    std::list<std::unique_ptr<HitReceiver>> hit_receivers_; ///< Pointers to HitReceivers
 };

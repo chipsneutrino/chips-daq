@@ -4,8 +4,11 @@
 
 #include <cstring>
 
-#include "daq_handler.h"
 #include <util/elastic_interface.h>
+
+#include "bbb_hit_receiver.h"
+#include "clb_hit_receiver.h"
+#include "daq_handler.h"
 
 DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data, const std::string& data_path)
     : collect_clb_data_ { collect_clb_data }
@@ -19,8 +22,7 @@ DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data, const std::
     , run_work_ { new boost::asio::io_service::work(*io_service_) }
     , thread_group_ {}
     , data_handler_ { new DataHandler(data_path) }
-    , clb_handlers_ {}
-    , bbb_handlers_ {}
+    , hit_receivers_ {}
 {
     clb_ports_.push_back(57001);
     clb_ports_.push_back(57002);
@@ -58,12 +60,12 @@ void DAQHandler::setupHandlers()
 {
     // Setup the CLB handler (if required)
     for (const int port : clb_ports_) {
-        clb_handlers_.emplace_back(new CLBHandler(io_service_, data_handler_, &mode_, port, clb_handlers_.size())); // FIXME: mode_
+        hit_receivers_.emplace_back(new CLBHitReceiver(io_service_, data_handler_, &mode_, port, hit_receivers_.size())); // FIXME: mode_
     }
 
     // Setup the BBB handler (if required)
     for (const int port : bbb_ports_) {
-        bbb_handlers_.emplace_back(new BBBHandler(io_service_, data_handler_, &mode_, port, bbb_handlers_.size())); // FIXME: mode_
+        hit_receivers_.emplace_back(new BBBHitReceiver(io_service_, data_handler_, &mode_, port, hit_receivers_.size())); // FIXME: mode_
     }
 }
 
@@ -99,13 +101,8 @@ void DAQHandler::handleStartDataCommand()
     g_elastic.log(INFO, "DAQonite: Starting Data");
 
     // Call the first work method to the optical data
-    for (const auto& clb_handler : clb_handlers_) {
-        clb_handler->workOpticalData();
-    }
-
-    // Call the first work method to the optical data
-    for (const auto& bbb_handler : bbb_handlers_) {
-        bbb_handler->workOpticalData();
+    for (const auto& hit_receiver : hit_receivers_) {
+        hit_receiver->workOpticalData();
     }
 }
 

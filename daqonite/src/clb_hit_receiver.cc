@@ -1,5 +1,5 @@
 /**
- * CLBHandler - Handler class for the CLB optical data stream
+ * CLBHitReceiver - Hit receiver class for the CLB optical data stream
  */
 
 #include <boost/bind.hpp>
@@ -8,22 +8,22 @@
 #include <clb/header_structs.h>
 #include <util/elastic_interface.h>
 
-#include "clb_handler.h"
+#include "clb_hit_receiver.h"
 
-CLBHandler::CLBHandler(std::shared_ptr<boost::asio::io_service> io_service,
+CLBHitReceiver::CLBHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
     std::shared_ptr<DataHandler> data_handler, bool* mode, int opt_port, int handler_id)
     : HitReceiver { io_service, data_handler, mode, opt_port, handler_id, sizeof(CLBCommonHeader) }
 {
-    g_elastic.log(INFO, "CLB Handler {} started on port {}", handler_id, opt_port);
+    g_elastic.log(INFO, "CLB hit receiver {} started on port {}", handler_id, opt_port);
 }
 
-bool CLBHandler::processPacket(const char* datagram, std::size_t size)
+bool CLBHitReceiver::processPacket(const char* datagram, std::size_t size)
 {
     // Check the size of the packet is consistent with CLBCommonHeader + some hits
     const std::size_t remaining_bytes = size - sizeof(CLBCommonHeader);
     const std::ldiv_t div = std::div((long)remaining_bytes, sizeof(hit_t));
     if (div.rem != 0) {
-        g_elastic.log(WARNING, "CLB Handler {} received packet with invalid body (expected multiple of {}, got {} which has remainder {})",
+        g_elastic.log(WARNING, "CLB hit receiver {} received packet with invalid body (expected multiple of {}, got {} which has remainder {})",
             handlerID(), sizeof(hit_t), remaining_bytes, div.rem);
         return false;
     }
@@ -34,7 +34,7 @@ bool CLBHandler::processPacket(const char* datagram, std::size_t size)
     // Check the type of the packet is optical from the CLBCommonHeader
     const std::pair<int, std::string>& type = getType(header);
     if (type.first != OPTO) {
-        g_elastic.log(WARNING, "CLB Handler {} received other than optical packet (expected {}, got {} which is {})",
+        g_elastic.log(WARNING, "CLB hit receiver {} received other than optical packet (expected {}, got {} which is {})",
             handlerID(), OPTO, type.first, type.second);
         return false;
     }
