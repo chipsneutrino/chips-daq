@@ -27,16 +27,7 @@
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 
-/// Enum for describing the different logging severity levels
-enum severity
-{
-    TRACE,
-    DEBUG,
-    INFO,
-    WARNING,
-    ERROR,
-    FATAL
-};
+#include "util/logging.h"
 
 /// Enum for describing the different logging modes
 enum log_mode

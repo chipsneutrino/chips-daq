@@ -2,6 +2,7 @@ add_library(util
     include/util/control_msg.h                  src/control_msg.cc
     include/util/chips_config.h                 src/chips_config.cc
     include/util/elastic_interface.h            src/elastic_interface.cc
+    include/util/logging.h                      src/logging.cc
     include/util/async_runnable.h
     include/util/async_component.h              src/async_component.cc
     include/util/async_component_group.h        src/async_component_group.cc
