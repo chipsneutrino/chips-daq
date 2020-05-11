@@ -14,8 +14,9 @@
 
 #pragma once
 
-#include <boost/asio.hpp>
 #include <memory>
+
+#include <boost/asio.hpp>
 
 #include "data_handler.h"
 

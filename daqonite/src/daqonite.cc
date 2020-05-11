@@ -10,8 +10,8 @@
 
 #include <boost/program_options.hpp>
 
-#include <string>
 #include <memory>
+#include <string>
 
 #include "daq_handler.h"
 #include "daqonite_publisher.h"
@@ -28,7 +28,7 @@ static constexpr int success = 0;
 namespace settings {
 // Default settings
 bool collect_clb_data = true;
-bool collect_bbb_data = false;
+bool collect_bbb_data = true;
 
 std::string state_bus_url {};
 std::string control_bus_url {};

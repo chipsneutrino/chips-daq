@@ -11,6 +11,7 @@ DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data, const std::
     : collect_clb_data_ { collect_clb_data }
     , collect_bbb_data_ { collect_bbb_data }
     , clb_ports_ {}
+    , bbb_ports_ {}
     , n_threads_ {}
     , mode_ { false }
     , run_type_ {}
@@ -19,7 +20,7 @@ DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data, const std::
     , thread_group_ {}
     , data_handler_ { new DataHandler(data_path) }
     , clb_handlers_ {}
-    , bbb_handler_ {}
+    , bbb_handlers_ {}
 {
     clb_ports_.push_back(57001);
     clb_ports_.push_back(57002);
@@ -30,6 +31,15 @@ DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data, const std::
     clb_ports_.push_back(57007);
     clb_ports_.push_back(57008);
 
+    bbb_ports_.push_back(57101);
+    bbb_ports_.push_back(57102);
+    bbb_ports_.push_back(57103);
+    bbb_ports_.push_back(57104);
+    bbb_ports_.push_back(57105);
+    bbb_ports_.push_back(57106);
+    bbb_ports_.push_back(57107);
+    bbb_ports_.push_back(57108);
+
     // Calculate thread count
     n_threads_ = 0;
 
@@ -38,7 +48,7 @@ DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data, const std::
     }
 
     if (collect_bbb_data_) {
-        n_threads_ += 1;
+        n_threads_ += bbb_ports_.size();
     }
 
     setupHandlers();
@@ -47,15 +57,13 @@ DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data, const std::
 void DAQHandler::setupHandlers()
 {
     // Setup the CLB handler (if required)
-    if (collect_clb_data_) {
-        for (const int port : clb_ports_) {
-            clb_handlers_.emplace_back(new CLBHandler(io_service_, data_handler_, &mode_, port, clb_handlers_.size())); // FIXME: mode_
-        }
+    for (const int port : clb_ports_) {
+        clb_handlers_.emplace_back(new CLBHandler(io_service_, data_handler_, &mode_, port, clb_handlers_.size())); // FIXME: mode_
     }
 
     // Setup the BBB handler (if required)
-    if (collect_bbb_data_) {
-        bbb_handler_ = std::unique_ptr<BBBHandler> { new BBBHandler }; // TODO: std::make_unique in c++14
+    for (const int port : bbb_ports_) {
+        bbb_handlers_.emplace_back(new BBBHandler(io_service_, data_handler_, &mode_, port, bbb_handlers_.size())); // FIXME: mode_
     }
 }
 
@@ -93,6 +101,11 @@ void DAQHandler::handleStartDataCommand()
     // Call the first work method to the optical data
     for (const auto& clb_handler : clb_handlers_) {
         clb_handler->workOpticalData();
+    }
+
+    // Call the first work method to the optical data
+    for (const auto& bbb_handler : bbb_handlers_) {
+        bbb_handler->workOpticalData();
     }
 }
 

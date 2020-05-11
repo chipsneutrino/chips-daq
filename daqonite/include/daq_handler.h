@@ -23,8 +23,8 @@
 
 #include "bbb_handler.h"
 #include "clb_handler.h"
-#include "util/command_receiver.h"
 #include "data_handler.h"
+#include "util/command_receiver.h"
 
 class DAQHandler : public CommandHandler {
 public:
@@ -72,6 +72,7 @@ private:
     bool collect_clb_data_; ///< Should we collect CLB data?
     bool collect_bbb_data_; ///< Should we collect BBB data?
     std::list<int> clb_ports_; ///< Port numbers where CLB handlers are listening.
+    std::list<int> bbb_ports_; ///< Port numbers where BBB handlers are listening.
     int n_threads_; ///< The number of threads to use
 
     // Running mode
@@ -86,5 +87,5 @@ private:
     // Other components
     std::shared_ptr<DataHandler> data_handler_; ///< DataHandler object
     std::list<std::unique_ptr<CLBHandler>> clb_handlers_; ///< Pointers to CLBHandlers
-    std::unique_ptr<BBBHandler> bbb_handler_; ///< Pointer to BBBHandler
+    std::list<std::unique_ptr<BBBHandler>> bbb_handlers_; ///< Pointers to BBBHandlers
 };

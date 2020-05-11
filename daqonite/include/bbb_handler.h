@@ -4,52 +4,70 @@
  * This class deals with the specifics of the BBB data stream, using the
  * fh_library API, to communicate with the Madison beaglebones.
  *
- * Author: Josh Tingey
- * Contact: j.tingey.16@ucl.ac.uk
+ * Author: Josh Tingey, Petr Mánek
+ * Contact: j.tingey.16@ucl.ac.uk, petr.manek.19@ucl.ac.uk
  */
 
 #pragma once
 
-#include "assert.h"
-#include <iostream>
+#include <memory>
 
-#include "bbb_api.h"
-#include "fh_library.h"
+#include <boost/asio.hpp>
+
+#include <bbb/packets.h>
+
+#include "data_handler.h"
+
+/// Buffer size in bytes for optical data
+const static size_t buffer_size_bbb_opt = 10000;
+
+using boost::asio::ip::udp;
 
 class BBBHandler {
 public:
-    /// Create a BBBHandler
-    BBBHandler();
+    BBBHandler(std::shared_ptr<boost::asio::io_service> io_service,
+        std::shared_ptr<DataHandler> data_handler, bool* mode, int opt_port, int handler_id);
 
-    /// Destroy a BBBHandler
-    ~BBBHandler();
+    ~BBBHandler() = default;
 
-    /**
-		 * Connects to the test server
-		 * Opens a TCP socket to communicate with the 'beaglebone' server
-		 * Using the COBS encoded frame protocal version 2.
-		 */
-    void bbb_connect();
+    // for safety, no copy- or move-semantics
+    BBBHandler(const BBBHandler& other) = delete;
+    BBBHandler(BBBHandler&& other) = delete;
 
-    /**
-		 * Gets the server status
-		 * Sends the MS_STATUS binary message to the beaglebone and gets 
-		 * and prints the response to stdout.
-		 */
-    void get_bbb_status();
+    BBBHandler& operator=(const BBBHandler& other) = delete;
+    BBBHandler& operator=(BBBHandler&& other) = delete;
 
     /**
-		 * Disconnect from the server
-		 * Sends the MS_CLOSE binary message to the beaglebone and checks 
-		 * for response before connection is closed.
-		 */
-    void bbb_disconnect();
+     * IO_service optical data work function.
+     * Calls the async_receive() on the IO_service for the optical data stream.
+     */
+    void workOpticalData();
 
 private:
-    char* fServer_ip; ///< Beaglebone server IP address
-    uint16_t fPort; ///< TCP socket port
+    /**
+     * Callback completion function for optical data async_receive().
+     * Handles the received optical data after the async_receive() has completed. 
+     * It fills the ROOT TTrees with the decoded data.
+     * 
+     * @param error Error code from async_receive()
+     * @param size Number of bytes received
+     */
+    void handleOpticalData(boost::system::error_code const& error, std::size_t size);
 
-    fh_connector_t* fConn; ///< fh_library connector to setup connection
-    fh_transport_t* fTransport; ///< fh_library transport for message IO
-    fh_message_t* fMsg; ///< fh_library message implementation
+    /// Process CLB optical data packet.
+    bool processPacket(const opt_packet_header_t& header, std::uint32_t n_hits, const opt_packet_hit_t* hit) const;
+
+    // CLBHandler settings/input
+    std::shared_ptr<DataHandler> data_handler_; ///< Pointer to the DataHandler
+    const bool* const mode_; ///< false = Monitoring, True = Running
+    const std::size_t buffer_size_; ///< Size of the buffers
+
+    // BOOST data collection
+    udp::socket socket_optical_; ///< Optical data UDP socket
+    char buffer_optical_[buffer_size_bbb_opt] __attribute__((aligned(8))); ///< Optical data buffer
+
+    int data_slot_idx_; ///< Unique data slot index assigned by DataHandler to prevent overwrites
+    int handler_id_; ///< Logging ID
+
+    std::uint32_t next_sequence_number_;
 };
