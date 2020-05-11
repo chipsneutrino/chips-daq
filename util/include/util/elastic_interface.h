@@ -147,7 +147,7 @@ private:
      * @param message       log Message
      * @param timestamp     timestamp when work was posted
      */
-    void logWork(severity level, std::string message, long timestamp);
+    void logWork(severity level, std::string unit, std::string message, long timestamp);
 
     /**
      * Indexes "daqstate" document to elasticsearch database

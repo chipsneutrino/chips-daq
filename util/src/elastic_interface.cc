@@ -55,7 +55,7 @@ void ElasticInterface::log(severity level, const std::string& unit, std::string&
         fmt::print("LOG ({}): {}\n", level, message);
         print_mutex_.unlock();
     }
-    index_service_.post(boost::bind(&ElasticInterface::logWork, this, level, message, timestamp()));
+    index_service_.post(boost::bind(&ElasticInterface::logWork, this, level, unit, message, timestamp()));
 }
 
 void ElasticInterface::state(std::string process, std::string state)
@@ -88,7 +88,7 @@ void ElasticInterface::run(int run_num, int run_type)
     index_service_.post(boost::bind(&ElasticInterface::runWork, this, run_num, run_type));
 }
 
-void ElasticInterface::logWork(severity level, std::string message, long timestamp)
+void ElasticInterface::logWork(severity level, std::string unit, std::string message, long timestamp)
 {
     if (suppress()) // Should we suppress this log?
         return;
@@ -97,6 +97,7 @@ void ElasticInterface::logWork(severity level, std::string message, long timesta
     document["timestamp"] = timestamp; // Milliseconds since epoch timestamp
     document["process"] = process_name_; // Process name
     document["pid"] = pid_; // Process ID
+    document["unit"] = unit; // Unit name
     document["severity"] = level; // severity level
     document["message"] = message; // log message
 

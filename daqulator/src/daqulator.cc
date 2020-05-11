@@ -67,6 +67,7 @@ public:
         PacketGenerator generator(config_file, data_file, address, deltaTS, run_num, MTU, hit_rate);
 
         log(INFO, "Packet Generators Stop");
+        return 0;
     }
 };
 
