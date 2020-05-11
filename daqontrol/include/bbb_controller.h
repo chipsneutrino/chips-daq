@@ -1,13 +1,11 @@
 /**
- * BBBController - BBBController for an individual CLB
+ * BBBController - BBBController for an individual BBB
  */
 
 #pragma once
 
 #include "controller.h"
-#include "fh_library.h"
 #include <util/elastic_interface.h>
-#include <bbb_comms_api.h>
 
 class BBBController: public Controller {
 public:
@@ -27,7 +25,4 @@ private:
     void configure();
     void startData();
     void stopData();
-
-    fh_transport_t *transport_;
-    fh_message_t *msg_;
 };
