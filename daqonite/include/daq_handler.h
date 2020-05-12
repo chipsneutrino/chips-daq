@@ -9,8 +9,8 @@
  * Author: Josh Tingey
  * Contact: j.tingey.16@ucl.ac.uk
  *
- * Co-author: Petr Manek
- * Contact: pmanek@fnal.gov
+ * Author: Petr Mánek
+ * Contact: petr.manek.19@ucl.ac.uk
  */
 
 #pragma once
@@ -35,7 +35,7 @@ public:
      * Initial work is then added to the IO_service before run() is called to
      * start to main loop.
      */
-    explicit DAQHandler(bool collect_clb_data, bool collect_bbb_data, const std::string& data_path);
+    explicit DAQHandler(const std::string& data_path);
 
     /// Destroy a DAQHandler
     virtual ~DAQHandler() = default;
@@ -70,8 +70,6 @@ private:
     void setupHandlers();
 
     // Settings
-    bool collect_clb_data_; ///< Should we collect CLB data?
-    bool collect_bbb_data_; ///< Should we collect BBB data?
     std::list<int> clb_ports_; ///< Port numbers where CLB handlers are listening.
     std::list<int> bbb_ports_; ///< Port numbers where BBB handlers are listening.
     int n_threads_; ///< The number of threads to use

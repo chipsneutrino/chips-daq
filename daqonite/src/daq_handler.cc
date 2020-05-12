@@ -10,10 +10,8 @@
 #include "clb_hit_receiver.h"
 #include "daq_handler.h"
 
-DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data, const std::string& data_path)
+DAQHandler::DAQHandler(const std::string& data_path)
     : Logging {}
-    , collect_clb_data_ { collect_clb_data }
-    , collect_bbb_data_ { collect_bbb_data }
     , clb_ports_ {}
     , bbb_ports_ {}
     , n_threads_ {}
@@ -47,14 +45,8 @@ DAQHandler::DAQHandler(bool collect_clb_data, bool collect_bbb_data, const std::
 
     // Calculate thread count
     n_threads_ = 0;
-
-    if (collect_clb_data_) {
-        n_threads_ += clb_ports_.size();
-    }
-
-    if (collect_bbb_data_) {
-        n_threads_ += bbb_ports_.size();
-    }
+    n_threads_ += clb_ports_.size();
+    n_threads_ += bbb_ports_.size();
 
     setupHandlers();
 }
@@ -74,7 +66,7 @@ void DAQHandler::setupHandlers()
 
 void DAQHandler::run()
 {
-    log(INFO, "Started ({}) ({}{})", n_threads_, collect_clb_data_ ? "clb" : "", collect_bbb_data_ ? ",bbb" : "");
+    log(INFO, "Started ({})", n_threads_);
 
     // Setup the thread group and call io_service.run() in each
     log(INFO, "Starting I/O service on {} threads", n_threads_);

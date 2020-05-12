@@ -14,7 +14,7 @@ BBBHitReceiver::BBBHitReceiver(std::shared_ptr<boost::asio::io_service> io_servi
     , next_sequence_number_ { 0 }
 {
     setUnitName("BBBHitReceiver[{}]", handler_id);
-    log(INFO, "Sarted on port {}", handler_id, opt_port);
+    log(INFO, "Started on port {}", handler_id, opt_port);
 }
 
 bool BBBHitReceiver::processPacket(const char* datagram, std::size_t size)
