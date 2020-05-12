@@ -60,12 +60,6 @@ public:
     RunType getRunType() { return run_type_; }
 
 private:
-    /**
-     * Bound to thread creation
-     * Allows us to modify how the thread operates and what it does
-     */
-    void ioServiceThread();
-
     /// Create CLB and BBB hit receivers depending on configuration.
     void createHitReceivers();
 
@@ -79,8 +73,9 @@ private:
     RunType run_type_;
 
     // IO_service stuff
-    std::shared_ptr<boost::asio::io_service> io_service_; ///< BOOST io_service. The heart of everything
-    std::unique_ptr<boost::asio::io_service::work> run_work_;
+    using io_service = boost::asio::io_service;
+    std::shared_ptr<io_service> io_service_; ///< BOOST io_service. The heart of everything
+    std::unique_ptr<io_service::work> run_work_;
     boost::thread_group thread_group_; ///< Group of threads to do the work
 
     // Other components

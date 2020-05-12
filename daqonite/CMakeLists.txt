@@ -7,6 +7,7 @@ add_executable(daqonite
     include/hit_receiver.h             src/hit_receiver.cc
     include/clb_hit_receiver.h         src/clb_hit_receiver.cc
     include/daq_handler.h              src/daq_handler.cc
+    include/data_run.h                 src/data_run.cc
     include/daq_logging.h
     include/data_handler.h             src/data_handler.cc
     include/merge_sorter.h             src/merge_sorter.cc

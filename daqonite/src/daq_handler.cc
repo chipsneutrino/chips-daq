@@ -17,8 +17,8 @@ DAQHandler::DAQHandler(const std::string& data_path)
     , n_threads_ {}
     , mode_ { false }
     , run_type_ {}
-    , io_service_ { new boost::asio::io_service }
-    , run_work_ { new boost::asio::io_service::work(*io_service_) }
+    , io_service_ { new io_service }
+    , run_work_ { new io_service::work(*io_service_) }
     , thread_group_ {}
     , data_handler_ { new DataHandler(data_path) }
     , hit_receivers_ {}
@@ -74,7 +74,7 @@ void DAQHandler::run()
     // Setup the thread group and call io_service.run() in each
     log(INFO, "Starting I/O service on {} threads", n_threads_);
     for (int i = 0; i < n_threads_; ++i) {
-        thread_group_.create_thread(boost::bind(&DAQHandler::ioServiceThread, this));
+        thread_group_.create_thread([this] { io_service_->run(); });
     }
 
     // Wait for all the threads to finish
@@ -82,11 +82,6 @@ void DAQHandler::run()
     data_handler_->join();
 
     log(INFO, "Finished.");
-}
-
-void DAQHandler::ioServiceThread()
-{
-    io_service_->run();
 }
 
 void DAQHandler::handleConfigCommand(std::string config_file)
