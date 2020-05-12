@@ -15,7 +15,6 @@ CLBHitReceiver::CLBHitReceiver(std::shared_ptr<boost::asio::io_service> io_servi
     : HitReceiver { io_service, data_handler, opt_port, sizeof(CLBCommonHeader) }
 {
     setUnitName("CLBHitReceiver[{}]", opt_port);
-    log(INFO, "Started on port {}", opt_port);
 }
 
 void CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_size, bool do_mine)

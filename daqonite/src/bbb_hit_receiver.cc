@@ -14,7 +14,6 @@ BBBHitReceiver::BBBHitReceiver(std::shared_ptr<boost::asio::io_service> io_servi
     , next_sequence_number_ { 0 }
 {
     setUnitName("BBBHitReceiver[{}]", opt_port);
-    log(INFO, "Started on port {}", opt_port);
 }
 
 void BBBHitReceiver::startData()
