@@ -17,10 +17,12 @@ void DaqonitePublisher::publishStatus()
     // TODO: synchronize?
     message_type message {};
 
-    if (daq_handler_->getMode()) {
+    std::shared_ptr<DataRun> run { daq_handler_->getRun() };
+
+    if (run && run->getState() == DataRunState::Running) {
         message.Discriminator = DaqoniteStateMessage::Running::Discriminator;
         message.Payload.pRunning = DaqoniteStateMessage::Running {};
-        message.Payload.pRunning.Which = daq_handler_->getRunType();
+        message.Payload.pRunning.Which = run->getType();
     } else {
         message.Discriminator = DaqoniteStateMessage::Ready::Discriminator;
     }

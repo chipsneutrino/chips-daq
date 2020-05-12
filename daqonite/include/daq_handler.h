@@ -21,11 +21,12 @@
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 
+#include <util/command_receiver.h>
 #include <util/logging.h>
 
 #include "data_handler.h"
+#include "data_run.h"
 #include "hit_receiver.h"
-#include "util/command_receiver.h"
 
 class DAQHandler : public CommandHandler, protected Logging {
 public:
@@ -54,10 +55,9 @@ public:
     virtual void handleStopRunCommand() override;
     virtual void handleExitCommand() override;
 
-    void run();
+    inline const std::shared_ptr<DataRun>& getRun() const { return run_; }
 
-    bool getMode() const { return mode_; }
-    RunType getRunType() { return run_type_; }
+    void run();
 
 private:
     /// Create CLB and BBB hit receivers depending on configuration.
@@ -66,11 +66,9 @@ private:
     // Settings
     std::list<int> clb_ports_; ///< Port numbers where CLB hit receivers are listening.
     std::list<int> bbb_ports_; ///< Port numbers where BBB hit receivers are listening.
-    int n_threads_; ///< The number of threads to use
 
     // Running mode
-    bool mode_; ///< false = Not Running, True = Running
-    RunType run_type_;
+    std::shared_ptr<DataRun> run_;
 
     // IO_service stuff
     using io_service = boost::asio::io_service;

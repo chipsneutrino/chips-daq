@@ -18,6 +18,7 @@
 #include <util/logging.h>
 
 #include "data_handler.h"
+#include "data_run.h"
 
 class HitReceiver : protected Logging {
 public:
@@ -36,7 +37,7 @@ public:
     virtual void startData();
     virtual void stopData();
 
-    virtual void startRun(RunType which);
+    virtual void startRun(std::shared_ptr<DataRun>& run);
     virtual void stopRun();
     inline int dataSlotIndex() const { return data_slot_idx_; }
 
@@ -59,6 +60,7 @@ private:
     };
 
     DataMode mode_;
+    std::shared_ptr<DataRun> run_;
 
     // BOOST data collection
     boost::asio::ip::udp::socket socket_optical_; ///< Optical data UDP socket

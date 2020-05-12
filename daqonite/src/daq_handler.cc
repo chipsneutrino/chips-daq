@@ -14,9 +14,7 @@ DAQHandler::DAQHandler(const std::string& data_path)
     : Logging {}
     , clb_ports_ {}
     , bbb_ports_ {}
-    , n_threads_ {}
-    , mode_ { false }
-    , run_type_ {}
+    , run_ {}
     , io_service_ { new io_service }
     , run_work_ { new io_service::work(*io_service_) }
     , thread_group_ {}
@@ -44,11 +42,6 @@ DAQHandler::DAQHandler(const std::string& data_path)
     bbb_ports_.push_back(57106);
     bbb_ports_.push_back(57107);
     bbb_ports_.push_back(57108);
-
-    // Calculate thread count
-    n_threads_ = 0;
-    n_threads_ += clb_ports_.size();
-    n_threads_ += bbb_ports_.size();
 }
 
 void DAQHandler::createHitReceivers()
@@ -69,11 +62,12 @@ void DAQHandler::createHitReceivers()
 
 void DAQHandler::run()
 {
-    log(INFO, "Started ({})", n_threads_);
+    // TODO: get this from a configuration file
+    const std::size_t n_threads { clb_ports_.size() + bbb_ports_.size() };
 
     // Setup the thread group and call io_service.run() in each
-    log(INFO, "Starting I/O service on {} threads", n_threads_);
-    for (int i = 0; i < n_threads_; ++i) {
+    log(INFO, "Starting I/O service on {} threads", n_threads);
+    for (std::size_t i = 0; i < n_threads; ++i) {
         thread_group_.create_thread([this] { io_service_->run(); });
     }
 
@@ -81,7 +75,7 @@ void DAQHandler::run()
     thread_group_.join_all();
     data_handler_->join();
 
-    log(INFO, "Finished.");
+    log(INFO, "I/O service signing off.");
 }
 
 void DAQHandler::handleConfigCommand(std::string config_file)
@@ -112,43 +106,42 @@ void DAQHandler::handleStopDataCommand()
 
 void DAQHandler::handleStartRunCommand(RunType which)
 {
-    log(INFO, "Starting Run");
     // If we are currently running first stop the current run
-    if (mode_ == true) {
-        log(INFO, "DAQ Handler stopping current mine");
+    if (run_) {
         handleStopRunCommand();
     }
 
-    // Start a data_handler run
-    data_handler_->startRun(which);
-
     // Set the mode to data taking
-    run_type_ = which;
-    mode_ = true;
+    run_ = std::make_shared<DataRun>();
+    run_->start(which);
+
+    log(INFO, "Started data run: {}", run_->logDescription());
+
+    // Start a data_handler run
+    data_handler_->startRun(which); // TODO: here pass run_
 
     for (const auto& hit_receiver : hit_receivers_) {
-        hit_receiver->startRun(which);
+        hit_receiver->startRun(run_);
     }
 }
 
 void DAQHandler::handleStopRunCommand()
 {
-    log(INFO, "Stopping Run");
+    if (!run_) {
+        return;
+    }
+
+    run_->stop();
+    log(INFO, "Stopped data run: {}", run_->logDescription());
 
     for (const auto& hit_receiver : hit_receivers_) {
         hit_receiver->stopRun();
     }
 
-    // Check we are actually running
-    if (mode_ == true) {
-        // Set the mode to monitoring
-        mode_ = false;
+    // Stop the data_handler run
+    data_handler_->stopRun();
 
-        // Stop the data_handler run
-        data_handler_->stopRun();
-    } else {
-        log(INFO, "Already stopped mining");
-    }
+    run_.reset();
 }
 
 void DAQHandler::handleExitCommand()

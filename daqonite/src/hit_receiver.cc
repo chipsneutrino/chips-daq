@@ -59,14 +59,16 @@ void HitReceiver::stopData()
     socket_optical_.cancel();
 }
 
-void HitReceiver::startRun(RunType which)
+void HitReceiver::startRun(std::shared_ptr<DataRun>& run)
 {
     mode_ = DataMode::Mining;
+    run_ = run;
 }
 
 void HitReceiver::stopRun()
 {
     mode_ = DataMode::Receiving;
+    run_.reset();
 }
 
 void HitReceiver::requestDatagram()
