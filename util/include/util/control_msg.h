@@ -9,6 +9,8 @@ enum class RunType {
     TestFlasher
 };
 
+#define NUMRUNTYPES 4
+
 struct OpsMessage {
     disc_t Discriminator;
 

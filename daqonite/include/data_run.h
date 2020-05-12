@@ -22,13 +22,14 @@ enum class DataRunState : int {
 
 class DataRun {
 public:
-    DataRun();
+    explicit DataRun(RunType type, const std::string& output_directory_path);
 
-    void start(RunType run_type);
+    void start();
     void stop();
 
     inline DataRunState getState() const { return state_; }
     inline RunType getType() const { return type_; }
+    inline const std::string& getOutputFilePath() const { return output_file_path_; }
 
     std::string logDescription() const;
 
@@ -44,4 +45,9 @@ private:
     static std::string formatType(RunType type);
 
     RunType type_;
+    std::uint64_t number_;
+    std::string output_directory_path_;
+    std::string output_file_path_;
+
+    void setOutputFileName();
 };

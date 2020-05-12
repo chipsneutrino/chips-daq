@@ -11,15 +11,13 @@
 #include "data_handler.h"
 #include "run_file.h"
 
-DataHandler::DataHandler(const std::string& data_path)
+DataHandler::DataHandler()
     : Logging {}
     , output_thread_ {}
     , scheduling_thread_ {}
+    , run_ {}
     , output_running_ { false }
     , scheduling_running_ { false }
-    , run_type_ {}
-    , run_num_ {}
-    , file_name_ {}
     , waiting_batches_ {}
     , last_approx_timestamp_ { 0 }
     , batch_scheduler_ {}
@@ -30,16 +28,14 @@ DataHandler::DataHandler(const std::string& data_path)
     , current_schedule_mtx_ {}
     , n_slots_ { 0 }
     , n_batches_ { 0 }
-    , data_path_ { data_path }
 {
     setUnitName("DataHandler");
 }
 
-void DataHandler::startRun(RunType which)
+void DataHandler::startRun(const std::shared_ptr<DataRun>& run)
 {
     // Set the fRun_type, fRun_num and fFile_name run variables
-    run_type_ = which;
-    getRunNumAndName();
+    run_ = run;
 
     // Prepare queues and schedule.
     waiting_batches_.consume_all([](Batch& b) { ; });
@@ -48,98 +44,39 @@ void DataHandler::startRun(RunType which)
         current_schedule_.clear();
     }
 
-    // TODO: determine this from run_type
     last_approx_timestamp_ = 0;
     n_batches_ = 0;
-    if ((int)run_type_ == 1) {
+
+    // TODO: determine schedulers properly
+
+    switch (run_->getType()) {
+    case RunType::DataNormal:
         batch_scheduler_ = static_cast<const std::shared_ptr<SpillScheduler>&>(spill_scheduler_);
-    } else if ((int)run_type_ == 2) {
+        break;
+    case RunType::Calibration:
         batch_scheduler_ = static_cast<const std::shared_ptr<RegularScheduler>&>(regular_scheduler_);
-    } else if ((int)run_type_ == 3) {
+        break;
+    case RunType::TestNormal:
         batch_scheduler_ = static_cast<const std::shared_ptr<InfiniteScheduler>&>(infinite_scheduler_);
+        break;
+    case RunType::TestFlasher:
+        batch_scheduler_ = static_cast<const std::shared_ptr<InfiniteScheduler>&>(infinite_scheduler_);
+        break;
     }
 
     // Start output thread.
-    log(WARNING, "Start mining into container {}", file_name_);
     output_running_ = scheduling_running_ = true;
-    output_thread_ = std::unique_ptr<std::thread> { new std::thread(std::bind(&DataHandler::outputThread, this)) };
+    output_thread_ = std::unique_ptr<std::thread> { new std::thread(std::bind(&DataHandler::outputThread, this, run_)) };
     scheduling_thread_ = std::unique_ptr<std::thread> { new std::thread(std::bind(&DataHandler::schedulingThread, this)) };
-
-    // Set the Elasticsearch ingest pipeline run.num and run.type
-    g_elastic.run(run_num_, (int)run_type_);
 }
 
 void DataHandler::stopRun()
 {
-    log(WARNING, "Signal stop mining into container {}, waiting for output threads to complete...", file_name_);
-
     // Wait for the output thread to end
     joinThreads();
-    log(WARNING, "Stop mining into container {}", file_name_);
-
-    // Set the Elasticsearch ingest pipeline run.num and run.type
-    // Put as -1 for both when outside a run
-    g_elastic.run(-1, -1);
 
     // Reset the run variables
-    run_type_ = {};
-    run_num_ = {};
-    file_name_ = "";
-}
-
-void DataHandler::getRunNumAndName()
-{
-    static constexpr auto run_file_name { "runNumbers.dat" };
-    const std::string run_file_path { fmt::format("{}/{}", data_path_, run_file_name) };
-    const int run_type_no = static_cast<int>(run_type_);
-    int runNums[NUMRUNTYPES];
-    std::ifstream runNumFile(run_file_path);
-    if (runNumFile.fail()) {
-        runNumFile.close();
-        // The file does not yet exist so lets create it
-        std::ofstream newFile(run_file_path);
-        if (newFile.is_open()) {
-            for (int i = 0; i < NUMRUNTYPES; i++) {
-                if (run_type_no == i) {
-                    newFile << 2 << "\n";
-                } else {
-                    newFile << 1 << "\n";
-                }
-            }
-            newFile.close();
-        } else {
-            throw std::runtime_error("Unable to create runNumbers.dat!");
-        }
-    } else {
-        // The file exists so read from it
-        for (int i = 0; i < NUMRUNTYPES; i++) {
-            runNumFile >> runNums[i];
-            if (runNums[i] < 1) {
-                runNums[i] = 1;
-            }
-            if (run_type_no == i + 1) {
-                run_num_ = runNums[i];
-            }
-        }
-        runNumFile.close();
-
-        // Now create the updated file
-        std::ofstream updateFile(run_file_path);
-        if (updateFile.is_open()) {
-            for (int i = 0; i < NUMRUNTYPES; i++) {
-                if (run_type_no == i + 1) {
-                    updateFile << runNums[i] + 1 << "\n";
-                } else {
-                    updateFile << runNums[i] << "\n";
-                }
-            }
-            updateFile.close();
-        } else {
-            throw std::runtime_error("Unable to update runNumbers.dat!");
-        }
-    }
-
-    file_name_ = fmt::format("{}/type{}_run{:05d}.root", data_path_, run_type_no, run_num_);
+    run_.reset();
 }
 
 std::size_t DataHandler::insertSort(CLBEventQueue& queue) noexcept
@@ -288,14 +225,17 @@ void DataHandler::disposeBatch(Batch& batch)
     delete[] batch.clb_opt_data;
 }
 
-void DataHandler::outputThread()
+void DataHandler::outputThread(std::shared_ptr<DataRun> run)
 {
     log(INFO, "Output thread up and running");
 
     // Open output.
-    RunFile out_file { file_name_ };
+    const std::string out_file_path { run->getOutputFilePath() };
+    log(DEBUG, "Run {} will be saved in at: '{}'", run->logDescription(), out_file_path);
+
+    RunFile out_file { out_file_path };
     if (!out_file.isOpen()) {
-        log(ERROR, "Error opening file at path: '{}'", file_name_);
+        log(ERROR, "Error opening file for writing: '{}'", out_file_path);
         return;
     }
 
@@ -373,6 +313,8 @@ void DataHandler::outputThread()
 
 void DataHandler::joinThreads()
 {
+    log(DEBUG, "Joining scheduling and output thread.");
+
     // Kill scheduling thread and wait until it's done.
     scheduling_running_ = false;
     if (scheduling_thread_ && scheduling_thread_->joinable()) {
@@ -389,6 +331,8 @@ void DataHandler::joinThreads()
     output_thread_.reset();
     scheduling_thread_.reset();
     batch_scheduler_.reset();
+
+    log(DEBUG, "Scheduling and output thread joined.");
 }
 
 void DataHandler::join()

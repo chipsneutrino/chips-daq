@@ -4,23 +4,24 @@
  * Author: Josh Tingey
  * E-mail: j.tingey.16@ucl.ac.uk
  *
- * Co-author: Petr Manek
- * Contact: pmanek@fnal.gov
+ * Author: Petr Mánek
+ * Contact: petr.manek.19@ucl.ac.uk
  */
-
-#include <boost/program_options.hpp>
 
 #include <memory>
 #include <string>
 
-#include "daq_handler.h"
-#include "daqonite_publisher.h"
-#include "util/command_receiver.h"
-#include "util/signal_receiver.h"
+#include <boost/program_options.hpp>
+
 #include <util/chips_config.h>
+#include <util/command_receiver.h>
 #include <util/elastic_interface.h>
 #include <util/logging.h>
+#include <util/signal_receiver.h>
 #include <util/singleton_process.h>
+
+#include "daq_handler.h"
+#include "daqonite_publisher.h"
 
 namespace exit_code {
 static constexpr int success = 0;

@@ -14,11 +14,12 @@ DAQHandler::DAQHandler(const std::string& data_path)
     : Logging {}
     , clb_ports_ {}
     , bbb_ports_ {}
+    , output_directory_path_ { data_path }
     , run_ {}
     , io_service_ { new io_service }
     , run_work_ { new io_service::work(*io_service_) }
     , thread_group_ {}
-    , data_handler_ { new DataHandler(data_path) }
+    , data_handler_ { new DataHandler }
     , hit_receivers_ {}
 {
     setUnitName("DAQHandler");
@@ -112,13 +113,13 @@ void DAQHandler::handleStartRunCommand(RunType which)
     }
 
     // Set the mode to data taking
-    run_ = std::make_shared<DataRun>();
-    run_->start(which);
+    run_ = std::make_shared<DataRun>(which, output_directory_path_);
+    run_->start();
 
     log(INFO, "Started data run: {}", run_->logDescription());
 
     // Start a data_handler run
-    data_handler_->startRun(which); // TODO: here pass run_
+    data_handler_->startRun(run_);
 
     for (const auto& hit_receiver : hit_receivers_) {
         hit_receiver->startRun(run_);

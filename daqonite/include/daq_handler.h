@@ -66,6 +66,7 @@ private:
     // Settings
     std::list<int> clb_ports_; ///< Port numbers where CLB hit receivers are listening.
     std::list<int> bbb_ports_; ///< Port numbers where BBB hit receivers are listening.
+    std::string output_directory_path_;
 
     // Running mode
     std::shared_ptr<DataRun> run_;
