@@ -74,10 +74,10 @@ void DAQHandler::setupHandlers()
 
 void DAQHandler::run()
 {
-    log(INFO, "DAQ Handler started ({}) ({}{})", n_threads_, collect_clb_data_ ? "clb" : "", collect_bbb_data_ ? ",bbb" : "");
+    log(INFO, "Started ({}) ({}{})", n_threads_, collect_clb_data_ ? "clb" : "", collect_bbb_data_ ? ",bbb" : "");
 
     // Setup the thread group and call io_service.run() in each
-    log(INFO, "DAQ Handler starting I/O service on {} threads", n_threads_);
+    log(INFO, "Starting I/O service on {} threads", n_threads_);
     for (int i = 0; i < n_threads_; ++i) {
         thread_group_.create_thread(boost::bind(&DAQHandler::ioServiceThread, this));
     }
@@ -86,7 +86,7 @@ void DAQHandler::run()
     thread_group_.join_all();
     data_handler_->join();
 
-    log(INFO, "DAQ Handler finished.");
+    log(INFO, "Finished.");
 }
 
 void DAQHandler::ioServiceThread()
@@ -96,12 +96,12 @@ void DAQHandler::ioServiceThread()
 
 void DAQHandler::handleConfigCommand(std::string config_file)
 {
-    log(INFO, "DAQonite: Config");
+    log(INFO, "Config");
 }
 
 void DAQHandler::handleStartDataCommand()
 {
-    log(INFO, "DAQonite: Starting Data");
+    log(INFO, "Starting Data");
 
     // Call the first work method to the optical data
     for (const auto& hit_receiver : hit_receivers_) {
@@ -111,14 +111,14 @@ void DAQHandler::handleStartDataCommand()
 
 void DAQHandler::handleStopDataCommand()
 {
-    log(INFO, "DAQonite: Stopping Data");
+    log(INFO, "Stopping Data");
 
     //TODO: Stop the work method for the optical data
 }
 
 void DAQHandler::handleStartRunCommand(RunType which)
 {
-    log(INFO, "DAQonite: Starting Run");
+    log(INFO, "Starting Run");
     // If we are currently running first stop the current run
     if (mode_ == true) {
         log(INFO, "DAQ Handler stopping current mine");
@@ -135,7 +135,7 @@ void DAQHandler::handleStartRunCommand(RunType which)
 
 void DAQHandler::handleStopRunCommand()
 {
-    log(INFO, "DAQonite: Stopping Run");
+    log(INFO, "Stopping Run");
     // Check we are actually running
     if (mode_ == true) {
         // Set the mode to monitoring
@@ -144,13 +144,13 @@ void DAQHandler::handleStopRunCommand()
         // Stop the data_handler run
         data_handler_->stopRun();
     } else {
-        log(INFO, "DAQ Handler already stopped mining");
+        log(INFO, "Already stopped mining");
     }
 }
 
 void DAQHandler::handleExitCommand()
 {
-    log(INFO, "DAQControl: Exit");
+    log(INFO, "Exit");
     handleStopRunCommand();
     run_work_.reset();
     io_service_->stop();

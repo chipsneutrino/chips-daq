@@ -37,8 +37,8 @@ void HitReceiver::workOpticalData()
 void HitReceiver::handleOpticalData(const boost::system::error_code& error, std::size_t size)
 {
     if (error) {
-        log(ERROR, "Hit receiver {} caught error {}: {}", handler_id_, error.value(), error.category().name());
-        log(WARNING, "Hit receiver {} stopping work on optical socket due to error.", handler_id_);
+        log(ERROR, "Caught error {}: {}", handler_id_, error.value(), error.category().name());
+        log(WARNING, "Stopping work on optical socket due to error.", handler_id_);
         return;
     }
 
@@ -50,7 +50,7 @@ void HitReceiver::handleOpticalData(const boost::system::error_code& error, std:
 
     // Check the packet has at least a BBB header in it
     if (size < header_size_) {
-        log(WARNING, "Hit receiver {} received packet without header (expected at least {}, got {})",
+        log(WARNING, "Received packet without header (expected at least {}, got {})",
             handler_id_, header_size_, size);
         workOpticalData();
         return;

@@ -108,7 +108,7 @@ void DataHandler::getRunNumAndName()
             }
             newFile.close();
         } else {
-            throw std::runtime_error("daqonite - Error: Unable to create runNumbers.dat!");
+            throw std::runtime_error("Unable to create runNumbers.dat!");
         }
     } else {
         // The file exists so read from it
@@ -135,7 +135,7 @@ void DataHandler::getRunNumAndName()
             }
             updateFile.close();
         } else {
-            throw std::runtime_error("daqonite - Error: Unable to update runNumbers.dat!");
+            throw std::runtime_error("Unable to update runNumbers.dat!");
         }
     }
 

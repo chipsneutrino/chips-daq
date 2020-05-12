@@ -113,7 +113,7 @@ void SpillScheduler::workSpillServer()
 {
     using namespace XmlRpc;
 
-    log(INFO, "SpillServer up and running at port {}!", port_);
+    log(INFO, "Up and running at port {}!", port_);
     spill_server_ = std::unique_ptr<XmlRpcServer>(new XmlRpcServer);
     predictor_ = std::make_shared<TriggerPredictor>(trigger_memory_size_, init_period_guess_);
 
@@ -130,7 +130,7 @@ void SpillScheduler::workSpillServer()
     }
 
     spill_server_.reset();
-    log(INFO, "SpillServer signing off!");
+    log(INFO, "Signing off!");
 }
 
 std::string getSpillNameFromType(int type)
@@ -201,7 +201,7 @@ void SpillScheduler::Spill::execute(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcV
 
     const int n_args = params.size();
     if (n_args != 2) {
-        log(WARNING, "SpillServer received bad request (expected 2 arguments, got {})", n_args);
+        log(WARNING, "Received bad request (expected 2 arguments, got {})", n_args);
         result = bad;
         return;
     }

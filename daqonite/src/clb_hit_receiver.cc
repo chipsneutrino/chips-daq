@@ -15,7 +15,7 @@ CLBHitReceiver::CLBHitReceiver(std::shared_ptr<boost::asio::io_service> io_servi
     : HitReceiver { io_service, data_handler, mode, opt_port, handler_id, sizeof(CLBCommonHeader) }
 {
     setUnitName("CLBHitReceiver[{}]", handler_id);
-    log(INFO, "CLB hit receiver {} started on port {}", handler_id, opt_port);
+    log(INFO, "Started on port {}", handler_id, opt_port);
 }
 
 bool CLBHitReceiver::processPacket(const char* datagram, std::size_t size)
@@ -24,7 +24,7 @@ bool CLBHitReceiver::processPacket(const char* datagram, std::size_t size)
     const std::size_t remaining_bytes = size - sizeof(CLBCommonHeader);
     const std::ldiv_t div = std::div((long)remaining_bytes, sizeof(hit_t));
     if (div.rem != 0) {
-        log(WARNING, "CLB hit receiver {} received packet with invalid body (expected multiple of {}, got {} which has remainder {})",
+        log(WARNING, "Received packet with invalid body (expected multiple of {}, got {} which has remainder {})",
             handlerID(), sizeof(hit_t), remaining_bytes, div.rem);
         return false;
     }
@@ -35,7 +35,7 @@ bool CLBHitReceiver::processPacket(const char* datagram, std::size_t size)
     // Check the type of the packet is optical from the CLBCommonHeader
     const std::pair<int, std::string>& type = getType(header);
     if (type.first != OPTO) {
-        log(WARNING, "CLB hit receiver {} received other than optical packet (expected {}, got {} which is {})",
+        log(WARNING, "Received other than optical packet (expected {}, got {} which is {})",
             handlerID(), OPTO, type.first, type.second);
         return false;
     }
