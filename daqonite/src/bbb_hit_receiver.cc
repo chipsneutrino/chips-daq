@@ -17,6 +17,14 @@ BBBHitReceiver::BBBHitReceiver(std::shared_ptr<boost::asio::io_service> io_servi
     log(INFO, "Started on port {}", opt_port);
 }
 
+void BBBHitReceiver::startData()
+{
+    // Reset sequence number before we start receiving hits
+    next_sequence_number_ = 0;
+
+    HitReceiver::startData();
+}
+
 void BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_size, bool do_mine)
 {
     // Check the size of the packet is consistent with opt_packet_header_t + some hits

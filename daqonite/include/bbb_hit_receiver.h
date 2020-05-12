@@ -24,6 +24,8 @@ public:
 
     ~BBBHitReceiver() = default;
 
+    void startData() override;
+
 protected:
     /// Process BBB optical data packet.
     void processDatagram(const char* datagram, std::size_t datagram_size, bool do_mine) override;
