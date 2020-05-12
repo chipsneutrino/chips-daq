@@ -55,12 +55,12 @@ void DAQHandler::setupHandlers()
 {
     // Setup the CLB handler (if required)
     for (const int port : clb_ports_) {
-        hit_receivers_.emplace_back(new CLBHitReceiver(io_service_, data_handler_, &mode_, port)); // FIXME: mode_
+        hit_receivers_.emplace_back(new CLBHitReceiver(io_service_, data_handler_, port));
     }
 
     // Setup the BBB handler (if required)
     for (const int port : bbb_ports_) {
-        hit_receivers_.emplace_back(new BBBHitReceiver(io_service_, data_handler_, &mode_, port)); // FIXME: mode_
+        hit_receivers_.emplace_back(new BBBHitReceiver(io_service_, data_handler_, port));
     }
 }
 
@@ -97,7 +97,7 @@ void DAQHandler::handleStartDataCommand()
 
     // Call the first work method to the optical data
     for (const auto& hit_receiver : hit_receivers_) {
-        hit_receiver->workOpticalData();
+        hit_receiver->startData();
     }
 }
 
@@ -106,6 +106,9 @@ void DAQHandler::handleStopDataCommand()
     log(INFO, "Stopping Data");
 
     //TODO: Stop the work method for the optical data
+    for (const auto& hit_receiver : hit_receivers_) {
+        hit_receiver->stopData();
+    }
 }
 
 void DAQHandler::handleStartRunCommand(RunType which)
@@ -123,11 +126,20 @@ void DAQHandler::handleStartRunCommand(RunType which)
     // Set the mode to data taking
     run_type_ = which;
     mode_ = true;
+
+    for (const auto& hit_receiver : hit_receivers_) {
+        hit_receiver->startRun(which);
+    }
 }
 
 void DAQHandler::handleStopRunCommand()
 {
     log(INFO, "Stopping Run");
+
+    for (const auto& hit_receiver : hit_receivers_) {
+        hit_receiver->stopRun();
+    }
+
     // Check we are actually running
     if (mode_ == true) {
         // Set the mode to monitoring

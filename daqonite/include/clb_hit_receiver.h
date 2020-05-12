@@ -25,7 +25,7 @@ struct hit_t;
 class CLBHitReceiver : public HitReceiver {
 public:
     explicit CLBHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
-        std::shared_ptr<DataHandler> data_handler, bool* mode, int opt_port);
+        std::shared_ptr<DataHandler> data_handler, int opt_port);
 
     virtual ~CLBHitReceiver() = default;
 

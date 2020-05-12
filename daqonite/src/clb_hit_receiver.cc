@@ -11,8 +11,8 @@
 #include "clb_hit_receiver.h"
 
 CLBHitReceiver::CLBHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
-    std::shared_ptr<DataHandler> data_handler, bool* mode, int opt_port)
-    : HitReceiver { io_service, data_handler, mode, opt_port, sizeof(CLBCommonHeader) }
+    std::shared_ptr<DataHandler> data_handler, int opt_port)
+    : HitReceiver { io_service, data_handler, opt_port, sizeof(CLBCommonHeader) }
 {
     setUnitName("CLBHitReceiver[{}]", opt_port);
     log(INFO, "Started on port {}", opt_port);

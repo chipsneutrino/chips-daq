@@ -9,8 +9,8 @@
 #include "bbb_hit_receiver.h"
 
 BBBHitReceiver::BBBHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
-    std::shared_ptr<DataHandler> data_handler, bool* mode, int opt_port)
-    : HitReceiver { io_service, data_handler, mode, opt_port, sizeof(opt_packet_header_t) }
+    std::shared_ptr<DataHandler> data_handler, int opt_port)
+    : HitReceiver { io_service, data_handler, opt_port, sizeof(opt_packet_header_t) }
     , next_sequence_number_ { 0 }
 {
     setUnitName("BBBHitReceiver[{}]", opt_port);
