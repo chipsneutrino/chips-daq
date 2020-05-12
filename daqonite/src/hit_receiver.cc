@@ -14,8 +14,8 @@ HitReceiver::HitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
     : Logging {}
     , data_handler_ { std::move(data_handler) }
     , mode_ { mode }
-    , buffer_size_ { BUFFER_SIZE_HITS }
     , socket_optical_ { *io_service, udp::endpoint(udp::v4(), opt_port) }
+    , datagram_buffer_ {}
     , data_slot_idx_ { data_handler_->assignNewSlot() }
     , handler_id_ { handler_id }
     , header_size_ { header_size }
@@ -25,20 +25,23 @@ HitReceiver::HitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
     // Setup the sockets
     // TODO: make this constant configurable
     socket_optical_.set_option(udp::socket::receive_buffer_size { 33554432 });
+
+    // TODO: make this constant configurable
+    datagram_buffer_.resize(65536);
 }
 
 void HitReceiver::workOpticalData()
 {
     using namespace boost::asio::placeholders;
-    socket_optical_.async_receive(boost::asio::buffer(&buffer_optical_[0], buffer_size_),
+    socket_optical_.async_receive(boost::asio::buffer(datagram_buffer_),
         boost::bind(&HitReceiver::handleOpticalData, this, error, bytes_transferred));
 }
 
 void HitReceiver::handleOpticalData(const boost::system::error_code& error, std::size_t size)
 {
     if (error) {
-        log(ERROR, "Caught error {}: {}", handler_id_, error.value(), error.category().name());
-        log(WARNING, "Stopping work on optical socket due to error.", handler_id_);
+        log(ERROR, "Caught error {}: {}", error.value(), error.category().name());
+        log(WARNING, "Stopping work on optical socket due to error.");
         return;
     }
 
@@ -48,14 +51,14 @@ void HitReceiver::handleOpticalData(const boost::system::error_code& error, std:
         return;
     }
 
-    // Check the packet has at least a BBB header in it
+    // Check the packet has at least a header in it
     if (size < header_size_) {
         log(WARNING, "Received packet without header (expected at least {}, got {})",
-            handler_id_, header_size_, size);
+            header_size_, size);
         workOpticalData();
         return;
     }
 
-    processPacket(&buffer_optical_[0], size);
+    processPacket(datagram_buffer_.data(), datagram_buffer_.size());
     workOpticalData();
 }

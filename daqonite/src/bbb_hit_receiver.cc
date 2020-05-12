@@ -14,7 +14,7 @@ BBBHitReceiver::BBBHitReceiver(std::shared_ptr<boost::asio::io_service> io_servi
     , next_sequence_number_ { 0 }
 {
     setUnitName("BBBHitReceiver[{}]", handler_id);
-    log(INFO, "Started on port {}", handler_id, opt_port);
+    log(INFO, "Started on port {}", opt_port);
 }
 
 bool BBBHitReceiver::processPacket(const char* datagram, std::size_t size)
@@ -24,7 +24,7 @@ bool BBBHitReceiver::processPacket(const char* datagram, std::size_t size)
     const std::ldiv_t div = std::div((long)remaining_bytes, sizeof(opt_packet_hit_t));
     if (div.rem != 0) {
         log(WARNING, "Received packet with invalid body (expected multiple of {}, got {} which has remainder {})",
-            handlerID(), sizeof(opt_packet_hit_t), remaining_bytes, div.rem);
+            sizeof(opt_packet_hit_t), remaining_bytes, div.rem);
         return false;
     }
 

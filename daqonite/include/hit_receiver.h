@@ -19,9 +19,6 @@
 
 #include "data_handler.h"
 
-/// Buffer size in bytes for optical data
-const static size_t BUFFER_SIZE_HITS = 10000;
-
 class HitReceiver : protected Logging {
 public:
     explicit HitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
@@ -55,11 +52,10 @@ private:
     // CLBHandler settings/input
 
     const bool* const mode_; ///< false = Monitoring, True = Running
-    const std::size_t buffer_size_; ///< Size of the buffers
 
     // BOOST data collection
     boost::asio::ip::udp::socket socket_optical_; ///< Optical data UDP socket
-    char buffer_optical_[BUFFER_SIZE_HITS] __attribute__((aligned(8))); ///< Optical data buffer
+    std::vector<char> datagram_buffer_; ///< Optical data buffer
 
     int data_slot_idx_; ///< Unique data slot index assigned by DataHandler to prevent overwrites
     int handler_id_; ///< Logging ID
