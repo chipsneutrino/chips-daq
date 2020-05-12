@@ -21,6 +21,7 @@ DAQHandler::DAQHandler(const std::string& data_path)
     , thread_group_ {}
     , data_handler_ { new DataHandler }
     , hit_receivers_ {}
+    , scheduling_ { new SchedulingPool }
 {
     setUnitName("DAQHandler");
 
@@ -113,7 +114,7 @@ void DAQHandler::handleStartRunCommand(RunType which)
     }
 
     // Set the mode to data taking
-    run_ = std::make_shared<DataRun>(which, output_directory_path_);
+    run_ = std::make_shared<DataRun>(which, output_directory_path_, scheduling_);
     run_->start();
 
     log(INFO, "Started data run: {}", run_->logDescription());

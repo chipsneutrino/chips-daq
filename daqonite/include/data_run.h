@@ -12,6 +12,8 @@
 
 #include <util/control_msg.h>
 
+#include "scheduling_pool.h"
+
 enum class DataRunState : int {
     NotStarted,
     Running,
@@ -22,7 +24,7 @@ enum class DataRunState : int {
 
 class DataRun {
 public:
-    explicit DataRun(RunType type, const std::string& output_directory_path);
+    explicit DataRun(RunType type, const std::string& output_directory_path, const std::shared_ptr<SchedulingPool>& scheduling_pool);
 
     void start();
     void stop();
@@ -30,6 +32,7 @@ public:
     inline DataRunState getState() const { return state_; }
     inline RunType getType() const { return type_; }
     inline const std::string& getOutputFilePath() const { return output_file_path_; }
+    std::shared_ptr<BatchScheduler> getScheduler() const;
 
     std::string logDescription() const;
 
@@ -43,6 +46,8 @@ private:
 
     static std::string formatTime(const clock::time_point& time);
     static std::string formatType(RunType type);
+
+    std::shared_ptr<SchedulingPool> scheduling_;
 
     RunType type_;
     std::uint64_t number_;

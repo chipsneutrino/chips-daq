@@ -259,6 +259,8 @@ private:
     // Log suppression
     int log_counter_; ///< Log counter
     std::chrono::time_point<std::chrono::system_clock> timer_start_; ///< Suppression window start time
+
+    static std::string level_to_string(severity level);
 };
 
 extern ElasticInterface g_elastic; ///< Global instance of this class

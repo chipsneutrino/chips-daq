@@ -21,9 +21,6 @@ DataHandler::DataHandler()
     , waiting_batches_ {}
     , last_approx_timestamp_ { 0 }
     , batch_scheduler_ {}
-    , infinite_scheduler_ { new InfiniteScheduler }
-    , regular_scheduler_ { new RegularScheduler(8, std::chrono::minutes(1)) }
-    , spill_scheduler_ { new SpillScheduler(55812, 20, 1.5, 8, 0.5) }
     , current_schedule_ {}
     , current_schedule_mtx_ {}
     , n_slots_ { 0 }
@@ -36,6 +33,7 @@ void DataHandler::startRun(const std::shared_ptr<DataRun>& run)
 {
     // Set the fRun_type, fRun_num and fFile_name run variables
     run_ = run;
+    batch_scheduler_ = run_->getScheduler();
 
     // Prepare queues and schedule.
     waiting_batches_.consume_all([](Batch& b) { ; });
@@ -46,23 +44,6 @@ void DataHandler::startRun(const std::shared_ptr<DataRun>& run)
 
     last_approx_timestamp_ = 0;
     n_batches_ = 0;
-
-    // TODO: determine schedulers properly
-
-    switch (run_->getType()) {
-    case RunType::DataNormal:
-        batch_scheduler_ = static_cast<const std::shared_ptr<SpillScheduler>&>(spill_scheduler_);
-        break;
-    case RunType::Calibration:
-        batch_scheduler_ = static_cast<const std::shared_ptr<RegularScheduler>&>(regular_scheduler_);
-        break;
-    case RunType::TestNormal:
-        batch_scheduler_ = static_cast<const std::shared_ptr<InfiniteScheduler>&>(infinite_scheduler_);
-        break;
-    case RunType::TestFlasher:
-        batch_scheduler_ = static_cast<const std::shared_ptr<InfiniteScheduler>&>(infinite_scheduler_);
-        break;
-    }
 
     // Start output thread.
     output_running_ = scheduling_running_ = true;
@@ -77,6 +58,7 @@ void DataHandler::stopRun()
 
     // Reset the run variables
     run_.reset();
+    batch_scheduler_.reset();
 }
 
 std::size_t DataHandler::insertSort(CLBEventQueue& queue) noexcept
@@ -337,7 +319,7 @@ void DataHandler::joinThreads()
 
 void DataHandler::join()
 {
-    spill_scheduler_->join();
+    /* Nothing done. */
 }
 
 int DataHandler::assignNewSlot()

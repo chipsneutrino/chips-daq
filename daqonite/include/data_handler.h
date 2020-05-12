@@ -26,11 +26,9 @@
 #include <util/control_msg.h>
 #include <util/logging.h>
 
-#include "batch_scheduler.h"
 #include "clb_event.h"
 #include "data_run.h"
 #include "merge_sorter.h"
-#include "spill_scheduler.h"
 
 class DataHandler : protected Logging {
 public:
@@ -90,9 +88,7 @@ private:
 
     std::atomic_uint32_t last_approx_timestamp_; ///< Latest timestamp sufficiently in the past (used by scheduler)
     std::shared_ptr<BatchScheduler> batch_scheduler_; ///< Scheduler of batch intervals.
-    std::shared_ptr<InfiniteScheduler> infinite_scheduler_;
-    std::shared_ptr<RegularScheduler> regular_scheduler_;
-    std::shared_ptr<SpillScheduler> spill_scheduler_;
+
     BatchSchedule current_schedule_; ///< Batches open for data writing.
     boost::upgrade_mutex current_schedule_mtx_; ///< Multiple-reader / single-writer mutex for current schedule.
 

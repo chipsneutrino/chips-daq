@@ -47,12 +47,32 @@ void ElasticInterface::init(bool print_logs, bool print_debug, int index_threads
     }
 }
 
+std::string ElasticInterface::level_to_string(severity level)
+{
+    switch (level) {
+    case severity::TRACE:
+        return "TRACE";
+    case severity::DEBUG:
+        return "DEBUG";
+    case severity::INFO:
+        return "INFO";
+    case severity::WARNING:
+        return "WARNING";
+    case severity::ERROR:
+        return "ERROR";
+    case severity::FATAL:
+        return "FATAL";
+    default:
+        return "unknown";
+    }
+}
+
 void ElasticInterface::log(severity level, const std::string& unit, std::string&& message)
 {
     if (print_logs_) // Print to stdout if required
     {
         print_mutex_.lock();
-        fmt::print("LOG ({}): {}\n", level, message);
+        fmt::print("LOG ({}, {}): {}\n", level_to_string(level), unit, message);
         print_mutex_.unlock();
     }
     index_service_.post(boost::bind(&ElasticInterface::logWork, this, level, unit, message, timestamp()));

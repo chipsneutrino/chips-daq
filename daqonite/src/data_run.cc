@@ -9,10 +9,11 @@
 
 #include "data_run.h"
 
-DataRun::DataRun(RunType type, const std::string& output_directory_path)
+DataRun::DataRun(RunType type, const std::string& output_directory_path, const std::shared_ptr<SchedulingPool>& scheduling_pool)
     : state_ { DataRunState::NotStarted }
     , pc_time_started_ {}
     , pc_time_stopped_ {}
+    , scheduling_ { scheduling_pool }
     , type_ { type }
     , number_ {}
     , output_directory_path_ { output_directory_path }
@@ -139,4 +140,20 @@ void DataRun::setOutputFileName()
 
     // TODO: use filesystem path join here
     output_file_path_ = fmt::format("{}/type{}_run{:05d}.root", output_directory_path_, run_type_no, number_);
+}
+
+std::shared_ptr<BatchScheduler> DataRun::getScheduler() const
+{
+    // TODO: determine schedulers properly
+
+    switch (type_) {
+    case RunType::DataNormal:
+        return scheduling_->spillScheduler();
+    case RunType::Calibration:
+        return scheduling_->regularScheduler();
+    case RunType::TestNormal:
+        return scheduling_->infiniteScheduler();
+    case RunType::TestFlasher:
+        return scheduling_->infiniteScheduler();
+    }
 }
