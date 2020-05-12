@@ -18,7 +18,7 @@ CLBHitReceiver::CLBHitReceiver(std::shared_ptr<boost::asio::io_service> io_servi
     log(INFO, "Started on port {}", opt_port);
 }
 
-bool CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_size, bool do_mine)
+void CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_size, bool do_mine)
 {
     // Check the size of the packet is consistent with CLBCommonHeader + some hits
     const std::size_t remaining_bytes = datagram_size - sizeof(CLBCommonHeader);
@@ -26,7 +26,8 @@ bool CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
     if (div.rem != 0) {
         log(WARNING, "Received packet with invalid body (expected multiple of {}, got {} which has remainder {})",
             sizeof(hit_t), remaining_bytes, div.rem);
-        return false;
+        reportBadDatagram();
+        return;
     }
 
     // Cast the beggining of the packet to the CLBCommonHeader
@@ -35,9 +36,10 @@ bool CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
     // Check the type of the packet is optical from the CLBCommonHeader
     const std::pair<int, std::string>& type = getType(header);
     if (type.first != OPTO) {
-        log(WARNING, "Received other than optical packet (expected {}, got {} which is {})",
+        log(WARNING, "Received non-optical packet (expected type {}, got {} which is {})",
             OPTO, type.first, type.second);
-        return false;
+        reportBadDatagram();
+        return;
     }
 
     int n_hits = div.quot;
@@ -48,10 +50,13 @@ bool CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
     new_event.Timestamp_s = header.timeStamp().sec();
     const std::uint32_t time_stamp_ns = header.timeStamp().tics() * 16;
 
-    // TODO: call recordReceivedDatagram()
+    // TODO: detect gaps in data stream
+
+    // FIXME: timestamps
+    reportGoodDatagram(new_event.PomId, 42, 42, n_hits);
 
     if (!do_mine) {
-        return true;
+        return;
     }
 
     data_handler_->updateLastApproxTimestamp(new_event.Timestamp_s);
@@ -59,13 +64,15 @@ bool CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
 
     if (!multi_queue) {
         // Timestamp not matched to any open batch, discard packet.
-        return false;
+        // TODO: devise a reporting mechanism for this
+        return;
     }
 
     std::lock_guard<std::mutex> l { multi_queue->write_mutex };
     if (multi_queue->closed_for_writing) {
         // Have a batch, which has been closed but not yet removed from the schedule. Discard packet.
-        return false;
+        // TODO: devise a reporting mechanism for this
+        return;
     }
 
     // Find/create queue for this POM
@@ -92,6 +99,4 @@ bool CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
 
         event_queue.emplace_back(std::cref(new_event));
     }
-
-    return true;
 }

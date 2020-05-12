@@ -17,7 +17,7 @@ BBBHitReceiver::BBBHitReceiver(std::shared_ptr<boost::asio::io_service> io_servi
     log(INFO, "Started on port {}", opt_port);
 }
 
-bool BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_size, bool do_mine)
+void BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_size, bool do_mine)
 {
     // Check the size of the packet is consistent with opt_packet_header_t + some hits
     const std::size_t remaining_bytes = datagram_size - sizeof(opt_packet_header_t);
@@ -25,23 +25,25 @@ bool BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
     if (div.rem != 0) {
         log(WARNING, "Received packet with invalid body (expected multiple of {}, got {} which has remainder {})",
             sizeof(opt_packet_hit_t), remaining_bytes, div.rem);
-        return false;
+        reportBadDatagram();
+        return;
     }
 
     // Cast the beggining of the packet to the opt_packet_header_t
     const opt_packet_header_t& header_optical = *reinterpret_cast<const opt_packet_header_t*>(datagram);
 
     const auto& header { *reinterpret_cast<const opt_packet_header_t*>(datagram) };
-    log(DEBUG, "Have optical header with run = {},\t plane = {},\t seq = {},\t hits = {},\t data_hits = {}.",
-        header.common.run_number, header.common.plane_number, header.common.sequence_number, header.hit_count, div.quot);
+    log(DEBUG, "Have optical header with run = {},\t plane = {},\t seq = {},\t hits = {}.",
+        header.common.run_number, header.common.plane_number, header.common.sequence_number, header.hit_count);
 
-    if (header.common.sequence_number != next_sequence_number_) {
-        log(WARNING, "Received a packet out of order (or after a gap), expected sequence number {}, got {} instead", next_sequence_number_, header.common.sequence_number);
+    if (header.hit_count != div.quot) {
+        log(WARNING, "Reported hit count differs from data size (datagram reports {} hits, buffer contains {})",
+            header.hit_count, div.quot);
+        reportBadDatagram();
+        return;
     }
-    next_sequence_number_ = 1 + header.common.sequence_number;
 
-    const std::uint32_t n_hits = std::min((std::uint32_t)div.quot, header.hit_count);
-
+    const std::uint32_t n_hits { header.hit_count };
     CLBEvent new_event {};
 
     // Assign the variables we need from the header
@@ -49,10 +51,23 @@ bool BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
     new_event.Timestamp_s = header.common.window_start.ticks_since_year / 100000000; // FIXME: add year's ticks
     const std::uint32_t time_stamp_ns = header.common.window_start.ticks_since_year % 100000000;
 
-    // TODO: call recordReceivedDatagram()
+    if (header.common.sequence_number > next_sequence_number_) {
+        // We missed some datagrams.
+        // FIXME: timestamp
+        reportDataStreamGap(42);
+    } else if (header.common.sequence_number < next_sequence_number_) {
+        // Late datagram, discard it.
+        reportBadDatagram();
+        return;
+    }
+
+    next_sequence_number_ = 1 + header.common.sequence_number;
+
+    // FIXME: timestamps
+    reportGoodDatagram(header.common.plane_number, 42, 42, n_hits);
 
     if (!do_mine) {
-        return true;
+        return;
     }
 
     data_handler_->updateLastApproxTimestamp(new_event.Timestamp_s);
@@ -60,13 +75,15 @@ bool BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
 
     if (!multi_queue) {
         // Timestamp not matched to any open batch, discard packet.
-        return false;
+        // TODO: devise a reporting mechanism for this
+        return;
     }
 
     std::lock_guard<std::mutex> l { multi_queue->write_mutex };
     if (multi_queue->closed_for_writing) {
         // Have a batch, which has been closed but not yet removed from the schedule. Discard packet.
-        return false;
+        // TODO: devise a reporting mechanism for this
+        return;
     }
 
     // Find/create queue for this POM
@@ -93,6 +110,4 @@ bool BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
 
         event_queue.emplace_back(std::cref(new_event));
     }
-
-    return true;
 }

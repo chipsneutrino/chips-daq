@@ -129,12 +129,17 @@ void HitReceiver::checkAndProcessDatagram(const char* datagram, std::size_t data
     processDatagram(datagram, datagram_size, do_mine);
 }
 
-void HitReceiver::recordBadDatagram()
+void HitReceiver::reportDataStreamGap(timestamp_type gap_end)
 {
     // TODO: implement me
 }
 
-void HitReceiver::recordGoodDatagram(std::uint32_t plane_id, std::uint64_t timestamp, std::uint64_t n_hits)
+void HitReceiver::reportBadDatagram()
+{
+    // TODO: implement me
+}
+
+void HitReceiver::reportGoodDatagram(std::uint32_t plane_id, timestamp_type start_time, timestamp_type end_time, std::uint64_t n_hits)
 {
     // TODO: implement me
 }

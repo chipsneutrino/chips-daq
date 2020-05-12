@@ -26,7 +26,7 @@ public:
 
 protected:
     /// Process BBB optical data packet.
-    bool processDatagram(const char* datagram, std::size_t datagram_size, bool do_mine) override;
+    void processDatagram(const char* datagram, std::size_t datagram_size, bool do_mine) override;
 
     std::uint32_t next_sequence_number_;
 };

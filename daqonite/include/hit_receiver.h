@@ -41,10 +41,13 @@ public:
     inline int dataSlotIndex() const { return data_slot_idx_; }
 
 protected:
-    virtual bool processDatagram(const char* datagram, std::size_t datagram_size, bool do_mine) = 0;
+    virtual void processDatagram(const char* datagram, std::size_t datagram_size, bool do_mine) = 0;
 
-    void recordBadDatagram();
-    void recordGoodDatagram(std::uint32_t plane_id, std::uint64_t timestamp, std::uint64_t n_hits);
+    using timestamp_type = std::uint64_t; // TODO: we will probably want this to be a struct with fine/coarse
+
+    void reportDataStreamGap(timestamp_type gap_end);
+    void reportBadDatagram();
+    void reportGoodDatagram(std::uint32_t plane_id, timestamp_type start_time, timestamp_type end_time, std::uint64_t n_hits);
 
     std::shared_ptr<DataHandler> data_handler_; ///< Pointer to the DataHandler
 
