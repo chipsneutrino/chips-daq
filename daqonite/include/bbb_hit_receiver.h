@@ -20,7 +20,7 @@
 class BBBHitReceiver : public HitReceiver {
 public:
     BBBHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
-        std::shared_ptr<DataHandler> data_handler, bool* mode, int opt_port, int handler_id);
+        std::shared_ptr<DataHandler> data_handler, bool* mode, int opt_port);
 
     ~BBBHitReceiver() = default;
 

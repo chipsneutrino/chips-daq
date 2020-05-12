@@ -19,16 +19,13 @@
 #include "data_handler.h"
 #include "hit_receiver.h"
 
-/// The default port for CLB UDP optical data
-const static unsigned int default_opto_port = 56015;
-
 class CLBCommonHeader;
 struct hit_t;
 
 class CLBHitReceiver : public HitReceiver {
 public:
     explicit CLBHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
-        std::shared_ptr<DataHandler> data_handler, bool* mode, int opt_port, int handler_id);
+        std::shared_ptr<DataHandler> data_handler, bool* mode, int opt_port);
 
     virtual ~CLBHitReceiver() = default;
 

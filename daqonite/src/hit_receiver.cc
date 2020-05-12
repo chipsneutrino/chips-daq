@@ -10,17 +10,16 @@ using boost::asio::ip::udp;
 
 HitReceiver::HitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
     std::shared_ptr<DataHandler> data_handler, bool* mode, int opt_port,
-    int handler_id, std::size_t header_size)
+    std::size_t header_size)
     : Logging {}
     , data_handler_ { std::move(data_handler) }
     , mode_ { mode }
     , socket_optical_ { *io_service, udp::endpoint(udp::v4(), opt_port) }
     , datagram_buffer_ {}
     , data_slot_idx_ { data_handler_->assignNewSlot() }
-    , handler_id_ { handler_id }
     , header_size_ { header_size }
 {
-    setUnitName("HitReceiver[{}]", handler_id);
+    setUnitName("HitReceiver[{}]", opt_port);
 
     // Setup the sockets
     // TODO: make this constant configurable

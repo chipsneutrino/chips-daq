@@ -55,12 +55,12 @@ void DAQHandler::setupHandlers()
 {
     // Setup the CLB handler (if required)
     for (const int port : clb_ports_) {
-        hit_receivers_.emplace_back(new CLBHitReceiver(io_service_, data_handler_, &mode_, port, hit_receivers_.size())); // FIXME: mode_
+        hit_receivers_.emplace_back(new CLBHitReceiver(io_service_, data_handler_, &mode_, port)); // FIXME: mode_
     }
 
     // Setup the BBB handler (if required)
     for (const int port : bbb_ports_) {
-        hit_receivers_.emplace_back(new BBBHitReceiver(io_service_, data_handler_, &mode_, port, hit_receivers_.size())); // FIXME: mode_
+        hit_receivers_.emplace_back(new BBBHitReceiver(io_service_, data_handler_, &mode_, port)); // FIXME: mode_
     }
 }
 

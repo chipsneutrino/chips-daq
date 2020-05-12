@@ -23,7 +23,7 @@ class HitReceiver : protected Logging {
 public:
     explicit HitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
         std::shared_ptr<DataHandler> data_handler, bool* mode, int opt_port,
-        int handler_id, std::size_t header_size);
+        std::size_t header_size);
 
     virtual ~HitReceiver() = default;
 
@@ -41,7 +41,6 @@ public:
     void workOpticalData();
 
     inline int dataSlotIndex() const { return data_slot_idx_; }
-    inline int handlerID() const { return handler_id_; }
 
 protected:
     virtual bool processPacket(const char* datagram, std::size_t size) = 0;
@@ -49,8 +48,6 @@ protected:
     std::shared_ptr<DataHandler> data_handler_; ///< Pointer to the DataHandler
 
 private:
-    // CLBHandler settings/input
-
     const bool* const mode_; ///< false = Monitoring, True = Running
 
     // BOOST data collection
@@ -58,7 +55,6 @@ private:
     std::vector<char> datagram_buffer_; ///< Optical data buffer
 
     int data_slot_idx_; ///< Unique data slot index assigned by DataHandler to prevent overwrites
-    int handler_id_; ///< Logging ID
 
     std::size_t header_size_;
 
