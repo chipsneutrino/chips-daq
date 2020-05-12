@@ -66,12 +66,12 @@ private:
      */
     void ioServiceThread();
 
-    /// Create CLB and BBB handlers depending on configuration.
-    void setupHandlers();
+    /// Create CLB and BBB hit receivers depending on configuration.
+    void createHitReceivers();
 
     // Settings
-    std::list<int> clb_ports_; ///< Port numbers where CLB handlers are listening.
-    std::list<int> bbb_ports_; ///< Port numbers where BBB handlers are listening.
+    std::list<int> clb_ports_; ///< Port numbers where CLB hit receivers are listening.
+    std::list<int> bbb_ports_; ///< Port numbers where BBB hit receivers are listening.
     int n_threads_; ///< The number of threads to use
 
     // Running mode

@@ -25,6 +25,7 @@ DAQHandler::DAQHandler(const std::string& data_path)
 {
     setUnitName("DAQHandler");
 
+    // TODO: get this from a config file
     clb_ports_.push_back(57001);
     clb_ports_.push_back(57002);
     clb_ports_.push_back(57003);
@@ -34,6 +35,7 @@ DAQHandler::DAQHandler(const std::string& data_path)
     clb_ports_.push_back(57007);
     clb_ports_.push_back(57008);
 
+    // TODO: get this from a config file
     bbb_ports_.push_back(57101);
     bbb_ports_.push_back(57102);
     bbb_ports_.push_back(57103);
@@ -47,12 +49,13 @@ DAQHandler::DAQHandler(const std::string& data_path)
     n_threads_ = 0;
     n_threads_ += clb_ports_.size();
     n_threads_ += bbb_ports_.size();
-
-    setupHandlers();
 }
 
-void DAQHandler::setupHandlers()
+void DAQHandler::createHitReceivers()
 {
+    // Get rid of any previous receivers.
+    hit_receivers_.clear();
+
     // Setup the CLB handler (if required)
     for (const int port : clb_ports_) {
         hit_receivers_.emplace_back(new CLBHitReceiver(io_service_, data_handler_, port));
@@ -89,6 +92,7 @@ void DAQHandler::ioServiceThread()
 void DAQHandler::handleConfigCommand(std::string config_file)
 {
     log(INFO, "Config");
+    createHitReceivers();
 }
 
 void DAQHandler::handleStartDataCommand()
