@@ -41,7 +41,10 @@ public:
     inline int dataSlotIndex() const { return data_slot_idx_; }
 
 protected:
-    virtual bool processPacket(const char* datagram, std::size_t size) = 0;
+    virtual bool processDatagram(const char* datagram, std::size_t datagram_size, bool do_mine) = 0;
+
+    void recordBadDatagram();
+    void recordGoodDatagram(std::uint32_t plane_id, std::uint64_t timestamp, std::uint64_t n_hits);
 
     std::shared_ptr<DataHandler> data_handler_; ///< Pointer to the DataHandler
 
@@ -70,7 +73,7 @@ private:
      */
     void requestDatagram();
 
-    void handleOpticalData(boost::system::error_code const& error, std::size_t size);
+    void receiveDatagram(boost::system::error_code const& error, std::size_t size);
 
     void checkAndProcessDatagram(const char* datagram, std::size_t datagram_size, bool do_mine);
 };

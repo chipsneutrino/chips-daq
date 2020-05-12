@@ -73,10 +73,10 @@ void HitReceiver::requestDatagram()
 {
     using namespace boost::asio::placeholders;
     socket_optical_.async_receive(boost::asio::buffer(datagram_buffer_),
-        boost::bind(&HitReceiver::handleOpticalData, this, error, bytes_transferred));
+        boost::bind(&HitReceiver::receiveDatagram, this, error, bytes_transferred));
 }
 
-void HitReceiver::handleOpticalData(const boost::system::error_code& error, std::size_t size)
+void HitReceiver::receiveDatagram(const boost::system::error_code& error, std::size_t size)
 {
     bool have_data { true };
     bool should_mine { true };
@@ -126,8 +126,15 @@ void HitReceiver::checkAndProcessDatagram(const char* datagram, std::size_t data
         return;
     }
 
-    // TODO: process packet even if not mining but not save it
-    if (do_mine) {
-        processPacket(datagram, datagram_size);
-    }
+    processDatagram(datagram, datagram_size, do_mine);
+}
+
+void HitReceiver::recordBadDatagram()
+{
+    // TODO: implement me
+}
+
+void HitReceiver::recordGoodDatagram(std::uint32_t plane_id, std::uint64_t timestamp, std::uint64_t n_hits)
+{
+    // TODO: implement me
 }

@@ -25,8 +25,8 @@ public:
     ~BBBHitReceiver() = default;
 
 protected:
-    /// Process CLB optical data packet.
-    bool processPacket(const char* datagram, std::size_t size) override;
+    /// Process BBB optical data packet.
+    bool processDatagram(const char* datagram, std::size_t datagram_size, bool do_mine) override;
 
     std::uint32_t next_sequence_number_;
 };

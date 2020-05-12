@@ -17,10 +17,10 @@ BBBHitReceiver::BBBHitReceiver(std::shared_ptr<boost::asio::io_service> io_servi
     log(INFO, "Started on port {}", opt_port);
 }
 
-bool BBBHitReceiver::processPacket(const char* datagram, std::size_t size)
+bool BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_size, bool do_mine)
 {
     // Check the size of the packet is consistent with opt_packet_header_t + some hits
-    const std::size_t remaining_bytes = size - sizeof(opt_packet_header_t);
+    const std::size_t remaining_bytes = datagram_size - sizeof(opt_packet_header_t);
     const std::ldiv_t div = std::div((long)remaining_bytes, sizeof(opt_packet_hit_t));
     if (div.rem != 0) {
         log(WARNING, "Received packet with invalid body (expected multiple of {}, got {} which has remainder {})",
@@ -48,6 +48,12 @@ bool BBBHitReceiver::processPacket(const char* datagram, std::size_t size)
     new_event.PomId = header.common.plane_number;
     new_event.Timestamp_s = header.common.window_start.ticks_since_year / 100000000; // FIXME: add year's ticks
     const std::uint32_t time_stamp_ns = header.common.window_start.ticks_since_year % 100000000;
+
+    // TODO: call recordReceivedDatagram()
+
+    if (!do_mine) {
+        return true;
+    }
 
     data_handler_->updateLastApproxTimestamp(new_event.Timestamp_s);
     CLBEventMultiQueue* multi_queue = data_handler_->findCLBOpticalQueue(new_event.Timestamp_s + 1e-9 * time_stamp_ns, dataSlotIndex());

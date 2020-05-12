@@ -31,5 +31,5 @@ public:
 
 private:
     /// Process CLB optical data packet.
-    bool processPacket(const char* datagram, std::size_t size) override;
+    bool processDatagram(const char* datagram, std::size_t datagram_size, bool do_mine) override;
 };
