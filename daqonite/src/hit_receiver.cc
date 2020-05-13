@@ -9,14 +9,16 @@
 using boost::asio::ip::udp;
 
 HitReceiver::HitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
-    std::shared_ptr<DataHandler> data_handler, int opt_port, std::size_t header_size)
+    std::shared_ptr<DataHandler> data_handler, int opt_port,
+    std::size_t expected_header_size, std::size_t expected_hit_size)
     : Logging {}
     , mode_ { DataMode::Idle }
     , data_handler_ { std::move(data_handler) }
     , socket_optical_ { *io_service, udp::endpoint(udp::v4(), opt_port) }
     , datagram_buffer_ {}
     , data_slot_idx_ { data_handler_->assignNewSlot() }
-    , header_size_ { header_size }
+    , expected_header_size_ { expected_header_size }
+    , expected_hit_size_ { expected_hit_size }
 {
     setUnitName("HitReceiver[{}]", opt_port);
 
@@ -122,13 +124,24 @@ void HitReceiver::receiveDatagram(const boost::system::error_code& error, std::s
 void HitReceiver::checkAndProcessDatagram(const char* datagram, std::size_t datagram_size, bool do_mine)
 {
     // Check the packet has at least a header in it
-    if (datagram_size < header_size_) {
+    if (datagram_size < expected_header_size_) {
         log(WARNING, "Received datagram without header (expected at least {} bytes, got {})",
-            header_size_, datagram_size);
+            expected_header_size_, datagram_size);
+        reportBadDatagram();
         return;
     }
 
-    processDatagram(datagram, datagram_size, do_mine);
+    // Check the size of the packet is consistent with opt_packet_header_t + some hits
+    const std::size_t remaining_bytes = datagram_size - expected_header_size_;
+    const std::ldiv_t div = std::div((long)remaining_bytes, expected_hit_size_);
+    if (div.rem != 0) {
+        log(WARNING, "Received datagram with invalid body (expected multiple of {} bytes, got {} which has nonzero remainder {})",
+            expected_hit_size_, remaining_bytes, div.rem);
+        reportBadDatagram();
+        return;
+    }
+
+    processDatagram(datagram, datagram_size, div.quot, do_mine);
 }
 
 void HitReceiver::reportDataStreamGap(const tai_timestamp& gap_end)

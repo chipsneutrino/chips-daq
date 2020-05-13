@@ -12,23 +12,13 @@
 
 CLBHitReceiver::CLBHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
     std::shared_ptr<DataHandler> data_handler, int opt_port)
-    : HitReceiver { io_service, data_handler, opt_port, sizeof(CLBCommonHeader) }
+    : HitReceiver { io_service, data_handler, opt_port, sizeof(CLBCommonHeader), sizeof(hit_t) }
 {
     setUnitName("CLBHitReceiver[{}]", opt_port);
 }
 
-void CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_size, bool do_mine)
+void CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_size, std::size_t n_hits, bool do_mine)
 {
-    // Check the size of the packet is consistent with CLBCommonHeader + some hits
-    const std::size_t remaining_bytes = datagram_size - sizeof(CLBCommonHeader);
-    const std::ldiv_t div = std::div((long)remaining_bytes, sizeof(hit_t));
-    if (div.rem != 0) {
-        log(WARNING, "Received packet with invalid body (expected multiple of {}, got {} which has remainder {})",
-            sizeof(hit_t), remaining_bytes, div.rem);
-        reportBadDatagram();
-        return;
-    }
-
     // Cast the beggining of the packet to the CLBCommonHeader
     const CLBCommonHeader& header = *reinterpret_cast<const CLBCommonHeader*>(datagram);
 
@@ -41,7 +31,6 @@ void CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
         return;
     }
 
-    const int n_hits { div.quot };
     hit new_hit {};
 
     // Assign the variables we need from the header

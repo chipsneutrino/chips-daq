@@ -9,7 +9,7 @@
 
 BBBHitReceiver::BBBHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
     std::shared_ptr<DataHandler> data_handler, int opt_port)
-    : HitReceiver { io_service, data_handler, opt_port, sizeof(opt_packet_header_t) }
+    : HitReceiver { io_service, data_handler, opt_port, sizeof(opt_packet_header_t), sizeof(opt_packet_hit_t) }
     , next_sequence_number_ { 0 }
 {
     setUnitName("BBBHitReceiver[{}]", opt_port);
@@ -23,33 +23,20 @@ void BBBHitReceiver::startData()
     HitReceiver::startData();
 }
 
-void BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_size, bool do_mine)
+void BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_size, std::size_t n_hits, bool do_mine)
 {
-    // Check the size of the packet is consistent with opt_packet_header_t + some hits
-    const std::size_t remaining_bytes = datagram_size - sizeof(opt_packet_header_t);
-    const std::ldiv_t div = std::div((long)remaining_bytes, sizeof(opt_packet_hit_t));
-    if (div.rem != 0) {
-        log(WARNING, "Received datagram with invalid body (expected multiple of {}, got {} which has remainder {})",
-            sizeof(opt_packet_hit_t), remaining_bytes, div.rem);
-        reportBadDatagram();
-        return;
-    }
-
     // Cast the beggining of the packet to the opt_packet_header_t
-    const opt_packet_header_t& header_optical = *reinterpret_cast<const opt_packet_header_t*>(datagram);
-
     const auto& header { *reinterpret_cast<const opt_packet_header_t*>(datagram) };
     log(DEBUG, "Have optical header with run = {},\t plane = {},\t seq = {},\t hits = {}.",
         header.common.run_number, header.common.plane_number, header.common.sequence_number, header.hit_count);
 
-    if (header.hit_count != div.quot) {
-        log(WARNING, "Reported hit count differs from data size (datagram reports {} hits, buffer contains {})",
-            header.hit_count, div.quot);
+    if (header.hit_count != n_hits) {
+        log(WARNING, "Observed inconsistent hit counts (datagram reports {} hits but contains {} instead)",
+            header.hit_count, n_hits);
         reportBadDatagram();
         return;
     }
 
-    const std::uint32_t n_hits { header.hit_count };
     hit new_hit {};
 
     // Assign the variables we need from the header

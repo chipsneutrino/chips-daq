@@ -23,7 +23,8 @@
 class HitReceiver : protected Logging {
 public:
     explicit HitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
-        std::shared_ptr<DataHandler> data_handler, int opt_port, std::size_t header_size);
+        std::shared_ptr<DataHandler> data_handler, int opt_port,
+        std::size_t expected_header_size, std::size_t expected_hit_size);
 
     virtual ~HitReceiver() = default;
 
@@ -42,7 +43,7 @@ public:
     inline int dataSlotIndex() const { return data_slot_idx_; }
 
 protected:
-    virtual void processDatagram(const char* datagram, std::size_t datagram_size, bool do_mine) = 0;
+    virtual void processDatagram(const char* datagram, std::size_t datagram_size, std::size_t n_hits, bool do_mine) = 0;
 
     void reportDataStreamGap(const tai_timestamp& gap_end);
     void reportBadDatagram();
@@ -68,7 +69,8 @@ private:
 
     int data_slot_idx_; ///< Unique data slot index assigned by DataHandler to prevent overwrites
 
-    std::size_t header_size_;
+    std::size_t expected_header_size_;
+    std::size_t expected_hit_size_;
 
     /**
      * IO_service optical data work function.
