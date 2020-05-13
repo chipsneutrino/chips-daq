@@ -27,7 +27,7 @@ struct Batch {
     bool started {}; ///< Was the batch "touched" by any data taking thread?
     utc_timestamp last_updated_time {}; ///< Time of last "touch"
 
-    CLBEventMultiQueue* clb_opt_data {}; ///< Data queues, one for each slot. Managed by DataHandler.
+    HitMultiQueue* clb_opt_data {}; ///< Data queues, one for each slot. Managed by DataHandler.
 };
 
 using BatchSchedule = std::list<Batch>;

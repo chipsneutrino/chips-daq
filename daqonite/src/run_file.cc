@@ -37,11 +37,12 @@ bool RunFile::isOpen() const
 
 void RunFile::addOptCLBBranches()
 {
-    opt_tree_->Branch("PomId", &fPomId_opt_clb, "fPomId_opt_clb/i");
-    opt_tree_->Branch("Channel", &fChannel_opt_clb, "fChannel_opt_clb/b");
-    opt_tree_->Branch("TimeStamp_s", &fTimestamp_s_opt_clb, "fTimestamp_s_opt_clb/i");
-    opt_tree_->Branch("TimeStamp_ns", &fTimestamp_ns_opt_clb, "fTimestamp_ns_opt_clb/i");
-    opt_tree_->Branch("ToT", &fTot_opt_clb, "fTot_opt_clb/B");
+    opt_tree_->Branch("plane_number", &hit_.plane_number, "plane_number/i");
+    opt_tree_->Branch("channel_number", &hit_.channel_number, "channel_number/b");
+    opt_tree_->Branch("tai_time_s", &hit_.timestamp.secs, "tai_time_s/l");
+    opt_tree_->Branch("tai_time_ns", &hit_.timestamp.nanosecs, "tai_time_ns/i");
+    opt_tree_->Branch("tot", &hit_.tot, "tot/B");
+    opt_tree_->Branch("adc0", &hit_.adc0, "adc0/b");
 }
 
 void RunFile::addMonCLBBranches()
@@ -55,15 +56,10 @@ void RunFile::addMonCLBBranches()
     mon_tree_->Branch("Hits", &fHits_mon_clb, "fHits_mon_clb[30]/i");
 }
 
-void RunFile::writeEventQueue(const CLBEventQueue& queue) const
+void RunFile::writeEventQueue(const HitQueue& queue) const
 {
-    for (const CLBEvent& event : queue) {
-        fPomId_opt_clb = event.PomId;
-        fChannel_opt_clb = event.Channel;
-        fTimestamp_s_opt_clb = event.Timestamp_s;
-        fTimestamp_ns_opt_clb = event.Timestamp_ns;
-        fTot_opt_clb = event.Tot;
-
+    for (const hit& queue_hit : queue) {
+        hit_ = queue_hit;
         opt_tree_->Fill();
     }
 }

@@ -62,7 +62,7 @@ void DataHandler::stopRun()
     batch_scheduler_.reset();
 }
 
-std::size_t DataHandler::insertSort(CLBEventQueue& queue) noexcept
+std::size_t DataHandler::insertSort(HitQueue& queue) noexcept
 {
     // Just your conventional O(n^2) insert-sort implementation.
     // Here utilized because insert-sort is actually O(n+k*n) for k-sorted sequences.
@@ -79,7 +79,7 @@ std::size_t DataHandler::insertSort(CLBEventQueue& queue) noexcept
     return n_swaps;
 }
 
-CLBEventMultiQueue* DataHandler::findCLBOpticalQueue(const tai_timestamp& timestamp, int data_slot_idx)
+HitMultiQueue* DataHandler::findCLBOpticalQueue(const tai_timestamp& timestamp, int data_slot_idx)
 {
     // For reading schedule, we need reader's access.
     boost::shared_lock<boost::upgrade_mutex> lk { current_schedule_mtx_ };
@@ -200,7 +200,7 @@ void DataHandler::prepareNewBatches(BatchSchedule& schedule)
             batch.idx = n_batches_++;
             batch.started = false;
             batch.last_updated_time = utc_timestamp::now();
-            batch.clb_opt_data = new CLBEventMultiQueue[n_slots_];
+            batch.clb_opt_data = new HitMultiQueue[n_slots_];
 
             log(INFO, "Scheduling batch {} with time interval: [{}, {}]", batch.idx, batch.start_time, batch.end_time);
         }
@@ -227,7 +227,7 @@ void DataHandler::outputThread(std::shared_ptr<DataRun> run)
     }
 
     MergeSorter sorter {};
-    CLBEventQueue out_queue {};
+    HitQueue out_queue {};
     for (;;) {
         // Obtain a batch to process.
         bool have_batch = false;
@@ -251,9 +251,9 @@ void DataHandler::outputThread(std::shared_ptr<DataRun> run)
         // At this point, we always have a valid batch.
 
         // Consolidate multi-queue by moving it into a single instance.
-        CLBEventMultiQueue events {};
+        HitMultiQueue events {};
         for (int i = 0; i < n_slots_; ++i) {
-            CLBEventMultiQueue& slot_multiqueue = current_batch.clb_opt_data[i];
+            HitMultiQueue& slot_multiqueue = current_batch.clb_opt_data[i];
             for (auto it = slot_multiqueue.begin(); it != slot_multiqueue.end(); ++it) {
                 events.emplace(it->first, std::move(it->second));
             }
@@ -264,7 +264,7 @@ void DataHandler::outputThread(std::shared_ptr<DataRun> run)
         // Calculate complete timestamps & make sure sequence is sorted
         std::size_t n_hits { 0 };
         for (auto& key_value : events) {
-            CLBEventQueue& queue = key_value.second;
+            HitQueue& queue = key_value.second;
             n_hits += queue.size();
 
             // TODO: report disorder measure to backend

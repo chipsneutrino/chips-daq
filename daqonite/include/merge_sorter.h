@@ -20,13 +20,13 @@ class MergeSorter {
         RIGHT
     };
 
-    using pair = std::pair<CLBEventQueue, CLBEventQueue>;
-    using key_array = std::vector<CLBEventMultiQueue::key_type>;
+    using pair = std::pair<HitQueue, HitQueue>;
+    using key_array = std::vector<HitMultiQueue::key_type>;
 
     mutable std::vector<pair> buffer_;
-    mutable CLBEventQueue mirror_;
+    mutable HitQueue mirror_;
 
-    CLBEvent marker_;
+    hit marker_;
 
     /**
      * Get internal buffer.
@@ -35,7 +35,7 @@ class MergeSorter {
      * \param  side          either of two of a kind (left/right)
      * \return               internal buffer
      */
-    inline CLBEventQueue& get_buffer(const unsigned int level, const left_right side) const
+    inline HitQueue& get_buffer(const unsigned int level, const left_right side) const
     {
         if (level == 0) {
             return mirror_;
@@ -62,7 +62,7 @@ class MergeSorter {
      * \param  second        second data set
      * \param  output        output data set
      */
-    static void merge_to_buffer(const CLBEventQueue& first, const CLBEventQueue& second, CLBEventQueue& output);
+    static void merge_to_buffer(const HitQueue& first, const HitQueue& second, HitQueue& output);
 
     /**
      * Fast copy of data set.
@@ -70,7 +70,7 @@ class MergeSorter {
      * \param  input         input  data set
      * \param  output        output data set
      */
-    static void copy_to_buffer(const CLBEventQueue& input, CLBEventQueue& output);
+    static void copy_to_buffer(const HitQueue& input, HitQueue& output);
 
     /**
      * Recursive merge.
@@ -81,11 +81,11 @@ class MergeSorter {
      * \param  level         depth in internal buffer
      * \param  side          either of two of a kind (left/right)
      */
-    void merge(CLBEventMultiQueue& input, key_array::const_iterator begin, key_array::const_iterator end, const unsigned int level = 0, const left_right side = left_right::LEFT) const;
+    void merge(HitMultiQueue& input, key_array::const_iterator begin, key_array::const_iterator end, const unsigned int level = 0, const left_right side = left_right::LEFT) const;
 
 public:
     explicit MergeSorter();
     virtual ~MergeSorter() = default;
 
-    void merge(CLBEventMultiQueue& input, CLBEventQueue& output);
+    void merge(HitMultiQueue& input, HitQueue& output);
 };

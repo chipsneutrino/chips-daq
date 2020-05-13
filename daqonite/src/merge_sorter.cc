@@ -12,10 +12,10 @@ MergeSorter::MergeSorter()
     , mirror_ {}
     , marker_ {}
 {
-    marker_.SortKey = std::numeric_limits<decltype(CLBEvent::SortKey)>::max();
+    marker_.sort_key = std::numeric_limits<decltype(hit::sort_key)>::max();
 }
 
-void MergeSorter::merge(CLBEventMultiQueue& input, CLBEventQueue& output)
+void MergeSorter::merge(HitMultiQueue& input, HitQueue& output)
 {
     // configure depth of internal buffer: nearest power of two
     std::size_t N = 0;
@@ -45,7 +45,7 @@ void MergeSorter::merge(CLBEventMultiQueue& input, CLBEventQueue& output)
     }
 }
 
-void MergeSorter::copy_to_buffer(const CLBEventQueue& input, CLBEventQueue& output)
+void MergeSorter::copy_to_buffer(const HitQueue& input, HitQueue& output)
 {
     std::size_t n = input.size();
     output.resize(n); // allocate memory
@@ -58,7 +58,7 @@ void MergeSorter::copy_to_buffer(const CLBEventQueue& input, CLBEventQueue& outp
     }
 }
 
-void MergeSorter::merge_to_buffer(const CLBEventQueue& first, const CLBEventQueue& second, CLBEventQueue& output)
+void MergeSorter::merge_to_buffer(const HitQueue& first, const HitQueue& second, HitQueue& output)
 {
     int n = (first.size() - 1 + // correct for end markers
         second.size() - 1);
@@ -82,7 +82,7 @@ void MergeSorter::merge_to_buffer(const CLBEventQueue& first, const CLBEventQueu
     *out = *i; // copy end marker
 }
 
-void MergeSorter::merge(CLBEventMultiQueue& input, key_array::const_iterator begin, key_array::const_iterator end, const unsigned int level, const left_right side) const
+void MergeSorter::merge(HitMultiQueue& input, key_array::const_iterator begin, key_array::const_iterator end, const unsigned int level, const left_right side) const
 {
     const std::ptrdiff_t N = std::distance(begin, end);
 

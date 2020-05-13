@@ -12,9 +12,9 @@
 
 #include <cstdint>
 
-#include "TFile.h"
+#include <TFile.h>
 
-class CLBEventQueue;
+class HitQueue;
 class TTree;
 
 class RunFile {
@@ -29,7 +29,7 @@ public:
     RunFile&& operator=(RunFile&& other) = delete;
 
     /// Save sorted queue of CLB events to the file.
-    void writeEventQueue(const CLBEventQueue& queue) const;
+    void writeEventQueue(const HitQueue& queue) const;
 
     /// Is the file open?
     bool isOpen() const;
@@ -47,11 +47,7 @@ private:
     TTree* mon_tree_; ///< ROOT CLB monitoring output TTree
 
     // opt_tree_ Variables
-    mutable std::uint32_t fPomId_opt_clb; ///< Opt CLB: Header POM ID (4 bytes)
-    mutable std::uint8_t fChannel_opt_clb; ///< Opt CLB: Hit Channel ID (1 bytes)
-    mutable std::uint32_t fTimestamp_s_opt_clb; ///< Opt CLB: Header timestamp (4 bytes)
-    mutable std::uint32_t fTimestamp_ns_opt_clb; ///< Opt CLB: Hit timestamp (4 bytes)
-    mutable std::int8_t fTot_opt_clb; ///< Opt CLB: Hit TOT value (1 bytes)
+    mutable hit hit_;
 
     /// Add the branches to the optical CLB TTree
     void addOptCLBBranches();

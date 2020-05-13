@@ -10,6 +10,7 @@ using namespace boost::gregorian;
 // Frequently used constants.
 static const ptime UTC_EPOCH { date(1970, 1, 1) };
 static const auto NS_PER_FRAC_S { static_cast<std::uint64_t>(time_duration(0, 0, 0, 1).total_nanoseconds()) };
+static constexpr std::uint32_t NS_PER_S { 1000000000 };
 
 // here we are assuming that fractional_second >= nanosecond
 // TODO: make this ideally a static assert
@@ -33,6 +34,12 @@ long double tai_timestamp::combined_secs() const
 bool tai_timestamp::empty() const
 {
     return secs == 0 && nanosecs == 0;
+}
+
+void tai_timestamp::normalise()
+{
+    secs += nanosecs / NS_PER_S;
+    nanosecs = nanosecs % NS_PER_S;
 }
 
 tai_timestamp tai_timestamp::min_time()
@@ -156,6 +163,6 @@ utc_timestamp utc_timestamp::from_universal_ptime(const ptime& time)
 boost::posix_time::ptime utc_timestamp::to_universal_ptime() const
 {
     // Since boost does not have BOOST_DATE_TIME_HAS_NANOSECONDS by default...
-    using ns = boost::date_time::subsecond_duration<time_duration, 1000000000>;
+    using ns = boost::date_time::subsecond_duration<time_duration, NS_PER_S>;
     return UTC_EPOCH + seconds(secs) + ns(nanosecs);
 }

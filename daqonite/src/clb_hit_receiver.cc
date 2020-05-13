@@ -41,28 +41,26 @@ void CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
         return;
     }
 
-    int n_hits = div.quot;
-    CLBEvent new_event {};
+    const int n_hits { div.quot };
+    hit new_hit {};
 
     // Assign the variables we need from the header
-    new_event.PomId = header.pomIdentifier();
-    new_event.Timestamp_s = header.timeStamp().sec();
-    const std::uint32_t time_stamp_ns = header.timeStamp().tics() * 16;
+    new_hit.plane_number = header.pomIdentifier();
+
+    // TODO: verify that the time from the header indeed is TAI
+    const tai_timestamp datagram_start_time { header.timeStamp().sec(), header.timeStamp().tics() * 16 };
 
     // TODO: detect gaps in data stream
 
     // FIXME: timestamps
-    reportGoodDatagram(new_event.PomId, 42, 42, n_hits);
+    reportGoodDatagram(new_hit.plane_number, datagram_start_time, tai_timestamp {}, n_hits);
 
     if (!do_mine) {
         return;
     }
 
-    // FIXME: update this once event format is finalised
-    const tai_timestamp datagram_start_time { new_event.Timestamp_s, time_stamp_ns };
-
     data_handler_->updateLastApproxTimestamp(datagram_start_time);
-    CLBEventMultiQueue* multi_queue = data_handler_->findCLBOpticalQueue(datagram_start_time, dataSlotIndex());
+    HitMultiQueue* multi_queue = data_handler_->findCLBOpticalQueue(datagram_start_time, dataSlotIndex());
 
     if (!multi_queue) {
         // Timestamp not matched to any open batch, discard packet.
@@ -78,27 +76,29 @@ void CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
     }
 
     // Find/create queue for this POM
-    CLBEventQueue& event_queue = multi_queue->get_queue_for_writing(new_event.PomId);
+    HitQueue& event_queue = multi_queue->get_queue_for_writing(new_hit.plane_number);
 
     // Find the number of hits this packet contains and loop over them all
     event_queue.reserve(event_queue.size() + n_hits);
     const hit_t* hit = reinterpret_cast<const hit_t*>(datagram + sizeof(CLBCommonHeader));
     for (int i = 0; i < n_hits; ++i, ++hit) { // TODO: find a way to unroll and vectorize this loop
         // Assign the hit channel
-        new_event.Channel = hit->channel;
+        new_hit.channel_number = hit->channel;
 
         // Need to change the ordering of the bytes to get the correct hit time
-        new_event.Timestamp_ns = time_stamp_ns;
-        new_event.Timestamp_ns += ((std::uint32_t)hit->timestamp1) << 24;
-        new_event.Timestamp_ns += ((std::uint32_t)hit->timestamp2) << 16;
-        new_event.Timestamp_ns += ((std::uint32_t)hit->timestamp3) << 8;
-        new_event.Timestamp_ns += (std::uint32_t)hit->timestamp4;
+        new_hit.timestamp = datagram_start_time;
+        new_hit.timestamp.nanosecs += ((std::uint32_t)hit->timestamp1) << 24;
+        new_hit.timestamp.nanosecs += ((std::uint32_t)hit->timestamp2) << 16;
+        new_hit.timestamp.nanosecs += ((std::uint32_t)hit->timestamp3) << 8;
+        new_hit.timestamp.nanosecs += ((std::uint32_t)hit->timestamp4);
+        new_hit.timestamp.normalise();
 
-        new_event.SortKey = new_event.Timestamp_s + 1e-9 * new_event.Timestamp_ns;
+        new_hit.sort_key = new_hit.timestamp.combined_secs();
 
-        // Assign the hit TOT
-        new_event.Tot = hit->ToT;
+        // Assign the hit TOT and ADC
+        new_hit.tot = hit->ToT; // FIXME: this TOT is sometimes negative, figure out why (sign bit?)
+        new_hit.adc0 = hit::NO_ADC0;
 
-        event_queue.emplace_back(std::cref(new_event));
+        event_queue.emplace_back(std::cref(new_hit));
     }
 }

@@ -23,8 +23,16 @@ struct tai_timestamp {
     explicit tai_timestamp();
     explicit tai_timestamp(std::uint64_t s, std::uint32_t ns);
 
+    /// Put both fields together to form a timestamp (e.g. for sorting).
+    /// NOTE: This should be considered lossy since the return value may drop some bits.
     long double combined_secs() const;
+
+    /// True if both fields are zero.
     bool empty() const;
+
+    /// Make sure that the number of nanoseconds fits into the second.
+    /// This carries any extra seconds to the `secs` field.
+    void normalise();
 
     static tai_timestamp min_time();
     static tai_timestamp max_time();

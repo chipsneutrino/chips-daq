@@ -57,7 +57,7 @@ public:
     void stopRun();
 
     /// Find a queue for CLB data coming at a specific time.
-    CLBEventMultiQueue* findCLBOpticalQueue(const tai_timestamp& timestamp, int data_slot_idx);
+    HitMultiQueue* findCLBOpticalQueue(const tai_timestamp& timestamp, int data_slot_idx);
 
     /// Bump up last approximate timestamp.
     void updateLastApproxTimestamp(const tai_timestamp& timestamp);
@@ -110,5 +110,5 @@ private:
     static void disposeBatch(Batch& batch);
 
     /// Implementation of conventional insert-sort algorithm used to pre-sort CLB queues.
-    static std::size_t insertSort(CLBEventQueue& queue) noexcept;
+    static std::size_t insertSort(HitQueue& queue) noexcept;
 };
