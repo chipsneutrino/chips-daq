@@ -20,7 +20,7 @@ CLBHitReceiver::CLBHitReceiver(std::shared_ptr<boost::asio::io_service> io_servi
 void CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_size, std::size_t n_hits, bool do_mine)
 {
     // Cast the beggining of the packet to the CLBCommonHeader
-    const CLBCommonHeader& header = *reinterpret_cast<const CLBCommonHeader*>(datagram);
+    const auto& header { *reinterpret_cast<const CLBCommonHeader*>(datagram) };
 
     // Check the type of the packet is optical from the CLBCommonHeader
     const std::pair<int, std::string>& type = getType(header);
@@ -39,7 +39,11 @@ void CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
     // TODO: verify that the time from the header indeed is TAI
     const tai_timestamp datagram_start_time { header.timeStamp().sec(), header.timeStamp().tics() * 16 };
 
-    // TODO: detect gaps in data stream
+    if (!checkAndIncrementSequenceNumber(header.udpSequenceNumber(), datagram_start_time)) {
+        // Late datagram, discard it.
+        reportBadDatagram();
+        return;
+    }
 
     // FIXME: timestamps
     reportGoodDatagram(new_hit.plane_number, datagram_start_time, tai_timestamp {}, n_hits);

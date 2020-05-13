@@ -19,6 +19,7 @@ HitReceiver::HitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
     , data_slot_idx_ { data_handler_->assignNewSlot() }
     , expected_header_size_ { expected_header_size }
     , expected_hit_size_ { expected_hit_size }
+    , next_sequence_number_ {}
 {
     setUnitName("HitReceiver[{}]", opt_port);
 
@@ -33,6 +34,9 @@ HitReceiver::HitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
 void HitReceiver::startData()
 {
     log(INFO, "Starting work on socket.");
+
+    // Reset sequence number before we start receiving hits
+    next_sequence_number_ = 0;
 
     mode_ = DataMode::Receiving;
     requestDatagram();
@@ -142,6 +146,23 @@ void HitReceiver::checkAndProcessDatagram(const char* datagram, std::size_t data
     }
 
     processDatagram(datagram, datagram_size, div.quot, do_mine);
+}
+
+bool HitReceiver::checkAndIncrementSequenceNumber(std::uint32_t seq_number, const tai_timestamp& datagram_start_time)
+{
+    if (seq_number < next_sequence_number_) {
+        // Late datagram, discard.
+        return false;
+    }
+
+    if (seq_number > next_sequence_number_) {
+        // We missed some datagrams. The gap ends at the start of this datagram.
+        // This is not necessarily bad, we just take note of it and skip ahead.
+        reportDataStreamGap(datagram_start_time);
+    }
+
+    next_sequence_number_ = 1 + seq_number;
+    return true;
 }
 
 void HitReceiver::reportDataStreamGap(const tai_timestamp& gap_end)

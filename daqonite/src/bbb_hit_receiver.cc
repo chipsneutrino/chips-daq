@@ -10,17 +10,8 @@
 BBBHitReceiver::BBBHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
     std::shared_ptr<DataHandler> data_handler, int opt_port)
     : HitReceiver { io_service, data_handler, opt_port, sizeof(opt_packet_header_t), sizeof(opt_packet_hit_t) }
-    , next_sequence_number_ { 0 }
 {
     setUnitName("BBBHitReceiver[{}]", opt_port);
-}
-
-void BBBHitReceiver::startData()
-{
-    // Reset sequence number before we start receiving hits
-    next_sequence_number_ = 0;
-
-    HitReceiver::startData();
 }
 
 void BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_size, std::size_t n_hits, bool do_mine)
@@ -48,19 +39,14 @@ void BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
         static_cast<std::uint32_t>(header.common.window_start.ticks_since_year % TICKS_PER_S) // FIXME: tick == ns?
     };
 
-    if (header.common.sequence_number > next_sequence_number_) {
-        // We missed some datagrams. The gap ends at the start of this datagram.
-        reportDataStreamGap(datagram_start_time);
-    } else if (header.common.sequence_number < next_sequence_number_) {
+    if (!checkAndIncrementSequenceNumber(header.common.sequence_number, datagram_start_time)) {
         // Late datagram, discard it.
         reportBadDatagram();
         return;
     }
 
-    next_sequence_number_ = 1 + header.common.sequence_number;
-
     // FIXME: timestamps
-    reportGoodDatagram(header.common.plane_number, tai_timestamp {}, tai_timestamp {}, n_hits);
+    reportGoodDatagram(header.common.plane_number, datagram_start_time, tai_timestamp {}, n_hits);
 
     if (!do_mine) {
         return;
