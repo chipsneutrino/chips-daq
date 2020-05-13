@@ -11,6 +11,7 @@
 #include <string>
 
 #include <util/control_msg.h>
+#include <util/timestamp.h>
 
 #include "scheduling_pool.h"
 
@@ -37,14 +38,10 @@ public:
     std::string logDescription() const;
 
 private:
-    // TODO: we would like this to be a TAI clock
-    using clock = std::chrono::high_resolution_clock;
-
     DataRunState state_;
-    clock::time_point pc_time_started_;
-    clock::time_point pc_time_stopped_;
+    utc_timestamp pc_time_started_;
+    utc_timestamp pc_time_stopped_;
 
-    static std::string formatTime(const clock::time_point& time);
     static std::string formatType(RunType type);
 
     std::shared_ptr<SchedulingPool> scheduling_;

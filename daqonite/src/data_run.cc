@@ -27,13 +27,13 @@ void DataRun::start()
     // Set the Elasticsearch ingest pipeline run.num and run.type
     g_elastic.run(number_, static_cast<int>(type_));
 
-    pc_time_started_ = clock::now();
+    pc_time_started_ = utc_timestamp::now();
     state_ = DataRunState::Running;
 }
 
 void DataRun::stop()
 {
-    pc_time_stopped_ = clock::now();
+    pc_time_stopped_ = utc_timestamp::now();
     state_ = DataRunState::Stopped;
 
     // Set the Elasticsearch ingest pipeline run.num and run.type
@@ -49,22 +49,13 @@ std::string DataRun::logDescription() const
             formatType(type_), number_);
     case DataRunState::Running:
         return fmt::format("[type = {}, number = {}, state = running, start_time = {}]",
-            formatType(type_), number_, formatTime(pc_time_started_));
+            formatType(type_), number_, pc_time_started_);
     case DataRunState::Stopped:
         return fmt::format("[type = {}, number = {}, state = stopped, start_time = {}, stop_time = {}]",
-            formatType(type_), number_, formatTime(pc_time_started_), formatTime(pc_time_stopped_));
+            formatType(type_), number_, pc_time_started_, pc_time_stopped_);
     default:
         return "unknown";
     }
-}
-
-std::string DataRun::formatTime(const clock::time_point& time)
-{
-    // TODO: this needs to be rethought once the clock is final
-    std::time_t converted { std::chrono::system_clock::to_time_t(time) };
-    std::stringstream ss {};
-    ss << std::put_time(std::localtime(&converted), "%F %T");
-    return ss.str();
 }
 
 std::string DataRun::formatType(RunType type)
@@ -155,5 +146,7 @@ std::shared_ptr<BatchScheduler> DataRun::getScheduler() const
         return scheduling_->infiniteScheduler();
     case RunType::TestFlasher:
         return scheduling_->infiniteScheduler();
+    default:
+        return {};
     }
 }

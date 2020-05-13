@@ -8,6 +8,7 @@ add_library(util
     include/util/async_component_group.h        src/async_component_group.cc
     include/util/publisher.h
     include/util/command_receiver.h             src/command_receiver.cc
+    include/util/timestamp.h                    src/timestamp.cc
     include/util/signal_receiver.h              src/signal_receiver.cc
     include/util/daq_config.h                   src/daq_config.cc
     include/util/bus_publisher.h                src/bus_publisher.cc
@@ -21,5 +22,5 @@ target_link_libraries(util PUBLIC ${ELASTICLIENT_LIBRARIES})
 target_include_directories(util PUBLIC ${ELASTICLIENT_INCLUDE_DIRS})
 
 target_link_libraries(util PUBLIC fmt)
-target_link_libraries(util PUBLIC Boost::thread)
+target_link_libraries(util PUBLIC Boost::thread Boost::date_time)
 target_link_libraries(util PUBLIC nngpp)
