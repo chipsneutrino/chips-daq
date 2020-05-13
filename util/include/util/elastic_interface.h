@@ -27,7 +27,8 @@
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 
-#include "util/logging.h"
+#include <util/logging.h>
+#include <util/timestamp.h>
 
 /// Enum for describing the different logging modes
 enum log_mode {
@@ -218,7 +219,8 @@ private:
     /// Gets current time in milliseconds since the epoch
     inline long timestamp()
     {
-        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        const auto now { utc_timestamp::now() };
+        return static_cast<long>(1e3 * now.combined_secs());
     }
 
     /// Gets the current ElasticInterface mode
