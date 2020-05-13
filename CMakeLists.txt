@@ -22,7 +22,7 @@ endif()
 
 # Dependencies
 find_package(Boost 1.60
-    COMPONENTS thread program_options chrono system
+    COMPONENTS thread program_options chrono system date_time
     REQUIRED
 )
 
