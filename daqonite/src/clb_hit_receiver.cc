@@ -58,8 +58,11 @@ void CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
         return;
     }
 
-    data_handler_->updateLastApproxTimestamp(new_event.Timestamp_s);
-    CLBEventMultiQueue* multi_queue = data_handler_->findCLBOpticalQueue(new_event.Timestamp_s + 1e-9 * time_stamp_ns, dataSlotIndex());
+    // FIXME: update this once event format is finalised
+    const tai_timestamp datagram_start_time { new_event.Timestamp_s, time_stamp_ns };
+
+    data_handler_->updateLastApproxTimestamp(datagram_start_time);
+    CLBEventMultiQueue* multi_queue = data_handler_->findCLBOpticalQueue(datagram_start_time, dataSlotIndex());
 
     if (!multi_queue) {
         // Timestamp not matched to any open batch, discard packet.

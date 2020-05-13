@@ -57,10 +57,10 @@ public:
     void stopRun();
 
     /// Find a queue for CLB data coming at a specific time.
-    CLBEventMultiQueue* findCLBOpticalQueue(double timestamp, int data_slot_idx);
+    CLBEventMultiQueue* findCLBOpticalQueue(const tai_timestamp& timestamp, int data_slot_idx);
 
     /// Bump up last approximate timestamp.
-    void updateLastApproxTimestamp(std::uint32_t timestamp);
+    void updateLastApproxTimestamp(const tai_timestamp& timestamp);
 
     /// Wait for threads to terminate.
     void join();
@@ -79,14 +79,13 @@ private:
     std::atomic_bool output_running_; ///< Is output thread supposed to be running?
     std::atomic_bool scheduling_running_; ///< Is scheduling thread supposed to be running?
 
-    using Clock = std::chrono::steady_clock;
     using BatchQueue = boost::lockfree::queue<Batch, boost::lockfree::capacity<16>>;
     BatchQueue waiting_batches_; ///< Thread-safe FIFO queue for closed batches pending merge-sort
 
     /// Main entry point of the output thread.
     void outputThread(std::shared_ptr<DataRun> run);
 
-    std::atomic_uint32_t last_approx_timestamp_; ///< Latest timestamp sufficiently in the past (used by scheduler)
+    tai_timestamp last_approx_timestamp_; ///< Latest timestamp sufficiently in the past (used by scheduler)
     std::shared_ptr<BatchScheduler> batch_scheduler_; ///< Scheduler of batch intervals.
 
     BatchSchedule current_schedule_; ///< Batches open for data writing.

@@ -5,6 +5,7 @@
 #include <functional>
 
 #include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include <util/elastic_interface.h>
 
@@ -19,7 +20,7 @@ DataHandler::DataHandler()
     , output_running_ { false }
     , scheduling_running_ { false }
     , waiting_batches_ {}
-    , last_approx_timestamp_ { 0 }
+    , last_approx_timestamp_ {}
     , batch_scheduler_ {}
     , current_schedule_ {}
     , current_schedule_mtx_ {}
@@ -42,7 +43,7 @@ void DataHandler::startRun(const std::shared_ptr<DataRun>& run)
         current_schedule_.clear();
     }
 
-    last_approx_timestamp_ = 0;
+    last_approx_timestamp_ = tai_timestamp {};
     n_batches_ = 0;
 
     // Start output thread.
@@ -78,7 +79,7 @@ std::size_t DataHandler::insertSort(CLBEventQueue& queue) noexcept
     return n_swaps;
 }
 
-CLBEventMultiQueue* DataHandler::findCLBOpticalQueue(double timestamp, int data_slot_idx)
+CLBEventMultiQueue* DataHandler::findCLBOpticalQueue(const tai_timestamp& timestamp, int data_slot_idx)
 {
     // For reading schedule, we need reader's access.
     boost::shared_lock<boost::upgrade_mutex> lk { current_schedule_mtx_ };
@@ -87,7 +88,7 @@ CLBEventMultiQueue* DataHandler::findCLBOpticalQueue(double timestamp, int data_
     for (Batch& batch : current_schedule_) {
         if (timestamp >= batch.start_time && timestamp < batch.end_time) {
             batch.started = true;
-            batch.last_updated_time = Clock::now();
+            batch.last_updated_time = utc_timestamp::now();
             return batch.clb_opt_data + data_slot_idx;
         }
     }
@@ -122,8 +123,10 @@ void DataHandler::closeBatch(Batch&& batch)
 void DataHandler::closeOldBatches(BatchSchedule& schedule)
 {
     // TODO: make maturation period configurable
-    static constexpr std::chrono::seconds MATURATION_PERIOD { 4 };
-    const auto close_time = Clock::now() - MATURATION_PERIOD;
+    static constexpr std::uint64_t MATURATION_SECONDS { 4 };
+
+    auto close_time { utc_timestamp::now() };
+    close_time.secs -= MATURATION_SECONDS;
 
     for (auto it = schedule.begin(); it != schedule.end();) {
         if (it->started && it->last_updated_time < close_time) {
@@ -135,8 +138,10 @@ void DataHandler::closeOldBatches(BatchSchedule& schedule)
     }
 }
 
-void DataHandler::updateLastApproxTimestamp(std::uint32_t timestamp)
+void DataHandler::updateLastApproxTimestamp(const tai_timestamp& timestamp)
 {
+    // FIXME: this function accesses `last_approx_timestamp_` from a different thread
+    // a race condition is possible
     if (timestamp > last_approx_timestamp_) {
         last_approx_timestamp_ = timestamp;
     }
@@ -194,7 +199,7 @@ void DataHandler::prepareNewBatches(BatchSchedule& schedule)
 
             batch.idx = n_batches_++;
             batch.started = false;
-            batch.last_updated_time = Clock::now();
+            batch.last_updated_time = utc_timestamp::now();
             batch.clb_opt_data = new CLBEventMultiQueue[n_slots_];
 
             log(INFO, "Scheduling batch {} with time interval: [{}, {}]", batch.idx, batch.start_time, batch.end_time);

@@ -58,6 +58,9 @@ void BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
     new_event.Timestamp_s = header.common.window_start.ticks_since_year / 100000000; // FIXME: add year's ticks
     const std::uint32_t time_stamp_ns = header.common.window_start.ticks_since_year % 100000000;
 
+    // FIXME: update this once time format is final
+    tai_timestamp datagram_start_time { new_event.Timestamp_s, time_stamp_ns };
+
     if (header.common.sequence_number > next_sequence_number_) {
         // We missed some datagrams.
         // FIXME: timestamp
@@ -77,8 +80,8 @@ void BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
         return;
     }
 
-    data_handler_->updateLastApproxTimestamp(new_event.Timestamp_s);
-    CLBEventMultiQueue* multi_queue = data_handler_->findCLBOpticalQueue(new_event.Timestamp_s + 1e-9 * time_stamp_ns, dataSlotIndex());
+    data_handler_->updateLastApproxTimestamp(datagram_start_time);
+    CLBEventMultiQueue* multi_queue = data_handler_->findCLBOpticalQueue(datagram_start_time, dataSlotIndex());
 
     if (!multi_queue) {
         // Timestamp not matched to any open batch, discard packet.

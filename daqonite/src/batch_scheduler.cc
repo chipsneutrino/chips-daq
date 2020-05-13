@@ -1,16 +1,14 @@
-#include <limits>
-
 #include <util/elastic_interface.h>
 
 #include "batch_scheduler.h"
 
-void InfiniteScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t last_approx_timestamp)
+void InfiniteScheduler::updateSchedule(BatchSchedule& schedule, const tai_timestamp& last_approx_timestamp)
 {
     if (schedule.empty()) {
         Batch single_window {};
         single_window.created = true;
-        single_window.start_time = 0;
-        single_window.end_time = std::numeric_limits<decltype(Batch::end_time)>::max();
+        single_window.start_time = tai_timestamp::min_time();
+        single_window.end_time = tai_timestamp::max_time();
 
         schedule.push_back(std::move(single_window));
     }
@@ -24,9 +22,9 @@ RegularScheduler::RegularScheduler(std::size_t n_batches_ahead, std::chrono::mil
     setUnitName("RegularScheduler");
 }
 
-void RegularScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t last_approx_timestamp)
+void RegularScheduler::updateSchedule(BatchSchedule& schedule, const tai_timestamp& last_approx_timestamp)
 {
-    if (last_approx_timestamp == 0) {
+    if (last_approx_timestamp.empty()) {
         // If there is no data, wait for more.
         log(WARNING, "No packets received. Cannot schedule batches yet.");
         return;
@@ -36,8 +34,11 @@ void RegularScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t las
     if (schedule.empty()) {
         Batch first {};
         first.created = true;
+
         first.start_time = last_approx_timestamp;
-        first.end_time = first.start_time + batch_duration_s_;
+
+        first.end_time = first.start_time;
+        first.end_time.secs += batch_duration_s_;
 
         schedule.push_back(std::move(first));
     }
@@ -46,8 +47,11 @@ void RegularScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t las
     while (schedule.size() < n_batches_ahead_) {
         Batch next {};
         next.created = true;
+
         next.start_time = schedule.back().end_time;
-        next.end_time = next.start_time + batch_duration_s_;
+
+        next.end_time = next.start_time;
+        next.end_time.secs += batch_duration_s_;
 
         schedule.push_back(std::move(next));
     }

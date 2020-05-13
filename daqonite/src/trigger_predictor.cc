@@ -5,7 +5,7 @@
 TriggerPredictor::TriggerPredictor(std::size_t n_last, TimeDiff init_interval)
     : observed_ {}
     , sorted_ {}
-    , last_timestamp_ { -1 }
+    , last_timestamp_ {}
     , next_ { 0 }
 {
     observed_.resize(n_last);
@@ -13,14 +13,16 @@ TriggerPredictor::TriggerPredictor(std::size_t n_last, TimeDiff init_interval)
     std::fill(observed_.begin(), observed_.end(), init_interval);
 }
 
-void TriggerPredictor::addTrigger(Timestamp timestamp)
+void TriggerPredictor::addTrigger(const tai_timestamp& timestamp)
 {
-    if (last_timestamp_ < 0) {
+    if (last_timestamp_.empty()) {
         last_timestamp_ = timestamp;
         return;
     }
 
-    observed_[next_] = timestamp - last_timestamp_;
+    // TODO: possible precision loss here, implement timestamp arithmetic correctly
+    observed_[next_] = timestamp.combined_secs() - last_timestamp_.combined_secs();
+
     next_ = (next_ + 1) % observed_.size();
     last_timestamp_ = timestamp;
 
@@ -29,7 +31,7 @@ void TriggerPredictor::addTrigger(Timestamp timestamp)
     learned_interval_ = sorted_[sorted_.size() / 2];
 }
 
-Timestamp TriggerPredictor::lastTimestamp() const
+const tai_timestamp& TriggerPredictor::lastTimestamp() const
 {
     return last_timestamp_;
 }

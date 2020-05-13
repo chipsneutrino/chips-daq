@@ -1,4 +1,4 @@
-#include <ctime>
+#include <limits>
 
 #include <fmt/format.h>
 
@@ -14,14 +14,82 @@ static const auto NS_PER_FRAC_S { static_cast<std::uint64_t>(time_duration(0, 0,
 // here we are assuming that fractional_second >= nanosecond
 // TODO: make this ideally a static assert
 
+tai_timestamp::tai_timestamp()
+    : tai_timestamp { 0, 0 }
+{
+}
+
+tai_timestamp::tai_timestamp(std::uint64_t s, std::uint32_t ns)
+    : secs { s }
+    , nanosecs { ns }
+{
+}
+
 long double tai_timestamp::combined_secs() const
 {
     return secs + 1e-9 * nanosecs;
 }
 
+bool tai_timestamp::empty() const
+{
+    return secs == 0 && nanosecs == 0;
+}
+
+tai_timestamp tai_timestamp::min_time()
+{
+    tai_timestamp time {};
+    time.secs = 0;
+    time.nanosecs = 0;
+
+    return time;
+}
+
+tai_timestamp tai_timestamp::max_time()
+{
+    tai_timestamp time {};
+    time.secs = std::numeric_limits<decltype(time.secs)>::max();
+    time.nanosecs = std::numeric_limits<decltype(time.nanosecs)>::max();
+
+    return time;
+}
+
 std::ostream& operator<<(std::ostream& stream, const tai_timestamp& time)
 {
     return stream << fmt::format("[TAI {:0.10f}]", time.combined_secs());
+}
+
+bool operator==(const tai_timestamp& lhs, const tai_timestamp& rhs)
+{
+    // Component-wise comparison.
+    return lhs.secs == rhs.secs && lhs.nanosecs == rhs.nanosecs;
+}
+
+bool operator<(const tai_timestamp& lhs, const tai_timestamp& rhs)
+{
+    // Component-wise comparison.
+    return lhs.secs == rhs.secs
+        ? (lhs.nanosecs < rhs.nanosecs)
+        : (lhs.secs < rhs.secs);
+}
+
+bool operator>(const tai_timestamp& lhs, const tai_timestamp& rhs)
+{
+    // Component-wise comparison.
+    return lhs.secs == rhs.secs
+        ? (lhs.nanosecs > rhs.nanosecs)
+        : (lhs.secs > rhs.secs);
+}
+
+bool operator<=(const tai_timestamp& lhs, const tai_timestamp& rhs)
+{
+    // Delegate to operators.
+    return lhs < rhs || lhs == rhs;
+}
+
+bool operator>=(const tai_timestamp& lhs, const tai_timestamp& rhs)
+{
+    // Delegate to operators.
+    return lhs > rhs || lhs == rhs;
 }
 
 long double utc_timestamp::combined_secs() const
@@ -33,6 +101,40 @@ std::ostream& operator<<(std::ostream& stream, const utc_timestamp& time)
 {
     const auto boost_time { time.to_universal_ptime() };
     return stream << fmt::format("[UTC {}]", to_simple_string(boost_time));
+}
+
+bool operator==(const utc_timestamp& lhs, const utc_timestamp& rhs)
+{
+    // Component-wise comparison.
+    return lhs.secs == rhs.secs && lhs.nanosecs == rhs.nanosecs;
+}
+
+bool operator<(const utc_timestamp& lhs, const utc_timestamp& rhs)
+{
+    // Component-wise comparison.
+    return lhs.secs == rhs.secs
+        ? (lhs.nanosecs < rhs.nanosecs)
+        : (lhs.secs < rhs.secs);
+}
+
+bool operator>(const utc_timestamp& lhs, const utc_timestamp& rhs)
+{
+    // Component-wise comparison.
+    return lhs.secs == rhs.secs
+        ? (lhs.nanosecs > rhs.nanosecs)
+        : (lhs.secs > rhs.secs);
+}
+
+bool operator<=(const utc_timestamp& lhs, const utc_timestamp& rhs)
+{
+    // Delegate to operators.
+    return lhs < rhs || lhs == rhs;
+}
+
+bool operator>=(const utc_timestamp& lhs, const utc_timestamp& rhs)
+{
+    // Delegate to operators.
+    return lhs > rhs || lhs == rhs;
 }
 
 utc_timestamp utc_timestamp::now()

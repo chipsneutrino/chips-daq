@@ -20,9 +20,21 @@ struct tai_timestamp {
     std::uint64_t secs;
     std::uint32_t nanosecs;
 
+    explicit tai_timestamp();
+    explicit tai_timestamp(std::uint64_t s, std::uint32_t ns);
+
     long double combined_secs() const;
+    bool empty() const;
+
+    static tai_timestamp min_time();
+    static tai_timestamp max_time();
 };
 std::ostream& operator<<(std::ostream& stream, const tai_timestamp& time);
+bool operator==(const tai_timestamp& lhs, const tai_timestamp& rhs);
+bool operator<(const tai_timestamp& lhs, const tai_timestamp& rhs);
+bool operator>(const tai_timestamp& lhs, const tai_timestamp& rhs);
+bool operator<=(const tai_timestamp& lhs, const tai_timestamp& rhs);
+bool operator>=(const tai_timestamp& lhs, const tai_timestamp& rhs);
 
 /// Time measured in relation to the UTC system, stored with up to ~1 ns precision.
 /// Here, UTC is Coordinated Universal Time - Civil time system as measured at
@@ -46,3 +58,8 @@ struct utc_timestamp {
     boost::posix_time::ptime to_universal_ptime() const;
 };
 std::ostream& operator<<(std::ostream& stream, const utc_timestamp& time);
+bool operator==(const utc_timestamp& lhs, const utc_timestamp& rhs);
+bool operator<(const utc_timestamp& lhs, const utc_timestamp& rhs);
+bool operator>(const utc_timestamp& lhs, const utc_timestamp& rhs);
+bool operator<=(const utc_timestamp& lhs, const utc_timestamp& rhs);
+bool operator>=(const utc_timestamp& lhs, const utc_timestamp& rhs);

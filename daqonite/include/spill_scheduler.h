@@ -74,7 +74,7 @@ class SpillScheduler : public BatchScheduler, protected Logging {
 
 public:
     explicit SpillScheduler(int port, std::size_t trigger_memory_size, double init_period_guess, std::size_t n_batches_ahead, double time_window_radius);
-    void updateSchedule(BatchSchedule& schedule, std::uint32_t last_approx_timestamp) override;
+    void updateSchedule(BatchSchedule& schedule, const tai_timestamp& last_approx_timestamp) override;
 
     /// Wait until spill server terminates.
     void join();

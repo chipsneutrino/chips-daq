@@ -33,8 +33,11 @@ void SpillScheduler::join()
     spill_server_thread_.reset();
 }
 
-void SpillScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t last_approx_timestamp)
+void SpillScheduler::updateSchedule(BatchSchedule& schedule, const tai_timestamp& last_approx_timestamp)
 {
+    /* FIXME: this entire function needs to be reimplemented */
+
+    /*
     // TODO: configure these
     static const std::size_t n_batches_ahead_ = 8;
     static const double window_half_width_s_ = 0.005;
@@ -44,7 +47,7 @@ void SpillScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t last_
     }
 
     // FIXME: race condition? get both at the same time
-    const Timestamp last_timestamp = predictor_->lastTimestamp();
+    const tai_timestamp last_timestamp = predictor_->lastTimestamp();
     const TimeDiff learned_interval = predictor_->learnedInterval();
 
     // TODO: set up intervals based on the predicted triggers
@@ -53,21 +56,21 @@ void SpillScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t last_
     //   (2) we know how trigger predictions and signals will be matched
     //   (3) white rabbits start giving sensible timestamps
 
-    Timestamp schedule_basis_timestamp {};
+    tai_timestamp schedule_basis_timestamp {};
     if (!bypass_os_time_) {
         // The basis timestamp comes from the OS.
         // Hope it's /roughly/ in sync with the data. Fortunately, we only need second-ish precision.
-        schedule_basis_timestamp = static_cast<Timestamp>(std::time(nullptr));
+        schedule_basis_timestamp = tai_timestamp::now();
     } else {
         // Use the last approximate timestamp received in the optical stream.
         // If data just started coming in, this may still be zero and cause the temporary "no packets received" warning.
-        schedule_basis_timestamp = static_cast<Timestamp>(last_approx_timestamp);
+        schedule_basis_timestamp = last_approx_timestamp;
     }
 
     if (!schedule.empty()) {
         // Ensure that the timestamp we use as a basis for scheduling is as recent as possible.
         // This prevents creating batch in the past if the schedule capacity is too small.
-        const Timestamp last_scheduled_timestamp { schedule.back().end_time };
+        const tai_timestamp last_scheduled_timestamp { schedule.back().end_time };
 
         if (last_scheduled_timestamp >= schedule_basis_timestamp) {
             schedule_basis_timestamp = last_scheduled_timestamp;
@@ -107,6 +110,7 @@ void SpillScheduler::updateSchedule(BatchSchedule& schedule, std::uint32_t last_
         schedule.push_back(std::move(next));
         ++coef;
     }
+    */
 }
 
 void SpillScheduler::workSpillServer()
@@ -221,11 +225,11 @@ void SpillScheduler::Spill::execute(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcV
     // TODO: do something with the spill type
 
     // FIXME: decide on standardized time representation
-    const double botchedTime = unixTime.tv_sec + 1e-6 * unixTime.tv_usec;
+    // const double botchedTime = unixTime.tv_sec + 1e-6 * unixTime.tv_usec;
 
     // TODO: log this but do not clutter
     // log(INFO, "Received spill '{}' at timestamp {}.", getSpillNameFromType(ttype), botchedTime);
 
-    predictor_->addTrigger(botchedTime);
+    // FIXME: predictor_->addTrigger(botchedTime);
     result = ok;
 }
