@@ -12,7 +12,7 @@
 #include <utility>
 #include <vector>
 
-#include "clb_event.h"
+#include "pmt_hit.h"
 
 class MergeSorter {
     enum class left_right {
@@ -20,13 +20,13 @@ class MergeSorter {
         RIGHT
     };
 
-    using pair = std::pair<HitQueue, HitQueue>;
-    using key_array = std::vector<HitMultiQueue::key_type>;
+    using pair = std::pair<PMTHitQueue, PMTHitQueue>;
+    using key_array = std::vector<PMTMultiPlaneHitQueue::key_type>;
 
     mutable std::vector<pair> buffer_;
-    mutable HitQueue mirror_;
+    mutable PMTHitQueue mirror_;
 
-    hit marker_;
+    PMTHit marker_;
 
     /**
      * Get internal buffer.
@@ -35,7 +35,7 @@ class MergeSorter {
      * \param  side          either of two of a kind (left/right)
      * \return               internal buffer
      */
-    inline HitQueue& get_buffer(const unsigned int level, const left_right side) const
+    inline PMTHitQueue& get_buffer(const unsigned int level, const left_right side) const
     {
         if (level == 0) {
             return mirror_;
@@ -62,7 +62,7 @@ class MergeSorter {
      * \param  second        second data set
      * \param  output        output data set
      */
-    static void merge_to_buffer(const HitQueue& first, const HitQueue& second, HitQueue& output);
+    static void merge_to_buffer(const PMTHitQueue& first, const PMTHitQueue& second, PMTHitQueue& output);
 
     /**
      * Fast copy of data set.
@@ -70,7 +70,7 @@ class MergeSorter {
      * \param  input         input  data set
      * \param  output        output data set
      */
-    static void copy_to_buffer(const HitQueue& input, HitQueue& output);
+    static void copy_to_buffer(const PMTHitQueue& input, PMTHitQueue& output);
 
     /**
      * Recursive merge.
@@ -81,11 +81,12 @@ class MergeSorter {
      * \param  level         depth in internal buffer
      * \param  side          either of two of a kind (left/right)
      */
-    void merge(HitMultiQueue& input, key_array::const_iterator begin, key_array::const_iterator end, const unsigned int level = 0, const left_right side = left_right::LEFT) const;
+    void merge(PMTMultiPlaneHitQueue& input, key_array::const_iterator begin, key_array::const_iterator end,
+        const unsigned int level = 0, const left_right side = left_right::LEFT) const;
 
 public:
     explicit MergeSorter();
     virtual ~MergeSorter() = default;
 
-    void merge(HitMultiQueue& input, HitQueue& output);
+    void merge(PMTMultiPlaneHitQueue& input, PMTHitQueue& output);
 };

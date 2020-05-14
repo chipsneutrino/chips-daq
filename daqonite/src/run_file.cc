@@ -6,9 +6,9 @@
 RunFile::RunFile(std::string path)
     : file_ { path.c_str(), "RECREATE" }
 {
-    opt_tree_ = new TTree("CLBOpt_tree", "CLBOpt_tree");
+    opt_tree_ = new TTree("opt_hits", "opt_hits");
     opt_tree_->SetDirectory(&file_);
-    addOptCLBBranches();
+    addHitBranches();
 
     mon_tree_ = new TTree("CLBMon_tree", "CLBMon_tree");
     mon_tree_->SetDirectory(&file_);
@@ -35,7 +35,7 @@ bool RunFile::isOpen() const
     return file_.IsOpen();
 }
 
-void RunFile::addOptCLBBranches()
+void RunFile::addHitBranches()
 {
     opt_tree_->Branch("plane_number", &hit_.plane_number, "plane_number/i");
     opt_tree_->Branch("channel_number", &hit_.channel_number, "channel_number/b");
@@ -56,9 +56,10 @@ void RunFile::addMonCLBBranches()
     mon_tree_->Branch("Hits", &fHits_mon_clb, "fHits_mon_clb[30]/i");
 }
 
-void RunFile::writeEventQueue(const HitQueue& queue) const
+void RunFile::writeHitQueue(const PMTHitQueue& queue) const
 {
-    for (const hit& queue_hit : queue) {
+    // fill hits one by one
+    for (const PMTHit& queue_hit : queue) {
         hit_ = queue_hit;
         opt_tree_->Fill();
     }

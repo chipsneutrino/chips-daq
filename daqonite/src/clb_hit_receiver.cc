@@ -74,7 +74,7 @@ void CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
 void CLBHitReceiver::mineHits(const hit_t* hits_begin, std::size_t n_hits, const tai_timestamp& base_time, std::uint32_t plane_number)
 {
     // TODO: perhaps use the lowest hit time in datagram here instead?
-    HitMultiQueue* multi_queue { data_handler_->findCLBOpticalQueue(base_time, dataSlotIndex()) };
+    PMTMultiPlaneHitQueue* multi_queue { data_handler_->findHitQueue(base_time, dataSlotIndex()) };
 
     if (!multi_queue) {
         // Timestamp not matched to any open batch, discard datagram.
@@ -83,7 +83,7 @@ void CLBHitReceiver::mineHits(const hit_t* hits_begin, std::size_t n_hits, const
     }
 
     // From this point on, the queue is being written into, and the batch cannot be closed until the end of scope.
-    std::lock_guard<std::mutex> l { multi_queue->write_mutex };
+    std::lock_guard<std::mutex> l { multi_queue->mutex };
 
     if (multi_queue->closed_for_writing) {
         // Have a batch, which has been closed but not yet removed from the schedule. Discard datagram.
@@ -92,7 +92,7 @@ void CLBHitReceiver::mineHits(const hit_t* hits_begin, std::size_t n_hits, const
     }
 
     // Find/create a queue for this plane
-    HitQueue& event_queue { multi_queue->get_queue_for_writing(plane_number) };
+    PMTHitQueue& event_queue { multi_queue->get_queue_for_writing(plane_number) };
 
     // Enqueue all the hits!
     event_queue.reserve(event_queue.size() + n_hits);
@@ -101,7 +101,7 @@ void CLBHitReceiver::mineHits(const hit_t* hits_begin, std::size_t n_hits, const
         // To avoid unnecessary copying, we first add the hit and then set its values later.
         // We can do this because we are holding on to the mutex.
         event_queue.emplace_back();
-        hit& dest_hit { event_queue.back() };
+        PMTHit& dest_hit { event_queue.back() };
 
         const hit_t& src_hit { *hits_it };
 

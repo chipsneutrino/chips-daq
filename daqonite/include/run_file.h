@@ -14,7 +14,9 @@
 
 #include <TFile.h>
 
-class HitQueue;
+#include "pmt_hit.h"
+
+class PMTHitQueue;
 class TTree;
 
 class RunFile {
@@ -28,8 +30,8 @@ public:
     RunFile&& operator=(const RunFile& other) = delete;
     RunFile&& operator=(RunFile&& other) = delete;
 
-    /// Save sorted queue of CLB events to the file.
-    void writeEventQueue(const HitQueue& queue) const;
+    /// Save sorted queue of hits to the file.
+    void writeHitQueue(const PMTHitQueue& queue) const;
 
     /// Is the file open?
     bool isOpen() const;
@@ -47,10 +49,10 @@ private:
     TTree* mon_tree_; ///< ROOT CLB monitoring output TTree
 
     // opt_tree_ Variables
-    mutable hit hit_;
+    mutable PMTHit hit_;
 
     /// Add the branches to the optical CLB TTree
-    void addOptCLBBranches();
+    void addHitBranches();
 
     // mon_tree_ Variables
     mutable std::uint32_t fPomId_mon_clb; ///< Mon CLB: Header POM ID (4 bytes)

@@ -3,7 +3,7 @@ add_executable(daqonite
     include/batch_scheduler.h          src/batch_scheduler.cc
     include/bbb_hit_receiver.h         src/bbb_hit_receiver.cc
     include/daqonite_publisher.h       src/daqonite_publisher.cc
-    include/clb_event.h
+    include/pmt_hit.h
     include/hit_receiver.h             src/hit_receiver.cc
     include/clb_hit_receiver.h         src/clb_hit_receiver.cc
     include/daq_handler.h              src/daq_handler.cc
