@@ -1,8 +1,11 @@
 /**
- * Merge-sorter - Algorithm to sort CLB event queues and merge them into a single queue
+ * Merge-sorter - A recursive tree-based algorithm to combine multiple time-sorted
+ * PMT hit queues (usually one for every plane) into a single time-sorted PMT hit queue.
+ * 
+ * Shamelessly inspired by a similar implementation by KM3NeT.
  *
- * Author: Petr Manek
- * Contact: pmanek@fnal.gov
+ * Author: Petr Mánek
+ * Contact: petr.manek.19@ucl.ac.uk
  */
 
 #pragma once
@@ -15,15 +18,15 @@
 #include "pmt_hit.h"
 
 class MergeSorter {
-    enum class left_right {
+    enum class LeftRight {
         LEFT,
         RIGHT
     };
 
-    using pair = std::pair<PMTHitQueue, PMTHitQueue>;
-    using key_array = std::vector<PMTMultiPlaneHitQueue::key_type>;
+    using PMTHitQueuePair = std::pair<PMTHitQueue, PMTHitQueue>;
+    using KeyArray = std::vector<PMTMultiPlaneHitQueue::key_type>;
 
-    mutable std::vector<pair> buffer_;
+    mutable std::vector<PMTHitQueuePair> buffer_;
     mutable PMTHitQueue mirror_;
 
     PMTHit marker_;
@@ -35,15 +38,15 @@ class MergeSorter {
      * \param  side          either of two of a kind (left/right)
      * \return               internal buffer
      */
-    inline PMTHitQueue& get_buffer(const unsigned int level, const left_right side) const
+    inline PMTHitQueue& getBuffer(const unsigned int level, const LeftRight side) const
     {
         if (level == 0) {
             return mirror_;
         } else if (level - 1 < buffer_.size()) {
             switch (side) {
-            case left_right::LEFT:
+            case LeftRight::LEFT:
                 return buffer_[level - 1].first;
-            case left_right::RIGHT:
+            case LeftRight::RIGHT:
                 return buffer_[level - 1].second;
             }
         }
@@ -62,7 +65,7 @@ class MergeSorter {
      * \param  second        second data set
      * \param  output        output data set
      */
-    static void merge_to_buffer(const PMTHitQueue& first, const PMTHitQueue& second, PMTHitQueue& output);
+    static void mergeToBuffer(const PMTHitQueue& first, const PMTHitQueue& second, PMTHitQueue& output);
 
     /**
      * Fast copy of data set.
@@ -70,7 +73,7 @@ class MergeSorter {
      * \param  input         input  data set
      * \param  output        output data set
      */
-    static void copy_to_buffer(const PMTHitQueue& input, PMTHitQueue& output);
+    static void copyToBuffer(const PMTHitQueue& input, PMTHitQueue& output);
 
     /**
      * Recursive merge.
@@ -81,8 +84,8 @@ class MergeSorter {
      * \param  level         depth in internal buffer
      * \param  side          either of two of a kind (left/right)
      */
-    void merge(PMTMultiPlaneHitQueue& input, key_array::const_iterator begin, key_array::const_iterator end,
-        const unsigned int level = 0, const left_right side = left_right::LEFT) const;
+    void merge(PMTMultiPlaneHitQueue& input, KeyArray::const_iterator begin, KeyArray::const_iterator end,
+        const unsigned int level = 0, const LeftRight side = LeftRight::LEFT) const;
 
 public:
     explicit MergeSorter();
