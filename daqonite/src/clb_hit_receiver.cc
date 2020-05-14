@@ -12,7 +12,7 @@
 
 CLBHitReceiver::CLBHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
     std::shared_ptr<DataHandler> data_handler, int opt_port)
-    : HitReceiver { io_service, data_handler, opt_port, sizeof(CLBCommonHeader), sizeof(hit_t) }
+    : BasicHitReceiver { io_service, data_handler, opt_port, sizeof(CLBCommonHeader), sizeof(hit_t) }
 {
     setUnitName("CLBHitReceiver[{}]", opt_port);
 }

@@ -1,14 +1,14 @@
 /**
- * HitReceiver - Handler class for the CLB & BBB optical data stream
+ * BasicHitReceiver - Common hit receiver implementation for optical data streams
  */
 
 #include <boost/bind.hpp>
 
-#include "hit_receiver.h"
+#include "basic_hit_receiver.h"
 
 using boost::asio::ip::udp;
 
-HitReceiver::HitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
+BasicHitReceiver::BasicHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
     std::shared_ptr<DataHandler> data_handler, int opt_port,
     std::size_t expected_header_size, std::size_t expected_hit_size)
     : Logging {}
@@ -21,7 +21,7 @@ HitReceiver::HitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
     , expected_hit_size_ { expected_hit_size }
     , next_sequence_number_ {}
 {
-    setUnitName("HitReceiver[{}]", opt_port);
+    setUnitName("BasicHitReceiver[{}]", opt_port);
 
     // Setup the sockets
     // TODO: make this constant configurable
@@ -31,7 +31,7 @@ HitReceiver::HitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
     datagram_buffer_.resize(65536);
 }
 
-void HitReceiver::startData()
+void BasicHitReceiver::startData()
 {
     log(INFO, "Starting work on socket.");
 
@@ -42,7 +42,7 @@ void HitReceiver::startData()
     requestDatagram();
 }
 
-void HitReceiver::stopData()
+void BasicHitReceiver::stopData()
 {
     log(INFO, "Stopping work on socket.");
 
@@ -65,26 +65,26 @@ void HitReceiver::stopData()
     socket_optical_.cancel();
 }
 
-void HitReceiver::startRun(std::shared_ptr<DataRun>& run)
+void BasicHitReceiver::startRun(std::shared_ptr<DataRun>& run)
 {
     mode_ = DataMode::Mining;
     run_ = run;
 }
 
-void HitReceiver::stopRun()
+void BasicHitReceiver::stopRun()
 {
     mode_ = DataMode::Receiving;
     run_.reset();
 }
 
-void HitReceiver::requestDatagram()
+void BasicHitReceiver::requestDatagram()
 {
     using namespace boost::asio::placeholders;
     socket_optical_.async_receive(boost::asio::buffer(datagram_buffer_),
-        boost::bind(&HitReceiver::receiveDatagram, this, error, bytes_transferred));
+        boost::bind(&BasicHitReceiver::receiveDatagram, this, error, bytes_transferred));
 }
 
-void HitReceiver::receiveDatagram(const boost::system::error_code& error, std::size_t size)
+void BasicHitReceiver::receiveDatagram(const boost::system::error_code& error, std::size_t size)
 {
     bool have_data { true };
     bool should_mine { true };
@@ -125,7 +125,7 @@ void HitReceiver::receiveDatagram(const boost::system::error_code& error, std::s
     }
 }
 
-void HitReceiver::checkAndProcessDatagram(const char* datagram, std::size_t datagram_size, bool do_mine)
+void BasicHitReceiver::checkAndProcessDatagram(const char* datagram, std::size_t datagram_size, bool do_mine)
 {
     // Check the packet has at least a header in it
     if (datagram_size < expected_header_size_) {
@@ -148,7 +148,7 @@ void HitReceiver::checkAndProcessDatagram(const char* datagram, std::size_t data
     processDatagram(datagram, datagram_size, div.quot, do_mine);
 }
 
-bool HitReceiver::checkAndIncrementSequenceNumber(std::uint32_t seq_number, const tai_timestamp& datagram_start_time)
+bool BasicHitReceiver::checkAndIncrementSequenceNumber(std::uint32_t seq_number, const tai_timestamp& datagram_start_time)
 {
     if (seq_number < next_sequence_number_) {
         // Late datagram, discard.
@@ -165,17 +165,17 @@ bool HitReceiver::checkAndIncrementSequenceNumber(std::uint32_t seq_number, cons
     return true;
 }
 
-void HitReceiver::reportDataStreamGap(const tai_timestamp& gap_end)
+void BasicHitReceiver::reportDataStreamGap(const tai_timestamp& gap_end)
 {
     // TODO: implement me
 }
 
-void HitReceiver::reportBadDatagram()
+void BasicHitReceiver::reportBadDatagram()
 {
     // TODO: implement me
 }
 
-void HitReceiver::reportGoodDatagram(std::uint32_t plane_id, const tai_timestamp& start_time, const tai_timestamp& end_time, std::uint64_t n_hits)
+void BasicHitReceiver::reportGoodDatagram(std::uint32_t plane_id, const tai_timestamp& start_time, const tai_timestamp& end_time, std::uint64_t n_hits)
 {
     data_handler_->updateLastApproxTimestamp(start_time);
 

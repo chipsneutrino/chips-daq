@@ -1,9 +1,10 @@
 /**
- * HitReceiver - Receiver class for optical data streams
+ * BasicHitReceiver - Common hit receiver implementation for optical data streams
  * 
  * This class deals with the specifics of UDP network communication. It manages
  * a socket, receives datagrams containing optical hits, and responds to start/stop
- * run commands.
+ * run commands. This is an abstract object, from which both specialised implementations
+ * for CLBs and BBBs inherit.
  *
  * Author: Petr Mánek
  * Contact: petr.manek.19@ucl.ac.uk
@@ -20,20 +21,20 @@
 #include "data_handler.h"
 #include "data_run.h"
 
-class HitReceiver : protected Logging {
+class BasicHitReceiver : protected Logging {
 public:
-    explicit HitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
+    explicit BasicHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
         std::shared_ptr<DataHandler> data_handler, int opt_port,
         std::size_t expected_header_size, std::size_t expected_hit_size);
 
-    virtual ~HitReceiver() = default;
+    virtual ~BasicHitReceiver() = default;
 
     // for safety, no copy- or move-semantics
-    HitReceiver(const HitReceiver& other) = delete;
-    HitReceiver(HitReceiver&& other) = delete;
+    BasicHitReceiver(const BasicHitReceiver& other) = delete;
+    BasicHitReceiver(BasicHitReceiver&& other) = delete;
 
-    HitReceiver& operator=(const HitReceiver& other) = delete;
-    HitReceiver& operator=(HitReceiver&& other) = delete;
+    BasicHitReceiver& operator=(const BasicHitReceiver& other) = delete;
+    BasicHitReceiver& operator=(BasicHitReceiver&& other) = delete;
 
     virtual void startData();
     virtual void stopData();

@@ -24,9 +24,9 @@
 #include <util/command_receiver.h>
 #include <util/logging.h>
 
+#include "basic_hit_receiver.h"
 #include "data_handler.h"
 #include "data_run.h"
-#include "hit_receiver.h"
 #include "scheduling_pool.h"
 
 class DAQHandler : public CommandHandler, protected Logging {
@@ -80,6 +80,6 @@ private:
 
     // Other components
     std::shared_ptr<DataHandler> data_handler_; ///< DataHandler object
-    std::list<std::unique_ptr<HitReceiver>> hit_receivers_; ///< Pointers to HitReceivers
+    std::list<std::unique_ptr<BasicHitReceiver>> hit_receivers_; ///< Pointers to hit receivers
     std::shared_ptr<SchedulingPool> scheduling_;
 };

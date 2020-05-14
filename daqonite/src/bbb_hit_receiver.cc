@@ -9,7 +9,7 @@
 
 BBBHitReceiver::BBBHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
     std::shared_ptr<DataHandler> data_handler, int opt_port)
-    : HitReceiver { io_service, data_handler, opt_port, sizeof(opt_packet_header_t), sizeof(opt_packet_hit_t) }
+    : BasicHitReceiver { io_service, data_handler, opt_port, sizeof(opt_packet_header_t), sizeof(opt_packet_hit_t) }
 {
     setUnitName("BBBHitReceiver[{}]", opt_port);
 }
