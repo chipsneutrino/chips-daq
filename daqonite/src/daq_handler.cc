@@ -45,7 +45,7 @@ void DAQHandler::createHitReceivers()
 void DAQHandler::run()
 {
     // TODO: get this from a configuration file
-    const std::size_t n_threads { clb_ports_.size() + bbb_ports_.size() };
+    const std::size_t n_threads { 8 };
 
     // Setup the thread group and call io_service.run() in each
     log(INFO, "Starting I/O service on {} threads", n_threads);

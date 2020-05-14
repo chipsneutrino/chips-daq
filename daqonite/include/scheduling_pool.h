@@ -16,7 +16,7 @@
 
 class SchedulingPool {
 public:
-    SchedulingPool();
+    explicit SchedulingPool();
 
     inline const std::shared_ptr<InfiniteSpillScheduler>& infiniteScheduler() const { return infinite_scheduler_; }
     inline const std::shared_ptr<PeriodicSpillScheduler>& periodicScheduler() const { return periodic_scheduler_; }

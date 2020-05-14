@@ -13,7 +13,6 @@ TDUSpillScheduler::TDUSpillScheduler(int port, std::size_t trigger_memory_size,
     , time_window_radius_ { time_window_radius }
     , spill_server_running_ {}
     , spill_server_thread_ {}
-    , spill_server_ {}
     , bypass_os_time_ { false } // TODO: this should be a configurable setting
 {
     setUnitName("TDUSpillScheduler");
@@ -117,21 +116,19 @@ void TDUSpillScheduler::workSpillServer()
     using namespace XmlRpc;
 
     log(INFO, "Up and running at port {}!", port_);
-    spill_server_ = std::unique_ptr<XmlRpcServer>(new XmlRpcServer);
-    predictor_ = std::make_shared<TriggerPredictor>(trigger_memory_size_, init_period_guess_);
 
-    {
-        XMLRPCSpillMethod spill_method { spill_server_.get(), predictor_ };
-        XmlRpc::setVerbosity(0);
-        spill_server_->bindAndListen(port_);
+    std::unique_ptr<XmlRpc::XmlRpcServer> spill_server { new XmlRpcServer };
+    auto predictor { std::make_shared<TriggerPredictor>(trigger_memory_size_, init_period_guess_) };
+    XMLRPCSpillMethod spill_method { spill_server.get(), predictor };
+    XmlRpc::setVerbosity(0);
 
-        while (spill_server_running_) {
-            spill_server_->work(1);
-        }
+    spill_server->bindAndListen(port_);
 
-        spill_server_->shutdown();
+    while (spill_server_running_) {
+        spill_server->work(1);
     }
 
-    spill_server_.reset();
+    spill_server->shutdown();
+
     log(INFO, "Signing off!");
 }

@@ -35,14 +35,12 @@ class TDUSpillScheduler : public BasicSpillScheduler {
     std::atomic_bool spill_server_running_; ///< Is the spill server supposed to be running?
     std::unique_ptr<std::thread> spill_server_thread_; ///< Spill server thread.
 
-    std::unique_ptr<XmlRpc::XmlRpcServer> spill_server_; ///< XML-RPC server handling spill requests.
-    std::shared_ptr<TriggerPredictor> predictor_; ///< Spill interval predictor.
-
     /// Main loop of the spill server thread.
     void workSpillServer();
 
 public:
     explicit TDUSpillScheduler(int port, std::size_t trigger_memory_size, double init_period_guess, std::size_t n_batches_ahead, double time_window_radius);
+
     void updateSchedule(SpillSchedule& schedule, const tai_timestamp& last_approx_timestamp) override;
 
     /// Wait until spill server terminates.
