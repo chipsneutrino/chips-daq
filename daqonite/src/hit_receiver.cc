@@ -177,5 +177,7 @@ void HitReceiver::reportBadDatagram()
 
 void HitReceiver::reportGoodDatagram(std::uint32_t plane_id, const tai_timestamp& start_time, const tai_timestamp& end_time, std::uint64_t n_hits)
 {
+    data_handler_->updateLastApproxTimestamp(start_time);
+
     // TODO: implement me
 }

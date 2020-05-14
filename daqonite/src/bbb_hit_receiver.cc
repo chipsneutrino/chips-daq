@@ -18,8 +18,6 @@ void BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
 {
     // Cast the beggining of the packet to the opt_packet_header_t
     const auto& header { *reinterpret_cast<const opt_packet_header_t*>(datagram) };
-    log(DEBUG, "Have optical header with run = {},\t plane = {},\t seq = {},\t hits = {}.",
-        header.common.run_number, header.common.plane_number, header.common.sequence_number, header.hit_count);
 
     if (header.hit_count != n_hits) {
         log(WARNING, "Observed inconsistent hit counts (datagram reports {} hits but contains {} instead)",
@@ -27,11 +25,6 @@ void BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
         reportBadDatagram();
         return;
     }
-
-    hit new_hit {};
-
-    // Assign the variables we need from the header
-    new_hit.plane_number = header.common.plane_number;
 
     static constexpr std::uint32_t TICKS_PER_S { 100000000 }; // TODO: move this to packet.h
     const tai_timestamp datagram_start_time {
@@ -45,15 +38,21 @@ void BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
         return;
     }
 
+    const std::uint32_t plane_number { header.common.plane_number };
+
     // FIXME: timestamps
     reportGoodDatagram(header.common.plane_number, datagram_start_time, tai_timestamp {}, n_hits);
 
-    if (!do_mine) {
-        return;
+    if (do_mine) {
+        const opt_packet_hit_t* hits_begin { reinterpret_cast<const opt_packet_hit_t*>(datagram + sizeof(opt_packet_header_t)) };
+        mineHits(hits_begin, n_hits, datagram_start_time, plane_number);
     }
+}
 
-    data_handler_->updateLastApproxTimestamp(datagram_start_time);
-    HitMultiQueue* multi_queue = data_handler_->findCLBOpticalQueue(datagram_start_time, dataSlotIndex());
+void BBBHitReceiver::mineHits(const opt_packet_hit_t* hits_begin, std::size_t n_hits, const tai_timestamp& base_time, std::uint32_t plane_number)
+{
+    // TODO: perhaps use the lowest hit time in datagram here instead?
+    HitMultiQueue* multi_queue { data_handler_->findCLBOpticalQueue(base_time, dataSlotIndex()) };
 
     if (!multi_queue) {
         // Timestamp not matched to any open batch, discard packet.
@@ -61,7 +60,9 @@ void BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
         return;
     }
 
+    // From this point on, the queue is being written into, and the batch cannot be closed until the end of scope.
     std::lock_guard<std::mutex> l { multi_queue->write_mutex };
+
     if (multi_queue->closed_for_writing) {
         // Have a batch, which has been closed but not yet removed from the schedule. Discard packet.
         // TODO: devise a reporting mechanism for this
@@ -69,30 +70,32 @@ void BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
     }
 
     // Find/create queue for this POM
-    HitQueue& event_queue = multi_queue->get_queue_for_writing(new_hit.plane_number);
+    HitQueue& event_queue { multi_queue->get_queue_for_writing(plane_number) };
 
     // Find the number of hits this packet contains and loop over them all
     event_queue.reserve(event_queue.size() + n_hits);
-    auto hit { reinterpret_cast<const opt_packet_hit_t*>(datagram + sizeof(opt_packet_header_t)) };
-    for (int i = 0; i < n_hits; ++i, ++hit) { // TODO: find a way to unroll and vectorize this loop
-        // Assign the hit channel
-        new_hit.channel_number = 1 + (0x0F & hit->channel_and_flags);
+    const opt_packet_hit_t* hits_end { hits_begin + n_hits };
+    for (auto hits_it = hits_begin; hits_it != hits_end; ++hits_it) { // NOTE: vectorize this loop?
+        // To avoid unnecessary copying, we first add the hit and then set its values later.
+        // We can do this because we are holding on to the mutex.
+        event_queue.emplace_back();
+        hit& dest_hit { event_queue.back() };
+
+        const opt_packet_hit_t& src_hit { *hits_it };
+
+        // Assign basic hit fields
+        dest_hit.plane_number = plane_number;
+        dest_hit.channel_number = 1 + (0x0F & src_hit.channel_and_flags);
+        dest_hit.tot = src_hit.tot;
+        dest_hit.adc0 = src_hit.adc0;
 
         // TODO: use flags
 
-        new_hit.timestamp = datagram_start_time;
-        new_hit.timestamp.nanosecs += hit->timestamp; // FIXME: timestamp in ns?
-        new_hit.timestamp.normalise();
+        // Assign hit timestamp
+        dest_hit.timestamp = base_time;
+        dest_hit.timestamp.nanosecs += src_hit.timestamp; // FIXME: timestamp in ns?
+        dest_hit.timestamp.normalise();
 
-        new_hit.sort_key = new_hit.timestamp.combined_secs();
-
-        // Assign the hit TOT and ADC
-        new_hit.tot = hit->tot;
-        new_hit.adc0 = hit->adc0;
-
-        log(DEBUG, "Have hit with plane = {}, channel = {},\t timestamp = {},\t ToT = {},\t ADC0 = {}.",
-            new_hit.plane_number, new_hit.channel_number, new_hit.timestamp, new_hit.tot, new_hit.adc0);
-
-        event_queue.emplace_back(std::cref(new_hit));
+        dest_hit.sort_key = dest_hit.timestamp.combined_secs();
     }
 }
