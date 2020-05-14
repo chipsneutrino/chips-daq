@@ -24,26 +24,6 @@ DAQHandler::DAQHandler(const std::string& data_path)
     , scheduling_ { new SchedulingPool }
 {
     setUnitName("DAQHandler");
-
-    // TODO: get this from a config file
-    clb_ports_.push_back(57001);
-    clb_ports_.push_back(57002);
-    clb_ports_.push_back(57003);
-    clb_ports_.push_back(57004);
-    clb_ports_.push_back(57005);
-    clb_ports_.push_back(57006);
-    clb_ports_.push_back(57007);
-    clb_ports_.push_back(57008);
-
-    // TODO: get this from a config file
-    bbb_ports_.push_back(57101);
-    bbb_ports_.push_back(57102);
-    bbb_ports_.push_back(57103);
-    bbb_ports_.push_back(57104);
-    bbb_ports_.push_back(57105);
-    bbb_ports_.push_back(57106);
-    bbb_ports_.push_back(57107);
-    bbb_ports_.push_back(57108);
 }
 
 void DAQHandler::createHitReceivers()
@@ -83,6 +63,11 @@ void DAQHandler::run()
 void DAQHandler::handleConfigCommand(std::string config_file)
 {
     log(INFO, "Config");
+
+    // TODO: get these from a config file
+    clb_ports_ = { 57001, 57002, 57003, 57004, 57005, 57006, 57007, 57008 };
+    bbb_ports_ = { 57101, 57102, 57103, 57104, 57105, 57106, 57107, 57108 };
+
     createHitReceivers();
 }
 
