@@ -19,6 +19,25 @@ CLBHitReceiver::CLBHitReceiver(std::shared_ptr<boost::asio::io_service> io_servi
 
 void CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_size, std::size_t n_hits, bool do_mine)
 {
+    /*
+    TODO:
+      - verify that timestamps are indeed TAI, can do so by simply comparing them with the current TAI and UTC
+      - refactor bitshifting in hit timestamps 1-4
+      - support "long hits"
+           Recording long hits: starting from firmware rev20160510, long hits, i.e. those hits whose time-over-threshold
+           duration exceeding 255 ns, are coded by means of (I) a first hit recorded as: "TDC channel" = x, 
+           "Time Stamp" = T0 and "Pulse Width" = 255, followed by (II) a second hit recorded as: same "TDC channel" = x, 
+           "Time Stamp" = (T0 + 255) and "Pulse Width" = (original duration of the hit - 255). It should be noted that 
+           very long hits could be recorded with more than 2 such "partial sub-hits". Warning: long hits are counted as 
+           single hits in the hit rate monitor as well as the hit count which is used for HRV, independently of how many 
+           "partial hits" are written in the data.
+      - resolve hits across time slices:
+           starting from CLB FW/SW [CLB_firmware_versions#Stable_releases rev20161014] hits that cross the boarder of 
+           two time slices are recorded as follows: the hit is recorded in the timeslice it starts in with the correct 
+           time but pulse width 0. The hit is not recorded in the following timeslice, even if it is a long hit.
+      ... for more info see: https://wiki.km3net.de/index.php/DAQ/Readout_Technical_Design_Report_(TDR)#Data_acquisition_concept
+    */
+
     // Cast the beggining of the packet to the CLBCommonHeader
     const auto& header { *reinterpret_cast<const CLBCommonHeader*>(datagram) };
 
@@ -34,6 +53,7 @@ void CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
     // TODO: verify that the time from the header indeed is TAI
     const tai_timestamp datagram_start_time { header.timeStamp().sec(), header.timeStamp().tics() * 16 };
 
+    // FIXME: this sequence number drops at the start of every window and will report fake gaps
     if (!checkAndIncrementSequenceNumber(header.udpSequenceNumber(), datagram_start_time)) {
         // Late datagram, discard it.
         reportBadDatagram();
