@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-#include "pmt_hit.h"
+#include <util/pmt_hit_queues.h>
 
 class MergeSorter {
     enum class LeftRight {

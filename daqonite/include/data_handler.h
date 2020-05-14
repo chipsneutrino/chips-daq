@@ -79,35 +79,35 @@ private:
     std::atomic_bool output_running_; ///< Is output thread supposed to be running?
     std::atomic_bool scheduling_running_; ///< Is scheduling thread supposed to be running?
 
-    using BatchQueue = boost::lockfree::queue<Batch, boost::lockfree::capacity<16>>;
-    BatchQueue waiting_batches_; ///< Thread-safe FIFO queue for closed batches pending merge-sort
+    using SpillQueue = boost::lockfree::queue<Spill, boost::lockfree::capacity<16>>;
+    SpillQueue waiting_batches_; ///< Thread-safe FIFO queue for closed batches pending merge-sort
 
     /// Main entry point of the output thread.
     void outputThread(std::shared_ptr<DataRun> run);
 
     tai_timestamp last_approx_timestamp_; ///< Latest timestamp sufficiently in the past (used by scheduler)
-    std::shared_ptr<BatchScheduler> batch_scheduler_; ///< Scheduler of batch intervals.
+    std::shared_ptr<BasicSpillScheduler> batch_scheduler_; ///< Scheduler of batch intervals.
 
-    BatchSchedule current_schedule_; ///< Batches open for data writing.
+    SpillSchedule current_schedule_; ///< Spills open for data writing.
     boost::upgrade_mutex current_schedule_mtx_; ///< Multiple-reader / single-writer mutex for current schedule.
 
     int n_slots_; ///< Number of open data slots. Must be constant during runs.
     int n_batches_; ///< Number of opened batches. Used for indexing.
 
     /// Close all batches which were not modified for a sufficiently long duration.
-    void closeOldBatches(BatchSchedule& schedule);
+    void closeOldSpills(SpillSchedule& schedule);
 
     /// Close one specific batch.
-    void closeBatch(Batch&& batch);
+    void closeSpill(Spill&& batch);
 
     /// Main entry point of the scheduling thread.
     void schedulingThread();
 
     /// Allocate data structures for newly created batches.
-    void prepareNewBatches(BatchSchedule& schedule);
+    void prepareNewSpills(SpillSchedule& schedule);
 
     /// Dispose of data structures associated with a bathc.
-    static void disposeBatch(Batch& batch);
+    static void disposeSpill(Spill& batch);
 
     /// Implementation of conventional insert-sort algorithm used to pre-sort CLB queues.
     static std::size_t insertSort(PMTHitQueue& queue) noexcept;

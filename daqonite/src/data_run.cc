@@ -133,15 +133,15 @@ void DataRun::setOutputFileName()
     output_file_path_ = fmt::format("{}/type{}_run{:05d}.root", output_directory_path_, run_type_no, number_);
 }
 
-std::shared_ptr<BatchScheduler> DataRun::getScheduler() const
+std::shared_ptr<BasicSpillScheduler> DataRun::getScheduler() const
 {
     // TODO: determine schedulers properly
 
     switch (type_) {
     case RunType::DataNormal:
-        return scheduling_->spillScheduler();
+        return scheduling_->tduScheduler();
     case RunType::Calibration:
-        return scheduling_->regularScheduler();
+        return scheduling_->periodicScheduler();
     case RunType::TestNormal:
         return scheduling_->infiniteScheduler();
     case RunType::TestFlasher:

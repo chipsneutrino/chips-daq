@@ -14,7 +14,7 @@
 
 #include <TFile.h>
 
-#include "pmt_hit.h"
+#include <util/pmt_hit.h>
 
 class PMTHitQueue;
 class TTree;

@@ -37,7 +37,7 @@ void DataHandler::startRun(const std::shared_ptr<DataRun>& run)
     batch_scheduler_ = run_->getScheduler();
 
     // Prepare queues and schedule.
-    waiting_batches_.consume_all([](Batch& b) { ; });
+    waiting_batches_.consume_all([](Spill& b) { ; });
     {
         boost::unique_lock<boost::upgrade_mutex> l { current_schedule_mtx_ };
         current_schedule_.clear();
@@ -85,7 +85,7 @@ PMTMultiPlaneHitQueue* DataHandler::findHitQueue(const tai_timestamp& timestamp,
     boost::shared_lock<boost::upgrade_mutex> lk { current_schedule_mtx_ };
 
     // TODO: if current_schedule_ is sorted, use binary search
-    for (Batch& batch : current_schedule_) {
+    for (Spill& batch : current_schedule_) {
         if (timestamp >= batch.start_time && timestamp < batch.end_time) {
             batch.started = true;
             batch.last_updated_time = utc_timestamp::now();
@@ -96,7 +96,7 @@ PMTMultiPlaneHitQueue* DataHandler::findHitQueue(const tai_timestamp& timestamp,
     return nullptr;
 }
 
-void DataHandler::closeBatch(Batch&& batch)
+void DataHandler::closeSpill(Spill&& batch)
 {
     // Signal to CLB threads that no writes should be performed.
     for (int i = 0; i < n_slots_; ++i) {
@@ -112,8 +112,8 @@ void DataHandler::closeBatch(Batch&& batch)
     // At this point, no thread should be writing data to any of the queues.
 
     if (!batch.started) {
-        log(INFO, "Batch {} was discarded because it was not started at the time of closing.", batch.idx);
-        disposeBatch(batch);
+        log(INFO, "Spill {} was discarded because it was not started at the time of closing.", batch.idx);
+        disposeSpill(batch);
         return;
     }
 
@@ -121,7 +121,7 @@ void DataHandler::closeBatch(Batch&& batch)
     waiting_batches_.push(std::move(batch));
 }
 
-void DataHandler::closeOldBatches(BatchSchedule& schedule)
+void DataHandler::closeOldSpills(SpillSchedule& schedule)
 {
     // TODO: make maturation period configurable
     static constexpr std::uint64_t MATURATION_SECONDS { 4 };
@@ -131,7 +131,7 @@ void DataHandler::closeOldBatches(BatchSchedule& schedule)
 
     for (auto it = schedule.begin(); it != schedule.end();) {
         if (it->started && it->last_updated_time < close_time) {
-            closeBatch(std::move(*it));
+            closeSpill(std::move(*it));
             it = schedule.erase(it);
         } else {
             ++it;
@@ -158,14 +158,14 @@ void DataHandler::schedulingThread()
             boost::upgrade_lock<boost::upgrade_mutex> lk { current_schedule_mtx_ };
 
             // Copy current schedule
-            BatchSchedule new_schedule { std::cref(current_schedule_) };
+            SpillSchedule new_schedule { std::cref(current_schedule_) };
 
             // Remove old batches from the schedule
-            closeOldBatches(new_schedule);
+            closeOldSpills(new_schedule);
 
             // Add some more
             batch_scheduler_->updateSchedule(new_schedule, last_approx_timestamp_);
-            prepareNewBatches(new_schedule);
+            prepareNewSpills(new_schedule);
 
             {
                 boost::upgrade_to_unique_lock<boost::upgrade_mutex> ulk { lk };
@@ -177,9 +177,9 @@ void DataHandler::schedulingThread()
     }
 
     // Close remaining batches.
-    BatchSchedule new_schedule { std::cref(current_schedule_) };
+    SpillSchedule new_schedule { std::cref(current_schedule_) };
     for (auto it = new_schedule.begin(); it != new_schedule.end();) {
-        closeBatch(std::move(*it));
+        closeSpill(std::move(*it));
         it = new_schedule.erase(it);
     }
 
@@ -192,9 +192,9 @@ void DataHandler::schedulingThread()
     log(INFO, "Scheduling thread signing off");
 }
 
-void DataHandler::prepareNewBatches(BatchSchedule& schedule)
+void DataHandler::prepareNewSpills(SpillSchedule& schedule)
 {
-    for (Batch& batch : schedule) {
+    for (Spill& batch : schedule) {
         if (batch.created) {
             batch.created = false;
 
@@ -208,7 +208,7 @@ void DataHandler::prepareNewBatches(BatchSchedule& schedule)
     }
 }
 
-void DataHandler::disposeBatch(Batch& batch)
+void DataHandler::disposeSpill(Spill& batch)
 {
     delete[] batch.clb_opt_data;
 }
@@ -232,7 +232,7 @@ void DataHandler::outputThread(std::shared_ptr<DataRun> run)
     for (;;) {
         // Obtain a batch to process.
         bool have_batch = false;
-        Batch current_batch {};
+        Spill current_batch {};
 
         if (waiting_batches_.pop(current_batch)) {
             // If there's something to process, dequeue.
@@ -286,11 +286,11 @@ void DataHandler::outputThread(std::shared_ptr<DataRun> run)
 
             // TODO: report metrics to backend
         } else {
-            log(INFO, "Batch {} is empty.", current_batch.idx);
+            log(INFO, "Spill {} is empty.", current_batch.idx);
         }
 
-        log(INFO, "Batch {} done and written", current_batch.idx);
-        disposeBatch(current_batch);
+        log(INFO, "Spill {} done and written", current_batch.idx);
+        disposeSpill(current_batch);
     }
 
     // Close output file.

@@ -10,19 +10,20 @@
 
 #include <memory>
 
-#include "batch_scheduler.h"
-#include "spill_scheduler.h"
+#include <spill_scheduling/infinite_spill_scheduler.h>
+#include <spill_scheduling/periodic_spill_scheduler.h>
+#include <spill_scheduling/tdu_spill_scheduler.h>
 
 class SchedulingPool {
 public:
     SchedulingPool();
 
-    inline const std::shared_ptr<InfiniteScheduler>& infiniteScheduler() const { return infinite_scheduler_; }
-    inline const std::shared_ptr<RegularScheduler>& regularScheduler() const { return regular_scheduler_; }
-    inline const std::shared_ptr<SpillScheduler>& spillScheduler() const { return spill_scheduler_; }
+    inline const std::shared_ptr<InfiniteSpillScheduler>& infiniteScheduler() const { return infinite_scheduler_; }
+    inline const std::shared_ptr<PeriodicSpillScheduler>& periodicScheduler() const { return periodic_scheduler_; }
+    inline const std::shared_ptr<TDUSpillScheduler>& tduScheduler() const { return tdu_scheduler_; }
 
 private:
-    std::shared_ptr<InfiniteScheduler> infinite_scheduler_;
-    std::shared_ptr<RegularScheduler> regular_scheduler_;
-    std::shared_ptr<SpillScheduler> spill_scheduler_;
+    std::shared_ptr<InfiniteSpillScheduler> infinite_scheduler_;
+    std::shared_ptr<PeriodicSpillScheduler> periodic_scheduler_;
+    std::shared_ptr<TDUSpillScheduler> tdu_scheduler_;
 };

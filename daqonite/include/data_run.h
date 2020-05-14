@@ -33,7 +33,7 @@ public:
     inline DataRunState getState() const { return state_; }
     inline RunType getType() const { return type_; }
     inline const std::string& getOutputFilePath() const { return output_file_path_; }
-    std::shared_ptr<BatchScheduler> getScheduler() const;
+    std::shared_ptr<BasicSpillScheduler> getScheduler() const;
 
     std::string logDescription() const;
 

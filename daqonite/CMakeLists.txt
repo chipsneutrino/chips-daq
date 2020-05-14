@@ -1,9 +1,7 @@
 add_executable(daqonite
     src/daqonite.cc
-    include/batch_scheduler.h          src/batch_scheduler.cc
     include/bbb_hit_receiver.h         src/bbb_hit_receiver.cc
     include/daqonite_publisher.h       src/daqonite_publisher.cc
-    include/pmt_hit.h
     include/basic_hit_receiver.h       src/basic_hit_receiver.cc
     include/clb_hit_receiver.h         src/clb_hit_receiver.cc
     include/daq_handler.h              src/daq_handler.cc
@@ -12,7 +10,6 @@ add_executable(daqonite
     include/data_handler.h             src/data_handler.cc
     include/merge_sorter.h             src/merge_sorter.cc
     include/run_file.h                 src/run_file.cc
-    include/spill_scheduler.h          src/spill_scheduler.cc
     include/scheduling_pool.h          src/scheduling_pool.cc
     include/trigger_predictor.h        src/trigger_predictor.cc
     )
@@ -22,7 +19,7 @@ target_include_directories(daqonite PUBLIC include)
 target_link_libraries(daqonite PUBLIC clb)
 target_link_libraries(daqonite PUBLIC bbb)
 target_link_libraries(daqonite PUBLIC util)
-target_link_libraries(daqonite PUBLIC XmlRpc)
+target_link_libraries(daqonite PUBLIC spill_scheduling)
 target_link_libraries(daqonite PUBLIC nngpp)
 target_link_libraries(daqonite PUBLIC ${ROOT_LIBRARIES})
 target_link_libraries(daqonite PUBLIC Boost::program_options)
