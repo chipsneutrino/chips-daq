@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.0)
 project(chips_daq C CXX)
 
+list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_SOURCE_DIR}/cmake")
+
 # Build Configuration
 set(CMAKE_CXX_STANDARD 11)
 
@@ -31,6 +33,8 @@ find_package(ROOT
     REQUIRED
 )
 include(${ROOT_USE_FILE})
+
+find_package(Libunwind REQUIRED)
 
 # Subprojects
 add_subdirectory(lib)

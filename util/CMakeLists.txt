@@ -15,6 +15,9 @@ add_library(util
     include/util/daq_config.h                   src/daq_config.cc
     include/util/bus_publisher.h                src/bus_publisher.cc
     include/util/singleton_process.h
+    src/demangle.h                     src/demangle.cc
+    src/backtrace.h                    src/backtrace.cc
+    src/backtrace_on_terminate.h
     )
     
 target_include_directories(util PUBLIC include)
@@ -26,3 +29,4 @@ target_include_directories(util PUBLIC ${ELASTICLIENT_INCLUDE_DIRS})
 target_link_libraries(util PUBLIC fmt)
 target_link_libraries(util PUBLIC Boost::thread Boost::date_time)
 target_link_libraries(util PUBLIC nngpp)
+target_link_libraries(util PRIVATE unwind)

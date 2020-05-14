@@ -4,6 +4,7 @@
  */
 
 #include "elastic_interface.h"
+#include "backtrace_on_terminate.h"
 #include "chips_config.h"
 
 ElasticInterface g_elastic; ///< Global instance of this class
@@ -23,8 +24,7 @@ ElasticInterface::ElasticInterface()
 
 ElasticInterface::~ElasticInterface()
 {
-    index_service_.stop();
-    index_threads_.join_all();
+    stop_and_join();
 }
 
 void ElasticInterface::init(bool print_logs, bool print_debug, int index_threads)
@@ -45,6 +45,12 @@ void ElasticInterface::init(bool print_logs, bool print_debug, int index_threads
     {
         index_threads_.create_thread(boost::bind(&ElasticInterface::runThread, this));
     }
+}
+
+void ElasticInterface::stop_and_join()
+{
+    index_service_.stop();
+    index_threads_.join_all();
 }
 
 std::string ElasticInterface::level_to_string(severity level)

@@ -79,6 +79,8 @@ public:
 		 */
     void init(bool print_logs, bool print_debug, int index_threads);
 
+    void stop_and_join();
+
     /// Unlinks the lock file at exit
     static void close(std::string path);
 
