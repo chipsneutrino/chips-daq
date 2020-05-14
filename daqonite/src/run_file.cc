@@ -41,7 +41,7 @@ void RunFile::addOptCLBBranches()
     opt_tree_->Branch("channel_number", &hit_.channel_number, "channel_number/b");
     opt_tree_->Branch("tai_time_s", &hit_.timestamp.secs, "tai_time_s/l");
     opt_tree_->Branch("tai_time_ns", &hit_.timestamp.nanosecs, "tai_time_ns/i");
-    opt_tree_->Branch("tot", &hit_.tot, "tot/B");
+    opt_tree_->Branch("tot", &hit_.tot, "tot/b");
     opt_tree_->Branch("adc0", &hit_.adc0, "adc0/b");
 }
 

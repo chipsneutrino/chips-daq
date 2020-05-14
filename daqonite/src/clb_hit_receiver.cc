@@ -88,7 +88,7 @@ void CLBHitReceiver::mineHits(const hit_t* hits_begin, std::size_t n_hits, const
         // Assign basic hit fields
         dest_hit.plane_number = plane_number;
         dest_hit.channel_number = src_hit.channel;
-        dest_hit.tot = src_hit.ToT; // FIXME: this TOT is sometimes negative, figure out why (sign bit?)
+        dest_hit.tot = src_hit.ToT;
         dest_hit.adc0 = hit::NO_ADC0; // CLBs do not report ADC
 
         // Assign hit timestamp
