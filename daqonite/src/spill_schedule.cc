@@ -12,6 +12,7 @@ SpillSchedule::SpillSchedule()
     , last_approx_timestamp_ {}
     , scheduler_ {}
     , current_schedule_ {}
+    , closed_spills_ {}
     , current_schedule_mtx_ {}
     , n_slots_ { 0 }
     , n_spills_ { 0 }
@@ -31,10 +32,12 @@ void SpillSchedule::startRun(const std::shared_ptr<DataRun>& run, const std::sha
         current_schedule_.clear();
     }
 
+    // Reset
     last_approx_timestamp_ = tai_timestamp {};
     n_spills_ = 0;
+    closed_spills_.clear();
 
-    // Start output thread.
+    // Start scheduling thread.
     runAsync();
 }
 
@@ -85,13 +88,13 @@ void SpillSchedule::closeSpill(SpillPtr spill)
     // At this point, no thread should be writing data to any of the queues.
 
     if (!spill->started) {
-        log(INFO, "Spill {} discarded (not started at the time of closing).", spill->spill_number);
+        log(DEBUG, "Spill {} not started at the time of closing.", spill->spill_number);
         delete spill;
         return;
     }
 
-    log(INFO, "Closing spill {} for processing.", spill->spill_number);
-    data_run_serialiser_->serialiseSpill(std::move(spill));
+    log(INFO, "Closing spill {}.", spill->spill_number);
+    closed_spills_.emplace_back(spill);
 }
 
 void SpillSchedule::closeOldSpills(SpillList& schedule)
@@ -111,6 +114,8 @@ void SpillSchedule::closeOldSpills(SpillList& schedule)
             ++it;
         }
     }
+
+    serialiseClosedSpills();
 }
 
 void SpillSchedule::updateLastApproxTimestamp(const tai_timestamp& timestamp)
@@ -124,7 +129,7 @@ void SpillSchedule::updateLastApproxTimestamp(const tai_timestamp& timestamp)
 
 void SpillSchedule::run()
 {
-    log(INFO, "Scheduling thread up and running");
+    log(DEBUG, "Scheduling thread up and running");
     scheduler_->beginScheduling();
 
     while (running_) {
@@ -150,6 +155,8 @@ void SpillSchedule::run()
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
+    log(INFO, "Spill scheduling cycle interrupted, closing remaining spills.");
+
     // Close remaining spills.
     SpillList new_schedule { std::cref(current_schedule_) };
     for (auto it = new_schedule.begin(); it != new_schedule.end();) {
@@ -162,8 +169,23 @@ void SpillSchedule::run()
         current_schedule_.swap(new_schedule);
     }
 
+    serialiseClosedSpills();
+    log(INFO, "All spills closed.");
+
+    // Block until all closed spills are serialised.
+    while (!closed_spills_.empty()) {
+        log(DEBUG, "Still need to serialise {} closed spills.", closed_spills_.size());
+        serialiseClosedSpills();
+
+        if (!closed_spills_.empty()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
+    }
+
+    log(INFO, "All spills serialised.");
+
     scheduler_->endScheduling();
-    log(INFO, "Scheduling thread signing off");
+    log(DEBUG, "Scheduling thread signing off");
 }
 
 void SpillSchedule::prepareNewSpills(SpillList& schedule)
@@ -187,4 +209,17 @@ void SpillSchedule::prepareNewSpills(SpillList& schedule)
 std::size_t SpillSchedule::assignNewSlot()
 {
     return n_slots_++;
+}
+
+void SpillSchedule::serialiseClosedSpills()
+{
+    while (!closed_spills_.empty()) {
+        const bool serialised { data_run_serialiser_->serialiseSpill(closed_spills_.front()) };
+
+        if (serialised) {
+            closed_spills_.pop_front();
+        } else {
+            break;
+        }
+    }
 }

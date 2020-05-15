@@ -70,6 +70,7 @@ private:
     std::shared_ptr<BasicSpillScheduler> scheduler_; ///< Scheduler of spill intervals.
 
     SpillList current_schedule_; ///< Spills open for data writing.
+    SpillList closed_spills_;
     boost::upgrade_mutex current_schedule_mtx_; ///< Multiple-reader / single-writer mutex for current schedule.
 
     std::size_t n_slots_; ///< Number of open data slots. Must be constant during runs.
@@ -85,4 +86,6 @@ private:
 
     /// Allocate data structures for newly created spills.
     void prepareNewSpills(SpillList& schedule);
+
+    void serialiseClosedSpills();
 };

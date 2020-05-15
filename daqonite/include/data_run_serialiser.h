@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include <boost/lockfree/queue.hpp>
+#include <boost/lockfree/spsc_queue.hpp>
 
 #include <spill_scheduling/spill.h>
 #include <util/async_component.h>
@@ -14,15 +14,15 @@
 class DataRunSerialiser : protected Logging, public AsyncComponent {
 public:
     explicit DataRunSerialiser(const std::shared_ptr<DataRun>& data_run);
-    virtual ~DataRunSerialiser() = default;
+    virtual ~DataRunSerialiser();
 
-    void serialiseSpill(SpillPtr spill);
+    bool serialiseSpill(SpillPtr spill);
 
 protected:
     void run() override;
 
 private:
-    using SpillQueue = boost::lockfree::queue<SpillPtr, boost::lockfree::capacity<16>>;
+    using SpillQueue = boost::lockfree::spsc_queue<SpillPtr>;
     SpillQueue waiting_spills_; ///< Thread-safe FIFO queue for closed spills pending merge-sort
 
     std::shared_ptr<DataRun> data_run_;

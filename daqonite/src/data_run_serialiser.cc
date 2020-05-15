@@ -6,26 +6,32 @@ DataRunSerialiser::DataRunSerialiser(const std::shared_ptr<DataRun>& data_run)
     : Logging {}
     , AsyncComponent {}
     , data_run_ { data_run }
-    , waiting_spills_ {}
+    , waiting_spills_ { 128 } // TODO: make this a configurable constant
 {
     setUnitName("DataRunSerialiser");
-
-    // FIXME: empty the queue in the destructor to prevent memory leak?
 }
 
-void DataRunSerialiser::serialiseSpill(SpillPtr spill)
+DataRunSerialiser::~DataRunSerialiser()
 {
-    // FIXME: what if this function returns false? memory leak?
-    waiting_spills_.push(spill);
+    waiting_spills_.consume_all([this](SpillPtr spill) {
+        log(WARNING, "Spill {} found in queue after serialiser thread terminated. Discarding data.",
+            spill->spill_number);
+        delete spill;
+    });
+}
+
+bool DataRunSerialiser::serialiseSpill(SpillPtr spill)
+{
+    return waiting_spills_.push(spill);
 }
 
 void DataRunSerialiser::run()
 {
-    log(INFO, "Output thread up and running");
+    log(DEBUG, "Output thread up and running");
 
     // Open output.
     const std::string out_file_path { data_run_->getOutputFilePath() };
-    log(DEBUG, "Run {} will be saved in at: '{}'", data_run_->logDescription(), out_file_path);
+    log(INFO, "Run {} will be saved at: '{}'", data_run_->logDescription(), out_file_path);
 
     DataRunFile out_file { out_file_path };
     if (!out_file.isOpen()) {
@@ -40,7 +46,7 @@ void DataRunSerialiser::run()
     PMTHitQueue out_queue {};
     for (;;) {
         // Obtain a spill to process.
-        bool have_spill = false;
+        bool have_spill { false };
         SpillPtr current_spill {};
 
         if (waiting_spills_.pop(current_spill)) {
@@ -83,13 +89,13 @@ void DataRunSerialiser::run()
 
             // TODO: report disorder measure to backend
             const std::size_t n_swaps = insertSort(queue);
-            log(INFO, "POM #{} ({} hits) required {} swaps to achieve time ordering", key_value.first, queue.size(), n_swaps);
+            log(INFO, "Plane {} ({} hits) required {} swaps to achieve time ordering", key_value.first, queue.size(), n_swaps);
         }
 
         out_queue.clear();
 
         if (n_hits > 0) {
-            // Merge-sort CLB events.
+            // Merge-sort hits.
             log(INFO, "Merge-sorting {} hits", n_hits);
             sorter.merge(events, out_queue);
         }
@@ -109,7 +115,7 @@ void DataRunSerialiser::run()
     // Close output file.
     out_file.close();
 
-    log(INFO, "Output thread signing off");
+    log(DEBUG, "Output thread signing off");
 }
 
 std::size_t DataRunSerialiser::insertSort(PMTHitQueue& queue) noexcept
