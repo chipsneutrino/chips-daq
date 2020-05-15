@@ -92,7 +92,7 @@ void DataRunSerialiser::run()
         }
 
         // Write sorted events out.
-        out_file.writeHitQueue(out_queue);
+        out_file.writeSpill(current_spill, out_queue);
         out_file.flush();
         out_queue.clear();
 

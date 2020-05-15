@@ -7,6 +7,7 @@ DataRunFile::DataRunFile(std::string path)
     : file_ { TFile::Open(path.c_str(), "RECREATE") }
 {
     createRunParams();
+    createSpills();
     createOptHits();
 }
 
@@ -14,6 +15,7 @@ void DataRunFile::close()
 {
     if (file_->IsOpen()) {
         run_params_->Write();
+        spills_->Write();
         opt_hits_->Write();
 
         file_->Close();
@@ -44,9 +46,24 @@ void DataRunFile::createRunParams()
     run_params_->Branch("utc_time_stopped_ns", &run_time_stopped_.nanosecs, "utc_time_stopped_ns/i");
 }
 
+void DataRunFile::createSpills()
+{
+    spills_ = new TTree("spills", "Sequence of spills scheduled during the run");
+    spills_->SetDirectory(file_.get());
+    // from this point on, the TTree is owned by TFile
+
+    spills_->Branch("number", &spill_number_, "number/l");
+    spills_->Branch("tai_time_started_s", &spill_time_started_.secs, "tai_time_started_s/l");
+    spills_->Branch("tai_time_started_ns", &spill_time_started_.nanosecs, "tai_time_started_ns/i");
+    spills_->Branch("tai_time_stopped_s", &spill_time_stopped_.secs, "tai_time_stopped_s/l");
+    spills_->Branch("tai_time_stopped_ns", &spill_time_stopped_.nanosecs, "tai_time_stopped_ns/i");
+    spills_->Branch("opt_hits_begin", &spill_opt_hits_begin_, "opt_hits_begin/l");
+    spills_->Branch("opt_hits_end", &spill_opt_hits_end_, "opt_hits_end/l");
+}
+
 void DataRunFile::createOptHits()
 {
-    opt_hits_ = new TTree("opt_hits", "Time-sorted sequence of optical hits from all planes");
+    opt_hits_ = new TTree("opt_hits", "Sequence of optical hits from all planes, guaranteed to be time-sorted within the scope of a spill");
     opt_hits_->SetDirectory(file_.get());
     // from this point on, the TTree is owned by TFile
 
@@ -58,13 +75,21 @@ void DataRunFile::createOptHits()
     opt_hits_->Branch("adc0", &hit_.adc0, "adc0/b");
 }
 
-void DataRunFile::writeHitQueue(const PMTHitQueue& queue) const
+void DataRunFile::writeSpill(const SpillPtr spill, const PMTHitQueue& merged_hits) const
 {
+    spill_number_ = spill->spill_number;
+    spill_time_started_ = spill->start_time;
+    spill_time_stopped_ = spill->end_time;
+    spill_opt_hits_begin_ = opt_hits_->GetEntries();
+
     // fill hits one by one
-    for (const PMTHit& queue_hit : queue) {
-        hit_ = queue_hit;
+    for (const PMTHit& src_hit : merged_hits) {
+        hit_ = src_hit;
         opt_hits_->Fill();
     }
+
+    spill_opt_hits_end_ = opt_hits_->GetEntries();
+    spills_->Fill();
 }
 
 void DataRunFile::writeRunParametersAtStart(const std::shared_ptr<DataRun>& run) const

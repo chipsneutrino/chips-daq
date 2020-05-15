@@ -15,6 +15,7 @@
 #include <TFile.h>
 #include <TTree.h>
 
+#include <spill_scheduling/spill.h>
 #include <util/pmt_hit.h>
 
 class PMTHitQueue;
@@ -37,7 +38,7 @@ public:
     void writeRunParametersAtEnd(const std::shared_ptr<DataRun>& run) const;
 
     /// Save sorted queue of hits to the file.
-    void writeHitQueue(const PMTHitQueue& queue) const;
+    void writeSpill(const SpillPtr spill, const PMTHitQueue& merged_hits) const;
 
     /// Is the file open?
     bool isOpen() const;
@@ -58,6 +59,15 @@ private:
     mutable utc_timestamp run_time_started_;
     mutable utc_timestamp run_time_stopped_;
     void createRunParams();
+
+    // Run parameters tree
+    TTree* spills_;
+    mutable ULong64_t spill_number_;
+    mutable tai_timestamp spill_time_started_;
+    mutable tai_timestamp spill_time_stopped_;
+    mutable ULong64_t spill_opt_hits_begin_;
+    mutable ULong64_t spill_opt_hits_end_;
+    void createSpills();
 
     // Optical hits tree
     TTree* opt_hits_;
