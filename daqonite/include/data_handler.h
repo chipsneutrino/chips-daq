@@ -54,13 +54,13 @@ public:
     void stopRun();
 
     /// Find a queue for CLB data coming at a specific time.
-    PMTMultiPlaneHitQueue* findHitQueue(const tai_timestamp& timestamp, int data_slot_idx);
+    PMTMultiPlaneHitQueue* findHitQueue(const tai_timestamp& timestamp, std::size_t data_slot_idx);
 
     /// Bump up last approximate timestamp.
     void updateLastApproxTimestamp(const tai_timestamp& timestamp);
 
     /// Create new slot for CLB optical data. Must *not* be called during run.
-    int assignNewSlot();
+    std::size_t assignNewSlot();
 
 protected:
     void run() override;
@@ -72,8 +72,8 @@ private:
     SpillSchedule current_schedule_; ///< Spills open for data writing.
     boost::upgrade_mutex current_schedule_mtx_; ///< Multiple-reader / single-writer mutex for current schedule.
 
-    int n_slots_; ///< Number of open data slots. Must be constant during runs.
-    int n_spills_; ///< Number of opened spills. Used for indexing.
+    std::size_t n_slots_; ///< Number of open data slots. Must be constant during runs.
+    std::size_t n_spills_; ///< Number of opened spills. Used for indexing.
 
     std::shared_ptr<DataRunSerialiser> data_run_serialiser_;
 

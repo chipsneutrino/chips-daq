@@ -42,7 +42,7 @@ public:
     virtual void startRun(std::shared_ptr<DataRun>& run);
     virtual void stopRun();
 
-    inline int dataSlotIndex() const { return data_slot_idx_; }
+    inline std::size_t dataSlotIndex() const { return data_slot_idx_; }
 
 protected:
     virtual void processDatagram(const char* datagram, std::size_t datagram_size, std::size_t n_hits, bool do_mine) = 0;
@@ -70,7 +70,7 @@ private:
     using DatagramBuffer = std::vector<char>;
     DatagramBuffer datagram_buffer_; ///< Optical data buffer
 
-    int data_slot_idx_; ///< Unique data slot index assigned by DataHandler to prevent overwrites
+    std::size_t data_slot_idx_; ///< Unique data slot index assigned by DataHandler to prevent overwrites
 
     std::size_t expected_header_size_;
     std::size_t expected_hit_size_;

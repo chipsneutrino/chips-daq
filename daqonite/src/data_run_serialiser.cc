@@ -66,7 +66,8 @@ void DataRunSerialiser::run()
             }
         }
 
-        log(INFO, "Processing spill {} (from {} planes)", current_spill->idx, events.size());
+        log(INFO, "Processing spill {} (from {} planes)",
+            current_spill->spill_number, events.size());
 
         // Calculate complete timestamps & make sure sequence is sorted
         std::size_t n_hits { 0 };
@@ -92,7 +93,7 @@ void DataRunSerialiser::run()
         out_file.flush();
         out_queue.clear();
 
-        log(INFO, "Spill {} done and written", current_spill->idx);
+        log(INFO, "Spill {} done and written", current_spill->spill_number);
         delete current_spill;
     }
 

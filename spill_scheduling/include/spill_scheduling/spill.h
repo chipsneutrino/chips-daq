@@ -31,9 +31,9 @@ struct Spill {
     tai_timestamp start_time; ///< Start timestamp for events.
     tai_timestamp end_time; ///< End timestamp for events.
 
-    int idx; ///< Batch index used for logging.
-    bool created; ///< Was the batch just created by the scheduler and needs DS allocation?
-    bool started; ///< Was the batch "touched" by any data taking thread?
+    std::size_t spill_number; ///< Sequential identifier (unique within the scope of a run) used for logging.
+    bool created; ///< Was the spill just created by the scheduler and needs DS allocation?
+    bool started; ///< Was the spill "touched" by any data taking thread?
     utc_timestamp last_updated_time; ///< Time of last "touch"
 
     PMTMultiPlaneHitQueue* opt_hit_queues; ///< Data queues, one for each slot. Managed by DataHandler.
@@ -42,7 +42,7 @@ struct Spill {
     explicit Spill()
         : start_time {}
         , end_time {}
-        , idx {}
+        , spill_number {}
         , created { true }
         , started {}
         , last_updated_time {}

@@ -52,7 +52,7 @@ void DataHandler::stopRun()
     data_run_serialiser_.reset();
 }
 
-PMTMultiPlaneHitQueue* DataHandler::findHitQueue(const tai_timestamp& timestamp, int data_slot_idx)
+PMTMultiPlaneHitQueue* DataHandler::findHitQueue(const tai_timestamp& timestamp, std::size_t data_slot_idx)
 {
     // For reading schedule, we need reader's access.
     boost::shared_lock<boost::upgrade_mutex> lk { current_schedule_mtx_ };
@@ -72,12 +72,12 @@ PMTMultiPlaneHitQueue* DataHandler::findHitQueue(const tai_timestamp& timestamp,
 void DataHandler::closeSpill(SpillPtr spill)
 {
     // Signal to CLB threads that no writes should be performed.
-    for (int i = 0; i < n_slots_; ++i) {
+    for (std::size_t i = 0; i < n_slots_; ++i) {
         spill->opt_hit_queues[i].closed_for_writing = true;
     }
 
     // Wait for any ongoing writes to finish.
-    for (int i = 0; i < n_slots_; ++i) {
+    for (std::size_t i = 0; i < n_slots_; ++i) {
         std::lock_guard<std::mutex> lk { spill->opt_hit_queues[i].mutex };
         // TODO: lock mutexes instead of using lock_guard
     }
@@ -85,12 +85,12 @@ void DataHandler::closeSpill(SpillPtr spill)
     // At this point, no thread should be writing data to any of the queues.
 
     if (!spill->started) {
-        log(INFO, "Spill {} discarded (not started at the time of closing).", spill->idx);
+        log(INFO, "Spill {} discarded (not started at the time of closing).", spill->spill_number);
         delete spill;
         return;
     }
 
-    log(INFO, "Closing spill {} for processing.", spill->idx);
+    log(INFO, "Closing spill {} for processing.", spill->spill_number);
     data_run_serialiser_->serialiseSpill(std::move(spill));
 }
 
@@ -172,18 +172,19 @@ void DataHandler::prepareNewSpills(SpillSchedule& schedule)
         if (spill->created) {
             spill->created = false;
 
-            spill->idx = n_spills_++;
+            spill->spill_number = n_spills_++;
             spill->started = false;
             spill->last_updated_time = utc_timestamp::now();
             spill->opt_hit_queues = new PMTMultiPlaneHitQueue[n_slots_];
             spill->n_data_slots = n_slots_;
 
-            log(INFO, "Scheduling spill {} with time interval: [{}, {}]", spill->idx, spill->start_time, spill->end_time);
+            log(INFO, "Scheduling spill {} with time interval: [{}, {}]",
+                spill->spill_number, spill->start_time, spill->end_time);
         }
     }
 }
 
-int DataHandler::assignNewSlot()
+std::size_t DataHandler::assignNewSlot()
 {
     return n_slots_++;
 }
