@@ -20,8 +20,8 @@ add_executable(
   src/spill_schedule.cc
   include/merge_sorter.h
   src/merge_sorter.cc
-  include/run_file.h
-  src/run_file.cc
+  include/data_run_file.h
+  src/data_run_file.cc
   include/spill_schedulers.h
   src/spill_schedulers.cc
   include/trigger_predictor.h

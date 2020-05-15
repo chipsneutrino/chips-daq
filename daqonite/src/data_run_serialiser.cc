@@ -1,6 +1,6 @@
 #include "data_run_serialiser.h"
+#include "data_run_file.h"
 #include "merge_sorter.h"
-#include "run_file.h"
 
 DataRunSerialiser::DataRunSerialiser(const std::shared_ptr<DataRun>& data_run)
     : Logging {}
@@ -27,7 +27,7 @@ void DataRunSerialiser::run()
     const std::string out_file_path { data_run_->getOutputFilePath() };
     log(DEBUG, "Run {} will be saved in at: '{}'", data_run_->logDescription(), out_file_path);
 
-    RunFile out_file { out_file_path };
+    DataRunFile out_file { out_file_path };
     if (!out_file.isOpen()) {
         log(ERROR, "Error opening file for writing: '{}'", out_file_path);
         return;

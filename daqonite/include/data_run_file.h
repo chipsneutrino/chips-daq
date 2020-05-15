@@ -1,11 +1,11 @@
 /**
- * RunFile - Wrapper class for file output
+ * DataRunFile - Wrapper class for file output
  * 
  * This class writes the output of data taking to output
  * files on per-run basis.
  *
- * Author: Petr Manek
- * Contact: pmanek@fnal.gov
+ * Author: Petr Mánek
+ * Contact: petr.manek.19@ucl.ac.uk
  */
 
 #pragma once
@@ -19,16 +19,18 @@
 
 class PMTHitQueue;
 
-class RunFile {
+class DataRunFile {
 public:
-    explicit RunFile(std::string path);
-    virtual ~RunFile() = default;
+    explicit DataRunFile(std::string path);
+    virtual ~DataRunFile() = default;
 
-    // No copy- / move-semantics, sorry!
-    RunFile(const RunFile& other) = delete;
-    RunFile(RunFile&& other) = delete;
-    RunFile&& operator=(const RunFile& other) = delete;
-    RunFile&& operator=(RunFile&& other) = delete;
+    // no copy semantics
+    DataRunFile(const DataRunFile& other) = delete;
+    DataRunFile&& operator=(const DataRunFile& other) = delete;
+
+    // no move semantics
+    DataRunFile(DataRunFile&& other) = delete;
+    DataRunFile&& operator=(DataRunFile&& other) = delete;
 
     /// Save sorted queue of hits to the file.
     void writeHitQueue(const PMTHitQueue& queue) const;
