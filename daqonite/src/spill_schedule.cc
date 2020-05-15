@@ -102,12 +102,19 @@ void SpillSchedule::closeOldSpills(SpillList& schedule)
     // TODO: make maturation period configurable
     static constexpr std::uint64_t MATURATION_SECONDS { 4 };
 
-    auto close_time { utc_timestamp::now() };
-    close_time.secs -= MATURATION_SECONDS;
+    auto close_updated_time { utc_timestamp::now() };
+    close_updated_time.secs -= MATURATION_SECONDS;
+
+    auto close_end_time { last_approx_timestamp_ };
+    if (!last_approx_timestamp_.empty()) {
+        close_end_time.secs -= MATURATION_SECONDS;
+    }
 
     for (auto it = schedule.begin(); it != schedule.end();) {
         SpillPtr spill { *it };
-        if (spill->started && spill->last_updated_time < close_time) {
+        if (spill->started
+            && spill->end_time < close_end_time
+            && spill->last_updated_time < close_updated_time) {
             closeSpill(std::move(*it));
             it = schedule.erase(it);
         } else {
