@@ -10,6 +10,7 @@ DataRunFile::DataRunFile(std::string path)
     createSpills();
     createOptHits();
     createOptAnnotations();
+    createTDUSignals();
 }
 
 void DataRunFile::close()
@@ -19,6 +20,7 @@ void DataRunFile::close()
         spills_->Write();
         opt_hits_->Write();
         opt_annotations_->Write();
+        tdu_signals_->Write();
 
         file_->Close();
     }
@@ -94,6 +96,18 @@ void DataRunFile::createOptAnnotations()
     opt_annotations_->Branch("tai_time_end_ns", &annotation_.time_end.nanosecs, "tai_time_end_ns/i");
 }
 
+void DataRunFile::createTDUSignals()
+{
+    tdu_signals_ = new TTree("tdu_signals", "Sequence of Fermilab accelerator time signals received from the NOvA TDU during the run period");
+    tdu_signals_->SetDirectory(file_.get());
+    // from this point on, the TTree is owned by TFile
+
+    tdu_signals_->Branch("type", &tdu_signal_.type, "type/I");
+    tdu_signals_->Branch("nova_time", &tdu_signal_.nova_time, "type/l");
+    tdu_signals_->Branch("tai_time_s", &tdu_signal_.time.secs, "tai_time_start_s/l");
+    tdu_signals_->Branch("tai_time_ns", &tdu_signal_.time.nanosecs, "tai_time_start_ns/i");
+}
+
 void DataRunFile::writeSpill(const SpillPtr spill, const PMTHitQueue& merged_hits) const
 {
     spill_number_ = spill->spill_number;
@@ -130,6 +144,8 @@ void DataRunFile::writeRunParametersAtEnd(const std::shared_ptr<DataRun>& run) c
     run_time_stopped_ = run->getTimeStopped();
 
     // TODO: write hit counts, etc.
+
+    // TODO: write spill signals
 
     run_params_->Fill();
 }

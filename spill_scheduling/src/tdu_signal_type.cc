@@ -1,6 +1,6 @@
-#include "nova_spill_signal_type.h"
+#include "tdu_signal_type.h"
 
-std::string getSpillSignalNameFromType(NovaSpillSignalType type)
+std::string getTDUSignalTypeString(TDUSignalType type)
 {
     std::string ret = "Undefined";
 #define NAME_CHECK(arg) \

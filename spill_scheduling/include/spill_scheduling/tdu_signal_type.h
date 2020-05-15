@@ -1,5 +1,5 @@
 /**
- * NovaSpillSignalType - NOvA spill signal types that correspond with different 
+ * TDUSignalType - NOvA spill signal types that correspond with different 
  * time points of the Fermilab accelerator cycle
  * 
  * NOTE: This file has been taken "as is" from NOvA code base and should always
@@ -13,7 +13,7 @@
 
 #include <string>
 
-enum NovaSpillSignalType : int {
+enum TDUSignalType : int {
     kNuMI, // MIBS $74 proton extraction into NuMI
     kBNB, // $1B paratisitic beam inhibit
     kNuMItclk, // tevatron clock, either $A9 or $AD depending on xml parameter
@@ -29,4 +29,4 @@ enum NovaSpillSignalType : int {
     kNSpillType // needs to be at the end, is used for range checking
 };
 
-static std::string getSpillSignalNameFromType(NovaSpillSignalType type);
+static std::string getTDUSignalTypeString(TDUSignalType type);

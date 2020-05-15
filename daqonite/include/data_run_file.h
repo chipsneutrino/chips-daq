@@ -16,6 +16,7 @@
 #include <TTree.h>
 
 #include <spill_scheduling/spill.h>
+#include <spill_scheduling/tdu_signal.h>
 #include <util/annotation.h>
 #include <util/pmt_hit.h>
 
@@ -81,4 +82,9 @@ private:
     TTree* opt_annotations_;
     mutable Annotation annotation_;
     void createOptAnnotations();
+
+    // TDU signals tree
+    TTree* tdu_signals_;
+    mutable TDUSignal tdu_signal_;
+    void createTDUSignals();
 };

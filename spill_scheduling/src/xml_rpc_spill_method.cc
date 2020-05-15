@@ -1,8 +1,8 @@
 #include <ctime>
 #include <sstream>
 
+#include "tdu_signal_type.h"
 #include "xml_rpc_spill_method.h"
-#include "nova_spill_signal_type.h"
 
 XMLRPCSpillMethod::XMLRPCSpillMethod(XmlRpc::XmlRpcServer* server, std::shared_ptr<TriggerPredictor> predictor)
     : XmlRpc::XmlRpcServerMethod { "Spill", server }

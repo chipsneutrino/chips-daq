@@ -1,7 +1,8 @@
 add_library(spill_scheduling 
     include/spill_scheduling/spill.h
     include/spill_scheduling/spill_data_slot.h
-    include/spill_scheduling/nova_spill_signal_type.h    src/nova_spill_signal_type.cc
+    include/spill_scheduling/tdu_signal.h
+    include/spill_scheduling/tdu_signal_type.h           src/tdu_signal_type.cc
     include/spill_scheduling/basic_spill_scheduler.h     src/basic_spill_scheduler.cc
     include/spill_scheduling/infinite_spill_scheduler.h  src/infinite_spill_scheduler.cc
     include/spill_scheduling/periodic_spill_scheduler.h  src/periodic_spill_scheduler.cc
