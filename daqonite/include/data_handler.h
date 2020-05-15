@@ -28,19 +28,18 @@
 #include "data_run.h"
 #include "data_run_serialiser.h"
 
-class DataHandler : protected Logging {
+class DataHandler : protected Logging, public AsyncComponent {
 public:
-    /// Create a DataHandler
     explicit DataHandler();
-
-    DataHandler(const DataHandler& other) = delete;
-    DataHandler(DataHandler&& other) = delete;
-
-    DataHandler& operator=(const DataHandler& other) = delete;
-    DataHandler& operator=(DataHandler&& other) = delete;
-
-    /// Destroy a DataHandler
     virtual ~DataHandler() = default;
+
+    // no copy semantics
+    DataHandler(const DataHandler& other) = delete;
+    DataHandler& operator=(const DataHandler& other) = delete;
+
+    // no move semantics
+    DataHandler& operator=(DataHandler&& other) = delete;
+    DataHandler(DataHandler&& other) = delete;
 
     /**
      * Start a data taking run
@@ -60,20 +59,17 @@ public:
     /// Bump up last approximate timestamp.
     void updateLastApproxTimestamp(const tai_timestamp& timestamp);
 
-    /// Wait for threads to terminate.
-    void join();
-
     /// Create new slot for CLB optical data. Must *not* be called during run.
     int assignNewSlot();
 
+protected:
+    void run() override;
+
 private:
     std::unique_ptr<DataRunSerialiser> serialiser_; ///< Thread for merge-sorting and saving
-    std::unique_ptr<std::thread> scheduling_thread_; ///< Thread for scheduling and closing spills
 
     /// Synchronously terminate all threads.
     void joinThreads();
-
-    std::atomic_bool scheduling_running_; ///< Is scheduling thread supposed to be running?
 
     tai_timestamp last_approx_timestamp_; ///< Latest timestamp sufficiently in the past (used by scheduler)
     std::shared_ptr<BasicSpillScheduler> scheduler_; ///< Scheduler of spill intervals.
@@ -89,9 +85,6 @@ private:
 
     /// Close one specific spill.
     void closeSpill(SpillPtr spill);
-
-    /// Main entry point of the scheduling thread.
-    void schedulingThread();
 
     /// Allocate data structures for newly created spills.
     void prepareNewSpills(SpillSchedule& schedule);

@@ -1,7 +1,3 @@
-/**
- * DataHandler - Handler class for combining the data and saving to file
- */
-
 #include <functional>
 
 #include <fmt/format.h>
@@ -12,9 +8,8 @@
 
 DataHandler::DataHandler()
     : Logging {}
+    , AsyncComponent {}
     , serialiser_ {}
-    , scheduling_thread_ {}
-    , scheduling_running_ { false }
     , last_approx_timestamp_ {}
     , scheduler_ {}
     , current_schedule_ {}
@@ -41,8 +36,7 @@ void DataHandler::startRun(const std::shared_ptr<DataRun>& run)
 
     // Start output thread.
     serialiser_ = std::unique_ptr<DataRunSerialiser> { new DataRunSerialiser(run) }; // TODO: std::make_unique
-    scheduling_running_ = true;
-    scheduling_thread_ = std::unique_ptr<std::thread> { new std::thread(std::bind(&DataHandler::schedulingThread, this)) };
+    runAsync();
 }
 
 void DataHandler::stopRun()
@@ -125,12 +119,12 @@ void DataHandler::updateLastApproxTimestamp(const tai_timestamp& timestamp)
     }
 }
 
-void DataHandler::schedulingThread()
+void DataHandler::run()
 {
     log(INFO, "Scheduling thread up and running");
     scheduler_->beginScheduling();
 
-    while (scheduling_running_) {
+    while (running_) {
         {
             boost::upgrade_lock<boost::upgrade_mutex> lk { current_schedule_mtx_ };
 
@@ -191,10 +185,8 @@ void DataHandler::joinThreads()
     log(DEBUG, "Joining scheduling and output thread.");
 
     // Kill scheduling thread and wait until it's done.
-    scheduling_running_ = false;
-    if (scheduling_thread_ && scheduling_thread_->joinable()) {
-        scheduling_thread_->join();
-    }
+    notifyJoin();
+    join();
 
     // Now that all spills are closed, we can signal termination of the output thread.
     serialiser_->notifyJoin();
@@ -202,15 +194,9 @@ void DataHandler::joinThreads()
 
     // Clean up.
     serialiser_.reset();
-    scheduling_thread_.reset();
     scheduler_.reset();
 
     log(DEBUG, "Scheduling and output thread joined.");
-}
-
-void DataHandler::join()
-{
-    /* Nothing done. */
 }
 
 int DataHandler::assignNewSlot()
