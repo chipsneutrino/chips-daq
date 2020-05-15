@@ -8,7 +8,7 @@ PeriodicSpillScheduler::PeriodicSpillScheduler(std::size_t n_batches_ahead, std:
     setUnitName("PeriodicSpillScheduler");
 }
 
-void PeriodicSpillScheduler::updateSchedule(SpillSchedule& schedule, const tai_timestamp& last_approx_timestamp)
+void PeriodicSpillScheduler::updateSchedule(SpillList& schedule, const tai_timestamp& last_approx_timestamp)
 {
     if (last_approx_timestamp.empty()) {
         // If there is no data, wait for more.

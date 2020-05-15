@@ -21,5 +21,5 @@ class InfiniteSpillScheduler : public BasicSpillScheduler {
 public:
     explicit InfiniteSpillScheduler();
 
-    void updateSchedule(SpillSchedule& schedule, const tai_timestamp& last_approx_timestamp) override;
+    void updateSchedule(SpillList& schedule, const tai_timestamp& last_approx_timestamp) override;
 };

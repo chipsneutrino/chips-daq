@@ -1,5 +1,5 @@
 /**
- * DataHandler - Handler class for combining the data and saving to file
+ * SpillSchedule - Handler class for combining the data and saving to file
  * 
  * This class deals with combing the data stream from both the CLB and BBB,
  * sorting and then saving to file
@@ -28,18 +28,18 @@
 #include "data_run.h"
 #include "data_run_serialiser.h"
 
-class DataHandler : protected Logging, public AsyncComponent {
+class SpillSchedule : protected Logging, public AsyncComponent {
 public:
-    explicit DataHandler();
-    virtual ~DataHandler() = default;
+    explicit SpillSchedule();
+    virtual ~SpillSchedule() = default;
 
     // no copy semantics
-    DataHandler(const DataHandler& other) = delete;
-    DataHandler& operator=(const DataHandler& other) = delete;
+    SpillSchedule(const SpillSchedule& other) = delete;
+    SpillSchedule& operator=(const SpillSchedule& other) = delete;
 
     // no move semantics
-    DataHandler& operator=(DataHandler&& other) = delete;
-    DataHandler(DataHandler&& other) = delete;
+    SpillSchedule& operator=(SpillSchedule&& other) = delete;
+    SpillSchedule(SpillSchedule&& other) = delete;
 
     /**
      * Start a data taking run
@@ -69,7 +69,7 @@ private:
     tai_timestamp last_approx_timestamp_; ///< Latest timestamp sufficiently in the past (used by scheduler)
     std::shared_ptr<BasicSpillScheduler> scheduler_; ///< Scheduler of spill intervals.
 
-    SpillSchedule current_schedule_; ///< Spills open for data writing.
+    SpillList current_schedule_; ///< Spills open for data writing.
     boost::upgrade_mutex current_schedule_mtx_; ///< Multiple-reader / single-writer mutex for current schedule.
 
     std::size_t n_slots_; ///< Number of open data slots. Must be constant during runs.
@@ -78,11 +78,11 @@ private:
     std::shared_ptr<DataRunSerialiser> data_run_serialiser_;
 
     /// Close all spills which were not modified for a sufficiently long duration.
-    void closeOldSpills(SpillSchedule& schedule);
+    void closeOldSpills(SpillList& schedule);
 
     /// Close one specific spill.
     void closeSpill(SpillPtr spill);
 
     /// Allocate data structures for newly created spills.
-    void prepareNewSpills(SpillSchedule& schedule);
+    void prepareNewSpills(SpillList& schedule);
 };

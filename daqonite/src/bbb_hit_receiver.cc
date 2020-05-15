@@ -8,8 +8,8 @@
 #include "bbb_hit_receiver.h"
 
 BBBHitReceiver::BBBHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
-    std::shared_ptr<DataHandler> data_handler, int opt_port)
-    : BasicHitReceiver { io_service, data_handler, opt_port, sizeof(opt_packet_header_t), sizeof(opt_packet_hit_t) }
+    std::shared_ptr<SpillSchedule> spill_schedule, int opt_port)
+    : BasicHitReceiver { io_service, spill_schedule, opt_port, sizeof(opt_packet_header_t), sizeof(opt_packet_hit_t) }
 {
     setUnitName("BBBHitReceiver[{}]", opt_port);
 }
@@ -52,7 +52,7 @@ void BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
 void BBBHitReceiver::mineHits(const opt_packet_hit_t* hits_begin, std::size_t n_hits, const tai_timestamp& base_time, std::uint32_t plane_number)
 {
     // TODO: perhaps use the lowest hit time in datagram here instead?
-    PMTMultiPlaneHitQueue* multi_queue { data_handler_->findHitQueue(base_time, dataSlotIndex()) };
+    PMTMultiPlaneHitQueue* multi_queue { spill_schedule_->findHitQueue(base_time, dataSlotIndex()) };
 
     if (!multi_queue) {
         // Timestamp not matched to any open batch, discard packet.

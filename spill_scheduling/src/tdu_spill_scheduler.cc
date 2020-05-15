@@ -31,7 +31,7 @@ void TDUSpillScheduler::join()
     spill_server_thread_.reset();
 }
 
-void TDUSpillScheduler::updateSchedule(SpillSchedule& schedule, const tai_timestamp& last_approx_timestamp)
+void TDUSpillScheduler::updateSchedule(SpillList& schedule, const tai_timestamp& last_approx_timestamp)
 {
     /* FIXME: this entire function needs to be reimplemented */
 

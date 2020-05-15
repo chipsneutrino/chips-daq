@@ -21,5 +21,5 @@ class PeriodicSpillScheduler : public BasicSpillScheduler {
 public:
     explicit PeriodicSpillScheduler(std::size_t n_batches_ahead, std::chrono::milliseconds batch_duration);
 
-    void updateSchedule(SpillSchedule& schedule, const tai_timestamp& last_approx_timestamp) override;
+    void updateSchedule(SpillList& schedule, const tai_timestamp& last_approx_timestamp) override;
 };

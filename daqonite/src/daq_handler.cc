@@ -20,7 +20,7 @@ DAQHandler::DAQHandler(const std::string& data_path)
     , io_service_ { new io_service }
     , run_work_ { new io_service::work(*io_service_) }
     , thread_group_ {}
-    , data_handler_ { new DataHandler }
+    , spill_schedule_ { new SpillSchedule }
     , hit_receivers_ {}
     , scheduling_ { new SpillSchedulers }
 {
@@ -34,12 +34,12 @@ void DAQHandler::createHitReceivers()
 
     // Setup the CLB handler (if required)
     for (const int port : clb_ports_) {
-        hit_receivers_.emplace_back(new CLBHitReceiver(io_service_, data_handler_, port));
+        hit_receivers_.emplace_back(new CLBHitReceiver(io_service_, spill_schedule_, port));
     }
 
     // Setup the BBB handler (if required)
     for (const int port : bbb_ports_) {
-        hit_receivers_.emplace_back(new BBBHitReceiver(io_service_, data_handler_, port));
+        hit_receivers_.emplace_back(new BBBHitReceiver(io_service_, spill_schedule_, port));
     }
 }
 
@@ -56,7 +56,7 @@ void DAQHandler::run()
 
     // Wait for all the threads to finish
     thread_group_.join_all();
-    data_handler_->join();
+    spill_schedule_->join();
 
     log(INFO, "I/O service signing off.");
 }
@@ -106,8 +106,8 @@ void DAQHandler::handleStartRunCommand(RunType which)
     data_run_->start();
     log(INFO, "Started data run: {}", data_run_->logDescription());
 
-    // Start a data_handler run
-    data_handler_->startRun(data_run_, data_run_serialiser_);
+    // Start a spill_schedule run
+    spill_schedule_->startRun(data_run_, data_run_serialiser_);
 
     for (const auto& hit_receiver : hit_receivers_) {
         hit_receiver->startRun(data_run_);
@@ -127,8 +127,8 @@ void DAQHandler::handleStopRunCommand()
         hit_receiver->stopRun();
     }
 
-    // Stop the data_handler run
-    data_handler_->stopRun();
+    // Stop the spill_schedule run
+    spill_schedule_->stopRun();
 
     // Stop the serialiser.
     data_run_serialiser_->notifyJoin();

@@ -41,7 +41,7 @@ class TDUSpillScheduler : public BasicSpillScheduler {
 public:
     explicit TDUSpillScheduler(int port, std::size_t trigger_memory_size, double init_period_guess, std::size_t n_batches_ahead, double time_window_radius);
 
-    void updateSchedule(SpillSchedule& schedule, const tai_timestamp& last_approx_timestamp) override;
+    void updateSchedule(SpillList& schedule, const tai_timestamp& last_approx_timestamp) override;
 
     /// Wait until spill server terminates.
     void join();

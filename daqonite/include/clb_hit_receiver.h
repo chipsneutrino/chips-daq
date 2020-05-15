@@ -17,7 +17,7 @@
 #include <memory>
 
 #include "basic_hit_receiver.h"
-#include "data_handler.h"
+#include "spill_schedule.h"
 
 class CLBCommonHeader;
 struct hit_t;
@@ -25,7 +25,7 @@ struct hit_t;
 class CLBHitReceiver : public BasicHitReceiver {
 public:
     explicit CLBHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
-        std::shared_ptr<DataHandler> data_handler, int opt_port);
+        std::shared_ptr<SpillSchedule> spill_schedule, int opt_port);
 
     virtual ~CLBHitReceiver() = default;
 

@@ -6,7 +6,7 @@ InfiniteSpillScheduler::InfiniteSpillScheduler()
     setUnitName("InfiniteSpillScheduler");
 }
 
-void InfiniteSpillScheduler::updateSchedule(SpillSchedule& schedule, const tai_timestamp& last_approx_timestamp)
+void InfiniteSpillScheduler::updateSchedule(SpillList& schedule, const tai_timestamp& last_approx_timestamp)
 {
     if (schedule.empty()) {
         SpillPtr new_spill { new Spill };

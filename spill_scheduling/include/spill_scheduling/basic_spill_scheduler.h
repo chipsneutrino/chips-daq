@@ -22,7 +22,7 @@
 
 #include "spill.h"
 
-using SpillSchedule = std::list<SpillPtr>;
+using SpillList = std::list<SpillPtr>;
 
 /// Base class for all schedulers, needs to be inherited and implemented.
 class BasicSpillScheduler : protected Logging {
@@ -31,6 +31,6 @@ public:
     virtual ~BasicSpillScheduler() = default;
 
     virtual void beginScheduling();
-    virtual void updateSchedule(SpillSchedule& schedule, const tai_timestamp& last_approx_timestamp) = 0;
+    virtual void updateSchedule(SpillList& schedule, const tai_timestamp& last_approx_timestamp) = 0;
     virtual void endScheduling();
 };

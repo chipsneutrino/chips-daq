@@ -3,10 +3,10 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
-#include "data_handler.h"
 #include "run_file.h"
+#include "spill_schedule.h"
 
-DataHandler::DataHandler()
+SpillSchedule::SpillSchedule()
     : Logging {}
     , AsyncComponent {}
     , last_approx_timestamp_ {}
@@ -17,10 +17,10 @@ DataHandler::DataHandler()
     , n_spills_ { 0 }
     , data_run_serialiser_ {}
 {
-    setUnitName("DataHandler");
+    setUnitName("SpillSchedule");
 }
 
-void DataHandler::startRun(const std::shared_ptr<DataRun>& run, const std::shared_ptr<DataRunSerialiser>& run_serialiser)
+void SpillSchedule::startRun(const std::shared_ptr<DataRun>& run, const std::shared_ptr<DataRunSerialiser>& run_serialiser)
 {
     scheduler_ = run->getScheduler();
     data_run_serialiser_ = run_serialiser;
@@ -38,7 +38,7 @@ void DataHandler::startRun(const std::shared_ptr<DataRun>& run, const std::share
     runAsync();
 }
 
-void DataHandler::stopRun()
+void SpillSchedule::stopRun()
 {
     log(DEBUG, "Joining scheduling thread.");
 
@@ -52,7 +52,7 @@ void DataHandler::stopRun()
     data_run_serialiser_.reset();
 }
 
-PMTMultiPlaneHitQueue* DataHandler::findHitQueue(const tai_timestamp& timestamp, std::size_t data_slot_idx)
+PMTMultiPlaneHitQueue* SpillSchedule::findHitQueue(const tai_timestamp& timestamp, std::size_t data_slot_idx)
 {
     // For reading schedule, we need reader's access.
     boost::shared_lock<boost::upgrade_mutex> lk { current_schedule_mtx_ };
@@ -69,7 +69,7 @@ PMTMultiPlaneHitQueue* DataHandler::findHitQueue(const tai_timestamp& timestamp,
     return nullptr;
 }
 
-void DataHandler::closeSpill(SpillPtr spill)
+void SpillSchedule::closeSpill(SpillPtr spill)
 {
     // Signal to CLB threads that no writes should be performed.
     for (std::size_t i = 0; i < n_slots_; ++i) {
@@ -94,7 +94,7 @@ void DataHandler::closeSpill(SpillPtr spill)
     data_run_serialiser_->serialiseSpill(std::move(spill));
 }
 
-void DataHandler::closeOldSpills(SpillSchedule& schedule)
+void SpillSchedule::closeOldSpills(SpillList& schedule)
 {
     // TODO: make maturation period configurable
     static constexpr std::uint64_t MATURATION_SECONDS { 4 };
@@ -113,7 +113,7 @@ void DataHandler::closeOldSpills(SpillSchedule& schedule)
     }
 }
 
-void DataHandler::updateLastApproxTimestamp(const tai_timestamp& timestamp)
+void SpillSchedule::updateLastApproxTimestamp(const tai_timestamp& timestamp)
 {
     // FIXME: this function accesses `last_approx_timestamp_` from a different thread
     // a race condition is possible
@@ -122,7 +122,7 @@ void DataHandler::updateLastApproxTimestamp(const tai_timestamp& timestamp)
     }
 }
 
-void DataHandler::run()
+void SpillSchedule::run()
 {
     log(INFO, "Scheduling thread up and running");
     scheduler_->beginScheduling();
@@ -132,7 +132,7 @@ void DataHandler::run()
             boost::upgrade_lock<boost::upgrade_mutex> lk { current_schedule_mtx_ };
 
             // Copy current schedule
-            SpillSchedule new_schedule { std::cref(current_schedule_) };
+            SpillList new_schedule { std::cref(current_schedule_) };
 
             // Remove old spills from the schedule
             closeOldSpills(new_schedule);
@@ -151,7 +151,7 @@ void DataHandler::run()
     }
 
     // Close remaining spills.
-    SpillSchedule new_schedule { std::cref(current_schedule_) };
+    SpillList new_schedule { std::cref(current_schedule_) };
     for (auto it = new_schedule.begin(); it != new_schedule.end();) {
         closeSpill(std::move(*it));
         it = new_schedule.erase(it);
@@ -166,7 +166,7 @@ void DataHandler::run()
     log(INFO, "Scheduling thread signing off");
 }
 
-void DataHandler::prepareNewSpills(SpillSchedule& schedule)
+void SpillSchedule::prepareNewSpills(SpillList& schedule)
 {
     for (SpillPtr spill : schedule) {
         if (spill->created) {
@@ -184,7 +184,7 @@ void DataHandler::prepareNewSpills(SpillSchedule& schedule)
     }
 }
 
-std::size_t DataHandler::assignNewSlot()
+std::size_t SpillSchedule::assignNewSlot()
 {
     return n_slots_++;
 }

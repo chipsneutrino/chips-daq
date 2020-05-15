@@ -9,14 +9,14 @@
 using boost::asio::ip::udp;
 
 BasicHitReceiver::BasicHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
-    std::shared_ptr<DataHandler> data_handler, int opt_port,
+    std::shared_ptr<SpillSchedule> spill_schedule, int opt_port,
     std::size_t expected_header_size, std::size_t expected_hit_size)
     : Logging {}
     , mode_ { DataMode::Idle }
-    , data_handler_ { std::move(data_handler) }
+    , spill_schedule_ { std::move(spill_schedule) }
     , socket_optical_ { *io_service, udp::endpoint(udp::v4(), opt_port) }
     , datagram_buffer_ {}
-    , data_slot_idx_ { data_handler_->assignNewSlot() }
+    , data_slot_idx_ { spill_schedule_->assignNewSlot() }
     , expected_header_size_ { expected_header_size }
     , expected_hit_size_ { expected_hit_size }
     , next_sequence_number_ {}
@@ -177,7 +177,7 @@ void BasicHitReceiver::reportBadDatagram()
 
 void BasicHitReceiver::reportGoodDatagram(std::uint32_t plane_id, const tai_timestamp& start_time, const tai_timestamp& end_time, std::uint64_t n_hits)
 {
-    data_handler_->updateLastApproxTimestamp(start_time);
+    spill_schedule_->updateLastApproxTimestamp(start_time);
 
     // TODO: implement me
 }

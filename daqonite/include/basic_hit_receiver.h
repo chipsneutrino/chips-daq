@@ -18,13 +18,13 @@
 
 #include <util/logging.h>
 
-#include "data_handler.h"
 #include "data_run.h"
+#include "spill_schedule.h"
 
 class BasicHitReceiver : protected Logging {
 public:
     explicit BasicHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
-        std::shared_ptr<DataHandler> data_handler, int opt_port,
+        std::shared_ptr<SpillSchedule> spill_schedule, int opt_port,
         std::size_t expected_header_size, std::size_t expected_hit_size);
 
     virtual ~BasicHitReceiver() = default;
@@ -52,7 +52,7 @@ protected:
     void reportBadDatagram();
     void reportGoodDatagram(std::uint32_t plane_id, const tai_timestamp& start_time, const tai_timestamp& end_time, std::uint64_t n_hits);
 
-    std::shared_ptr<DataHandler> data_handler_; ///< Pointer to the DataHandler
+    std::shared_ptr<SpillSchedule> spill_schedule_; ///< Pointer to the SpillSchedule
 
 private:
     enum class DataMode {
@@ -70,7 +70,7 @@ private:
     using DatagramBuffer = std::vector<char>;
     DatagramBuffer datagram_buffer_; ///< Optical data buffer
 
-    std::size_t data_slot_idx_; ///< Unique data slot index assigned by DataHandler to prevent overwrites
+    std::size_t data_slot_idx_; ///< Unique data slot index assigned by SpillSchedule to prevent overwrites
 
     std::size_t expected_header_size_;
     std::size_t expected_hit_size_;

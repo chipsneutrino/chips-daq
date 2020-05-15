@@ -16,11 +16,11 @@
  *       The `created` flag set implicitly by the constructor.
  * 
  *   2.  After creation, Spills are added to the current SpillSchedule by the SpillScheduler. Since the schedule is
- *       managed by DataHandler, this implies ownership transfer. The DataHandler also allocates data structures for all
+ *       managed by SpillSchedule, this implies ownership transfer. The SpillSchedule also allocates data structures for all
  *       new Spills.
  * 
- *   3.  For the most of their lifetime Spills are owned by the DataHandler, which closes them when the run ends or when
- *       their end time expires during an ongoing run. Closed Spills are either deleted by the DataHandler straight away
+ *   3.  For the most of their lifetime Spills are owned by the SpillSchedule, which closes them when the run ends or when
+ *       their end time expires during an ongoing run. Closed Spills are either deleted by the SpillSchedule straight away
  *       (if empty) or passed on to the DataRunSerialiser, constituting another ownership transfer.
  * 
  *   4.  The DataRunSerialiser acts as a sink and deletes all Spills it receives.
@@ -36,7 +36,7 @@ struct Spill {
     bool started; ///< Was the spill "touched" by any data taking thread?
     utc_timestamp last_updated_time; ///< Time of last "touch"
 
-    PMTMultiPlaneHitQueue* opt_hit_queues; ///< Data queues, one for each slot. Managed by DataHandler.
+    PMTMultiPlaneHitQueue* opt_hit_queues; ///< Data queues, one for each slot. Managed by SpillSchedule.
     std::size_t n_data_slots;
 
     explicit Spill()
