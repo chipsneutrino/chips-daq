@@ -1,6 +1,7 @@
 add_executable(
   daqonite
   src/daqonite.cc
+  include/annotation.h
   include/bbb_hit_receiver.h
   src/bbb_hit_receiver.cc
   include/daqonite_publisher.h

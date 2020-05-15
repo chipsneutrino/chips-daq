@@ -9,6 +9,7 @@ DataRunFile::DataRunFile(std::string path)
     createRunParams();
     createSpills();
     createOptHits();
+    createOptAnnotations();
 }
 
 void DataRunFile::close()
@@ -17,6 +18,7 @@ void DataRunFile::close()
         run_params_->Write();
         spills_->Write();
         opt_hits_->Write();
+        opt_annotations_->Write();
 
         file_->Close();
     }
@@ -59,11 +61,13 @@ void DataRunFile::createSpills()
     spills_->Branch("tai_time_stopped_ns", &spill_time_stopped_.nanosecs, "tai_time_stopped_ns/i");
     spills_->Branch("opt_hits_begin", &spill_opt_hits_begin_, "opt_hits_begin/l");
     spills_->Branch("opt_hits_end", &spill_opt_hits_end_, "opt_hits_end/l");
+    spills_->Branch("opt_annotations_begin", &spill_opt_annotations_begin_, "opt_annotations_begin/l");
+    spills_->Branch("opt_annotations_end", &spill_opt_annotations_end_, "opt_annotations_end/l");
 }
 
 void DataRunFile::createOptHits()
 {
-    opt_hits_ = new TTree("opt_hits", "Sequence of optical hits from all planes, guaranteed to be time-sorted within the scope of a spill");
+    opt_hits_ = new TTree("opt_hits", "Sequence of optical hits taken from all planes during multiple spills, guaranteed to be time-sorted within the scope of a single spill");
     opt_hits_->SetDirectory(file_.get());
     // from this point on, the TTree is owned by TFile
 
@@ -73,6 +77,21 @@ void DataRunFile::createOptHits()
     opt_hits_->Branch("tai_time_ns", &hit_.timestamp.nanosecs, "tai_time_ns/i");
     opt_hits_->Branch("tot", &hit_.tot, "tot/b");
     opt_hits_->Branch("adc0", &hit_.adc0, "adc0/b");
+}
+
+void DataRunFile::createOptAnnotations()
+{
+    opt_annotations_ = new TTree("opt_annotations", "Sequence of annotations of the optical hit data (containing information about gaps, dropped channels, etc.), guaranteed to be time-sorted within the scope of a single spill");
+    opt_annotations_->SetDirectory(file_.get());
+    // from this point on, the TTree is owned by TFile
+
+    opt_annotations_->Branch("type", &annotation_.type, "type/b");
+    opt_annotations_->Branch("plane_number", &annotation_.plane_number, "plane_number/i");
+    opt_annotations_->Branch("channel_number", &annotation_.channel_number, "plane_number/n");
+    opt_annotations_->Branch("tai_time_start_s", &annotation_.time_start.secs, "tai_time_start_s/l");
+    opt_annotations_->Branch("tai_time_start_ns", &annotation_.time_start.nanosecs, "tai_time_start_ns/i");
+    opt_annotations_->Branch("tai_time_end_s", &annotation_.time_end.secs, "tai_time_end_s/l");
+    opt_annotations_->Branch("tai_time_end_ns", &annotation_.time_end.nanosecs, "tai_time_end_ns/i");
 }
 
 void DataRunFile::writeSpill(const SpillPtr spill, const PMTHitQueue& merged_hits) const
@@ -89,6 +108,12 @@ void DataRunFile::writeSpill(const SpillPtr spill, const PMTHitQueue& merged_hit
     }
 
     spill_opt_hits_end_ = opt_hits_->GetEntries();
+
+    spill_opt_annotations_begin_ = opt_annotations_->GetEntries();
+
+    // TODO: fill annotations
+
+    spill_opt_annotations_end_ = opt_annotations_->GetEntries();
     spills_->Fill();
 }
 

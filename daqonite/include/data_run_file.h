@@ -18,6 +18,8 @@
 #include <spill_scheduling/spill.h>
 #include <util/pmt_hit.h>
 
+#include "annotation.h"
+
 class PMTHitQueue;
 class DataRun;
 
@@ -67,10 +69,17 @@ private:
     mutable tai_timestamp spill_time_stopped_;
     mutable ULong64_t spill_opt_hits_begin_;
     mutable ULong64_t spill_opt_hits_end_;
+    mutable ULong64_t spill_opt_annotations_begin_;
+    mutable ULong64_t spill_opt_annotations_end_;
     void createSpills();
 
     // Optical hits tree
     TTree* opt_hits_;
     mutable PMTHit hit_;
     void createOptHits();
+
+    // Optical annotations tree
+    TTree* opt_annotations_;
+    mutable Annotation annotation_;
+    void createOptAnnotations();
 };
