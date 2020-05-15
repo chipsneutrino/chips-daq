@@ -9,10 +9,13 @@ DataRunSerialiser::DataRunSerialiser(const std::shared_ptr<DataRun>& data_run)
     , waiting_spills_ {}
 {
     setUnitName("DataRunSerialiser");
+
+    // FIXME: empty the queue in the destructor to prevent memory leak?
 }
 
 void DataRunSerialiser::serialiseSpill(SpillPtr spill)
 {
+    // FIXME: what if this function returns false? memory leak?
     waiting_spills_.push(spill);
 }
 
