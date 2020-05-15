@@ -109,7 +109,7 @@ void CLBHitReceiver::mineHits(const hit_t* hits_begin, std::size_t n_hits, const
         dest_hit.plane_number = plane_number;
         dest_hit.channel_number = src_hit.channel;
         dest_hit.tot = src_hit.ToT;
-        dest_hit.adc0 = hit::NO_ADC0; // CLBs do not report ADC
+        dest_hit.adc0 = PMTHit::NO_ADC0; // CLBs do not report ADC
 
         // Assign hit timestamp
         // Need to change the ordering of the bytes to get the correct hit time

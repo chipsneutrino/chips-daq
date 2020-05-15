@@ -2,6 +2,7 @@ add_executable(daqonite
     src/daqonite.cc
     include/bbb_hit_receiver.h         src/bbb_hit_receiver.cc
     include/daqonite_publisher.h       src/daqonite_publisher.cc
+    include/data_run_serialiser.h      src/data_run_serialiser.cc
     include/basic_hit_receiver.h       src/basic_hit_receiver.cc
     include/clb_hit_receiver.h         src/clb_hit_receiver.cc
     include/daq_handler.h              src/daq_handler.cc

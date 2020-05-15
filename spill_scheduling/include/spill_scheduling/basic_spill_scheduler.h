@@ -22,7 +22,7 @@
 
 #include "spill.h"
 
-using SpillSchedule = std::list<Spill>;
+using SpillSchedule = std::list<SpillPtr>;
 
 /// Base class for all schedulers, needs to be inherited and implemented.
 class BasicSpillScheduler : protected Logging {

@@ -18,27 +18,25 @@ void PeriodicSpillScheduler::updateSchedule(SpillSchedule& schedule, const tai_t
 
     // Initialize the very first spill.
     if (schedule.empty()) {
-        Spill first {};
-        first.created = true;
+        SpillPtr first { new Spill };
 
-        first.start_time = last_approx_timestamp;
+        first->start_time = last_approx_timestamp;
 
-        first.end_time = first.start_time;
-        first.end_time.secs += batch_duration_s_;
+        first->end_time = first->start_time;
+        first->end_time.secs += batch_duration_s_;
 
-        schedule.push_back(std::move(first));
+        schedule.push_back(first);
     }
 
     // At this point, there's always a previous spill.
     while (schedule.size() < n_batches_ahead_) {
-        Spill next {};
-        next.created = true;
+        SpillPtr next { new Spill };
 
-        next.start_time = schedule.back().end_time;
+        next->start_time = schedule.back()->end_time;
 
-        next.end_time = next.start_time;
-        next.end_time.secs += batch_duration_s_;
+        next->end_time = next->start_time;
+        next->end_time.secs += batch_duration_s_;
 
-        schedule.push_back(std::move(next));
+        schedule.push_back(next);
     }
 }

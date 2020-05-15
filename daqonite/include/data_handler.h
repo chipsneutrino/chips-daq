@@ -20,15 +20,13 @@
 #include <stdexcept>
 #include <thread>
 
-#include <boost/lockfree/queue.hpp>
 #include <boost/thread.hpp>
 
 #include <util/control_msg.h>
 #include <util/logging.h>
 
-#include "clb_event.h"
 #include "data_run.h"
-#include "merge_sorter.h"
+#include "data_run_serialiser.h"
 
 class DataHandler : protected Logging {
 public:
@@ -69,46 +67,32 @@ public:
     int assignNewSlot();
 
 private:
-    std::unique_ptr<std::thread> output_thread_; ///< Thread for merge-sorting and saving
-    std::unique_ptr<std::thread> scheduling_thread_; ///< Thread for scheduling and closing batches
+    std::unique_ptr<DataRunSerialiser> serialiser_; ///< Thread for merge-sorting and saving
+    std::unique_ptr<std::thread> scheduling_thread_; ///< Thread for scheduling and closing spills
 
     /// Synchronously terminate all threads.
     void joinThreads();
 
-    std::shared_ptr<DataRun> run_;
-    std::atomic_bool output_running_; ///< Is output thread supposed to be running?
     std::atomic_bool scheduling_running_; ///< Is scheduling thread supposed to be running?
 
-    using SpillQueue = boost::lockfree::queue<Spill, boost::lockfree::capacity<16>>;
-    SpillQueue waiting_batches_; ///< Thread-safe FIFO queue for closed batches pending merge-sort
-
-    /// Main entry point of the output thread.
-    void outputThread(std::shared_ptr<DataRun> run);
-
     tai_timestamp last_approx_timestamp_; ///< Latest timestamp sufficiently in the past (used by scheduler)
-    std::shared_ptr<BasicSpillScheduler> batch_scheduler_; ///< Scheduler of batch intervals.
+    std::shared_ptr<BasicSpillScheduler> scheduler_; ///< Scheduler of spill intervals.
 
     SpillSchedule current_schedule_; ///< Spills open for data writing.
     boost::upgrade_mutex current_schedule_mtx_; ///< Multiple-reader / single-writer mutex for current schedule.
 
     int n_slots_; ///< Number of open data slots. Must be constant during runs.
-    int n_batches_; ///< Number of opened batches. Used for indexing.
+    int n_spills_; ///< Number of opened spills. Used for indexing.
 
-    /// Close all batches which were not modified for a sufficiently long duration.
+    /// Close all spills which were not modified for a sufficiently long duration.
     void closeOldSpills(SpillSchedule& schedule);
 
-    /// Close one specific batch.
-    void closeSpill(Spill&& batch);
+    /// Close one specific spill.
+    void closeSpill(SpillPtr spill);
 
     /// Main entry point of the scheduling thread.
     void schedulingThread();
 
-    /// Allocate data structures for newly created batches.
+    /// Allocate data structures for newly created spills.
     void prepareNewSpills(SpillSchedule& schedule);
-
-    /// Dispose of data structures associated with a bathc.
-    static void disposeSpill(Spill& batch);
-
-    /// Implementation of conventional insert-sort algorithm used to pre-sort CLB queues.
-    static std::size_t insertSort(PMTHitQueue& queue) noexcept;
 };
