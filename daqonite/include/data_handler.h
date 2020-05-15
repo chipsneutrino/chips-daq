@@ -45,7 +45,7 @@ public:
      * Start a data taking run
      * Sets the run variables, opens the output file, and adds TTrees and branches
      */
-    void startRun(const std::shared_ptr<DataRun>& run);
+    void startRun(const std::shared_ptr<DataRun>& run, const std::shared_ptr<DataRunSerialiser>& run_serialiser);
 
     /**
      * Stop a data taking run
@@ -66,11 +66,6 @@ protected:
     void run() override;
 
 private:
-    std::unique_ptr<DataRunSerialiser> serialiser_; ///< Thread for merge-sorting and saving
-
-    /// Synchronously terminate all threads.
-    void joinThreads();
-
     tai_timestamp last_approx_timestamp_; ///< Latest timestamp sufficiently in the past (used by scheduler)
     std::shared_ptr<BasicSpillScheduler> scheduler_; ///< Scheduler of spill intervals.
 
@@ -79,6 +74,8 @@ private:
 
     int n_slots_; ///< Number of open data slots. Must be constant during runs.
     int n_spills_; ///< Number of opened spills. Used for indexing.
+
+    std::shared_ptr<DataRunSerialiser> data_run_serialiser_;
 
     /// Close all spills which were not modified for a sufficiently long duration.
     void closeOldSpills(SpillSchedule& schedule);

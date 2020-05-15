@@ -15,7 +15,8 @@ DAQHandler::DAQHandler(const std::string& data_path)
     , clb_ports_ {}
     , bbb_ports_ {}
     , output_directory_path_ { data_path }
-    , run_ {}
+    , data_run_ {}
+    , data_run_serialiser_ {}
     , io_service_ { new io_service }
     , run_work_ { new io_service::work(*io_service_) }
     , thread_group_ {}
@@ -94,32 +95,33 @@ void DAQHandler::handleStopDataCommand()
 void DAQHandler::handleStartRunCommand(RunType which)
 {
     // If we are currently running first stop the current run
-    if (run_) {
+    if (data_run_) {
         handleStopRunCommand();
     }
 
     // Set the mode to data taking
-    run_ = std::make_shared<DataRun>(which, output_directory_path_, scheduling_);
-    run_->start();
+    data_run_ = std::make_shared<DataRun>(which, output_directory_path_, scheduling_);
+    data_run_serialiser_ = std::make_shared<DataRunSerialiser>(data_run_);
 
-    log(INFO, "Started data run: {}", run_->logDescription());
+    data_run_->start();
+    log(INFO, "Started data run: {}", data_run_->logDescription());
 
     // Start a data_handler run
-    data_handler_->startRun(run_);
+    data_handler_->startRun(data_run_, data_run_serialiser_);
 
     for (const auto& hit_receiver : hit_receivers_) {
-        hit_receiver->startRun(run_);
+        hit_receiver->startRun(data_run_);
     }
 }
 
 void DAQHandler::handleStopRunCommand()
 {
-    if (!run_) {
+    if (!data_run_) {
         return;
     }
 
-    run_->stop();
-    log(INFO, "Stopped data run: {}", run_->logDescription());
+    data_run_->stop();
+    log(INFO, "Stopped data run: {}", data_run_->logDescription());
 
     for (const auto& hit_receiver : hit_receivers_) {
         hit_receiver->stopRun();
@@ -128,7 +130,13 @@ void DAQHandler::handleStopRunCommand()
     // Stop the data_handler run
     data_handler_->stopRun();
 
-    run_.reset();
+    // Stop the serialiser.
+    data_run_serialiser_->notifyJoin();
+    data_run_serialiser_->join();
+
+    // clean up
+    data_run_serialiser_.reset();
+    data_run_.reset();
 }
 
 void DAQHandler::handleExitCommand()

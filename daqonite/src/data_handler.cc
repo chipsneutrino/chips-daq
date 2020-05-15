@@ -9,21 +9,21 @@
 DataHandler::DataHandler()
     : Logging {}
     , AsyncComponent {}
-    , serialiser_ {}
     , last_approx_timestamp_ {}
     , scheduler_ {}
     , current_schedule_ {}
     , current_schedule_mtx_ {}
     , n_slots_ { 0 }
     , n_spills_ { 0 }
+    , data_run_serialiser_ {}
 {
     setUnitName("DataHandler");
 }
 
-void DataHandler::startRun(const std::shared_ptr<DataRun>& run)
+void DataHandler::startRun(const std::shared_ptr<DataRun>& run, const std::shared_ptr<DataRunSerialiser>& run_serialiser)
 {
-    // Set the fRun_type, fRun_num and fFile_name run variables
     scheduler_ = run->getScheduler();
+    data_run_serialiser_ = run_serialiser;
 
     // Prepare schedule.
     {
@@ -35,18 +35,21 @@ void DataHandler::startRun(const std::shared_ptr<DataRun>& run)
     n_spills_ = 0;
 
     // Start output thread.
-    serialiser_ = std::unique_ptr<DataRunSerialiser> { new DataRunSerialiser(run) }; // TODO: std::make_unique
     runAsync();
 }
 
 void DataHandler::stopRun()
 {
-    // Wait for the output thread to end
-    joinThreads();
+    log(DEBUG, "Joining scheduling thread.");
 
-    // Reset the run variables
-    serialiser_.reset();
+    // Kill scheduling thread and wait until it's done.
+    notifyJoin();
+    join();
+
+    log(DEBUG, "Scheduling thread joined.");
+
     scheduler_.reset();
+    data_run_serialiser_.reset();
 }
 
 PMTMultiPlaneHitQueue* DataHandler::findHitQueue(const tai_timestamp& timestamp, int data_slot_idx)
@@ -82,13 +85,13 @@ void DataHandler::closeSpill(SpillPtr spill)
     // At this point, no thread should be writing data to any of the queues.
 
     if (!spill->started) {
-        log(INFO, "Spill {} was discarded because it was not started at the time of closing.", spill->idx);
+        log(INFO, "Spill {} discarded (not started at the time of closing).", spill->idx);
         delete spill;
         return;
     }
 
     log(INFO, "Closing spill {} for processing.", spill->idx);
-    serialiser_->serialiseSpill(std::move(spill));
+    data_run_serialiser_->serialiseSpill(std::move(spill));
 }
 
 void DataHandler::closeOldSpills(SpillSchedule& schedule)
@@ -178,25 +181,6 @@ void DataHandler::prepareNewSpills(SpillSchedule& schedule)
             log(INFO, "Scheduling spill {} with time interval: [{}, {}]", spill->idx, spill->start_time, spill->end_time);
         }
     }
-}
-
-void DataHandler::joinThreads()
-{
-    log(DEBUG, "Joining scheduling and output thread.");
-
-    // Kill scheduling thread and wait until it's done.
-    notifyJoin();
-    join();
-
-    // Now that all spills are closed, we can signal termination of the output thread.
-    serialiser_->notifyJoin();
-    serialiser_->join();
-
-    // Clean up.
-    serialiser_.reset();
-    scheduler_.reset();
-
-    log(DEBUG, "Scheduling and output thread joined.");
 }
 
 int DataHandler::assignNewSlot()

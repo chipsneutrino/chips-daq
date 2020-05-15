@@ -27,6 +27,7 @@
 #include "basic_hit_receiver.h"
 #include "data_handler.h"
 #include "data_run.h"
+#include "data_run_serialiser.h"
 #include "scheduling_pool.h"
 
 class DAQHandler : public CommandHandler, protected Logging {
@@ -56,7 +57,7 @@ public:
     virtual void handleStopRunCommand() override;
     virtual void handleExitCommand() override;
 
-    inline const std::shared_ptr<DataRun>& getRun() const { return run_; }
+    inline const std::shared_ptr<DataRun>& getRun() const { return data_run_; }
 
     void run();
 
@@ -70,7 +71,8 @@ private:
     std::string output_directory_path_;
 
     // Running mode
-    std::shared_ptr<DataRun> run_;
+    std::shared_ptr<DataRun> data_run_;
+    std::shared_ptr<DataRunSerialiser> data_run_serialiser_; ///< Thread for merge-sorting and saving
 
     // IO_service stuff
     using io_service = boost::asio::io_service;
