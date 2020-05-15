@@ -32,7 +32,7 @@ bool DataRunFile::isOpen() const
 
 void DataRunFile::createRunParams()
 {
-    run_params_ = new TTree("run_params", "run_params");
+    run_params_ = new TTree("run_params", "Information about the run");
     run_params_->SetDirectory(file_.get());
     // from this point on, the TTree is owned by TFile
 
@@ -46,7 +46,7 @@ void DataRunFile::createRunParams()
 
 void DataRunFile::createOptHits()
 {
-    opt_hits_ = new TTree("opt_hits", "opt_hits");
+    opt_hits_ = new TTree("opt_hits", "Time-sorted sequence of optical hits from all planes");
     opt_hits_->SetDirectory(file_.get());
     // from this point on, the TTree is owned by TFile
 
