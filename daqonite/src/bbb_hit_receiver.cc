@@ -26,11 +26,7 @@ void BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
         return;
     }
 
-    static constexpr std::uint32_t TICKS_PER_S { 100000000 }; // TODO: move this to packet.h
-    const tai_timestamp datagram_start_time {
-        header.common.window_start.ticks_since_year / TICKS_PER_S, // FIXME: add year's seconds
-        static_cast<std::uint32_t>(header.common.window_start.ticks_since_year % TICKS_PER_S) // FIXME: tick == ns?
-    };
+    const tai_timestamp datagram_start_time { header.common.window_start.secs, header.common.window_start.nanosecs };
 
     if (!checkAndIncrementSequenceNumber(header.common.sequence_number, datagram_start_time)) {
         // Late datagram, discard it.

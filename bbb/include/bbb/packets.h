@@ -18,8 +18,8 @@ extern "C" {
 /* Auxiliary types ---------------------------------------------------------- */
 
 typedef struct {
-    uint16_t year; // UTC year number
-    uint64_t ticks_since_year; // time since the midnight of Jan 1 [10 ns, or 1e-10 s]
+    uint64_t secs; // number of seconds since TAI epoch
+    uint32_t nanosecs; // number of nanoseconds since the second
 } packet_time_t;
 
 enum packet_type { // fits into uint8_t
@@ -34,8 +34,8 @@ typedef struct {
     uint16_t plane_number; // set in hub.cfg, should be the same for all packets originating in a single device
     uint32_t run_number; // set in run.cfg, should be the same for all packets of the same run
     uint32_t sequence_number; // unique within the scope of (device, run, packet type), monotonically increases (with overflow)
-    packet_time_t window_start; // start of the time range this packet corresponds to (inclusive)
-    uint32_t window_size; // duration of the time range [10 ns, or 1e-10 s]
+    packet_time_t window_start; // start of the time window this packet corresponds to (inclusive)
+    uint32_t window_size; // duration of the time window [ns]
 } packet_common_header_t;
 
 /* Optical data packets ----------------------------------------------------- */
@@ -49,7 +49,7 @@ typedef struct {
 
 typedef struct {
     uint8_t channel_and_flags; // bottom 4 bits are channel number in [0;15], top 4 bits are reserved for flags
-    uint32_t timestamp; // time since the window start [10 ns, or 1e-10 s]
+    uint32_t timestamp; // nanoseconds since the window start
     uint16_t tot; // time over threshold, TODO: units
     uint16_t adc0; // monitoring ADC, TODO: units
 } opt_packet_hit_t;
