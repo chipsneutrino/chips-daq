@@ -22,7 +22,7 @@ DAQHandler::DAQHandler(const std::string& data_path)
     , thread_group_ {}
     , data_handler_ { new DataHandler }
     , hit_receivers_ {}
-    , scheduling_ { new SchedulingPool }
+    , scheduling_ { new SpillSchedulers }
 {
     setUnitName("DAQHandler");
 }

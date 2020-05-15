@@ -9,7 +9,7 @@
 
 #include "data_run.h"
 
-DataRun::DataRun(RunType type, const std::string& output_directory_path, const std::shared_ptr<SchedulingPool>& scheduling_pool)
+DataRun::DataRun(RunType type, const std::string& output_directory_path, const std::shared_ptr<SpillSchedulers>& scheduling_pool)
     : state_ { DataRunState::NotStarted }
     , pc_time_started_ {}
     , pc_time_stopped_ {}

@@ -13,7 +13,7 @@
 #include <util/control_msg.h>
 #include <util/timestamp.h>
 
-#include "scheduling_pool.h"
+#include "spill_schedulers.h"
 
 enum class DataRunState : int {
     NotStarted,
@@ -25,7 +25,7 @@ enum class DataRunState : int {
 
 class DataRun {
 public:
-    explicit DataRun(RunType type, const std::string& output_directory_path, const std::shared_ptr<SchedulingPool>& scheduling_pool);
+    explicit DataRun(RunType type, const std::string& output_directory_path, const std::shared_ptr<SpillSchedulers>& scheduling_pool);
 
     void start();
     void stop();
@@ -44,7 +44,7 @@ private:
 
     static std::string formatType(RunType type);
 
-    std::shared_ptr<SchedulingPool> scheduling_;
+    std::shared_ptr<SpillSchedulers> scheduling_;
 
     RunType type_;
     std::uint64_t number_;

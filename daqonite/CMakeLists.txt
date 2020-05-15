@@ -11,7 +11,7 @@ add_executable(daqonite
     include/data_handler.h             src/data_handler.cc
     include/merge_sorter.h             src/merge_sorter.cc
     include/run_file.h                 src/run_file.cc
-    include/scheduling_pool.h          src/scheduling_pool.cc
+    include/spill_schedulers.h         src/spill_schedulers.cc
     include/trigger_predictor.h        src/trigger_predictor.cc
     )
 

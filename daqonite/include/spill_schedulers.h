@@ -1,5 +1,5 @@
 /**
- * SchedulingPool - Takes care of scheduling strategies, which are occasionally
+ * SpillSchedulers - Takes care of scheduling strategies, which are occasionally
  * used to determine batches during runs.
  *
  * Author: Petr Mánek
@@ -14,9 +14,10 @@
 #include <spill_scheduling/periodic_spill_scheduler.h>
 #include <spill_scheduling/tdu_spill_scheduler.h>
 
-class SchedulingPool {
+class SpillSchedulers {
 public:
-    explicit SchedulingPool();
+    explicit SpillSchedulers();
+    virtual ~SpillSchedulers() = default;
 
     inline const std::shared_ptr<InfiniteSpillScheduler>& infiniteScheduler() const { return infinite_scheduler_; }
     inline const std::shared_ptr<PeriodicSpillScheduler>& periodicScheduler() const { return periodic_scheduler_; }
