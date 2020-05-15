@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include <util/pmt_hit_queues.h>
+#include <spill_scheduling/spill_data_slot.h>
 #include <util/timestamp.h>
 
 /**********************************************************************************************************************
@@ -36,8 +36,8 @@ struct Spill {
     bool started; ///< Was the spill "touched" by any data taking thread?
     utc_timestamp last_updated_time; ///< Time of last "touch"
 
-    PMTMultiPlaneHitQueue* opt_hit_queues; ///< Data queues, one for each slot. Managed by SpillSchedule.
-    std::size_t n_data_slots;
+    SpillDataSlot* data_slots; ///< Multiple data slots, one for each hit receiver
+    std::size_t n_data_slots; ///< Number of valid items in `data_slots`
 
     explicit Spill()
         : start_time {}
@@ -46,7 +46,7 @@ struct Spill {
         , created { true }
         , started {}
         , last_updated_time {}
-        , opt_hit_queues {}
+        , data_slots {}
         , n_data_slots {}
     {
     }
@@ -57,9 +57,9 @@ struct Spill {
 
     ~Spill()
     {
-        if (opt_hit_queues != nullptr) {
-            delete[] opt_hit_queues;
-            opt_hit_queues = nullptr;
+        if (data_slots != nullptr) {
+            delete[] data_slots;
+            data_slots = nullptr;
         }
     }
 };

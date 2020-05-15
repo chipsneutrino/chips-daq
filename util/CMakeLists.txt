@@ -3,6 +3,8 @@ add_library(util
     include/util/chips_config.h                 src/chips_config.cc
     include/util/elastic_interface.h            src/elastic_interface.cc
     include/util/logging.h                      src/logging.cc
+    include/util/annotation.h
+    include/util/annotation_queues.h
     include/util/pmt_hit.h
     include/util/pmt_hit_queues.h
     include/util/async_runnable.h

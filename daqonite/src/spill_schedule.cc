@@ -52,7 +52,7 @@ void SpillSchedule::stopRun()
     data_run_serialiser_.reset();
 }
 
-PMTMultiPlaneHitQueue* SpillSchedule::findHitQueue(const tai_timestamp& timestamp, std::size_t data_slot_idx)
+SpillDataSlot* SpillSchedule::findDataSlot(const tai_timestamp& timestamp, std::size_t data_slot_idx)
 {
     // For reading schedule, we need reader's access.
     boost::shared_lock<boost::upgrade_mutex> lk { current_schedule_mtx_ };
@@ -62,7 +62,7 @@ PMTMultiPlaneHitQueue* SpillSchedule::findHitQueue(const tai_timestamp& timestam
         if (timestamp >= spill->start_time && timestamp < spill->end_time) {
             spill->started = true;
             spill->last_updated_time = utc_timestamp::now();
-            return spill->opt_hit_queues + data_slot_idx;
+            return spill->data_slots + data_slot_idx;
         }
     }
 
@@ -73,12 +73,12 @@ void SpillSchedule::closeSpill(SpillPtr spill)
 {
     // Signal to CLB threads that no writes should be performed.
     for (std::size_t i = 0; i < n_slots_; ++i) {
-        spill->opt_hit_queues[i].closed_for_writing = true;
+        spill->data_slots[i].closed_for_writing = true;
     }
 
     // Wait for any ongoing writes to finish.
     for (std::size_t i = 0; i < n_slots_; ++i) {
-        std::lock_guard<std::mutex> lk { spill->opt_hit_queues[i].mutex };
+        std::lock_guard<std::mutex> lk { spill->data_slots[i].mutex };
         // TODO: lock mutexes instead of using lock_guard
     }
 
@@ -175,7 +175,7 @@ void SpillSchedule::prepareNewSpills(SpillList& schedule)
             spill->spill_number = n_spills_++;
             spill->started = false;
             spill->last_updated_time = utc_timestamp::now();
-            spill->opt_hit_queues = new PMTMultiPlaneHitQueue[n_slots_];
+            spill->data_slots = new SpillDataSlot[n_slots_];
             spill->n_data_slots = n_slots_;
 
             log(INFO, "Scheduling spill {} with time interval: [{}, {}]",

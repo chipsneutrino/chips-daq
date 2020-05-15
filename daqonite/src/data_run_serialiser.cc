@@ -63,11 +63,14 @@ void DataRunSerialiser::run()
         // Consolidate multi-queue by moving it into a single instance.
         PMTMultiPlaneHitQueue events {};
         for (std::size_t data_slot_idx = 0; data_slot_idx < current_spill->n_data_slots; ++data_slot_idx) {
-            PMTMultiPlaneHitQueue& slot_multiqueue { current_spill->opt_hit_queues[data_slot_idx] };
+            SpillDataSlot& slot { current_spill->data_slots[data_slot_idx] };
+            PMTMultiPlaneHitQueue& slot_multiqueue { slot.opt_hit_queue };
             for (auto it = slot_multiqueue.begin(); it != slot_multiqueue.end(); ++it) {
                 events.emplace(it->first, std::move(it->second));
             }
         }
+
+        // TODO: consolidate annotation queues in the same way
 
         log(INFO, "Processing spill {} (from {} planes)",
             current_spill->spill_number, events.size());

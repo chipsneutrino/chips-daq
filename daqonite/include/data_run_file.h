@@ -16,9 +16,8 @@
 #include <TTree.h>
 
 #include <spill_scheduling/spill.h>
+#include <util/annotation.h>
 #include <util/pmt_hit.h>
-
-#include "annotation.h"
 
 class PMTHitQueue;
 class DataRun;

@@ -1,32 +1,17 @@
-add_executable(
-  daqonite
-  src/daqonite.cc
-  include/annotation.h
-  include/bbb_hit_receiver.h
-  src/bbb_hit_receiver.cc
-  include/daqonite_publisher.h
-  src/daqonite_publisher.cc
-  include/data_run_serialiser.h
-  src/data_run_serialiser.cc
-  include/basic_hit_receiver.h
-  src/basic_hit_receiver.cc
-  include/clb_hit_receiver.h
-  src/clb_hit_receiver.cc
-  include/daq_handler.h
-  src/daq_handler.cc
-  include/data_run.h
-  src/data_run.cc
+add_executable(daqonite              src/daqonite.cc
+  include/bbb_hit_receiver.h         src/bbb_hit_receiver.cc
+  include/daqonite_publisher.h       src/daqonite_publisher.cc
+  include/data_run_serialiser.h      src/data_run_serialiser.cc
+  include/basic_hit_receiver.h       src/basic_hit_receiver.cc
+  include/clb_hit_receiver.h         src/clb_hit_receiver.cc
+  include/daq_handler.h              src/daq_handler.cc
+  include/data_run.h                 src/data_run.cc
   include/daq_logging.h
-  include/spill_schedule.h
-  src/spill_schedule.cc
-  include/merge_sorter.h
-  src/merge_sorter.cc
-  include/data_run_file.h
-  src/data_run_file.cc
-  include/spill_schedulers.h
-  src/spill_schedulers.cc
-  include/trigger_predictor.h
-  src/trigger_predictor.cc)
+  include/spill_schedule.h           src/spill_schedule.cc
+  include/merge_sorter.h             src/merge_sorter.cc
+  include/data_run_file.h            src/data_run_file.cc
+  include/spill_schedulers.h         src/spill_schedulers.cc
+  include/trigger_predictor.h        src/trigger_predictor.cc)
 
 target_include_directories(daqonite PUBLIC include)
 

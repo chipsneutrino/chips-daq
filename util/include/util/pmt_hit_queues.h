@@ -7,9 +7,6 @@
 
 #pragma once
 
-#include <atomic>
-#include <cstdint>
-#include <mutex>
 #include <unordered_map>
 #include <vector>
 
@@ -23,11 +20,6 @@ class PMTHitQueue : public std::vector<PMTHit> {
 /// plane, indexed by plane number.
 class PMTMultiPlaneHitQueue : public std::unordered_map<std::uint32_t, PMTHitQueue> {
 public:
-    std::mutex mutex {}; /// threads need to hold this mutex before accessing the entire queue
-    // TODO: hit receivers should not compete for this mutex
-
-    std::atomic_bool closed_for_writing { false }; /// if true, writing is no longer enabled
-
     inline PMTHitQueue& get_queue_for_writing(std::uint32_t plane_number)
     {
         auto it = find(plane_number);

@@ -7,8 +7,8 @@
  * Author: Josh Tingey
  * Contact: j.tingey.16@ucl.ac.uk
  *
- * Co-author: Petr Manek
- * Contact: pmanek@fnal.gov
+ * Co-author: Petr Mánek
+ * Contact: petr.manek.19@ucl.ac.uk
  */
 
 #pragma once
@@ -22,6 +22,7 @@
 
 #include <boost/thread.hpp>
 
+#include <spill_scheduling/spill_data_slot.h>
 #include <util/control_msg.h>
 #include <util/logging.h>
 
@@ -53,13 +54,12 @@ public:
      */
     void stopRun();
 
-    /// Find a queue for CLB data coming at a specific time.
-    PMTMultiPlaneHitQueue* findHitQueue(const tai_timestamp& timestamp, std::size_t data_slot_idx);
+    SpillDataSlot* findDataSlot(const tai_timestamp& timestamp, std::size_t data_slot_idx);
 
     /// Bump up last approximate timestamp.
     void updateLastApproxTimestamp(const tai_timestamp& timestamp);
 
-    /// Create new slot for CLB optical data. Must *not* be called during run.
+    /// Create new slot for spill data. Must *not* be called during run.
     std::size_t assignNewSlot();
 
 protected:
