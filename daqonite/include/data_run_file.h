@@ -18,6 +18,7 @@
 #include <util/pmt_hit.h>
 
 class PMTHitQueue;
+class DataRun;
 
 class DataRunFile {
 public:
@@ -31,6 +32,9 @@ public:
     // no move semantics
     DataRunFile(DataRunFile&& other) = delete;
     DataRunFile&& operator=(DataRunFile&& other) = delete;
+
+    void writeRunParametersAtStart(const std::shared_ptr<DataRun>& run) const;
+    void writeRunParametersAtEnd(const std::shared_ptr<DataRun>& run) const;
 
     /// Save sorted queue of hits to the file.
     void writeHitQueue(const PMTHitQueue& queue) const;
@@ -46,6 +50,14 @@ public:
 
 private:
     std::unique_ptr<TFile> file_; ///< ROOT output TFile
+
+    // Run parameters tree
+    TTree* run_params_;
+    mutable ULong64_t run_number_;
+    mutable UChar_t run_type_;
+    mutable utc_timestamp run_time_started_;
+    mutable utc_timestamp run_time_stopped_;
+    void createRunParams();
 
     // Optical hits tree
     TTree* opt_hits_;

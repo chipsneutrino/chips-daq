@@ -31,7 +31,10 @@ public:
     void stop();
 
     inline DataRunState getState() const { return state_; }
+    inline std::uint64_t getNumber() const { return number_; }
     inline RunType getType() const { return type_; }
+    inline const utc_timestamp& getTimeStarted() const { return pc_time_started_; }
+    inline const utc_timestamp& getTimeStopped() const { return pc_time_stopped_; }
     inline const std::string& getOutputFilePath() const { return output_file_path_; }
     std::shared_ptr<BasicSpillScheduler> getScheduler() const;
 

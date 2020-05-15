@@ -33,6 +33,9 @@ void DataRunSerialiser::run()
         return;
     }
 
+    out_file.writeRunParametersAtStart(data_run_);
+    out_file.flush();
+
     MergeSorter sorter {};
     PMTHitQueue out_queue {};
     for (;;) {
@@ -96,6 +99,9 @@ void DataRunSerialiser::run()
         log(INFO, "Spill {} done and written", current_spill->spill_number);
         delete current_spill;
     }
+
+    out_file.writeRunParametersAtEnd(data_run_);
+    out_file.flush();
 
     // Close output file.
     out_file.close();

@@ -106,7 +106,7 @@ void DAQHandler::handleStartRunCommand(RunType which)
     data_run_->start();
     log(INFO, "Started data run: {}", data_run_->logDescription());
 
-    // Start a spill_schedule run
+    data_run_serialiser_->runAsync();
     spill_schedule_->startRun(data_run_, data_run_serialiser_);
 
     for (const auto& hit_receiver : hit_receivers_) {
