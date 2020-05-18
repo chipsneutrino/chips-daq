@@ -13,6 +13,7 @@
 #pragma once
 
 #include <memory>
+#include <unordered_map>
 
 #include <boost/asio.hpp>
 
@@ -47,7 +48,7 @@ public:
 protected:
     virtual void processDatagram(const char* datagram, std::size_t datagram_size, std::size_t n_hits, bool do_mine) = 0;
 
-    bool checkAndIncrementSequenceNumber(std::uint32_t seq_number, const tai_timestamp& datagram_start_time);
+    bool checkAndIncrementSequenceNumber(std::uint32_t plane_number, std::uint32_t seq_number, const tai_timestamp& datagram_start_time);
 
     void reportBadDatagram();
     void reportGoodDatagram(std::uint32_t plane_id, const tai_timestamp& start_time, const tai_timestamp& end_time, std::uint64_t n_hits);
@@ -75,7 +76,8 @@ private:
     std::size_t expected_header_size_;
     std::size_t expected_hit_size_;
 
-    std::uint32_t next_sequence_number_;
+    using SequenceNumberMap = std::unordered_map<std::uint32_t, std::uint32_t>;
+    SequenceNumberMap plane_to_next_sequence_number_;
 
     /**
      * IO_service optical data work function.

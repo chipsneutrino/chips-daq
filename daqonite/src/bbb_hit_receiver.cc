@@ -37,14 +37,13 @@ void BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
     }
 
     const tai_timestamp datagram_start_time { header.common.window_start.secs, header.common.window_start.nanosecs };
+    const std::uint32_t plane_number { header.common.plane_number };
 
-    if (!checkAndIncrementSequenceNumber(header.common.sequence_number, datagram_start_time)) {
+    if (!checkAndIncrementSequenceNumber(plane_number, header.common.sequence_number, datagram_start_time)) {
         // Late datagram, discard it.
         reportBadDatagram();
         return;
     }
-
-    const std::uint32_t plane_number { header.common.plane_number };
 
     // FIXME: timestamps
     reportGoodDatagram(header.common.plane_number, datagram_start_time, tai_timestamp {}, n_hits);

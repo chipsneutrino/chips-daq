@@ -19,7 +19,7 @@ BasicHitReceiver::BasicHitReceiver(std::shared_ptr<boost::asio::io_service> io_s
     , data_slot_idx_ { spill_schedule_->assignNewSlot() }
     , expected_header_size_ { expected_header_size }
     , expected_hit_size_ { expected_hit_size }
-    , next_sequence_number_ {}
+    , plane_to_next_sequence_number_ {}
 {
     setUnitName("BasicHitReceiver[{}]", opt_port);
 
@@ -35,8 +35,8 @@ void BasicHitReceiver::startData()
 {
     log(INFO, "Starting work on socket.");
 
-    // Reset sequence number before we start receiving hits
-    next_sequence_number_ = 0;
+    // Reset sequence numbers before we start receiving hits
+    plane_to_next_sequence_number_ = {};
 
     mode_ = DataMode::Receiving;
     requestDatagram();
@@ -148,20 +148,27 @@ void BasicHitReceiver::checkAndProcessDatagram(const char* datagram, std::size_t
     processDatagram(datagram, datagram_size, div.quot, do_mine);
 }
 
-bool BasicHitReceiver::checkAndIncrementSequenceNumber(std::uint32_t seq_number, const tai_timestamp& datagram_start_time)
+bool BasicHitReceiver::checkAndIncrementSequenceNumber(std::uint32_t plane_number, std::uint32_t seq_number, const tai_timestamp& datagram_start_time)
 {
-    if (seq_number < next_sequence_number_) {
+    auto next_seq_number_it { plane_to_next_sequence_number_.find(plane_number) };
+    if (next_seq_number_it == plane_to_next_sequence_number_.end()) {
+        // This is the first time we see this plane number, create a new entry for it.
+        std::tie(next_seq_number_it, std::ignore) = plane_to_next_sequence_number_.emplace(plane_number, seq_number);
+    }
+
+    auto& next_seq_number { next_seq_number_it->second };
+    if (seq_number < next_seq_number) {
         // Late datagram, discard.
         return false;
     }
 
-    if (seq_number > next_sequence_number_) {
+    if (seq_number > next_seq_number) {
         // We missed some datagrams. The gap ends at the start of this datagram.
         // This is not necessarily bad, we just take note of it and skip ahead.
         reportDataStreamGap(datagram_start_time);
     }
 
-    next_sequence_number_ = 1 + seq_number;
+    next_seq_number = 1 + seq_number;
     return true;
 }
 
