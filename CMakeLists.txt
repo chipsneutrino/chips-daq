@@ -36,6 +36,8 @@ include(${ROOT_USE_FILE})
 
 find_package(Libunwind REQUIRED)
 
+find_package(Config++ REQUIRED)
+
 # Subprojects
 add_subdirectory(lib)
 
