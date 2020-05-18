@@ -28,4 +28,6 @@ private:
     void stopData();
 
     std::unique_ptr<Badgerboard> badgerboard_;
+
+    static bool loadFileContents(std::vector<char>& dest_buffer, const char* file_path); // FIXME: temporary, remove me
 };
