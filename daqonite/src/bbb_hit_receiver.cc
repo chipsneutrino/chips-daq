@@ -36,21 +36,29 @@ void BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
         return;
     }
 
-    const tai_timestamp datagram_start_time { header.common.window_start.secs, header.common.window_start.nanosecs };
+    const tai_timestamp base_time { header.common.window_start.secs, header.common.window_start.nanosecs };
     const std::uint32_t plane_number { header.common.plane_number };
 
-    if (!checkAndIncrementSequenceNumber(plane_number, header.common.sequence_number, datagram_start_time)) {
+    if (!checkAndIncrementSequenceNumber(plane_number, header.common.sequence_number, base_time)) {
         // Late datagram, discard it.
         reportBadDatagram();
         return;
     }
 
-    // FIXME: timestamps
-    reportGoodDatagram(header.common.plane_number, datagram_start_time, tai_timestamp {}, n_hits);
+    // Peek at the timestamps of the first and the last hit in the datagram.
+    tai_timestamp datagram_first_timestamp { base_time };
+    tai_timestamp datagram_last_timestamp { base_time };
+    const opt_packet_hit_t* hits_begin { reinterpret_cast<const opt_packet_hit_t*>(datagram + sizeof(opt_packet_header_t)) };
+
+    if (n_hits > 0) {
+        datagram_first_timestamp = calculateHitTime(hits_begin[0], base_time);
+        datagram_last_timestamp = calculateHitTime(hits_begin[n_hits - 1], base_time);
+    }
+
+    reportGoodDatagram(header.common.plane_number, datagram_first_timestamp, datagram_last_timestamp, n_hits);
 
     if (do_mine) {
-        const opt_packet_hit_t* hits_begin { reinterpret_cast<const opt_packet_hit_t*>(datagram + sizeof(opt_packet_header_t)) };
-        mineHits(hits_begin, n_hits, datagram_start_time, plane_number);
+        mineHits(hits_begin, n_hits, base_time, plane_number);
     }
 }
 
@@ -88,19 +96,25 @@ void BBBHitReceiver::mineHits(const opt_packet_hit_t* hits_begin, std::size_t n_
 
         const opt_packet_hit_t& src_hit { *hits_it };
 
-        // Assign basic hit fields
+        // Assign hit fields
         dest_hit.plane_number = plane_number;
         dest_hit.channel_number = 1 + (0x0F & src_hit.channel_and_flags);
         dest_hit.tot = src_hit.tot;
         dest_hit.adc0 = src_hit.adc0;
+        dest_hit.timestamp = calculateHitTime(src_hit, base_time);
 
-        // TODO: use flags
-
-        // Assign hit timestamp
-        dest_hit.timestamp = base_time;
-        dest_hit.timestamp.nanosecs += src_hit.timestamp; // FIXME: timestamp in ns?
-        dest_hit.timestamp.normalise();
+        // TODO: use hit flags
 
         dest_hit.sort_key = dest_hit.timestamp.combined_secs();
     }
+}
+
+tai_timestamp BBBHitReceiver::calculateHitTime(const opt_packet_hit_t& hit, const tai_timestamp& base_time)
+{
+    // Hit time is expressed as [ns] offset w.r.t. a base timestamp.
+    tai_timestamp timestamp { base_time };
+    timestamp.nanosecs += hit.timestamp;
+    timestamp.normalise();
+
+    return timestamp;
 }

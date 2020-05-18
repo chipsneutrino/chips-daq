@@ -51,21 +51,29 @@ void CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
     }
 
     // TODO: verify that the time from the header indeed is TAI
-    const tai_timestamp datagram_start_time { header.timeStamp().sec(), header.timeStamp().tics() * 16 };
+    const tai_timestamp base_time { header.timeStamp().sec(), header.timeStamp().tics() * 16 };
     const std::uint32_t plane_number { header.pomIdentifier() };
 
-    if (!checkAndIncrementSequenceNumber(plane_number, header.udpSequenceNumber(), datagram_start_time)) {
+    if (!checkAndIncrementSequenceNumber(plane_number, header.udpSequenceNumber(), base_time)) {
         // Late datagram, discard it.
         reportBadDatagram();
         return;
     }
 
-    // FIXME: timestamps
-    reportGoodDatagram(plane_number, datagram_start_time, tai_timestamp {}, n_hits);
+    // Peek at the timestamps of the first and the last hit in the datagram.
+    tai_timestamp datagram_first_timestamp { base_time };
+    tai_timestamp datagram_last_timestamp { base_time };
+    const hit_t* hits_begin { reinterpret_cast<const hit_t*>(datagram + sizeof(CLBCommonHeader)) };
+
+    if (n_hits > 0) {
+        datagram_first_timestamp = calculateHitTime(hits_begin[0], base_time);
+        datagram_last_timestamp = calculateHitTime(hits_begin[n_hits - 1], base_time);
+    }
+
+    reportGoodDatagram(plane_number, datagram_first_timestamp, datagram_last_timestamp, n_hits);
 
     if (do_mine) {
-        const hit_t* hits_begin { reinterpret_cast<const hit_t*>(datagram + sizeof(CLBCommonHeader)) };
-        mineHits(hits_begin, n_hits, datagram_start_time, plane_number);
+        mineHits(hits_begin, n_hits, base_time, plane_number);
     }
 }
 
@@ -103,21 +111,28 @@ void CLBHitReceiver::mineHits(const hit_t* hits_begin, std::size_t n_hits, const
 
         const hit_t& src_hit { *hits_it };
 
-        // Assign basic hit fields
+        // Assign hit fields
         dest_hit.plane_number = plane_number;
         dest_hit.channel_number = src_hit.channel;
         dest_hit.tot = src_hit.ToT;
         dest_hit.adc0 = PMTHit::NO_ADC0; // CLBs do not report ADC
-
-        // Assign hit timestamp
-        // Need to change the ordering of the bytes to get the correct hit time
-        dest_hit.timestamp = base_time;
-        dest_hit.timestamp.nanosecs += static_cast<std::uint32_t>(src_hit.timestamp1) << 24;
-        dest_hit.timestamp.nanosecs += static_cast<std::uint32_t>(src_hit.timestamp2) << 16;
-        dest_hit.timestamp.nanosecs += static_cast<std::uint32_t>(src_hit.timestamp3) << 8;
-        dest_hit.timestamp.nanosecs += static_cast<std::uint32_t>(src_hit.timestamp4);
-        dest_hit.timestamp.normalise();
+        dest_hit.timestamp = calculateHitTime(src_hit, base_time);
 
         dest_hit.sort_key = dest_hit.timestamp.combined_secs();
     }
+}
+
+tai_timestamp CLBHitReceiver::calculateHitTime(const hit_t& hit, const tai_timestamp& base_time)
+{
+    // Hit time is expressed as [ns] offset w.r.t. a base timestamp.
+    // Need to change the ordering of the bytes to get the correct hit time
+    // FIXME: There surely must be a more elegant (and performant) way to do this
+    tai_timestamp timestamp { base_time };
+    timestamp.nanosecs += static_cast<std::uint32_t>(hit.timestamp1) << 24;
+    timestamp.nanosecs += static_cast<std::uint32_t>(hit.timestamp2) << 16;
+    timestamp.nanosecs += static_cast<std::uint32_t>(hit.timestamp3) << 8;
+    timestamp.nanosecs += static_cast<std::uint32_t>(hit.timestamp4);
+    timestamp.normalise();
+
+    return timestamp;
 }
