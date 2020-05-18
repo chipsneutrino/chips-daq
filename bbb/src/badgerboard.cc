@@ -5,18 +5,22 @@
 #include "badgerboard_datagrams.h"
 
 Badgerboard::Badgerboard()
-    : address_ { "tcp://192.168.0.61:54321" } // FIXME: make this configurable
+    : Logging {}
+    , address_ { "tcp://192.168.0.61:54321" } // FIXME: make this configurable
     , req_sock_ { nng::req::open() }
     , req_mutex_ {}
 {
+    setUnitName("Badgerboard[{}]", address_);
     req_sock_.dial(address_.c_str());
 }
 
 bool Badgerboard::blockingSend(nng::msg&& request_msg)
 {
     std::lock_guard<std::mutex> l { req_mutex_ };
-    const BadgerboardRequestType sent_request_type { request_msg.body().data<BadgerboardCommonHeader>()->type };
+    const std::uint8_t sent_request_type { request_msg.body().data<BadgerboardCommonHeader>()->type };
     nng::msg response_msg {};
+
+    log(DEBUG, "Sending message of type {} and size {} bytes.", (std::uint8_t)sent_request_type, request_msg.body().size());
 
     try {
         // TODO: timeout?
@@ -38,7 +42,7 @@ bool Badgerboard::blockingSend(nng::msg&& request_msg)
         return false;
     }
 
-    if (response.response_type != BadgerboardResponseType::Ack) {
+    if (response.response_type != static_cast<std::uint8_t>(BadgerboardResponseType::Ack)) {
         // TODO: throw stuff
         return false;
     }

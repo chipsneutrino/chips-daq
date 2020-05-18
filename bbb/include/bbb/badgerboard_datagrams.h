@@ -18,50 +18,48 @@ enum class BadgerboardResponseType : std::uint8_t {
     Nak = 2,
 };
 
-struct BadgerboardResponse {
-    BadgerboardResponseType response_type;
-    BadgerboardRequestType request_type;
+struct __attribute__((packed)) BadgerboardResponse {
+    std::uint8_t response_type;
+    std::uint8_t request_type;
 };
 
-struct BadgerboardCommonHeader {
-    BadgerboardRequestType type;
+struct __attribute__((packed)) BadgerboardCommonHeader {
+    std::uint8_t type;
 };
 
-struct BadgerboardConfigureHubDatagramHeader {
+struct __attribute__((packed)) BadgerboardConfigureHubDatagramHeader {
     BadgerboardCommonHeader common;
     std::uint32_t config_size;
 };
 
-struct BadgerboardConfigureRunDatagramHeader {
+struct __attribute__((packed)) BadgerboardConfigureRunDatagramHeader {
     BadgerboardCommonHeader common;
     std::uint32_t config_size;
 };
 
-struct BadgerboardSetPowerStateDatagramHeader {
+struct __attribute__((packed)) BadgerboardSetPowerStateDatagramHeader {
     BadgerboardCommonHeader common;
     std::uint16_t channel_bitfield;
 };
 
-struct BadgerboardReprogramDatagramHeader {
+struct __attribute__((packed)) BadgerboardReprogramDatagramHeader {
     BadgerboardCommonHeader common;
     std::uint16_t channel_bitfield;
     std::uint32_t firmware_size;
 };
 
-struct BadgerboardBeginDataRunDatagramHeader {
+struct __attribute__((packed)) BadgerboardBeginDataRunDatagramHeader {
     BadgerboardCommonHeader common;
 };
 
-struct BadgerboardAbortDataRunDatagramHeader {
+struct __attribute__((packed)) BadgerboardAbortDataRunDatagramHeader {
     BadgerboardCommonHeader common;
 };
 
-struct BadgerboardTerminateDatagramHeader {
+struct __attribute__((packed)) BadgerboardTerminateDatagramHeader {
     BadgerboardCommonHeader common;
 };
 
-struct BadgerboardShutdownDatagramHeader {
+struct __attribute__((packed)) BadgerboardShutdownDatagramHeader {
     BadgerboardCommonHeader common;
 };
-
-static constexpr std::size_t BADGERBOARD_HEADER_MAX_SIZE = 65536;

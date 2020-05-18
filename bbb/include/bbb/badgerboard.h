@@ -7,7 +7,9 @@
 
 #include <nngpp/nngpp.h>
 
-class Badgerboard {
+#include <util/logging.h>
+
+class Badgerboard : protected Logging {
 public:
     explicit Badgerboard();
 
@@ -37,7 +39,7 @@ private:
         auto& header { *request_msg.body().data<RequestHeaderType>() };
         auto body { reinterpret_cast<char*>(request_msg.body().data()) + sizeof(RequestHeaderType) };
 
-        header.common.type = request_type;
+        header.common.type = static_cast<decltype(header.common.type)>(request_type);
         config_ftor(header, body);
 
         return blockingSend(std::move(request_msg));
