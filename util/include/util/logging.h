@@ -3,6 +3,7 @@
 #include <string>
 
 #include <fmt/format.h>
+#include <fmt/ostream.h>
 
 /// Enum for describing the different logging severity levels
 enum severity {
