@@ -16,6 +16,16 @@ BBBHitReceiver::BBBHitReceiver(std::shared_ptr<boost::asio::io_service> io_servi
 
 void BBBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_size, std::size_t n_hits, bool do_mine)
 {
+    const auto& common_header { *reinterpret_cast<const packet_common_header_t*>(datagram) };
+
+    // Check the type of the packet is optical
+    if (common_header.packet_type != UDP_PACKET_TYPE_OPTICAL) {
+        log(WARNING, "Received non-optical packet (expected type {}, got {} instead)",
+            UDP_PACKET_TYPE_OPTICAL, common_header.packet_type);
+        reportBadDatagram();
+        return;
+    }
+
     // Cast the beggining of the packet to the opt_packet_header_t
     const auto& header { *reinterpret_cast<const opt_packet_header_t*>(datagram) };
 

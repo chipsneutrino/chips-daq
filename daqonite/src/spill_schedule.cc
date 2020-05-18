@@ -3,7 +3,6 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
-#include "data_run_file.h"
 #include "spill_schedule.h"
 
 SpillSchedule::SpillSchedule()
