@@ -12,7 +12,7 @@ Badgerboard::Badgerboard()
     req_sock_.dial(address_.c_str());
 }
 
-bool Badgerboard::sendAndWaitForAcknowledgement(nng::msg&& request_msg)
+bool Badgerboard::blockingSend(nng::msg&& request_msg)
 {
     std::lock_guard<std::mutex> l { req_mutex_ };
     const BadgerboardRequestType sent_request_type { request_msg.body().data<BadgerboardCommonHeader>()->type };
@@ -46,33 +46,44 @@ bool Badgerboard::sendAndWaitForAcknowledgement(nng::msg&& request_msg)
     return true;
 }
 
-bool Badgerboard::configureHub()
+bool Badgerboard::configureHub(const char* config, std::size_t config_size)
 {
-    // TODO: implement me
-    return false;
+    return composeAndSendRequest<BadgerboardConfigureHubDatagramHeader>(
+        BadgerboardRequestType::ConfigureHub, config_size,
+        [&](BadgerboardConfigureHubDatagramHeader& header, char* body) {
+            header.config_size = config_size;
+            std::memcpy(body, config, config_size);
+        });
 }
 
-bool Badgerboard::configureRun()
+bool Badgerboard::configureRun(const char* config, std::size_t config_size)
 {
-    // TODO: implement me
-    return false;
+    return composeAndSendRequest<BadgerboardConfigureRunDatagramHeader>(
+        BadgerboardRequestType::ConfigureRun, config_size,
+        [&](BadgerboardConfigureRunDatagramHeader& header, char* body) {
+            header.config_size = config_size;
+            std::memcpy(body, config, config_size);
+        });
 }
 
 bool Badgerboard::setPowerState(const bool channel_powered[N_CHANNELS])
 {
-    nng::msg request_msg { sizeof(BadgerboardSetPowerStateDatagramHeader) };
-    auto& request { *request_msg.body().data<BadgerboardSetPowerStateDatagramHeader>() };
-
-    request.common.type = BadgerboardRequestType::SetPowerState;
-    request.channel_bitfield = composeBitfield(channel_powered);
-
-    return sendAndWaitForAcknowledgement(std::move(request_msg));
+    return composeAndSendRequest<BadgerboardSetPowerStateDatagramHeader>(
+        BadgerboardRequestType::SetPowerState, 0,
+        [&](BadgerboardSetPowerStateDatagramHeader& header, char* body) {
+            header.channel_bitfield = composeBitfield(channel_powered);
+        });
 }
 
-bool Badgerboard::reprogram()
+bool Badgerboard::reprogram(const bool channel_reprogrammed[N_CHANNELS], const char* firmware, std::size_t firmware_size)
 {
-    // TODO: implement me
-    return false;
+    return composeAndSendRequest<BadgerboardReprogramDatagramHeader>(
+        BadgerboardRequestType::Reprogram, firmware_size,
+        [&](BadgerboardReprogramDatagramHeader& header, char* body) {
+            header.channel_bitfield = composeBitfield(channel_reprogrammed);
+            header.firmware_size = firmware_size;
+            std::memcpy(body, firmware, firmware_size);
+        });
 }
 
 std::uint16_t Badgerboard::composeBitfield(const bool channels[N_CHANNELS])
@@ -89,40 +100,20 @@ std::uint16_t Badgerboard::composeBitfield(const bool channels[N_CHANNELS])
 
 bool Badgerboard::beginDataRun()
 {
-    nng::msg request_msg { sizeof(BadgerboardBeginDataRunDatagramHeader) };
-    auto& request { *request_msg.body().data<BadgerboardBeginDataRunDatagramHeader>() };
-
-    request.common.type = BadgerboardRequestType::BeginDataRun;
-
-    return sendAndWaitForAcknowledgement(std::move(request_msg));
+    return composeAndSendRequest<BadgerboardBeginDataRunDatagramHeader>(BadgerboardRequestType::BeginDataRun);
 }
 
 bool Badgerboard::abortDataRun()
 {
-    nng::msg request_msg { sizeof(BadgerboardAbortDataRunDatagramHeader) };
-    auto& request { *request_msg.body().data<BadgerboardAbortDataRunDatagramHeader>() };
-
-    request.common.type = BadgerboardRequestType::AbortDataRun;
-
-    return sendAndWaitForAcknowledgement(std::move(request_msg));
+    return composeAndSendRequest<BadgerboardAbortDataRunDatagramHeader>(BadgerboardRequestType::AbortDataRun);
 }
 
 bool Badgerboard::terminate()
 {
-    nng::msg request_msg { sizeof(BadgerboardTerminateDatagramHeader) };
-    auto& request { *request_msg.body().data<BadgerboardTerminateDatagramHeader>() };
-
-    request.common.type = BadgerboardRequestType::Terminate;
-
-    return sendAndWaitForAcknowledgement(std::move(request_msg));
+    return composeAndSendRequest<BadgerboardTerminateDatagramHeader>(BadgerboardRequestType::Terminate);
 }
 
 bool Badgerboard::shutdown()
 {
-    nng::msg request_msg { sizeof(BadgerboardShutdownDatagramHeader) };
-    auto& request { *request_msg.body().data<BadgerboardShutdownDatagramHeader>() };
-
-    request.common.type = BadgerboardRequestType::Shutdown;
-
-    return sendAndWaitForAcknowledgement(std::move(request_msg));
+    return composeAndSendRequest<BadgerboardShutdownDatagramHeader>(BadgerboardRequestType::Shutdown);
 }
