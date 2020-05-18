@@ -9,7 +9,7 @@
 
 BBBHitReceiver::BBBHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
     std::shared_ptr<SpillSchedule> spill_schedule, int opt_port)
-    : BasicHitReceiver { io_service, spill_schedule, opt_port, sizeof(opt_packet_header_t), sizeof(opt_packet_hit_t) }
+    : BasicHitReceiver { io_service, spill_schedule, opt_port, sizeof(opt_packet_header_t), sizeof(opt_packet_hit_t), false }
 {
     setUnitName("BBBHitReceiver[{}]", opt_port);
 }

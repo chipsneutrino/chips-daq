@@ -12,7 +12,7 @@
 
 CLBHitReceiver::CLBHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
     std::shared_ptr<SpillSchedule> spill_schedule, int opt_port)
-    : BasicHitReceiver { io_service, spill_schedule, opt_port, sizeof(CLBCommonHeader), sizeof(hit_t) }
+    : BasicHitReceiver { io_service, spill_schedule, opt_port, sizeof(CLBCommonHeader), sizeof(hit_t), true }
 {
     setUnitName("CLBHitReceiver[{}]", opt_port);
 }
@@ -52,15 +52,13 @@ void CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
 
     // TODO: verify that the time from the header indeed is TAI
     const tai_timestamp datagram_start_time { header.timeStamp().sec(), header.timeStamp().tics() * 16 };
+    const std::uint32_t plane_number { header.pomIdentifier() };
 
-    // FIXME: this sequence number drops at the start of every window and will report fake gaps
-    if (!checkAndIncrementSequenceNumber(header.udpSequenceNumber(), datagram_start_time)) {
+    if (!checkAndIncrementSequenceNumber(plane_number, header.udpSequenceNumber(), datagram_start_time)) {
         // Late datagram, discard it.
         reportBadDatagram();
         return;
     }
-
-    const std::uint32_t plane_number { header.pomIdentifier() };
 
     // FIXME: timestamps
     reportGoodDatagram(plane_number, datagram_start_time, tai_timestamp {}, n_hits);

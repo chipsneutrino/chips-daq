@@ -26,7 +26,8 @@ class BasicHitReceiver : protected Logging {
 public:
     explicit BasicHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
         std::shared_ptr<SpillSchedule> spill_schedule, int opt_port,
-        std::size_t expected_header_size, std::size_t expected_hit_size);
+        std::size_t expected_header_size, std::size_t expected_hit_size,
+        bool tolerate_seq_number_drops);
 
     virtual ~BasicHitReceiver() = default;
 
@@ -78,6 +79,7 @@ private:
 
     using SequenceNumberMap = std::unordered_map<std::uint32_t, std::uint32_t>;
     SequenceNumberMap plane_to_next_sequence_number_;
+    bool tolerate_seq_number_drops_;
 
     /**
      * IO_service optical data work function.

@@ -10,7 +10,8 @@ using boost::asio::ip::udp;
 
 BasicHitReceiver::BasicHitReceiver(std::shared_ptr<boost::asio::io_service> io_service,
     std::shared_ptr<SpillSchedule> spill_schedule, int opt_port,
-    std::size_t expected_header_size, std::size_t expected_hit_size)
+    std::size_t expected_header_size, std::size_t expected_hit_size,
+    bool tolerate_seq_number_drops)
     : Logging {}
     , mode_ { DataMode::Idle }
     , spill_schedule_ { std::move(spill_schedule) }
@@ -20,6 +21,7 @@ BasicHitReceiver::BasicHitReceiver(std::shared_ptr<boost::asio::io_service> io_s
     , expected_header_size_ { expected_header_size }
     , expected_hit_size_ { expected_hit_size }
     , plane_to_next_sequence_number_ {}
+    , tolerate_seq_number_drops_ { tolerate_seq_number_drops }
 {
     setUnitName("BasicHitReceiver[{}]", opt_port);
 
@@ -157,9 +159,16 @@ bool BasicHitReceiver::checkAndIncrementSequenceNumber(std::uint32_t plane_numbe
     }
 
     auto& next_seq_number { next_seq_number_it->second };
-    if (seq_number < next_seq_number) {
-        // Late datagram, discard.
-        return false;
+    if (tolerate_seq_number_drops_) {
+        // Allow the sequence number to drop only to zero.
+        if (seq_number < next_seq_number && seq_number != 0) {
+            return false;
+        }
+    } else {
+        // Do not allow drops at all.
+        if (seq_number < next_seq_number) {
+            return false;
+        }
     }
 
     if (seq_number > next_seq_number) {
