@@ -9,6 +9,7 @@ add_executable(daqontrol
 
 target_include_directories(daqontrol PUBLIC include)
 target_link_libraries(daqontrol PUBLIC clb)
+target_link_libraries(daqontrol PUBLIC bbb)
 target_link_libraries(daqontrol PUBLIC util)
 target_link_libraries(daqontrol PUBLIC relay)
 target_link_libraries(daqontrol PUBLIC Boost::thread)

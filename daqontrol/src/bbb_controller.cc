@@ -5,7 +5,8 @@
 #include "bbb_controller.h"
 
 BBBController::BBBController(ControllerConfig config)
-    : Controller(config)
+    : Controller { config }
+    , badgerboard_ { new Badgerboard }
 {
     setUnitName("BBBController[{}]", config.eid_);
     log(INFO, "Creating BBBController({})", config.eid_);
@@ -35,7 +36,8 @@ void BBBController::startData()
     log(DEBUG, "BBBController({}) Start Data...", config_.eid_);
     working_ = true;
 
-    // TODO: implement me
+    badgerboard_->beginDataRun();
+    // TODO: handle errors
 
     state_ = Control::Started; // Set the controller state to Started
     log(DEBUG, "BBBController({}) Start Data DONE", config_.eid_);

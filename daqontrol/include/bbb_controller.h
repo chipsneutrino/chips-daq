@@ -4,9 +4,11 @@
 
 #pragma once
 
+#include <bbb/badgerboard.h>
+
 #include "controller.h"
 
-class BBBController: public Controller {
+class BBBController : public Controller {
 public:
     /// Create a BBBController, calling Controller constructor and created MsgProcessor
     BBBController(ControllerConfig config);
@@ -24,4 +26,6 @@ private:
     void configure();
     void startData();
     void stopData();
+
+    std::unique_ptr<Badgerboard> badgerboard_;
 };
