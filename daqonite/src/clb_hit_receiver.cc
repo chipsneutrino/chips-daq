@@ -6,7 +6,6 @@
 
 #include <clb/data_structs.h>
 #include <clb/header_structs.h>
-#include <util/elastic_interface.h>
 
 #include "clb_hit_receiver.h"
 
@@ -79,26 +78,18 @@ void CLBHitReceiver::processDatagram(const char* datagram, std::size_t datagram_
 
 void CLBHitReceiver::mineHits(const hit_t* hits_begin, std::size_t n_hits, const tai_timestamp& base_time, std::uint32_t plane_number)
 {
-    // TODO: perhaps use the lowest hit time in datagram here instead?
-    SpillDataSlot* slot { spill_schedule_->findDataSlot(base_time, dataSlotIndex()) };
-
-    if (!slot) {
-        // Timestamp not matched to any open batch, discard datagram.
-        // TODO: devise a reporting mechanism for this
+    SpillDataSlot* found_slot {};
+    if (!(found_slot = findAndLockDataSlot(base_time))) {
+        // Have no slot to store the hits, discard datagram.
         return;
     }
 
-    // From this point on, the queue is being written into, and the batch cannot be closed until the end of scope.
-    std::lock_guard<std::mutex> l { slot->mutex };
+    // The slot will be automatically unlocked at the end of this scope.
+    SpillDataSlot& slot { *found_slot };
+    std::lock_guard<std::mutex> l { slot.mutex, std::adopt_lock };
 
-    if (slot->closed_for_writing) {
-        // Have a batch, which has been closed but not yet removed from the schedule. Discard datagram.
-        // TODO: devise a reporting mechanism for this
-        return;
-    }
-
-    // Find/create a queue for this plane
-    PMTHitQueue& event_queue { slot->opt_hit_queue.get_queue_for_writing(plane_number) };
+    // Find/create a queue for this plane.
+    PMTHitQueue& event_queue { slot.opt_hit_queue.get_queue_for_writing(plane_number) };
 
     // Enqueue all the hits!
     event_queue.reserve(event_queue.size() + n_hits);

@@ -2,6 +2,8 @@
  * BasicHitReceiver - Common hit receiver implementation for optical data streams
  */
 
+#include <mutex>
+
 #include <boost/bind.hpp>
 
 #include "basic_hit_receiver.h"
@@ -14,9 +16,9 @@ BasicHitReceiver::BasicHitReceiver(std::shared_ptr<boost::asio::io_service> io_s
     bool tolerate_seq_number_drops)
     : Logging {}
     , mode_ { DataMode::Idle }
-    , spill_schedule_ { std::move(spill_schedule) }
     , socket_optical_ { *io_service, udp::endpoint(udp::v4(), opt_port) }
     , datagram_buffer_ {}
+    , spill_schedule_ { std::move(spill_schedule) }
     , data_slot_idx_ { spill_schedule_->assignNewSlot() }
     , expected_header_size_ { expected_header_size }
     , expected_hit_size_ { expected_hit_size }
@@ -196,4 +198,34 @@ void BasicHitReceiver::reportGoodDatagram(std::uint32_t plane_id, const tai_time
     spill_schedule_->updateLastApproxTimestamp(start_time);
 
     // TODO: implement me
+}
+
+SpillDataSlot* BasicHitReceiver::findAndLockDataSlot(const tai_timestamp& base_time)
+{
+    // TODO: perhaps use a more representative timestamp here instead?
+    SpillDataSlot* slot { spill_schedule_->findDataSlot(base_time, data_slot_idx_) };
+
+    if (!slot) {
+        // Timestamp not matched to any open spill, discard datagram.
+        // TODO: devise a reporting mechanism for this
+        return nullptr;
+    }
+
+    if (slot->closed_for_writing) {
+        // Inexpensive check before (potentially expensive) locking
+        // TODO: devise a reporting mechanism for this
+        return nullptr;
+    }
+
+    // From this point on, the spill is being written into and cannot be closed.
+    slot->mutex.lock();
+
+    if (slot->closed_for_writing) {
+        // Have a spill, which has been closed but not yet removed from the schedule. Discard datagram.
+        // TODO: devise a reporting mechanism for this
+        slot->mutex.unlock();
+        return nullptr;
+    }
+
+    return slot;
 }

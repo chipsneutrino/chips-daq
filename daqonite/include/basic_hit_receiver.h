@@ -31,20 +31,15 @@ public:
 
     virtual ~BasicHitReceiver() = default;
 
-    // for safety, no copy- or move-semantics
+    // hit receiver works with I/O, hence no copy semantics
     BasicHitReceiver(const BasicHitReceiver& other) = delete;
-    BasicHitReceiver(BasicHitReceiver&& other) = delete;
-
     BasicHitReceiver& operator=(const BasicHitReceiver& other) = delete;
-    BasicHitReceiver& operator=(BasicHitReceiver&& other) = delete;
 
     virtual void startData();
     virtual void stopData();
 
     virtual void startRun(std::shared_ptr<DataRun>& run);
     virtual void stopRun();
-
-    inline std::size_t dataSlotIndex() const { return data_slot_idx_; }
 
 protected:
     virtual void processDatagram(const char* datagram, std::size_t datagram_size, std::size_t n_hits, bool do_mine) = 0;
@@ -54,7 +49,7 @@ protected:
     void reportBadDatagram();
     void reportGoodDatagram(std::uint32_t plane_id, const tai_timestamp& start_time, const tai_timestamp& end_time, std::uint64_t n_hits);
 
-    std::shared_ptr<SpillSchedule> spill_schedule_; ///< Pointer to the SpillSchedule
+    SpillDataSlot* findAndLockDataSlot(const tai_timestamp& base_time);
 
 private:
     enum class DataMode {
@@ -72,6 +67,7 @@ private:
     using DatagramBuffer = std::vector<char>;
     DatagramBuffer datagram_buffer_; ///< Optical data buffer
 
+    std::shared_ptr<SpillSchedule> spill_schedule_; ///< Pointer to the SpillSchedule
     std::size_t data_slot_idx_; ///< Unique data slot index assigned by SpillSchedule to prevent overwrites
 
     std::size_t expected_header_size_;
