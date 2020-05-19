@@ -5,11 +5,11 @@
 
 #include <boost/program_options.hpp>
 
-#include "util/command_receiver.h"
-#include "util/signal_receiver.h"
-#include "util/singleton_process.h"
-#include <util/chips_config.h>
+#include <util/command_receiver.h>
+#include <util/config.h>
 #include <util/elastic_interface.h>
+#include <util/signal_receiver.h>
+#include <util/singleton_process.h>
 
 #include "daq_control.h"
 #include "daqontrol_publisher.h"
@@ -33,8 +33,7 @@ public:
         if (!singleton())
             throw std::runtime_error("DAQontrol already running!");
 
-        std::string state_bus_url;
-        std::string control_bus_url;
+        const std::string process_name { argv[0] };
 
         boost::program_options::options_description desc("Options");
         desc.add_options()("help,h", "DAQontrol...");
@@ -45,7 +44,7 @@ public:
 
             if (vm.count("help")) {
                 std::cout << desc << std::endl;
-                return EXIT_SUCCESS;
+                return exit_code::success;
             }
             boost::program_options::notify(vm);
         } catch (const boost::program_options::error& e) {
@@ -54,23 +53,21 @@ public:
             throw std::runtime_error("DAQontrol - runtime Argument Error");
         }
 
-        state_bus_url = Config::getString("DAQONTROL_BUS");
-        control_bus_url = Config::getString("CONTROL_BUS");
-
         // Initialise the elasticsearch interface.
-        g_elastic.init(true, false, 10); // log to stdout and use 10 threads for indexing
+        g_config.init(process_name);
+        g_elastic.init(process_name);
         log(INFO, "Starting DAQontrol");
 
         {
             // Main entry point.
             std::shared_ptr<DAQControl> daq_control { new DAQControl() };
-            std::shared_ptr<DaqontrolPublisher> bus_publisher { new DaqontrolPublisher(daq_control, state_bus_url) };
+            std::shared_ptr<DaqontrolPublisher> bus_publisher { new DaqontrolPublisher(daq_control) };
 
             std::unique_ptr<SignalReceiver> signal_receiver { new SignalReceiver };
             signal_receiver->setHandler(daq_control);
             signal_receiver->runAsync();
 
-            std::unique_ptr<CommandReceiver> cmd_receiver { new CommandReceiver(control_bus_url) };
+            std::unique_ptr<CommandReceiver> cmd_receiver { new CommandReceiver() };
             cmd_receiver->setHandler(daq_control);
             cmd_receiver->runAsync();
 

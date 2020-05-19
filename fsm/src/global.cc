@@ -2,7 +2,7 @@
 
 #include <boost/program_options.hpp>
 
-#include <util/chips_config.h>
+#include <util/config.h>
 
 #include "daqonite/observer.h"
 #include "daqontrol/observer.h"
@@ -43,11 +43,11 @@ void Global::readSettings(int argc, char* argv[])
 
     opts::notify(vm);
 
-    ops_bus_url_ = Config::getString("OPS_BUS");
-    daqonite_bus_url_ = Config::getString("DAQONITE_BUS");
-    daqontrol_bus_url_ = Config::getString("DAQONTROL_BUS");
-    daqsitter_bus_url_ = Config::getString("DAQSITTER_BUS");
-    control_bus_url_ = Config::getString("CONTROL_BUS");
+    ops_bus_url_ = g_config.lookupString("bus.ops");
+    daqonite_bus_url_ = g_config.lookupString("bus.daqonite");
+    daqontrol_bus_url_ = g_config.lookupString("bus.daqontrol");
+    daqsitter_bus_url_ = g_config.lookupString("bus.daqsitter");
+    control_bus_url_ = g_config.lookupString("bus.control");
 }
 
 void Global::setupComponents()

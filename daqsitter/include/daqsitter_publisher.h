@@ -15,7 +15,7 @@
 
 class DaqsitterPublisher : public BusPublisher<DaqsitterStateMessage> {
 public:
-    explicit DaqsitterPublisher(std::shared_ptr<MonitoringHandler> monitoring_handler, const std::string& url);
+    explicit DaqsitterPublisher(std::shared_ptr<MonitoringHandler> monitoring_handler);
     virtual ~DaqsitterPublisher() = default;
 
 private:

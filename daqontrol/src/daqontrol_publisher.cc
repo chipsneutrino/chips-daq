@@ -2,12 +2,12 @@
 
 #include <nngpp/nngpp.h>
 #include <nngpp/protocol/pub0.h>
-#include <util/elastic_interface.h>
+#include <util/config.h>
 
 #include "daqontrol_publisher.h"
 
-DaqontrolPublisher::DaqontrolPublisher(std::shared_ptr<DAQControl> daq_control, const std::string& url)
-    : BusPublisher { url }
+DaqontrolPublisher::DaqontrolPublisher(std::shared_ptr<DAQControl> daq_control)
+    : BusPublisher { g_config.lookupString("bus.daqontrol") }
     , daq_control_ { std::move(daq_control) }
 {
 }

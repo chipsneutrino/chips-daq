@@ -5,6 +5,9 @@
 
 #include <boost/asio.hpp>
 
+#include <util/elastic_interface.h>
+#include <util/config.h>
+
 #include <relay/relay.h>
 #include <relay/mc_relay.h>
 #include <relay/ec_relay.h>
@@ -49,7 +52,9 @@ void clbsOff(int box);
 
 int main(int argc, char *argv[])
 {
-    g_elastic.init(true, false, 1); // log to stdout and use 1 threads for indexing
+    const std::string process_name{ argv[0] };
+    g_config.init(process_name);
+    g_elastic.init(process_name);
 
     // Get the type of command
     const std::string type{argv[1]};

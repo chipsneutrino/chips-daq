@@ -1,6 +1,7 @@
 #include <csignal>
 #include <iostream>
 
+#include <util/config.h>
 #include <util/elastic_interface.h>
 #include <util/singleton_process.h>
 
@@ -39,7 +40,10 @@ public:
         if (!singleton())
             throw std::runtime_error("FSM already running!");
 
-        g_elastic.init(true, false, 10); // log to stdout and use 10 threads for indexing
+        const std::string process_name { argv[0] };
+
+        g_config.init(process_name);
+        g_elastic.init(process_name);
         log(INFO, "FSM started");
 
         std::signal(SIGINT, signal_handler);

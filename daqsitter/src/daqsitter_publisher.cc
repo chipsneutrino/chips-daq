@@ -2,12 +2,12 @@
 
 #include <nngpp/nngpp.h>
 #include <nngpp/protocol/pub0.h>
-#include <util/elastic_interface.h>
+#include <util/config.h>
 
 #include "daqsitter_publisher.h"
 
-DaqsitterPublisher::DaqsitterPublisher(std::shared_ptr<MonitoringHandler> monitoring_handler, const std::string& url)
-    : BusPublisher { url }
+DaqsitterPublisher::DaqsitterPublisher(std::shared_ptr<MonitoringHandler> monitoring_handler)
+    : BusPublisher { g_config.lookupString("bus.daqsitter") }
     , monitoring_handler_ { std::move(monitoring_handler) }
 {
 }

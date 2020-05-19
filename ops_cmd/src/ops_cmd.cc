@@ -18,7 +18,7 @@
 #include <nngpp/nngpp.h>
 #include <nngpp/protocol/req0.h>
 
-#include <util/chips_config.h>
+#include <util/config.h>
 #include <util/control_msg.h>
 
 namespace ExitCode {
@@ -38,11 +38,14 @@ int main(int argc, char* argv[])
         return ExitCode::BadArgs;
     }
 
+    const std::string process_name { argv[0] };
+    g_config.init(process_name);
+
     // Construct a message
     OpsMessage msg {};
     const std::string command { argv[1] };
-    const std::string ops_bus_url { Config::getString("OPS_BUS") };
-    const std::string config_path { Config::getString("CONFIG_PATH") };
+    const std::string ops_bus_url { g_config.lookupString("bus.ops") };
+    const std::string detector_config_directory { g_config.lookupString("detector_config_directory") };
 
     if (command == "config") {
         if (argc != 3) {
@@ -51,7 +54,7 @@ int main(int argc, char* argv[])
         }
 
         const std::string config_file { argv[2] };
-        const std::string full_path_to_config_file { (!config_file.empty() && config_file[0] == '/') ? config_file : fmt::format("{}/{}", config_path, config_file) };
+        const std::string full_path_to_config_file { (!config_file.empty() && config_file[0] == '/') ? config_file : fmt::format("{}/{}", detector_config_directory, config_file) };
 
         msg.Discriminator = OpsMessage::Config::Discriminator;
         strcpy(msg.Payload.pConfig.config_file, full_path_to_config_file.c_str());

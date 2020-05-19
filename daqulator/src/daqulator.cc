@@ -5,8 +5,11 @@
  * E-mail: j.tingey.16@ucl.ac.uk
  */
 
+#include <util/config.h>
+#include <util/elastic_interface.h>
+#include <util/singleton_process.h>
+
 #include "packet_generator.h"
-#include "util/singleton_process.h"
 
 namespace po = boost::program_options;
 
@@ -25,6 +28,8 @@ public:
         if (!singleton())
             throw std::runtime_error("DAQulator already running!");
 
+        const std::string process_name { argv[0] };
+
         // Default settings
         std::string address = "localhost";
         std::string config_file("../data/config.opt");
@@ -34,12 +39,8 @@ public:
         unsigned int MTU = 9600;
         unsigned int run_num = 1;
 
-        bool print_logs = true;
-        bool print_debug = false;
-        int index_threads = 10;
-
         po::options_description desc("Options");
-        desc.add_options()("help,h", "DAQulator help...")("address,a", po::value<std::string>(&address)->default_value(address), "SDAQ address")("timeslice,t", po::value<unsigned int>(&deltaTS)->default_value(deltaTS), "Time slice duration (ms)")("hitrate,r", po::value<unsigned int>(&hit_rate)->default_value(hit_rate), "Hit rate (KHz)")("runnum,n", po::value<unsigned int>(&run_num)->default_value(run_num), "Run number")("mtu,m", po::value<unsigned int>(&MTU)->default_value(MTU), "Maximum transfer unit size")("config,c", po::value<std::string>(&config_file)->default_value(config_file), "Config file")("testdata,d", po::value<std::string>(&data_file)->default_value(data_file), "Test data file")("logs", boost::program_options::value<bool>(&print_logs), "Print logs to stdout (true)")("debug", boost::program_options::value<bool>(&print_debug), "Print ElasticInterface debug messages (false)")("threads", boost::program_options::value<int>(&index_threads), "Number of ElasticInterface indexing threads (10)");
+        desc.add_options()("help,h", "DAQulator help...")("address,a", po::value<std::string>(&address)->default_value(address), "SDAQ address")("timeslice,t", po::value<unsigned int>(&deltaTS)->default_value(deltaTS), "Time slice duration (ms)")("hitrate,r", po::value<unsigned int>(&hit_rate)->default_value(hit_rate), "Hit rate (KHz)")("runnum,n", po::value<unsigned int>(&run_num)->default_value(run_num), "Run number")("mtu,m", po::value<unsigned int>(&MTU)->default_value(MTU), "Maximum transfer unit size")("config,c", po::value<std::string>(&config_file)->default_value(config_file), "Config file")("testdata,d", po::value<std::string>(&data_file)->default_value(data_file), "Test data file");
 
         try {
             po::variables_map vm;
@@ -59,7 +60,8 @@ public:
             throw std::runtime_error("DAQulator: Argument error");
         }
 
-        g_elastic.init(print_logs, print_debug, index_threads); // Initialise the ElasticInterface
+        g_config.init(process_name);
+        g_elastic.init(process_name);
 
         // Log the setup to elasticsearch
         log(INFO, "DAQulator Start ({},{},{},{},{},{})", address, deltaTS, MTU, run_num, hit_rate, config_file);

@@ -12,7 +12,7 @@
 #include "util/command_receiver.h"
 #include "util/signal_receiver.h"
 #include "util/singleton_process.h"
-#include <util/chips_config.h>
+#include <util/config.h>
 #include <util/elastic_interface.h>
 
 namespace exit_code {
@@ -40,16 +40,11 @@ public:
         bool file = false;
         float sample_frac = 0.001;
 
-        bool print_logs = true;
-        bool print_debug = false;
-        int index_threads = 100;
-
-        std::string state_bus_url;
-        std::string control_bus_url;
+        const std::string process_name { argv[0] };
 
         // Argument handling
         boost::program_options::options_description desc("Options");
-        desc.add_options()("help,h", "DAQsitter...")("elastic", "Save monitoring data to elasticsearch")("file", "Save monitoring data to ROOT file")("config,c", boost::program_options::value<std::string>(&config), "Configuration file (../data/config.opt)")("sample", boost::program_options::value<float>(&sample_frac), "Fraction of packets to use (0.01)")("logs", boost::program_options::value<bool>(&print_logs), "Print logs to stdout (true)")("debug", boost::program_options::value<bool>(&print_debug), "Print ElasticInterface debug messages (false)")("threads", boost::program_options::value<int>(&index_threads), "Number of ElasticInterface indexing threads (100)");
+        desc.add_options()("help,h", "DAQsitter...")("elastic", "Save monitoring data to elasticsearch")("file", "Save monitoring data to ROOT file")("config,c", boost::program_options::value<std::string>(&config), "Configuration file (../data/config.opt)")("sample", boost::program_options::value<float>(&sample_frac), "Fraction of packets to use (0.01)");
 
         try {
             boost::program_options::variables_map vm;
@@ -72,23 +67,20 @@ public:
             throw std::runtime_error("DAQsitter - runtime Argument Error");
         }
 
-        state_bus_url = Config::getString("DAQSITTER_BUS");
-        control_bus_url = Config::getString("CONTROL_BUS");
-
-        g_elastic.init(print_logs, print_debug, index_threads); // Initialise the ElasticInterface
-
+        g_config.init(process_name);
+        g_elastic.init(process_name);
         log(INFO, "Starting DAQsitter");
 
         {
             // Main entry point.
             std::shared_ptr<MonitoringHandler> mon_handler { new MonitoringHandler(config, elastic, file, sample_frac) };
-            std::shared_ptr<DaqsitterPublisher> bus_publisher { new DaqsitterPublisher(mon_handler, state_bus_url) };
+            std::shared_ptr<DaqsitterPublisher> bus_publisher { new DaqsitterPublisher(mon_handler) };
 
             std::unique_ptr<SignalReceiver> signal_receiver { new SignalReceiver };
             signal_receiver->setHandler(mon_handler);
             signal_receiver->runAsync();
 
-            std::unique_ptr<CommandReceiver> cmd_receiver { new CommandReceiver(control_bus_url) };
+            std::unique_ptr<CommandReceiver> cmd_receiver { new CommandReceiver() };
             cmd_receiver->setHandler(mon_handler);
             cmd_receiver->runAsync();
 

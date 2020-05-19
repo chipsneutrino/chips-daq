@@ -15,7 +15,7 @@
 
 class DaqontrolPublisher : public BusPublisher<DaqontrolStateMessage> {
 public:
-    explicit DaqontrolPublisher(std::shared_ptr<DAQControl> daq_control, const std::string& url);
+    explicit DaqontrolPublisher(std::shared_ptr<DAQControl> daq_control);
     virtual ~DaqontrolPublisher() = default;
 
 private:
