@@ -69,8 +69,17 @@ create_config() {
 	customize_template scripts/config/global/bus.cfg.in config/global/bus.cfg
 	customize_template scripts/config/global/logging.cfg.in config/global/logging.cfg
 	customize_template scripts/config/global/elastic.cfg.in config/global/elastic.cfg
+	customize_template scripts/config/global/fnal.cfg.in config/global/fnal.cfg
 
 	customize_template scripts/config/daqonite.cfg.in config/daqonite.cfg
+	customize_template scripts/config/daqulator.cfg.in config/daqulator.cfg
+	customize_template scripts/config/daqontrol.cfg.in config/daqontrol.cfg
+	customize_template scripts/config/daqsitter.cfg.in config/daqsitter.cfg
+	customize_template scripts/config/fsm.cfg.in config/fsm.cfg
+	customize_template scripts/config/ops_cmd.cfg.in config/ops_cmd.cfg
+	customize_template scripts/config/power.cfg.in config/power.cfg
+	customize_template scripts/config/spill_tunnel.cfg.in config/spill_tunnel.cfg
+	customize_template scripts/config/monitoring_tunnel.cfg.in config/monitoring_tunnel.cfg
 }
 
 distribute() {

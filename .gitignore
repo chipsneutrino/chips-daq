@@ -15,4 +15,3 @@ daqonite/src/monitoring_gui_dict.cc
 daqonite/src/monitoring_gui_dict.h
 env
 *.keytab
-scripts/dist_config.sh
