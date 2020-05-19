@@ -1,0 +1,14 @@
+[Unit]
+Description=Optical DAQ
+
+[Service]
+ExecStart=%BIN_PATH%/run_with_env.sh daqonite
+WorkingDirectory=%RUN_PATH%
+Restart=always
+Nice=3
+User=%RUN_USER%
+Group=%RUN_USER%
+
+[Install]
+WantedBy=network.target
+

@@ -17,7 +17,17 @@ export DEPLOY_VERSION=`git describe --always`
 set -e
 
 cp_units() {
-	cp -r ./units "${BPATH}"
+	rm -rf "${BPATH}/units"
+	mkdir "${BPATH}/units"
+
+	cp ./scripts/systemd/unit.mk "${BPATH}/units/unit.mk"
+
+	UNITS="daqonite daqontrol daqsitter fsm monitoring-tunnel numi-update-watcher spill-tunnel"
+	for UNIT in ${UNITS}; do
+		mkdir "${BPATH}/units/${UNIT}"
+		cp ./scripts/systemd/${UNIT}/Makefile "${BPATH}/units/${UNIT}/Makefile"
+		customize_template scripts/systemd/${UNIT}/chips-${UNIT}.service.in units/${UNIT}/chips-${UNIT}.service
+	done
 }
 
 customize_template() {
@@ -26,13 +36,16 @@ customize_template() {
 	sed \
 		-e "s/%BASE_PATH%/${TGTPATH//\//\\/}\/${DIST_DIR_NAME//\//\\/}/" \
 		-e "s/%CONFIG_PATH%/${TGTPATH//\//\\/}\/${CONFIG_DIR_NAME//\//\\/}/" \
+		-e "s/%RUN_PATH%/${TGTPATH//\//\\/}\/${RUN_DIR_NAME//\//\\/}/" \
 		-e "s/%DIST_CONFIG_PATH%/${TGTPATH//\//\\/}\/${DIST_DIR_NAME//\//\\/}\\/${DIST_CONFIG_DIR_NAME//\//\\/}/" \
+		-e "s/%BIN_PATH%/${TGTPATH//\//\\/}\/${DIST_DIR_NAME//\//\\/}\/${DIST_BIN_DIR_NAME//\//\\/}/" \
 		-e "s/%DATA_PATH%/${TGTPATH//\//\\/}\/${DATA_DIR_NAME//\//\\/}/" \
 		-e "s/%DEPLOY_DATE_READABLE%/${DEPLOY_DATE_READABLE}/" \
 		-e "s/%DEPLOY_VERSION%/${DEPLOY_VERSION}/" \
 		-e "s/%DATA_MACHINE%/${DATA_MACHINE}/" \
 		-e "s/%MON_MACHINE%/${MON_MACHINE}/" \
 		-e "s/%ES_PASSWORD%/${ES_PASSWORD}/" \
+		-e "s/%RUN_USER%/${RUN_USER}/" \
 		./${SOURCE_FILE} \
 		>${BPATH}/${TARGET_FILE}
 }
@@ -40,17 +53,17 @@ customize_template() {
 cp_artifacts() {
 	SRC_PATH="./build"
 
-	rm -rf "${BPATH}/bin" "${BPATH}/lib"
+	rm -rf "${BPATH}/${DIST_BIN_DIR_NAME}" "${BPATH}/lib"
 
-	mkdir "${BPATH}/bin"
-	cp ${SRC_PATH}/bin/* "${BPATH}/bin"
-	cp ./scripts/run_with_env.sh "${BPATH}/bin"
-	cp ./scripts/k5reauth "${BPATH}/bin"
-	cp ./scripts/spill_tunnel.sh "${BPATH}/bin"
-	cp ./scripts/monitoring_tunnel.sh "${BPATH}/bin"
-	cp ./scripts/restart.sh "${BPATH}/bin"
-	cp ./scripts/jumbo.sh "${BPATH}/bin"
-	customize_template scripts/chips_env_activate.sh.in bin/chips_env_activate.sh
+	mkdir "${BPATH}/${DIST_BIN_DIR_NAME}"
+	cp ${SRC_PATH}/bin/* "${BPATH}/${DIST_BIN_DIR_NAME}"
+	cp ./scripts/run_with_env.sh "${BPATH}/${DIST_BIN_DIR_NAME}"
+	cp ./scripts/k5reauth "${BPATH}/${DIST_BIN_DIR_NAME}"
+	cp ./scripts/spill_tunnel.sh "${BPATH}/${DIST_BIN_DIR_NAME}"
+	cp ./scripts/monitoring_tunnel.sh "${BPATH}/${DIST_BIN_DIR_NAME}"
+	cp ./scripts/restart.sh "${BPATH}/${DIST_BIN_DIR_NAME}"
+	cp ./scripts/jumbo.sh "${BPATH}/${DIST_BIN_DIR_NAME}"
+	customize_template scripts/chips_env_activate.sh.in ${DIST_BIN_DIR_NAME}/chips_env_activate.sh
 
 	mkdir "${BPATH}/lib"
 	cp -P ${SRC_PATH}/lib/*.so* "${BPATH}/lib"
@@ -58,7 +71,7 @@ cp_artifacts() {
 }
 
 cp_scripts() {
-	cp -r ./numi_update_watcher/numi_update_watcher.py "${BPATH}/bin"
+	cp -r ./numi_update_watcher/numi_update_watcher.py "${BPATH}/${DIST_BIN_DIR_NAME}"
 }
 
 create_config() {

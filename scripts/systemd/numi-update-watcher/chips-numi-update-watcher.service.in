@@ -1,0 +1,13 @@
+[Unit]
+Description=Watcher of Fermilab status updates
+
+[Service]
+ExecStart=%BIN_PATH%/run_with_env.sh numi_update_watcher.py
+WorkingDirectory=%RUN_PATH%
+Restart=always
+User=%RUN_USER%
+Group=%RUN_USER%
+
+[Install]
+WantedBy=network.target
+

@@ -2,11 +2,11 @@
 Description=Finite State Machine
 
 [Service]
-ExecStart=/chips/dist/bin/run_with_env.sh fsm
-WorkingDirectory=/chips/run
+ExecStart=%BIN_PATH%/run_with_env.sh fsm
+WorkingDirectory=%RUN_PATH%
 Restart=always
-User=daq
-Group=daq
+User=%RUN_USER%
+Group=%RUN_USER%
 
 [Install]
 WantedBy=network.target

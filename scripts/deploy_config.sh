@@ -16,9 +16,16 @@ export DATA_DIR_NAME="data"
 # Configuration directory name relative to TGTPATH, must be readable to run user (persistent between deployments)
 export CONFIG_DIR_NAME="config"
 
+# Directory name relative to TGTPATH, set as working directory of all systemd services, must be readable to run user (persistent between deployments)
+export RUN_DIR_NAME="run"
+
 # Configuration directory name relative to DIST_DIR_NAME, must be readable to run user
 # WARNING: gets wiped upon every deployment!
 export DIST_CONFIG_DIR_NAME="config"
+
+# Directory name relative to DIST_DIR_NAME, where DAQ binaries are stored, must be readable to run user
+# WARNING: gets wiped upon every deployment!
+export DIST_BIN_DIR_NAME="bin"
 
 # User used to deploy, must be the same on all machines, also must have passwordless login
 export DEPLOY_USER="root"
