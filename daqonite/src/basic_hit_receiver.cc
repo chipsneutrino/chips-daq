@@ -6,6 +6,8 @@
 
 #include <boost/bind.hpp>
 
+#include <util/config.h>
+
 #include "basic_hit_receiver.h"
 
 using boost::asio::ip::udp;
@@ -28,11 +30,8 @@ BasicHitReceiver::BasicHitReceiver(std::shared_ptr<boost::asio::io_service> io_s
     setUnitName("BasicHitReceiver[{}]", opt_port);
 
     // Setup the sockets
-    // TODO: make this constant configurable
-    socket_optical_.set_option(udp::socket::receive_buffer_size { 33554432 });
-
-    // TODO: make this constant configurable
-    datagram_buffer_.resize(65536);
+    socket_optical_.set_option(udp::socket::receive_buffer_size { g_config.lookupI32("udp_buffer_size") });
+    datagram_buffer_.resize(g_config.lookupI32("udp_buffer_size"));
 }
 
 void BasicHitReceiver::startData()

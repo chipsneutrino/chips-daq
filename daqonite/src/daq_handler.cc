@@ -18,6 +18,7 @@ DAQHandler::DAQHandler()
     , output_directory_path_ { g_config.lookupString("run_file_output_directory") }
     , data_run_ {}
     , data_run_serialiser_ {}
+    , n_hit_threads_ { g_config.lookupU32("n_hit_threads") }
     , io_service_ { new io_service }
     , run_work_ { new io_service::work(*io_service_) }
     , thread_group_ {}
@@ -46,12 +47,9 @@ void DAQHandler::createHitReceivers()
 
 void DAQHandler::run()
 {
-    // TODO: get this from a configuration file
-    const std::size_t n_threads { 8 };
-
     // Setup the thread group and call io_service.run() in each
-    log(INFO, "Starting I/O service on {} threads", n_threads);
-    for (std::size_t i = 0; i < n_threads; ++i) {
+    log(INFO, "Starting I/O service on {} threads", n_hit_threads_);
+    for (std::size_t i = 0; i < n_hit_threads_; ++i) {
         thread_group_.create_thread([this] { io_service_->run(); });
     }
 

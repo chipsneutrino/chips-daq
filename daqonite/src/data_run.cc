@@ -5,6 +5,7 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include <util/config.h>
 #include <util/elastic_interface.h>
 
 #include "data_run.h"
@@ -78,8 +79,7 @@ void DataRun::setOutputFileName()
 {
     // TODO: this entire function needs to be streamlined
 
-    static constexpr auto run_file_name { "runNumbers.dat" }; // TODO: make this a configurable setting
-    const std::string run_file_path { fmt::format("{}/{}", output_directory_path_, run_file_name) }; // TODO: use a path join
+    const auto run_file_path { g_config.lookupString("run_number_file") }; // TODO: this should ideally be looked up in a constructor
     const auto run_type_no { static_cast<int>(type_) };
 
     std::uint64_t runNums[NUMRUNTYPES];
@@ -98,7 +98,7 @@ void DataRun::setOutputFileName()
             }
             newFile.close();
         } else {
-            throw std::runtime_error("Unable to create runNumbers.dat!");
+            throw std::runtime_error(fmt::format("Unable to create {}!", run_file_path));
         }
     } else {
         // The file exists so read from it
@@ -125,7 +125,7 @@ void DataRun::setOutputFileName()
             }
             updateFile.close();
         } else {
-            throw std::runtime_error("Unable to update runNumbers.dat!");
+            throw std::runtime_error(fmt::format("Unable to create {}!", run_file_path));
         }
     }
 

@@ -21,17 +21,17 @@ logging :
     # to various supported backends, each of which can be enabled individually.
     # In addition, we also allow to control the sparsity of the log stream by
     # filtering messages based on their severity.
-    stdout :
+    stderr :
     {
-        # Whether to emit logs to the standard output
-        enable = false;
+        # Whether to emit logs to the standard error output
+        enabled = false;
         # Severity threshold: TRACE|DEBUG|INFO|WARNING|ERROR|FATAL
         min_severity = "TRACE";
     };
     elastic_search :
     {
         # Whether to index logs in ElasticSearch
-        enable = true;
+        enabled = true;
         # Severity threshold: TRACE|DEBUG|INFO|WARNING|ERROR|FATAL
         min_severity = "TRACE";
     };

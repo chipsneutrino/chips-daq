@@ -1,12 +1,14 @@
-#include "data_run_serialiser.h"
+#include <util/config.h>
+
 #include "data_run_file.h"
+#include "data_run_serialiser.h"
 #include "merge_sorter.h"
 
 DataRunSerialiser::DataRunSerialiser(const std::shared_ptr<DataRun>& data_run)
     : Logging {}
     , AsyncComponent {}
     , data_run_ { data_run }
-    , waiting_spills_ { 128 } // TODO: make this a configurable constant
+    , waiting_spills_ { g_config.lookupU32("max_serialiser_queue_size") }
 {
     setUnitName("DataRunSerialiser");
 }

@@ -76,6 +76,7 @@ private:
 
     // IO_service stuff
     using io_service = boost::asio::io_service;
+    std::uint32_t n_hit_threads_;
     std::shared_ptr<io_service> io_service_; ///< BOOST io_service. The heart of everything
     std::unique_ptr<io_service::work> run_work_;
     boost::thread_group thread_group_; ///< Group of threads to do the work
