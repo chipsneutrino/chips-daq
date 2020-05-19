@@ -5,6 +5,7 @@
 ##############################################################
 
 source scripts/deploy_config.sh
+source scripts/deploy_config_secrets.sh
 
 export BPATH="/tmp/chips-dist.$$/${DIST_DIR_NAME}"
 export MACHINES="${DATA_MACHINE} ${MON_MACHINE}"
@@ -31,6 +32,7 @@ customize_template() {
 		-e "s/%DEPLOY_VERSION%/${DEPLOY_VERSION}/" \
 		-e "s/%DATA_MACHINE%/${DATA_MACHINE}/" \
 		-e "s/%MON_MACHINE%/${MON_MACHINE}/" \
+		-e "s/%ES_PASSWORD%/${ES_PASSWORD}/" \
 		./${SOURCE_FILE} \
 		>${BPATH}/${TARGET_FILE}
 }
