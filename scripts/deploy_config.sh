@@ -16,6 +16,10 @@ export DATA_DIR_NAME="data"
 # Configuration directory name relative to TGTPATH, must be readable to run user (persistent between deployments)
 export CONFIG_DIR_NAME="config"
 
+# Configuration directory name relative to DIST_DIR_NAME, must be readable to run user
+# WARNING: gets wiped upon every deployment!
+export DIST_CONFIG_DIR_NAME="config"
+
 # User used to deploy, must be the same on all machines, also must have passwordless login
 export DEPLOY_USER="root"
 
@@ -25,14 +29,14 @@ export RUN_USER="daq"
 # Path to rsync (or alternative with similar interface)
 export RSYNC="/usr/bin/rsync"
 
-# Which machines is used for data taking
-export DATA_MACHINE="chipsshore01"
+# Which machine is used for data taking
+export DATA_MACHINE="localhost" # "chipsshore01"
 
 # Which machine is used for monitoring
-export MON_MACHINE="chipsshore04"
+export MON_MACHINE="localhost" # "chipsshore04"
 
 # Which services run on the data machine
-export DATA_SERVICES="daqonite spill-tunnel"
+export DATA_SERVICES="daqonite" #" spill-tunnel"
 
 # Which services run on the monitoring machine
-export MON_SERVICES="numi-update-watcher fsm daqontrol daqsitter monitoring-tunnel"
+export MON_SERVICES="fsm daqontrol daqsitter" # numi-update-watcher monitoring-tunnel

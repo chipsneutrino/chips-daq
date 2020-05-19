@@ -13,8 +13,8 @@
 
 #include <boost/program_options.hpp>
 
-#include <util/chips_config.h>
 #include <util/command_receiver.h>
+#include <util/config.h>
 #include <util/elastic_interface.h>
 #include <util/logging.h>
 #include <util/signal_receiver.h>
@@ -25,12 +25,6 @@
 
 namespace exit_code {
 static constexpr int success = 0;
-}
-
-namespace settings {
-std::string state_bus_url {};
-std::string control_bus_url {};
-std::string data_path {};
 }
 
 class Main : protected Logging {
@@ -58,10 +52,6 @@ public:
         }
 
         opts::notify(vm);
-
-        settings::state_bus_url = Config::getString("DAQONITE_BUS");
-        settings::control_bus_url = Config::getString("CONTROL_BUS");
-        settings::data_path = Config::getString("DATA_PATH");
     }
 
     int main(int argc, char* argv[])
@@ -71,23 +61,26 @@ public:
         if (!singleton())
             throw std::runtime_error("DAQonite already running!");
 
+        const std::string process_name { argv[0] };
+
         // Read configuration.
         readSettings(argc, argv);
 
         // Initialise the elasticsearch interface.
-        g_elastic.init(true, false, 10); // log to stdout and use 10 threads for indexing
+        g_config.init(process_name);
+        g_elastic.init(process_name);
         log(INFO, "Checking hard hats, high-vis, boots and gloves!");
 
         {
             // Main entry point.
-            std::shared_ptr<DAQHandler> daq_handler { new DAQHandler(settings::data_path) };
-            std::shared_ptr<DaqonitePublisher> bus_publisher { new DaqonitePublisher(daq_handler, settings::state_bus_url) };
+            std::shared_ptr<DAQHandler> daq_handler { new DAQHandler() };
+            std::shared_ptr<DaqonitePublisher> bus_publisher { new DaqonitePublisher(daq_handler) };
 
             std::unique_ptr<SignalReceiver> signal_receiver { new SignalReceiver };
             signal_receiver->setHandler(daq_handler);
             signal_receiver->runAsync();
 
-            std::unique_ptr<CommandReceiver> cmd_receiver { new CommandReceiver(settings::control_bus_url) };
+            std::unique_ptr<CommandReceiver> cmd_receiver { new CommandReceiver() };
             cmd_receiver->setHandler(daq_handler);
             cmd_receiver->runAsync();
 

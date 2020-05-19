@@ -70,14 +70,7 @@ public:
     /// Destroy a ElasticInterface
     ~ElasticInterface();
 
-    /**
-		 * Initialises the ElasticInterface
-		 * 
-         * @param print_logs    print logs to stdout
-         * @param print_debug   print debug messages to stdout
-         * @param index_threads number of threads to use for indexing
-		 */
-    void init(bool print_logs, bool print_debug, int index_threads);
+    void init(const std::string& process_name);
 
     void stop_and_join();
 

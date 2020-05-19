@@ -4,17 +4,18 @@
 
 #include <cstring>
 
-#include <util/elastic_interface.h>
+#include <util/config.h>
+#include <util/logging.h>
 
 #include "bbb_hit_receiver.h"
 #include "clb_hit_receiver.h"
 #include "daq_handler.h"
 
-DAQHandler::DAQHandler(const std::string& data_path)
+DAQHandler::DAQHandler()
     : Logging {}
     , clb_ports_ {}
     , bbb_ports_ {}
-    , output_directory_path_ { data_path }
+    , output_directory_path_ { g_config.lookupString("run_file_output_directory") }
     , data_run_ {}
     , data_run_serialiser_ {}
     , io_service_ { new io_service }

@@ -25,9 +25,12 @@ customize_template() {
 	sed \
 		-e "s/%BASE_PATH%/${TGTPATH//\//\\/}\/${DIST_DIR_NAME//\//\\/}/" \
 		-e "s/%CONFIG_PATH%/${TGTPATH//\//\\/}\/${CONFIG_DIR_NAME//\//\\/}/" \
+		-e "s/%DIST_CONFIG_PATH%/${TGTPATH//\//\\/}\/${DIST_DIR_NAME//\//\\/}\\/${DIST_CONFIG_DIR_NAME//\//\\/}/" \
 		-e "s/%DATA_PATH%/${TGTPATH//\//\\/}\/${DATA_DIR_NAME//\//\\/}/" \
 		-e "s/%DEPLOY_DATE_READABLE%/${DEPLOY_DATE_READABLE}/" \
 		-e "s/%DEPLOY_VERSION%/${DEPLOY_VERSION}/" \
+		-e "s/%DATA_MACHINE%/${DATA_MACHINE}/" \
+		-e "s/%MON_MACHINE%/${MON_MACHINE}/" \
 		./${SOURCE_FILE} \
 		>${BPATH}/${TARGET_FILE}
 }
@@ -57,7 +60,17 @@ cp_scripts() {
 }
 
 create_config() {
+	mkdir "${BPATH}/config"
+	mkdir "${BPATH}/config/global"
+
 	customize_template scripts/dist_config.sh config.sh
+	
+	customize_template scripts/config/global.cfg.in config/global.cfg
+	customize_template scripts/config/global/bus.cfg.in config/global/bus.cfg
+	customize_template scripts/config/global/logging.cfg.in config/global/logging.cfg
+	customize_template scripts/config/global/elastic.cfg.in config/global/elastic.cfg
+
+	customize_template scripts/config/daqonite.cfg.in config/daqonite.cfg
 }
 
 distribute() {

@@ -38,7 +38,7 @@ public:
      * Initial work is then added to the IO_service before run() is called to
      * start to main loop.
      */
-    explicit DAQHandler(const std::string& data_path);
+    explicit DAQHandler();
 
     /// Destroy a DAQHandler
     virtual ~DAQHandler() = default;

@@ -1,11 +1,11 @@
 /**
  * ElasticInterface - Interface to elasticsearch for logging and monitoring
- * 
  */
 
-#include "elastic_interface.h"
+#include <util/config.h>
+
 #include "backtrace_on_terminate.h"
-#include "chips_config.h"
+#include "elastic_interface.h"
 
 ElasticInterface g_elastic; ///< Global instance of this class
 
@@ -14,10 +14,6 @@ ElasticInterface::ElasticInterface()
     , index_work_(index_service_)
     , log_counter_(0)
 {
-    // elasticlient requires a vector of elasticsearch nodes, for now we just add the one
-    client_list_.clear();
-    client_list_.push_back(Config::getString("ELASTIC_CLIENT"));
-
     builder_["commentStyle"] = "None";
     builder_["indentation"] = ""; // If you want whitespace-less output
 }
@@ -27,11 +23,20 @@ ElasticInterface::~ElasticInterface()
     stop_and_join();
 }
 
-void ElasticInterface::init(bool print_logs, bool print_debug, int index_threads)
+void ElasticInterface::init(const std::string& process_name)
 {
+    // elasticlient requires a vector of elasticsearch nodes, for now we just add the one
+    client_list_.clear();
+    client_list_.push_back(g_config.lookupString("elastic_search.url"));
+
+    // TODO: move these settings to Logging
+    const bool print_logs { false };
+    const bool print_debug { false };
+
+    const std::uint32_t index_threads { g_config.lookupU32("elastic_search.n_index_threads") };
+
     // Get the application name and pid
-    std::ifstream comm("/proc/self/comm");
-    getline(comm, process_name_);
+    process_name_ = process_name;
     pid_ = getpid();
 
     print_logs_ = print_logs; // stdout settings
@@ -41,7 +46,7 @@ void ElasticInterface::init(bool print_logs, bool print_debug, int index_threads
         elasticlient::setLogFunction(elasticlientCallback);
     }
 
-    for (int threadCount = 0; threadCount < index_threads; threadCount++) // start indexing threads
+    for (std::uint32_t threadCount = 0; threadCount < index_threads; threadCount++) // start indexing threads
     {
         index_threads_.create_thread(boost::bind(&ElasticInterface::runThread, this));
     }

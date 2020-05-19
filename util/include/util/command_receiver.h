@@ -23,7 +23,7 @@ public:
 
 class CommandReceiver : protected Logging {
 public:
-    explicit CommandReceiver(const std::string& url);
+    explicit CommandReceiver();
     virtual ~CommandReceiver() = default;
 
     void setHandler(std::shared_ptr<CommandHandler> handler);

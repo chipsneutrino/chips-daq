@@ -3,12 +3,14 @@
 #include <nngpp/nngpp.h>
 #include <nngpp/protocol/sub0.h>
 
+#include <util/config.h>
+
 #include "command_receiver.h"
 
-CommandReceiver::CommandReceiver(const std::string& url)
+CommandReceiver::CommandReceiver()
     : Logging {}
     , handler_ {}
-    , url_ { url }
+    , url_ { g_config.lookupString("bus.control") }
     , running_ { false }
     , receiver_thread_ {}
     , cv_receiver_thread_ {}

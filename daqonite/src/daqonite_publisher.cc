@@ -2,12 +2,14 @@
 
 #include <nngpp/nngpp.h>
 #include <nngpp/protocol/pub0.h>
-#include <util/elastic_interface.h>
+
+#include <util/config.h>
+#include <util/logging.h>
 
 #include "daqonite_publisher.h"
 
-DaqonitePublisher::DaqonitePublisher(std::shared_ptr<DAQHandler> daq_handler, const std::string& url)
-    : BusPublisher { url }
+DaqonitePublisher::DaqonitePublisher(std::shared_ptr<DAQHandler> daq_handler)
+    : BusPublisher { g_config.lookupString("bus.daqonite") }
     , daq_handler_ { std::move(daq_handler) }
 {
 }

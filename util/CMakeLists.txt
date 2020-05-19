@@ -1,6 +1,6 @@
 add_library(util 
     include/util/control_msg.h                  src/control_msg.cc
-    include/util/chips_config.h                 src/chips_config.cc
+    include/util/config.h                       src/config.cc
     include/util/elastic_interface.h            src/elastic_interface.cc
     include/util/logging.h                      src/logging.cc
     include/util/annotation.h
@@ -29,6 +29,8 @@ target_link_libraries(util PUBLIC ${ELASTICLIENT_LIBRARIES})
 target_include_directories(util PUBLIC ${ELASTICLIENT_INCLUDE_DIRS})
 
 target_link_libraries(util PUBLIC fmt)
-target_link_libraries(util PUBLIC Boost::thread Boost::date_time)
+target_link_libraries(util PUBLIC Boost::thread)
+target_link_libraries(util PUBLIC Boost::date_time)
 target_link_libraries(util PUBLIC nngpp)
+target_link_libraries(util PUBLIC ${CONFIG++_LIBRARY})
 target_link_libraries(util PRIVATE unwind)
