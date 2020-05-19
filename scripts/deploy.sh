@@ -69,7 +69,6 @@ create_config() {
 	customize_template scripts/config/global/bus.cfg.in config/global/bus.cfg
 	customize_template scripts/config/global/logging.cfg.in config/global/logging.cfg
 	customize_template scripts/config/global/elastic.cfg.in config/global/elastic.cfg
-	customize_template scripts/config/global/fnal.cfg.in config/global/fnal.cfg
 
 	customize_template scripts/config/daqonite.cfg.in config/daqonite.cfg
 	customize_template scripts/config/daqulator.cfg.in config/daqulator.cfg

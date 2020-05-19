@@ -5,16 +5,17 @@
 ##############################################################
 
 source config.sh
+source ${CHIPS_DIST_CONFIG_PATH}/monitoring_tunnel.cfg
 set -e
 
 ##############################################################
 
 k5reauth \
-	-p ${CHIPS_TUNNEL_PRINCIPAL} \
-	-k ${CHIPS_TUNNEL_KEYTAB} \
+	-p ${fnal_principal} \
+	-k ${fnal_keytab} \
 	-- \
-	${CHIPS_AUTOSSH} \
+	${autossh} \
 		-M 0 \
 		-nNT \
-		-R ${CHIPS_TUNNEL_MONITORING_REMOTE_PORT}:localhost:${CHIPS_TUNNEL_MONITORING_LOCAL_PORT} \
-		${CHIPS_TUNNEL_MONITORING_REMOTE_HOST}
+		-R ${remote_port}:localhost:${local_port} \
+		${remote_host}
