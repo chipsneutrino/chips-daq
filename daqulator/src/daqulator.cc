@@ -61,6 +61,7 @@ public:
         }
 
         g_config.init(process_name);
+        LoggingMultiplexer::init();
         g_elastic.init(process_name);
 
         // Log the setup to elasticsearch

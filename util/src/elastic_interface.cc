@@ -10,7 +10,8 @@
 ElasticInterface g_elastic; ///< Global instance of this class
 
 ElasticInterface::ElasticInterface()
-    : mode_(ELASTIC)
+    : Logging {}
+    , mode_(ELASTIC)
     , index_work_(index_service_)
     , log_counter_(0)
 {
@@ -30,7 +31,6 @@ void ElasticInterface::init(const std::string& process_name)
     client_list_.push_back(g_config.lookupString("elastic_search.url"));
 
     // TODO: move these settings to Logging
-    const bool print_logs { false };
     const bool print_debug { false };
 
     const std::uint32_t index_threads { g_config.lookupU32("elastic_search.n_index_threads") };
@@ -38,8 +38,6 @@ void ElasticInterface::init(const std::string& process_name)
     // Get the application name and pid
     process_name_ = process_name;
     pid_ = getpid();
-
-    print_logs_ = print_logs; // stdout settings
 
     if (print_debug) // if print_debug, then set the elasticlient logging callback function
     {
@@ -58,34 +56,8 @@ void ElasticInterface::stop_and_join()
     index_threads_.join_all();
 }
 
-std::string ElasticInterface::level_to_string(severity level)
+void ElasticInterface::log(Severity level, const std::string& unit, const std::string& message)
 {
-    switch (level) {
-    case severity::TRACE:
-        return "TRACE";
-    case severity::DEBUG:
-        return "DEBUG";
-    case severity::INFO:
-        return "INFO";
-    case severity::WARNING:
-        return "WARNING";
-    case severity::ERROR:
-        return "ERROR";
-    case severity::FATAL:
-        return "FATAL";
-    default:
-        return "unknown";
-    }
-}
-
-void ElasticInterface::log(severity level, const std::string& unit, std::string&& message)
-{
-    if (print_logs_) // Print to stdout if required
-    {
-        print_mutex_.lock();
-        fmt::print("LOG ({}, {}): {}\n", level_to_string(level), unit, message);
-        print_mutex_.unlock();
-    }
     index_service_.post(boost::bind(&ElasticInterface::logWork, this, level, unit, message, timestamp()));
 }
 
@@ -119,7 +91,7 @@ void ElasticInterface::run(int run_num, int run_type)
     index_service_.post(boost::bind(&ElasticInterface::runWork, this, run_num, run_type));
 }
 
-void ElasticInterface::logWork(severity level, std::string unit, std::string message, long timestamp)
+void ElasticInterface::logWork(Severity level, std::string unit, std::string message, long timestamp)
 {
     if (suppress()) // Should we suppress this log?
         return;
@@ -245,12 +217,8 @@ void ElasticInterface::runWork(int run_num, int run_type)
         cpr::Header { { "Content-Type", "application/json" } },
         cpr::Body { Json::writeString(builder_, body) });
 
-    if (res.status_code == 200) {
-        return;
-    } else {
-        print_mutex_.lock();
-        fmt::print("{}\n", res.text);
-        print_mutex_.unlock();
+    if (res.status_code != 200) {
+        log(WARNING, "Could not index run to ElasticSearch. Response: {}", res.text);
     }
 }
 
@@ -275,9 +243,7 @@ bool ElasticInterface::suppress()
             work_mutex_.unlock();
             return true;
         } else if (log_counter_ > MAX_LOG_RATE) {
-            print_mutex_.lock();
-            fmt::print("ElasticInterface suppressed a rate of: {}\n", log_counter_);
-            print_mutex_.unlock();
+            logWithoutES(WARNING, "ElasticInterface suppressed a rate of: {}", log_counter_);
             log_counter_ = 0;
         } else {
             log_counter_ = 0;
@@ -299,11 +265,12 @@ void ElasticInterface::index(std::string index, Json::Value document)
             if (res.status_code == 201) {
                 return;
             } else {
-                print_mutex_.lock();
-                fmt::print("{}\n", res.text);
-                print_mutex_.unlock();
+                logWithoutES(WARNING, "Failed to index document (received code {}): '{}'",
+                    res.status_code, Json::writeString(builder_, document));
             }
         } catch (const std::runtime_error& e) {
+            logWithoutES(WARNING, "Failed to index document: '{}', error: {}",
+                Json::writeString(builder_, document), e.what());
         }
     }
 

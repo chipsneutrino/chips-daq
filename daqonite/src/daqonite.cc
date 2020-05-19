@@ -68,6 +68,7 @@ public:
 
         // Initialise the elasticsearch interface.
         g_config.init(process_name);
+        LoggingMultiplexer::init();
         g_elastic.init(process_name);
         log(INFO, "Checking hard hats, high-vis, boots and gloves!");
 

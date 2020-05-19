@@ -62,7 +62,7 @@ inline void elasticlientCallback(elasticlient::LogLevel logLevel, const std::str
     std::cout << "LOG (" << (unsigned)logLevel << "): " << msg << std::endl;
 }
 
-class ElasticInterface {
+class ElasticInterface : protected Logging {
 public:
     /// Create a ElasticInterface
     ElasticInterface();
@@ -85,7 +85,7 @@ public:
      * @param unit          component from which the message comes
      * @param message       message to log
      */
-    void log(severity level, const std::string& unit, std::string&& message);
+    void log(Severity level, const std::string& unit, const std::string& message);
 
     /**
      * Adds stateWork() work to indexing io_service
@@ -143,7 +143,7 @@ private:
      * @param message       log Message
      * @param timestamp     timestamp when work was posted
      */
-    void logWork(severity level, std::string unit, std::string message, long timestamp);
+    void logWork(Severity level, std::string unit, std::string message, long timestamp);
 
     /**
      * Indexes "daqstate" document to elasticsearch database
@@ -244,20 +244,16 @@ private:
     boost::asio::io_service index_service_; ///< Indexing io_service
     boost::asio::io_service::work index_work_; ///< Work for the indexing io_service
     boost::thread_group index_threads_; ///< Group of indexing threads to do the work
-    boost::mutex print_mutex_; ///< Mutex for stdout printing
     boost::mutex work_mutex_; ///< Mutex for work inside indexing io_service
 
     // Settings
     std::string process_name_; ///< Process name for using in log messages
     int pid_; ///< Process pid for using in log messages
     std::string file_name_; ///< file name used when in FILE_LOG mode
-    bool print_logs_; ///< Should we print logs to stdout?
 
     // Log suppression
     int log_counter_; ///< Log counter
     std::chrono::time_point<std::chrono::system_clock> timer_start_; ///< Suppression window start time
-
-    static std::string level_to_string(severity level);
 };
 
 extern ElasticInterface g_elastic; ///< Global instance of this class

@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
 {
     const std::string process_name{ argv[0] };
     g_config.init(process_name);
+    LoggingMultiplexer::init();
     g_elastic.init(process_name);
 
     // Get the type of command
