@@ -21,10 +21,12 @@ enum class BadgerboardResponseType : std::uint8_t {
 struct __attribute__((packed)) BadgerboardResponse {
     std::uint8_t response_type;
     std::uint8_t request_type;
+    std::uint32_t seq_number;
 };
 
 struct __attribute__((packed)) BadgerboardCommonHeader {
     std::uint8_t type;
+    std::uint32_t seq_number;
 };
 
 struct __attribute__((packed)) BadgerboardConfigureHubDatagramHeader {

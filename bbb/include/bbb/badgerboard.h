@@ -40,6 +40,7 @@ private:
         auto body { reinterpret_cast<char*>(request_msg.body().data()) + sizeof(RequestHeaderType) };
 
         header.common.type = static_cast<decltype(header.common.type)>(request_type);
+        header.common.seq_number = ++next_sequence_number_;
         config_ftor(header, body);
 
         return blockingSend(std::move(request_msg));
@@ -49,6 +50,8 @@ private:
 
     std::mutex req_mutex_;
     nng::socket req_sock_;
+
+    std::uint32_t next_sequence_number_;
 
     static std::uint16_t composeBitfield(const bool channels[N_CHANNELS]);
 };

@@ -9,6 +9,7 @@ Badgerboard::Badgerboard()
     , address_ { "tcp://192.168.0.61:54321" } // FIXME: make this configurable
     , req_sock_ { nng::req::open() }
     , req_mutex_ {}
+    , next_sequence_number_ { 0 }
 {
     setUnitName("Badgerboard[{}]", address_);
     req_sock_.dial(address_.c_str());
@@ -17,33 +18,45 @@ Badgerboard::Badgerboard()
 bool Badgerboard::blockingSend(nng::msg&& request_msg)
 {
     std::lock_guard<std::mutex> l { req_mutex_ };
-    const std::uint8_t sent_request_type { request_msg.body().data<BadgerboardCommonHeader>()->type };
-    nng::msg response_msg {};
 
-    log(DEBUG, "Sending message of type {} and size {} bytes.", (std::uint8_t)sent_request_type, request_msg.body().size());
+    // Peek at the header, so that we know what response to receive
+    const auto& common_header { *request_msg.body().data<BadgerboardCommonHeader>() };
+    const std::uint8_t sent_request_type { common_header.type };
+    const std::uint32_t seq_number { common_header.seq_number };
+
+    nng::msg response_msg {};
 
     try {
         // TODO: timeout?
         req_sock_.send(std::move(request_msg));
         response_msg = req_sock_.recv_msg();
     } catch (const nng::exception& e) {
-        // TODO: print stuff
+        log(WARNING, "Error sending a request of type {} - {}",
+            sent_request_type, e.what());
         return false;
     }
 
     if (response_msg.body().size() != sizeof(BadgerboardResponse)) {
-        // TODO: throw stuff
+        log(WARNING, "Unexpected response size (expected {} bytes, received {})",
+            sizeof(BadgerboardResponse), response_msg.body().size());
         return false;
     }
 
     const auto& response { *response_msg.body().data<BadgerboardResponse>() };
     if (response.request_type != sent_request_type) {
-        // TODO: throw stuff
+        log(WARNING, "Unexpected response type (expected {}, received {})",
+            sent_request_type, response.request_type);
+        return false;
+    }
+
+    if (response.seq_number != seq_number) {
+        log(WARNING, "Unexpected response sequence number (expected {}, received {})",
+            seq_number, response.seq_number);
         return false;
     }
 
     if (response.response_type != static_cast<std::uint8_t>(BadgerboardResponseType::Ack)) {
-        // TODO: throw stuff
+        log(WARNING, "Received NAK for a request of type {}", sent_request_type);
         return false;
     }
 
