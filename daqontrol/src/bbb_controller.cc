@@ -2,21 +2,27 @@
  * BBBController - BBBController for an individual BBB
  */
 
+#include <chrono>
 #include <fstream>
 
 #include "bbb_controller.h"
 
 BBBController::BBBController(ControllerConfig config)
     : Controller { config }
-    , badgerboard_ { new Badgerboard }
+    , control_ { new BadgerboardControl }
+    , heartbeat_ { new BadgerboardHeartbeat }
 {
     setUnitName("BBBController[{}]", config.eid_);
     log(INFO, "Creating");
+
+    heartbeat_->runAsync();
 }
 
 BBBController::~BBBController()
 {
     // TODO: implement me
+    heartbeat_->notifyJoin();
+    heartbeat_->join();
 }
 
 void BBBController::reset()
@@ -26,28 +32,52 @@ void BBBController::reset()
 
 void BBBController::configure()
 {
+    using namespace std::chrono;
+
     log(DEBUG, "Start configure...");
     working_ = true;
+
+    // TODO: handle errors
+    control_->resetConfiguration();
 
     // FIXME: get this from central config source
     std::vector<char> hub_cfg {};
     loadFileContents(hub_cfg, "/chips/config/test_madison_hub.cfg");
-    badgerboard_->configureHub(hub_cfg.data(), hub_cfg.size());
-    // TODO: handle errors
 
-    // TODO: wait until heartbeat shows hub-configured state
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    // TODO: handle errors
+    control_->configureHub(hub_cfg.data(), hub_cfg.size());
+    heartbeat_->waitForStateChange(milliseconds { 5000 }, [](const BadgerboardState& state) {
+        return state.hubConfig == BadgerboardConfigState::Configured;
+    });
 
     // FIXME: get this from central config source
     std::vector<char> run_cfg {};
     loadFileContents(run_cfg, "/chips/config/test_madison_run.cfg");
-    badgerboard_->configureRun(run_cfg.data(), run_cfg.size());
+
     // TODO: handle errors
+    control_->configureRun(run_cfg.data(), run_cfg.size());
+    heartbeat_->waitForStateChange(milliseconds { 5000 }, [](const BadgerboardState& state) {
+        return state.runConfig == BadgerboardConfigState::Configured;
+    });
 
-    // TODO: wait until heartbeat shows run-configured state
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    // FIXME: get this from central config source
+    BadgerboardChannelSelection desired_power_state {};
+    desired_power_state[14] = true;
 
-    // TODO: set channel power state
+    // TODO: handle errors
+    control_->setPowerState(desired_power_state);
+    heartbeat_->waitForStateChange(milliseconds { 45000 }, [&desired_power_state](const BadgerboardState& state) {
+        for (std::size_t channel_idx = 0; channel_idx < N_BADGERBOARD_CHANNELS; ++channel_idx) {
+            auto expected_state { desired_power_state[channel_idx]
+                    ? BadgerboardChannelState::Started
+                    : BadgerboardChannelState::PoweredOff };
+
+            if (state.channels[channel_idx] != expected_state) {
+                return false;
+            }
+        }
+        return true;
+    });
 
     state_ = Control::Configured; // Set the controller state to Configured
     log(DEBUG, "Configure DONE");
@@ -59,7 +89,7 @@ void BBBController::startData()
     log(DEBUG, "Start Data...");
     working_ = true;
 
-    badgerboard_->beginDataRun();
+    control_->beginDataRun();
     // TODO: handle errors
 
     state_ = Control::Started; // Set the controller state to Started

@@ -1,21 +1,22 @@
 #include <nngpp/nngpp.h>
 #include <nngpp/protocol/req0.h>
 
-#include "badgerboard.h"
+#include "badgerboard_control.h"
 #include "badgerboard_datagrams.h"
 
-Badgerboard::Badgerboard()
+BadgerboardControl::BadgerboardControl()
     : Logging {}
-    , address_ { "tcp://192.168.0.61:54321" } // FIXME: make this configurable
+    , req_address_ { "tcp://192.168.0.61:56114" } // FIXME: make this configurable
     , req_sock_ { nng::req::open() }
     , req_mutex_ {}
-    , next_sequence_number_ { 0 }
+    , req_next_sequence_number_ { 0 }
 {
-    setUnitName("Badgerboard[{}]", address_);
-    req_sock_.dial(address_.c_str());
+    setUnitName("BadgerboardControl[{}]", req_address_);
+
+    req_sock_.dial(req_address_.c_str()); // TODO: exception?
 }
 
-bool Badgerboard::blockingSend(nng::msg&& request_msg)
+bool BadgerboardControl::blockingSend(nng::msg&& request_msg)
 {
     std::lock_guard<std::mutex> l { req_mutex_ };
 
@@ -63,8 +64,9 @@ bool Badgerboard::blockingSend(nng::msg&& request_msg)
     return true;
 }
 
-bool Badgerboard::configureHub(const char* config, std::size_t config_size)
+bool BadgerboardControl::configureHub(const char* config, std::size_t config_size)
 {
+    log(DEBUG, "Configuring hub");
     return composeAndSendRequest<BadgerboardConfigureHubDatagramHeader>(
         BadgerboardRequestType::ConfigureHub, config_size,
         [&](BadgerboardConfigureHubDatagramHeader& header, char* body) {
@@ -73,8 +75,9 @@ bool Badgerboard::configureHub(const char* config, std::size_t config_size)
         });
 }
 
-bool Badgerboard::configureRun(const char* config, std::size_t config_size)
+bool BadgerboardControl::configureRun(const char* config, std::size_t config_size)
 {
+    log(DEBUG, "Configuring run");
     return composeAndSendRequest<BadgerboardConfigureRunDatagramHeader>(
         BadgerboardRequestType::ConfigureRun, config_size,
         [&](BadgerboardConfigureRunDatagramHeader& header, char* body) {
@@ -83,30 +86,32 @@ bool Badgerboard::configureRun(const char* config, std::size_t config_size)
         });
 }
 
-bool Badgerboard::setPowerState(const bool channel_powered[N_CHANNELS])
+bool BadgerboardControl::setPowerState(const BadgerboardChannelSelection& powered_channels)
 {
+    log(DEBUG, "Setting power state");
     return composeAndSendRequest<BadgerboardSetPowerStateDatagramHeader>(
         BadgerboardRequestType::SetPowerState, 0,
         [&](BadgerboardSetPowerStateDatagramHeader& header, char* body) {
-            header.channel_bitfield = composeBitfield(channel_powered);
+            header.channel_bitfield = composeBitfield(powered_channels);
         });
 }
 
-bool Badgerboard::reprogram(const bool channel_reprogrammed[N_CHANNELS], const char* firmware, std::size_t firmware_size)
+bool BadgerboardControl::reprogram(const BadgerboardChannelSelection& reprogrammed_channels, const char* firmware, std::size_t firmware_size)
 {
+    log(DEBUG, "Reprogramming");
     return composeAndSendRequest<BadgerboardReprogramDatagramHeader>(
         BadgerboardRequestType::Reprogram, firmware_size,
         [&](BadgerboardReprogramDatagramHeader& header, char* body) {
-            header.channel_bitfield = composeBitfield(channel_reprogrammed);
+            header.channel_bitfield = composeBitfield(reprogrammed_channels);
             header.firmware_size = firmware_size;
             std::memcpy(body, firmware, firmware_size);
         });
 }
 
-std::uint16_t Badgerboard::composeBitfield(const bool channels[N_CHANNELS])
+std::uint16_t BadgerboardControl::composeBitfield(const BadgerboardChannelSelection& channels)
 {
     std::uint16_t bitfield { 0 };
-    for (std::size_t channel_idx = 0; channel_idx < N_CHANNELS; ++channel_idx) {
+    for (std::size_t channel_idx = 0; channel_idx < N_BADGERBOARD_CHANNELS; ++channel_idx) {
         if (channels[channel_idx]) {
             bitfield |= 1 << channel_idx;
         }
@@ -115,22 +120,32 @@ std::uint16_t Badgerboard::composeBitfield(const bool channels[N_CHANNELS])
     return bitfield;
 }
 
-bool Badgerboard::beginDataRun()
+bool BadgerboardControl::beginDataRun()
 {
+    log(DEBUG, "Beginning data run");
     return composeAndSendRequest<BadgerboardBeginDataRunDatagramHeader>(BadgerboardRequestType::BeginDataRun);
 }
 
-bool Badgerboard::abortDataRun()
+bool BadgerboardControl::abortDataRun()
 {
+    log(DEBUG, "Aborting data run");
     return composeAndSendRequest<BadgerboardAbortDataRunDatagramHeader>(BadgerboardRequestType::AbortDataRun);
 }
 
-bool Badgerboard::terminate()
+bool BadgerboardControl::terminate()
 {
+    log(DEBUG, "Terminating daemon");
     return composeAndSendRequest<BadgerboardTerminateDatagramHeader>(BadgerboardRequestType::Terminate);
 }
 
-bool Badgerboard::shutdown()
+bool BadgerboardControl::shutdown()
 {
+    log(DEBUG, "Shutting down device");
     return composeAndSendRequest<BadgerboardShutdownDatagramHeader>(BadgerboardRequestType::Shutdown);
+}
+
+bool BadgerboardControl::resetConfiguration()
+{
+    log(DEBUG, "Resetting configuration");
+    return composeAndSendRequest<BadgerboardResetConfigurationDatagramHeader>(BadgerboardRequestType::ResetConfiguration);
 }

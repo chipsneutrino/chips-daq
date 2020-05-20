@@ -66,7 +66,7 @@ void DAQHandler::handleConfigCommand(std::string config_file)
 
     // TODO: get these from a config file
     clb_ports_ = { 57001, 57002, 57003, 57004, 57005, 57006, 57007, 57008 };
-    bbb_ports_ = { 57101, 57102, 57103, 57104, 57105, 57106, 57107, 57108 };
+    bbb_ports_ = { 56115 };
 
     createHitReceivers();
 }

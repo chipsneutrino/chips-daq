@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <mutex>
@@ -9,16 +10,21 @@
 
 #include <util/logging.h>
 
-class Badgerboard : protected Logging {
+#include <bbb/constants.h>
+
+using BadgerboardChannelSelection = std::array<bool, N_BADGERBOARD_CHANNELS>;
+
+class BadgerboardControl : protected Logging {
 public:
-    explicit Badgerboard();
+    explicit BadgerboardControl();
 
-    static constexpr std::size_t N_CHANNELS { 16 };
+    void blockingCheckHeartbeat();
 
+    bool resetConfiguration();
     bool configureHub(const char* config, std::size_t config_size);
     bool configureRun(const char* config, std::size_t config_size);
-    bool setPowerState(const bool channel_powered[N_CHANNELS]);
-    bool reprogram(const bool channel_reprogrammed[N_CHANNELS], const char* firmware, std::size_t firmware_size);
+    bool setPowerState(const BadgerboardChannelSelection& powered_channels);
+    bool reprogram(const BadgerboardChannelSelection& reprogrammed_channels, const char* firmware, std::size_t firmware_size);
     bool beginDataRun();
     bool abortDataRun();
     bool terminate();
@@ -40,18 +46,16 @@ private:
         auto body { reinterpret_cast<char*>(request_msg.body().data()) + sizeof(RequestHeaderType) };
 
         header.common.type = static_cast<decltype(header.common.type)>(request_type);
-        header.common.seq_number = ++next_sequence_number_;
+        header.common.seq_number = ++req_next_sequence_number_;
         config_ftor(header, body);
 
         return blockingSend(std::move(request_msg));
     }
 
-    std::string address_;
-
+    std::string req_address_;
     std::mutex req_mutex_;
     nng::socket req_sock_;
+    std::uint32_t req_next_sequence_number_;
 
-    std::uint32_t next_sequence_number_;
-
-    static std::uint16_t composeBitfield(const bool channels[N_CHANNELS]);
+    static std::uint16_t composeBitfield(const BadgerboardChannelSelection& channels);
 };

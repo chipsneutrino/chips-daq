@@ -4,7 +4,8 @@
 
 #pragma once
 
-#include <bbb/badgerboard.h>
+#include <bbb/badgerboard_control.h>
+#include <bbb/badgerboard_heartbeat.h>
 
 #include "controller.h"
 
@@ -27,7 +28,8 @@ private:
     void startData();
     void stopData();
 
-    std::unique_ptr<Badgerboard> badgerboard_;
+    std::unique_ptr<BadgerboardControl> control_;
+    std::unique_ptr<BadgerboardHeartbeat> heartbeat_;
 
     static bool loadFileContents(std::vector<char>& dest_buffer, const char* file_path); // FIXME: temporary, remove me
 };
