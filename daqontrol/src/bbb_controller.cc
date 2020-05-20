@@ -68,7 +68,7 @@ void BBBController::configure()
     control_->setPowerState(desired_power_state);
     heartbeat_->waitForStateChange(milliseconds { 45000 }, [&desired_power_state](const BadgerboardState& state) {
         for (std::size_t channel_idx = 0; channel_idx < N_BADGERBOARD_CHANNELS; ++channel_idx) {
-            auto expected_state { desired_power_state[channel_idx]
+            const auto expected_state { desired_power_state[channel_idx]
                     ? BadgerboardChannelState::Started
                     : BadgerboardChannelState::PoweredOff };
 
