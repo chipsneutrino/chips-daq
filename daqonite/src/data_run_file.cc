@@ -77,8 +77,8 @@ void DataRunFile::createOptHits()
     opt_hits_->Branch("channel_number", &hit_.channel_number, "channel_number/b");
     opt_hits_->Branch("tai_time_s", &hit_.timestamp.secs, "tai_time_s/l");
     opt_hits_->Branch("tai_time_ns", &hit_.timestamp.nanosecs, "tai_time_ns/i");
-    opt_hits_->Branch("tot", &hit_.tot, "tot/b");
-    opt_hits_->Branch("adc0", &hit_.adc0, "adc0/b");
+    opt_hits_->Branch("tot", &hit_.tot, "tot/s");
+    opt_hits_->Branch("adc0", &hit_.adc0, "adc0/s");
 }
 
 void DataRunFile::createOptAnnotations()

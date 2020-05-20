@@ -7,8 +7,8 @@ struct PMTHit {
     std::uint32_t plane_number {}; /// uniquely identifies the plane
     std::uint8_t channel_number {}; /// which PMT in the plane was hit
     tai_timestamp timestamp {}; /// when the hit occurred
-    std::uint8_t tot {}; /// time over threshold, corresponds with energy
-    std::uint8_t adc0 {}; /// value of the ADC, only for Madison planes
+    std::uint16_t tot {}; /// time over threshold, corresponds with energy
+    std::uint16_t adc0 {}; /// value of the ADC, only for Madison planes
 
     long double sort_key {}; /// precalculated compound timestamp, useful for sorting
 
