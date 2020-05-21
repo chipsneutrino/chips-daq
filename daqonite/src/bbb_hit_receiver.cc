@@ -94,8 +94,7 @@ void BBBHitReceiver::mineHits(const opt_packet_hit_t* hits_begin, std::size_t n_
         dest_hit.tot = src_hit.tot;
         dest_hit.adc0 = src_hit.adc0;
         dest_hit.timestamp = calculateHitTime(src_hit, base_time);
-
-        // TODO: use hit flags
+        dest_hit.cpu_trigger = 0 != (OPT_PACKET_HIT_CPU_TRIGGER_FLAG & src_hit.channel_and_flags);
 
         dest_hit.sort_key = dest_hit.timestamp.combined_secs();
     }

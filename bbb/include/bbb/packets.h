@@ -48,7 +48,12 @@ typedef struct {
 } opt_packet_header_t;
 
 typedef struct {
-    uint8_t channel_and_flags; // bottom 4 bits are channel number in [0;15], top 4 bits are reserved for flags
+    // bottom 4 bits are channel number in [0;15], top 4 bits are reserved for flags
+    uint8_t channel_and_flags;
+
+    // bit 16: 0 = CPU trigger not active, 1 = CPU trigger active
+    #define OPT_PACKET_HIT_CPU_TRIGGER_FLAG (1 << 16)
+
     uint32_t timestamp; // nanoseconds since the window start
     uint16_t tot; // time over threshold, TODO: units
     uint16_t adc0; // monitoring ADC, TODO: units

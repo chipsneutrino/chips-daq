@@ -79,6 +79,7 @@ void DataRunFile::createOptHits()
     opt_hits_->Branch("tai_time_ns", &hit_.timestamp.nanosecs, "tai_time_ns/i");
     opt_hits_->Branch("tot", &hit_.tot, "tot/s");
     opt_hits_->Branch("adc0", &hit_.adc0, "adc0/s");
+    opt_hits_->Branch("cpu_trigger", &hit_.adc0, "cpu_trigger/O");
 }
 
 void DataRunFile::createOptAnnotations()
